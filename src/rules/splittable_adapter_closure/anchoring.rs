@@ -4,8 +4,8 @@
 //! A lifted step runs once per item the adapter pulls. A step left in
 //! the closure runs once per item only where the closure always reaches
 //! it, so hoisting one out of a conditional position changes behaviour.
-//! That change compiles, which makes this the one gate in the rule whose
-//! wrong answer is not a compile error:
+//! That change compiles, which makes this the one gate in the chain
+//! trigger whose wrong answer is not a compile error:
 //!
 //! ```ignore
 //! .map(|s| if flag { s.trim().parse::<usize>().unwrap() } else { 0 })
@@ -268,8 +268,9 @@ fn statements<'tcx>(statements: &'tcx [Stmt<'tcx>]) -> impl Iterator<Item = &'tc
 /// division or remainder by zero, in either the plain or the compound
 /// spelling, and an index out of bounds. Arithmetic
 /// overflow is the one left out, because a `fold` whose accumulator is
-/// added to is the shape this rule is mostly about, and declining every
-/// one of those costs more than the panic ordering it would buy.
+/// added to is the shape the chain trigger is mostly about, and
+/// declining every one of those costs more than the panic ordering it
+/// would buy.
 fn observable<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
     struct Observable<'a, 'tcx> {
         cx: &'a LateContext<'tcx>,

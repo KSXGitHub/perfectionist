@@ -1,4 +1,4 @@
-# Splittable adapter closures
+# `splittable_adapter_closure`
 
 **Source:** project convention, from a maintainer's review suggestion
 on <https://github.com/KSXGitHub/perfectionist/pull/475>. The
@@ -10,16 +10,27 @@ below is the catalogue's own rather than a quotation.
 
 ## Status
 
-Three rules implement this file's three triggers, which are three rules
-rather than one because each has its own trigger predicate, its own lift
-target and no shared configuration, per
-[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule).
+One rule implements this file's three triggers, in
+[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs)
+and the trigger modules beside it. Three rules were tried first and read
+wrong against
+[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule):
+that section asks whether the sub-checks can be *cleanly separated*, and
+these cannot. They share the family table and the gates on captures,
+receiver moves and the extra reference a lifted test is handed; their
+configuration is disjoint only because all three have none; and the
+adapters whose closure returns an `Option` are a seam both the chain and
+the guard-and-value trigger have a split for, so which trigger answers is
+a question about what the closure holds rather than about which adapter
+holds it.
 
-| trigger         | rule                                                                                              | a lifted part goes into                          |
-|-----------------|---------------------------------------------------------------------------------------------------|--------------------------------------------------|
-| guard and value | [`src/rules/splittable_adapter_option_chain.rs`](../src/rules/splittable_adapter_option_chain.rs) | the combinator's counterpart, discipline-matched |
-| predicate       | [`src/rules/splittable_adapter_predicate.rs`](../src/rules/splittable_adapter_predicate.rs)       | `filter` or `take_while`, by discipline          |
-| chain           | [`src/rules/splittable_adapter_step_chain.rs`](../src/rules/splittable_adapter_step_chain.rs)     | the adapter mapping the item's channel           |
+| trigger         | module                                                                       | a lifted part goes into                          |
+|-----------------|------------------------------------------------------------------------------|--------------------------------------------------|
+| guard and value | [`option_chain.rs`](../src/rules/splittable_adapter_closure/option_chain.rs) | the combinator's counterpart, discipline-matched |
+| predicate       | [`predicate.rs`](../src/rules/splittable_adapter_closure/predicate.rs)       | `filter` or `take_while`, by discipline          |
+| chain           | [`step_chain.rs`](../src/rules/splittable_adapter_closure/step_chain.rs)     | the adapter mapping the item's channel           |
+
+The triggers are asked in that order and the first finding wins.
 
 Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
 `Poll`, `ControlFlow`, `Itertools`, `ParallelIterator` and `Pipe`.
@@ -45,8 +56,8 @@ crate's own source:
   matched against the item's, and the item is the receiver of the first
   step alone.
 - **`filter_map`, `find_map` and `map_while` are the guard-and-value
-  trigger's**, not the chain's, so the chain rule leaves them alone.
-  `filter_map_ok` is the same shape and no rule lints it, the
+  trigger's**, not the chain's, so the chain trigger leaves them alone.
+  `filter_map_ok` is the same shape and nothing lints it, the
   guard-and-value trigger reaching `Iterator` alone; rayon's
   `find_map_any`, `find_map_first` and `find_map_last` are the chain
   trigger's for the same reason, so the same closure splits one way on

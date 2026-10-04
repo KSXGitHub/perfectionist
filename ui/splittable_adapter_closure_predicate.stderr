@@ -1,14 +1,14 @@
 warning: this predicate runs 2 tests on the item, so `filter` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |         .filter(|line| wanted(line) && line.starts_with('#'))
    |          ^^^^^^
    |
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
-   = note: `#[warn(perfectionist::splittable_adapter_predicate)]` on by default
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
 
 warning: this predicate runs 3 tests on the item, so `filter` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |         .filter(|line| wanted(line) && line.starts_with('#') && line.ends_with('!'))
    |          ^^^^^^
@@ -16,7 +16,7 @@ LL |         .filter(|line| wanted(line) && line.starts_with('#') && line.ends_w
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `filter` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |         .filter(|line| wanted(line) && (line.starts_with('#') || line.ends_with('!')))
    |          ^^^^^^
@@ -24,7 +24,7 @@ LL |         .filter(|line| wanted(line) && (line.starts_with('#') || line.ends_
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `find` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     lines.find(|line| wanted(line) && line.starts_with('#'))
    |           ^^^^
@@ -32,7 +32,7 @@ LL |     lines.find(|line| wanted(line) && line.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `rfind` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     lines.rfind(|line| wanted(line) && line.starts_with('#'))
    |           ^^^^^
@@ -40,7 +40,7 @@ LL |     lines.rfind(|line| wanted(line) && line.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `any` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     lines.any(|line| wanted(line) && line.starts_with('#'))
    |           ^^^
@@ -48,7 +48,7 @@ LL |     lines.any(|line| wanted(line) && line.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `take_while` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |         .take_while(|line| wanted(line) && line.starts_with('#'))
    |          ^^^^^^^^^^
@@ -56,7 +56,7 @@ LL |         .take_while(|line| wanted(line) && line.starts_with('#'))
    = help: give every test but the last a leading `take_while` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `any` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |         .any(|name| name.starts_with('a') && name.ends_with('z'))
    |          ^^^
@@ -64,7 +64,7 @@ LL |         .any(|name| name.starts_with('a') && name.ends_with('z'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `any` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
    |             ^^^
@@ -72,7 +72,7 @@ LL |     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `any` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     lines.any(move |line| longer(line, limit) && shorter(line, limit))
    |           ^^^
@@ -80,7 +80,7 @@ LL |     lines.any(move |line| longer(line, limit) && shorter(line, limit))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `filter` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     line.filter(|line| wanted(line) && line.starts_with('#'))
    |          ^^^^^^
@@ -88,7 +88,7 @@ LL |     line.filter(|line| wanted(line) && line.starts_with('#'))
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
 warning: this predicate runs 2 tests on the item, so `is_some_and` does all of them
-  --> $DIR/splittable_adapter_predicate.rs:LL:CC
+  --> $DIR/splittable_adapter_closure_predicate.rs:LL:CC
    |
 LL |     line.is_some_and(|line| wanted(line) && line.starts_with('#'))
    |          ^^^^^^^^^^^

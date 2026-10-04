@@ -2,7 +2,8 @@
 //
 // Regression test: the rule must not fire on a closure a proc-macro
 // derive synthesised, where the suggestion would be advice about code
-// the author never wrote.
+// the author never wrote. One derive per trigger, since each trigger
+// picks the diagnostic span itself.
 //
 // The derive stamps every token it emits, the enclosing `fn` included,
 // with the driving attribute's span, which leaves both span-reading
@@ -13,12 +14,23 @@
 
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthSplittableAdapterStepChain;
+use proc_macro_synth_binding::{
+    SynthSplittableAdapterOptionChain, SynthSplittableAdapterPredicate,
+    SynthSplittableAdapterStepChain,
+};
 
 const VARS: &[&str] = &[" a ", " b "];
 
 #[derive(SynthSplittableAdapterStepChain)]
 #[synth_splittable_adapter_step_chain]
 struct UsesSynthSplittableAdapterStepChain;
+
+#[derive(SynthSplittableAdapterPredicate)]
+#[synth_splittable_adapter_predicate]
+struct UsesSynthSplittableAdapterPredicate;
+
+#[derive(SynthSplittableAdapterOptionChain)]
+#[synth_splittable_adapter_option_chain]
+struct UsesSynthSplittableAdapterOptionChain;
 
 fn main() {}

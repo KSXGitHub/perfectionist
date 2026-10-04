@@ -1,4 +1,4 @@
-//! Which adapters this rule speaks about, where each one's item
+//! Which adapters the chain trigger speaks about, where each one's item
 //! parameter sits in the closure it takes, and what a lifted step goes
 //! into.
 //!
@@ -16,51 +16,10 @@
 //! about an adapter's contract, which no type exposes. Each entry below
 //! was checked against that contract by hand.
 
+use super::family::Family;
 use rustc_span::Symbol;
 
-/// Which family a receiver belongs to, which is what tells
-/// `Iterator::map` from `Option::map`.
-///
-/// Each family beyond `Iterator` carries one value rather than a stream,
-/// and only its mapping adapters are in scope. A fallible, defaulted or
-/// predicate-shaped adapter leaves the lifted step's result wrapped in
-/// the one the adapter keeps, which costs the reader a wrapper and
-/// sometimes a `mut` rebinding that the folded form did not have. The
-/// planning file measured those splits as equivalent, which they are;
-/// what it did not weigh is what they read like.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Family {
-    /// `Iterator` or `DoubleEndedIterator`.
-    Iterator,
-    /// `Option`.
-    Option,
-    /// `Result`.
-    Result,
-    /// `Poll`.
-    Poll,
-    /// `ControlFlow`.
-    ControlFlow,
-    /// The `Itertools` blanket extension of `Iterator`.
-    Itertools,
-    /// rayon's `ParallelIterator`.
-    Rayon,
-    /// `pipe-trait`'s `Pipe`.
-    Pipe,
-}
-
-impl Family {
-    /// Whether a lifted step's result has to be `Send`.
-    ///
-    /// `ParallelIterator::map` requires it of the item it produces,
-    /// where the folded form does not, because the value never leaves
-    /// the closure. `.map(|s| Rc::new(*s).len())` compiles and
-    /// `.map(|s| Rc::new(*s)).map(|r| r.len())` does not.
-    pub(super) fn sends_between_threads(self) -> bool {
-        self == Self::Rayon
-    }
-}
-
-/// One adapter this rule speaks about.
+/// One adapter the chain trigger speaks about.
 #[derive(Clone, Copy)]
 pub(super) struct Adapter {
     /// Which of the method's arguments is the closure holding the item.
@@ -100,8 +59,8 @@ const fn stateful(lift_target: &'static str) -> Adapter {
     }
 }
 
-/// The adapter `method` is on `family`, or `None` for a method this rule
-/// does not speak about.
+/// The adapter `method` is on `family`, or `None` for a method the chain
+/// trigger does not speak about.
 pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
     match family {
         Family::Iterator => iterator(method),
@@ -118,8 +77,8 @@ pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
 fn iterator(method: Symbol) -> Option<Adapter> {
     // `filter_map`, `find_map` and `map_while` meet the condition and
     // are left out all the same: their closure returns an `Option`, and
-    // what splits inside one is `Option` work, which
-    // `perfectionist::splittable_adapter_option_chain` is about.
+    // what splits inside one is `Option` work, which the guard-and-value
+    // trigger is about.
     Some(match method.as_str() {
         "map" | "flat_map" | "for_each" | "try_for_each" => unary("map"),
         "any" | "all" | "position" | "rposition" => unary("map"),
@@ -162,10 +121,10 @@ fn control_flow(method: Symbol) -> Option<Adapter> {
 
 fn itertools(method: Symbol) -> Option<Adapter> {
     // `filter_map_ok`'s closure returns an `Option`, so what splits
-    // inside it is `Option` work rather than a chain, and
-    // `perfectionist::splittable_adapter_option_chain` reaches
-    // `Iterator` alone, so nothing lints it yet. `partition_map` returns
-    // an `Either`, which this rule has no lift target for, and
+    // inside it is `Option` work rather than a chain, and the
+    // guard-and-value trigger reaches `Iterator` alone, so nothing lints
+    // it yet. `partition_map` returns an `Either`, which the chain
+    // trigger has no lift target for, and
     // `tree_reduce` takes the item twice as `Iterator::reduce` does.
     // Excluded for taking the item by reference: `unique_by`,
     // `filter_ok`, `update`, `find_position`, `into_group_map_by`,

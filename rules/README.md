@@ -162,17 +162,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `Option<bool>` compared against a `Some` of a boolean literal, which never says what `None` means
 
-- [`splittable_adapter_option_chain`](./splittable_adapter_option_chain.md) (default: `active`).
+- [`splittable_adapter_closure`](./splittable_adapter_closure.md) (default: `active`).
 
-  a closure passed to an `Option`-returning adapter welds a guard to a value
-
-- [`splittable_adapter_predicate`](./splittable_adapter_predicate.md) (default: `active`).
-
-  a predicate passed to a filtering adapter is a conjunction of several tests
-
-- [`splittable_adapter_step_chain`](./splittable_adapter_step_chain.md) (default: `active`).
-
-  a closure passed to a mapping adapter chains several steps onto its item
+  a closure passed to an adapter does several things the pipeline has an adapter apiece for
 
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
