@@ -199,12 +199,12 @@ fn ref_item(headers: std::vec::IntoIter<String>) -> Vec<usize> {
     headers.map(|ref header| header.trim().len()).collect()
 }
 
-// Not flagged: a callee that is not a path can hand back an `Fn` holding
-// a borrow, which the step's result then carries.
 fn pick<'chosen>(prefix: &'chosen str) -> impl Fn(&str) -> &'chosen str {
     move |_| prefix
 }
 
+// Not flagged: a callee that is not a path can hand back an `Fn` holding
+// a borrow, which the step's result then carries.
 fn callee_lends_the_result(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(|line| pick(&String::from("m"))(line).len())

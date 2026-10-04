@@ -25,13 +25,14 @@ fn wanted(line: &str) -> bool {
     !line.is_empty()
 }
 
-// Not flagged: a conjunction of comparisons on one quantity is one test.
-// Each of these asks a single question that its halves do not: whether a
-// byte is whitespace, and whether a position is inside a range.
+// Not flagged: two inequalities on one byte ask whether it is whitespace,
+// which neither half asks on its own.
 fn whitespace_byte(bytes: std::slice::Iter<'static, u8>) -> bool {
     bytes.clone().any(|byte| *byte != b' ' && *byte != b'\t')
 }
 
+// Not flagged: a lower and an upper bound on one position ask whether it is
+// inside a range, which neither bound asks on its own.
 fn inside_a_range(positions: std::vec::IntoIter<usize>, start: usize, end: usize) -> bool {
     positions.into_iter().any(|pos| pos >= start && pos < end)
 }

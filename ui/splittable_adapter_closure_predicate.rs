@@ -383,13 +383,13 @@ fn split_copy_capture_in_two_tests(
         .any(move |line| shorter(line, limit))
 }
 
-// Not flagged: two tests reaching a capture held mutably would be two
-// closures both holding it.
 fn note(log: &mut Vec<usize>, line: &str) -> bool {
     log.push(line.len());
     !line.is_empty()
 }
 
+// Not flagged: two tests reaching a capture held mutably would be two
+// closures both holding it.
 fn mutable_capture_in_two_tests(lines: std::vec::IntoIter<&'static str>) -> usize {
     let mut log = Vec::new();
     lines

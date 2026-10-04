@@ -67,27 +67,16 @@ fn split_last_step_borrows(headers: std::vec::IntoIter<String>) -> Vec<&'static 
     headers.map(|header| header.len()).map(label).collect()
 }
 
-// Bad: `filter_map`, `find_map` and `map_while` meet the same condition,
-// and a body that is a chain rather than `Option` work lifts into a
-// leading `map` as any other adapter's does. The guard-and-value trigger
-// answers first where the body is `Option` work.
+// Bad: `filter_map`'s item enters by value and never comes back out, so a
+// body that is a chain lifts into a leading `map`. The guard-and-value
+// trigger answers first where the body is `Option` work instead.
 fn parsing(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| line.trim().parse::<usize>().ok())
         .collect()
 }
 
-fn first_parsed(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
-    lines.find_map(|line| line.trim().parse::<usize>().ok())
-}
-
-fn parsed_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
-    lines
-        .map_while(|line| line.trim().parse::<usize>().ok())
-        .collect()
-}
-
-// Good: one adapter per step, each of the three adapters left what it is.
+// Good: one adapter per step, `filter_map` left the discarding of errors.
 fn split_parsing(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(str::trim)
@@ -96,6 +85,14 @@ fn split_parsing(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
+// Bad: `find_map` stops at the first item its body answers for, which the
+// steps below it do not decide, so a chain in that body lifts.
+fn first_parsed(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.find_map(|line| line.trim().parse::<usize>().ok())
+}
+
+// Good: one adapter per step, `find_map` left the search it is. The
+// receiver needs no `mut` once the leading `map` takes it by value.
 fn split_first_parsed(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines
         .map(str::trim)
@@ -103,6 +100,15 @@ fn split_first_parsed(lines: std::vec::IntoIter<&'static str>) -> Option<usize> 
         .find_map(Result::ok)
 }
 
+// Bad: `map_while` ends the iterator at the first item its body answers
+// `None` for, and a chain in that body lifts without moving that point.
+fn parsed_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map_while(|line| line.trim().parse::<usize>().ok())
+        .collect()
+}
+
+// Good: one adapter per step, `map_while` left the item it stops on.
 fn split_parsed_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(str::trim)
@@ -153,52 +159,25 @@ fn split_binary_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
         .fold(0, |total, length| total + length)
 }
 
-// Bad: the rest of the adapter table, one case each, so an entry
-// naming the wrong parameter or the wrong shape would show up here.
+// Bad: `flat_map` yields many items per item, and its own item still
+// enters by value and never comes back out.
 fn flattening(lines: std::vec::IntoIter<&'static str>) -> String {
     lines.flat_map(|line| line.trim().chars()).collect()
 }
 
-fn trying_each(mut lines: std::vec::IntoIter<&'static str>) -> Option<()> {
-    lines.try_for_each(|line| Some(record(line.trim().len())))
-}
-
-fn every(mut lines: std::vec::IntoIter<&'static str>) -> bool {
-    lines.all(|line| line.trim().is_empty())
-}
-
-fn first_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
-    lines.position(|line| line.trim().is_empty())
-}
-
-fn last_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
-    lines.rposition(|line| line.trim().is_empty())
-}
-
-fn try_total(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
-    lines.try_fold(0, |total, line| Some(total + line.trim().len()))
-}
-
-fn total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize {
-    lines.rfold(0, |total, line| total + line.trim().len())
-}
-
-fn try_total_from_the_right(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
-    lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
-}
-
-fn running_total(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
-    lines
-        .scan(0, |total, line| Some(*total + line.trim().len()))
-        .collect()
-}
-
-// Good: the same table, split. Each adapter is left what it is, and the
-// stateful ones keep the accumulation alone.
+// Good: one adapter per step, `flat_map` left the fanning out.
 fn split_flattening(lines: std::vec::IntoIter<&'static str>) -> String {
     lines.map(str::trim).flat_map(str::chars).collect()
 }
 
+// Bad: `try_for_each` consumes rather than adapts, and stops on the first
+// item its closure answers for.
+fn trying_each(mut lines: std::vec::IntoIter<&'static str>) -> Option<()> {
+    lines.try_for_each(|line| Some(record(line.trim().len())))
+}
+
+// Good: one adapter per step, `try_for_each` left the stopping. Wrapping
+// each answer is what keeps the `Option<()>` the folded form returns.
 fn split_trying_each(lines: std::vec::IntoIter<&'static str>) -> Option<()> {
     lines
         .map(str::trim)
@@ -207,18 +186,47 @@ fn split_trying_each(lines: std::vec::IntoIter<&'static str>) -> Option<()> {
         .try_for_each(Some)
 }
 
+// Bad: `all` asks one test of every item, and a chain reaching that test
+// lifts without changing which items it is asked of.
+fn every(mut lines: std::vec::IntoIter<&'static str>) -> bool {
+    lines.all(|line| line.trim().is_empty())
+}
+
+// Good: one adapter per step, `all` left the test. The receiver needs no
+// `mut` once the leading `map` takes it by value.
 fn split_every(lines: std::vec::IntoIter<&'static str>) -> bool {
     lines.map(str::trim).all(str::is_empty)
 }
 
+// Bad: `position` answers with an index, which counts the items its
+// closure is asked of, and a leading `map` changes none of them.
+fn first_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.position(|line| line.trim().is_empty())
+}
+
+// Good: one adapter per step, `position` left the counting.
 fn split_first_empty(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.map(str::trim).position(str::is_empty)
 }
 
+// Bad: `rposition` counts from the other end, and the step it is handed
+// runs per item either way.
+fn last_empty(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.rposition(|line| line.trim().is_empty())
+}
+
+// Good: one adapter per step, `rposition` left the counting.
 fn split_last_empty(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.map(str::trim).rposition(str::is_empty)
 }
 
+// Bad: `try_fold` takes the item as its closure's *second* parameter, the
+// accumulator being the first, so the chain is rooted one parameter along.
+fn try_total(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.try_fold(0, |total, line| Some(total + line.trim().len()))
+}
+
+// Good: one adapter per step, `try_fold` left the accumulation alone.
 fn split_try_total(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines
         .map(str::trim)
@@ -226,6 +234,13 @@ fn split_try_total(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
         .try_fold(0, |total, length| Some(total + length))
 }
 
+// Bad: `rfold` accumulates from the right, its item likewise the second
+// parameter of the closure it takes.
+fn total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize {
+    lines.rfold(0, |total, line| total + line.trim().len())
+}
+
+// Good: one adapter per step, `rfold` left the accumulation alone.
 fn split_total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines
         .map(str::trim)
@@ -233,6 +248,13 @@ fn split_total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize 
         .rfold(0, |total, length| total + length)
 }
 
+// Bad: `try_rfold` accumulates from the right and can stop early, and its
+// item is the second parameter for the same reason.
+fn try_total_from_the_right(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
+    lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
+}
+
+// Good: one adapter per step, `try_rfold` left the accumulation alone.
 fn split_try_total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines
         .map(str::trim)
@@ -240,6 +262,15 @@ fn split_try_total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> Op
         .try_rfold(0, |total, length| Some(total + length))
 }
 
+// Bad: `scan` yields each running value, and takes the state it threads as
+// its closure's first parameter, so the item is the second.
+fn running_total(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .scan(0, |total, line| Some(*total + line.trim().len()))
+        .collect()
+}
+
+// Good: one adapter per step, `scan` left the state it threads.
 fn split_running_total(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(str::trim)

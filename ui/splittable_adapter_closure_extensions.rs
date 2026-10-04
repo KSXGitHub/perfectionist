@@ -166,18 +166,13 @@ fn not_sendable(items: Parallel<&'static str>) -> Parallel<usize> {
 }
 
 // Not flagged: `pipe` moves the receiver into the closure, so a step
-// returning a borrow of it dies with the closure. The same body under
-// `pipe_ref` below does split, the borrow there being of what the receiver
-// lent the closure.
+// returning a borrow of it dies with the closure.
 fn piped_borrowing(value: String) -> usize {
     value.pipe(|owned| owned.trim().len())
 }
 
-// Bad: the piping methods that hand the closure a borrow. The conversion
-// each performs happens at the head of the chain, so the first lifted step
-// keeps the method and every later one takes the value a `pipe` hands it.
-// One case per table entry, so an entry naming the wrong method would show
-// up here.
+// Bad: `pipe_ref` hands the closure a shared borrow, so a step borrowing
+// through it outlives the closure and lifts.
 fn piped_by_reference(value: String) -> usize {
     value.pipe_ref(|text| text.trim().len())
 }
@@ -188,12 +183,13 @@ fn split_piped_by_reference(value: String) -> usize {
     value.pipe_ref(|text| text.trim()).pipe(str::len)
 }
 
-// Bad: three steps, where the two above the head take a value.
+// Bad: three steps rather than two, so the lifting runs past one step.
 fn piped_by_reference_thrice(value: String) -> usize {
     value.pipe_ref(|text| text.trim().to_uppercase().len())
 }
 
-// Good: the head keeps the method and the step above it takes a value.
+// Good: the head keeps the method, and both steps above it take the value a
+// `pipe` hands them.
 fn split_piped_by_reference_thrice(value: String) -> usize {
     value
         .pipe_ref(|text| text.trim())
@@ -201,65 +197,79 @@ fn split_piped_by_reference_thrice(value: String) -> usize {
         .pipe(|upper| upper.len())
 }
 
+// Bad: `pipe_mut` hands the closure a mutable borrow, which a step may
+// borrow through just as it may a shared one.
 fn piped_mutably(mut value: Vec<usize>) -> usize {
     value.pipe_mut(|all| all.as_mut_slice().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_mut`, which is what keeps the borrow mutable.
 fn split_piped_mutably(mut value: Vec<usize>) -> usize {
     value.pipe_mut(|all| all.as_mut_slice()).pipe(|all| all.len())
 }
 
+// Bad: `pipe_as_ref` converts through `AsRef` before handing the borrow
+// over, and the step borrows through what the conversion produced.
 fn piped_as_reference(value: String) -> usize {
     value.pipe_as_ref(|text: &str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_as_ref`, so the conversion still happens once.
 fn split_piped_as_reference(value: String) -> usize {
     value.pipe_as_ref(|text: &str| text.trim()).pipe(str::len)
 }
 
+// Bad: `pipe_as_mut` converts through `AsMut`, the mutable counterpart of
+// the same conversion.
 fn piped_as_mutable(mut value: String) -> usize {
     value.pipe_as_mut(|text: &mut str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_as_mut`, so the conversion still happens once.
 fn split_piped_as_mutable(mut value: String) -> usize {
     value.pipe_as_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
 
+// Bad: `pipe_deref` reaches the borrow through `Deref` rather than a
+// conversion the caller names.
 fn piped_through_deref(value: String) -> usize {
     value.pipe_deref(|text: &str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_deref`, so the deref still happens once.
 fn split_piped_through_deref(value: String) -> usize {
     value.pipe_deref(|text: &str| text.trim()).pipe(str::len)
 }
 
+// Bad: `pipe_deref_mut` reaches a mutable borrow through `DerefMut`.
 fn piped_through_deref_mut(mut value: String) -> usize {
     value.pipe_deref_mut(|text: &mut str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_deref_mut`, so the deref still happens once.
 fn split_piped_through_deref_mut(mut value: String) -> usize {
     value.pipe_deref_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
 
+// Bad: `pipe_borrow` reaches the borrow through `Borrow`, which a type may
+// implement for several targets.
 fn piped_through_borrow(value: String) -> usize {
     value.pipe_borrow(|text: &str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_borrow`, so the borrow is still of the target
+// the annotation picked.
 fn split_piped_through_borrow(value: String) -> usize {
     value.pipe_borrow(|text: &str| text.trim()).pipe(str::len)
 }
 
+// Bad: `pipe_borrow_mut` reaches a mutable borrow through `BorrowMut`.
 fn piped_through_borrow_mut(mut value: String) -> usize {
     value.pipe_borrow_mut(|text: &mut str| text.trim().len())
 }
 
-// Good: the head keeps the method, the step above it takes a value.
+// Good: the head keeps `pipe_borrow_mut`, so the borrow is still mutable
+// and still of the target the annotation picked.
 fn split_piped_through_borrow_mut(mut value: String) -> usize {
     value.pipe_borrow_mut(|text: &mut str| text.trim()).pipe(str::len)
 }
@@ -309,21 +319,24 @@ fn one_step(
     items.map_ok(|text| text.trim()).collect()
 }
 
-// Bad: the rest of the extension tables, one case each, so an entry
-// naming the wrong parameter or the wrong shape would show up here.
+// Bad: `counts_by` keys a tally by what its closure answers, and the item
+// enters it by value.
 fn counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
     lines.counts_by(|text| text.trim().len())
 }
 
-fn partitioned(lines: std::vec::IntoIter<&'static str>) -> (Vec<usize>, Vec<&'static str>) {
-    lines.partition_map(|text| classify(text.trim()))
-}
-
-// Good: the same two, split.
+// Good: one adapter per step, `counts_by` left the tallying.
 fn split_counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
     lines.map(str::trim).counts_by(str::len)
 }
 
+// Bad: `partition_map` sends each item one way or the other by what its
+// closure answers, the item entering by value.
+fn partitioned(lines: std::vec::IntoIter<&'static str>) -> (Vec<usize>, Vec<&'static str>) {
+    lines.partition_map(|text| classify(text.trim()))
+}
+
+// Good: one adapter per step, `partition_map` left the sorting into two.
 fn split_partitioned(
     lines: std::vec::IntoIter<&'static str>,
 ) -> (Vec<usize>, Vec<&'static str>) {
@@ -331,77 +344,77 @@ fn split_partitioned(
 }
 
 // Not flagged: the guard-and-value trigger reads `Iterator`'s own
-// `filter_map` alone. rayon's is the same shape, and what each combinator
-// hands its work to was tabled for `Iterator`, so this one is left to the
-// chain trigger, whose rayon table does not name it either.
+// `filter_map` alone, and what each combinator hands its work to was tabled
+// for `Iterator`, so rayon's is left to the chain trigger.
 fn parallel_guarded(items: Parallel<&'static str>) -> Vec<usize> {
     items
         .filter_map(|text| wanted(text).then(|| text.len()))
         .into_items()
 }
 
+// Bad: rayon's `for_each` consumes in parallel, and its item enters by
+// value and never comes back out.
 fn parallel_each(items: Parallel<&'static str>) {
     items.for_each(|text| drop(text.trim().len()));
 }
 
-fn parallel_every(items: Parallel<&'static str>) -> bool {
-    items.all(|text| text.trim().is_empty())
-}
-
-fn parallel_position(items: Parallel<&'static str>) -> Option<usize> {
-    items.position_any(|text| text.trim().is_empty())
-}
-
-fn parallel_position_first(items: Parallel<&'static str>) -> Option<usize> {
-    items.position_first(|text| text.trim().is_empty())
-}
-
-fn parallel_position_last(items: Parallel<&'static str>) -> Option<usize> {
-    items.position_last(|text| text.trim().is_empty())
-}
-
-fn parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
-    items.find_map_any(|text| text.trim().parse().ok())
-}
-
-fn parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
-    items.find_map_first(|text| text.trim().parse().ok())
-}
-
-fn parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
-    items.find_map_last(|text| text.trim().parse().ok())
-}
-
-fn parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
-    items.fold(|| 0, |total, text| total + text.trim().len())
-}
-
-fn parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
-    items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
-}
-
-// Good: the same parallel table, split. `map` keeps one item per item, so
-// the positional answers are the positions they were.
+// Good: one adapter per step, `for_each` left the consuming.
 fn split_parallel_each(items: Parallel<&'static str>) {
     items.map(str::trim).map(str::len).for_each(drop);
 }
 
+// Bad: rayon's `all` asks one test of every item, in whatever order the
+// pool reaches them.
+fn parallel_every(items: Parallel<&'static str>) -> bool {
+    items.all(|text| text.trim().is_empty())
+}
+
+// Good: one adapter per step, `all` left the test.
 fn split_parallel_every(items: Parallel<&'static str>) -> bool {
     items.map(str::trim).all(str::is_empty)
 }
 
+// Bad: `position_any` answers with the index of whichever passing item the
+// pool reaches first, and a leading `map` keeps one item per item, so the
+// indices are the ones they were.
+fn parallel_position(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_any(|text| text.trim().is_empty())
+}
+
+// Good: one adapter per step, `position_any` left the answering.
 fn split_parallel_position(items: Parallel<&'static str>) -> Option<usize> {
     items.map(str::trim).position_any(str::is_empty)
 }
 
+// Bad: `position_first` pins the answer to the earliest passing item
+// rather than the earliest reached, the indices still one per item.
+fn parallel_position_first(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_first(|text| text.trim().is_empty())
+}
+
+// Good: one adapter per step, `position_first` left the answering.
 fn split_parallel_position_first(items: Parallel<&'static str>) -> Option<usize> {
     items.map(str::trim).position_first(str::is_empty)
 }
 
+// Bad: `position_last` pins the answer to the latest passing item, and
+// counts the same items the folded form counted.
+fn parallel_position_last(items: Parallel<&'static str>) -> Option<usize> {
+    items.position_last(|text| text.trim().is_empty())
+}
+
+// Good: one adapter per step, `position_last` left the answering.
 fn split_parallel_position_last(items: Parallel<&'static str>) -> Option<usize> {
     items.map(str::trim).position_last(str::is_empty)
 }
 
+// Bad: `find_map_any` takes whichever answer the pool produces first, and
+// its item enters by value.
+fn parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_any(|text| text.trim().parse().ok())
+}
+
+// Good: one adapter per step, `find_map_any` left the discarding of errors.
 fn split_parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
     items
         .map(str::trim)
@@ -409,6 +422,14 @@ fn split_parallel_found_any(items: Parallel<&'static str>) -> Option<usize> {
         .find_map_any(Result::ok)
 }
 
+// Bad: `find_map_first` takes the answer belonging to the earliest item
+// rather than the earliest produced.
+fn parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_first(|text| text.trim().parse().ok())
+}
+
+// Good: one adapter per step, `find_map_first` left the discarding of
+// errors.
 fn split_parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
     items
         .map(str::trim)
@@ -416,6 +437,13 @@ fn split_parallel_found_first(items: Parallel<&'static str>) -> Option<usize> {
         .find_map_first(Result::ok)
 }
 
+// Bad: `find_map_last` takes the answer belonging to the latest item.
+fn parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
+    items.find_map_last(|text| text.trim().parse().ok())
+}
+
+// Good: one adapter per step, `find_map_last` left the discarding of
+// errors.
 fn split_parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
     items
         .map(str::trim)
@@ -423,6 +451,13 @@ fn split_parallel_found_last(items: Parallel<&'static str>) -> Option<usize> {
         .find_map_last(Result::ok)
 }
 
+// Bad: rayon's `fold` takes an accumulator per thread, so it is handed a
+// closure whose *second* parameter is the item.
+fn parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.fold(|| 0, |total, text| total + text.trim().len())
+}
+
+// Good: one adapter per step, `fold` left the accumulation alone.
 fn split_parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
     items
         .map(str::trim)
@@ -430,6 +465,13 @@ fn split_parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
         .fold(|| 0, |total, length| total + length)
 }
 
+// Bad: rayon's `try_fold` can stop early, its item likewise the second
+// parameter of the closure it takes.
+fn parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
+    items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
+}
+
+// Good: one adapter per step, `try_fold` left the accumulation alone.
 fn split_parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
     items
         .map(str::trim)
@@ -437,26 +479,29 @@ fn split_parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<us
         .try_fold(|| 0, |total, length| Some(total + length))
 }
 
-// Bad: `find_first` and `find_any` hand the closure a borrow of the item,
-// which a leading `map` would replace, so the chain trigger leaves them
-// alone. The conjunction trigger's `filter` takes the item the same way, so
-// its finding is the one reported.
+// Bad: `find_first` hands the closure a borrow of the item, which a leading
+// `map` would replace, so the chain trigger leaves it alone and the
+// conjunction trigger's `filter`, taking the item the same way, reports.
 fn parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
     items.find_first(|text| wanted(text) && text.starts_with('#'))
 }
 
-fn parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
-    items.find_any(|text| wanted(text) && text.starts_with('#'))
-}
-
-// Good: one adapter per test, the leading one filtering, which hands the
-// item the same way the finder did.
+// Good: one adapter per test, the leading `filter` handing the item the way
+// `find_first` did.
 fn split_parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
     items
         .filter(|text| wanted(text))
         .find_first(|text| text.starts_with('#'))
 }
 
+// Bad: `find_any` hands the closure a borrow too, so the conjunction
+// trigger is the one with a split for it.
+fn parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
+    items.find_any(|text| wanted(text) && text.starts_with('#'))
+}
+
+// Good: one adapter per test, the leading `filter` handing the item the way
+// `find_any` did.
 fn split_parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
     items
         .filter(|text| wanted(text))

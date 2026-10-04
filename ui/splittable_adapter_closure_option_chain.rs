@@ -406,23 +406,28 @@ fn another_trait_filter_map(line: &'static str) -> Option<usize> {
     line.filter_map(|text| parse(text).and_then(validate))
 }
 
-// Bad: for the same reason, `map` and `filter` on something that is not
-// an `Option`.
+// Bad: a `map` whose receiver is the `Option` the step before it made is
+// an ordinary step, named like the combinator seam without being it.
 fn map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| sieve(line).map(render)).collect()
 }
 
+// Good: the step rooted at the item lifted, leaving the adapter the `map`
+// that was never its own.
+fn split_map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines.map(sieve).filter_map(|held| held.map(render)).collect()
+}
+
+// Bad: a `filter` whose receiver is the `Option` the step before it made is
+// likewise a step, the name saying nothing about what it is called on.
 fn filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
         .collect()
 }
 
-// Good: the chain's split for both of them.
-fn split_map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
-    lines.map(sieve).filter_map(|held| held.map(render)).collect()
-}
-
+// Good: the step rooted at the item lifted, leaving the adapter the
+// `filter` it was handed.
 fn split_filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .map(sieve)
