@@ -55,6 +55,21 @@ pub mod iter {
             Parallel(kept)
         }
 
+        /// Here to be left alone: the guard-and-value trigger reads
+        /// `Iterator`'s own `filter_map`, and this one is in no table.
+        fn filter_map<Output: Send, Body>(self, body: Body) -> Parallel<Output>
+        where
+            Body: Fn(Self::Item) -> Option<Output> + Send + Sync,
+        {
+            let mut kept = Vec::new();
+            for item in self.into_items() {
+                if let Some(made) = body(item) {
+                    kept.push(made);
+                }
+            }
+            Parallel(kept)
+        }
+
         fn for_each<Body>(self, body: Body)
         where
             Body: Fn(Self::Item) + Send + Sync,

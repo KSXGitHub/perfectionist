@@ -221,6 +221,16 @@ fn partitioned(lines: std::vec::IntoIter<&'static str>) -> (Vec<usize>, Vec<&'st
     lines.partition_map(|text| classify(text.trim()))
 }
 
+// Not flagged: the guard-and-value trigger reads `Iterator`'s own
+// `filter_map` alone. rayon's is the same shape, and what each combinator
+// hands its work to was tabled for `Iterator`, so this one is left to the
+// chain trigger, whose rayon table does not name it either.
+fn parallel_guarded(items: Parallel<&'static str>) -> Vec<usize> {
+    items
+        .filter_map(|text| wanted(text).then(|| text.len()))
+        .into_items()
+}
+
 fn parallel_each(items: Parallel<&'static str>) {
     items.for_each(|text| drop(text.trim().len()));
 }
