@@ -99,8 +99,8 @@ declare_tool_lint! {
     ///
     /// ### Applicability
     ///
-    /// A conjunction is rewritten for you, one adapter per test. The other
-    /// two shapes are described rather than rewritten, their splits having
+    /// A conjunction is rewritten, one adapter per test. The other two
+    /// shapes are described rather than rewritten, their splits having
     /// more than one reasonable text.
     ///
     /// The rewrite keeps the closure each test was written in rather than
