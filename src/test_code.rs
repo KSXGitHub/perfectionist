@@ -65,8 +65,10 @@ pub(crate) fn in_test_code(tcx: TyCtxt<'_>, id: HirId) -> bool {
 /// after configuration and walks every `all(...)` / `any(...)` /
 /// `not(...)` nesting.
 pub(crate) fn cfg_predicate_implies_test(tcx: TyCtxt<'_>, id: HirId) -> bool {
-    find_attr!(tcx, id, CfgTrace(cfgs) => cfgs)
-        .is_some_and(|cfgs| cfgs.iter().any(|(cfg, _)| entry_implies_test(cfg, false)))
+    let Some(cfgs) = find_attr!(tcx, id, CfgTrace(cfgs) => cfgs) else {
+        return false;
+    };
+    cfgs.iter().any(|(cfg, _)| entry_implies_test(cfg, false))
 }
 
 /// Whether the predicate `cfg`, read under a negation when `negated`,

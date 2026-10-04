@@ -290,6 +290,28 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
     }
 }
 
+/// Whether `ty` mentions a region, which is where a borrow would show
+/// up.
+pub(crate) fn borrows(ty: rustc_middle::ty::Ty<'_>) -> bool {
+    ty.walk().any(|argument| argument.as_region().is_some())
+}
+
+/// Whether `pat` binds its value `mut`, so the body can write to it in
+/// place.
+///
+/// Two rules lift a test out of an adapter handed the item by value into
+/// one handed `&Item`, where a test that writes to the item has nothing
+/// to write through. A `&mut` item, `ref mut` included, is the type's
+/// answer, `pat_ty` of either spelling being `&mut T`; this is the
+/// binding's, for an owned item. An item the body never writes to does
+/// not carry the `mut`, which `clippy::unused_mut` is about.
+pub(crate) fn binds_mutably(pat: &hir::Pat<'_>) -> bool {
+    matches!(
+        pat.kind,
+        hir::PatKind::Binding(hir::BindingMode(_, hir::Mutability::Mut), ..),
+    )
+}
+
 /// Resolve a `&str` set from a curated built-in default, a
 /// user-supplied `extras` list, and a user-supplied `ignore`
 /// list. Used by rules whose runtime set key remains a `String` —

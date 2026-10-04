@@ -8,6 +8,78 @@ its error in the same step; the suggestion rewrote it so that each
 adapter did one thing. Neither style guide covers this, so the wording
 below is the catalogue's own rather than a quotation.
 
+## Status
+
+One rule implements this file's three triggers, in
+[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs)
+and the trigger modules beside it. Three rules were tried first and read
+wrong against
+[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule):
+that section asks whether the sub-checks can be *cleanly separated*, and
+these cannot. They share the family table and the gates on captures,
+receiver moves and the extra reference a lifted test is handed; their
+configuration is disjoint only because all three have none; and the
+adapters whose closure returns an `Option` are a seam both the chain and
+the guard-and-value trigger have a split for, so which trigger answers is
+a question about what the closure holds rather than about which adapter
+holds it.
+
+| trigger         | module                                                                       | a lifted part goes into                          |
+|-----------------|------------------------------------------------------------------------------|--------------------------------------------------|
+| guard and value | [`option_chain.rs`](../src/rules/splittable_adapter_closure/option_chain.rs) | the combinator's counterpart, discipline-matched |
+| predicate       | [`predicate.rs`](../src/rules/splittable_adapter_closure/predicate.rs)       | `filter` or `take_while`, by discipline          |
+| chain           | [`step_chain.rs`](../src/rules/splittable_adapter_closure/step_chain.rs)     | the adapter mapping the item's channel           |
+
+The triggers are asked in that order and the first finding wins.
+
+Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
+`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator` and `Pipe`.
+
+Narrower than this file describes, each narrowing measured against this
+crate's own source:
+
+- **`Result::map_or_else`'s error closure is left alone.** It takes one
+  closure per channel, as [`Option` and `Result`](#option-and-result)
+  records, and the table holds one adapter per name, so the value closure
+  is the one read.
+- **A conjunction of nothing but comparisons stays folded.** A comparison
+  is a bound rather than a question, and a conjunction of them is how Rust
+  spells one test, so each half gets no adapter of its own. One comparison
+  among named questions is not that shape and does split.
+- **Liftability asks about a step's own receiver** rather than the item,
+  which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
+  the item is the receiver of the first step alone, and a step applied to
+  an owned value declines however safe the borrow its result carries,
+  since the regions in typeck results are erased. What the step's
+  *arguments* could lend is read from the declared signature instead,
+  where they are not.
+- **The guard-and-value trigger declines a stage whose result borrows.**
+  The stage that stays becomes the next adapter's item, so a borrow leaves
+  the closure with it, and the erased regions make a borrow of the item
+  indistinguishable from one that outlives the closure. A stage returning
+  `Option<&str>` is the cost, and the cost is in which split is offered
+  rather than in silence: the chain trigger reads the same body as two
+  steps.
+- **The guard-and-value trigger counts every split as moving the
+  receiver**, where only a leading lift does. The shapes lifting work to
+  the right hand the receiver to the adapter that already had it, so
+  `find_map`, the one adapter among the three taking its receiver by
+  reference, declines a receiver named again for a split that would not
+  have moved it.
+- **A borrowing adapter whose receiver is named again is declined**
+  rather than suggesting the reborrow of
+  [Which adapters](#which-adapters), which is the cheaper error that
+  section asks for. A split whose head keeps the folded method borrows the
+  receiver where the folded form did, so the piping methods that hand a
+  borrow are not declined for it.
+
+Not implemented, and the rest of this file is their active spec:
+
+- No autofix. The point-free form a split invites asks more of each step
+  than the split does, so the text a rewrite would have to choose is not
+  the text a reader wants.
+- Both `## Deferred` sections below.
+
 ## Statement
 
 An adapter should do one thing. A closure doing several makes one

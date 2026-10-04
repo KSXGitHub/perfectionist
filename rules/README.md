@@ -162,6 +162,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `Option<bool>` compared against a `Some` of a boolean literal, which never says what `None` means
 
+- [`splittable_adapter_closure`](./splittable_adapter_closure.md) (default: `active`).
+
+  a closure passed to an adapter does several things the pipeline has an adapter apiece for
+
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`

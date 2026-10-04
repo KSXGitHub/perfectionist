@@ -95,23 +95,17 @@ pattern that several rules call out by reference — live in
 
 ### Iterator adapters
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
-  — flag a closure passed to an iterator adapter that chains two or
-  more steps onto its item, so one adapter does all of them; suggest
-  one adapter per step, lifting each into a leading `map`. A predicate
-  built from separable tests splits the same way into successive
-  filtering adapters, `filter(foo).filter(bar)` for
-  `filter(|x| foo(x) && bar(x))`. Covers the
-  adapters that take the item by value and never
-  hand it back (`map`, `filter_map`, `flat_map`,
-  `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
-  `position`, `rposition`, and the item side of `fold`, `try_fold`,
-  `scan`, `rfold` and `try_rfold`), rayon's parallel counterparts,
-  itertools' additions, `Option`, `Result`, `Poll` and `ControlFlow`
-  on every channel each has, and `pipe-trait`'s piping methods;
-  excludes `all`, `position` and the rest, where a
-  leading adapter changes the answer. Narrows what also satisfies
-  `perfectionist::overly_long_method_chain` without contradicting it.
-  Active by default.
+  — flag a closure doing several jobs where one adapter per job would
+  do: a chain of steps on the item, a predicate that is a conjunction,
+  or a guard welded to a value. Three rules implement those three
+  triggers, over nine families; the file's `## Status` section says which
+  rule covers which, which families each reaches, and how each is
+  narrower than the file. It remains the spec for the `[T; N]` receiver,
+  the unanchored chain and the autofix. Narrows what also satisfies
+  `perfectionist::overly_long_method_chain`, and contradicts it where the
+  lift target is a method of another name: that rule collapses a run of
+  one name, so `map` into `map` is free where `any` into `map` costs a
+  call. Active by default.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer

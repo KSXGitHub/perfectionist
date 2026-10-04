@@ -135,6 +135,7 @@ rule_index! {
     single_letter_let_binding => SingleLetterLetBinding,
     single_letter_static_item => SingleLetterStaticItem,
     some_bool_comparison => SomeBoolComparison,
+    splittable_adapter_closure => SplittableAdapterClosure,
     thiserror_usage => ThiserrorUsage,
     too_many_local_bindings => TooManyLocalBindings,
     too_many_struct_fields => TooManyStructFields,

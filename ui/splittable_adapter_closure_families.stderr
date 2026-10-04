@@ -1,0 +1,162 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.map(|text| text.trim().len())
+   |            ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.map(|text| text.trim().len())
+   |             ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_err` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.map_err(|text| text.trim().len())
+   |             ^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     state.map(|text| text.trim().len())
+   |           ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     state.map_ok(|text| text.trim().len())
+   |           ^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_break` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     flow.map_break(|text| text.trim().len())
+   |          ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_break` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_continue` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     flow.map_continue(|text| text.trim().len())
+   |          ^^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_continue` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `and_then` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.and_then(|text| parse(text.trim()))
+   |            ^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_or` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.map_or(0, |text| text.trim().len())
+   |            ^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_or_else` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.map_or_else(|| 0, |text| text.trim().len())
+   |            ^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `is_some_and` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.is_some_and(|text| text.trim().is_empty())
+   |            ^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `is_none_or` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     header.is_none_or(|text| text.trim().is_empty())
+   |            ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `and_then` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.and_then(|text| parse(text.trim()).ok_or(0))
+   |             ^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `is_ok_and` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.is_ok_and(|text| text.trim().is_empty())
+   |             ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_or` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.map_or(0, |text| text.trim().len())
+   |             ^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `map_or_else` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.map_or_else(|text| text.trim().len(), |text| text.trim().len())
+   |             ^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `or_else` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.or_else(|text| recover(text.trim()))
+   |             ^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `unwrap_or_else` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.unwrap_or_else(|text| text.trim().len())
+   |             ^^^^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `is_err_and` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     outcome.is_err_and(|text| text.trim().is_empty())
+   |             ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `is_some_and` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     bytes.is_some_and(|run| run.iter().all(u8::is_ascii_hexdigit))
+   |           ^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: N warnings emitted

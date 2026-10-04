@@ -691,6 +691,90 @@ pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthSplittableAdapterStepChain)]` +
+/// `#[synth_splittable_adapter_step_chain]` → `source`, every token of
+/// which inherits the user-span of `synth_splittable_adapter_step_chain`.
+///
+/// `VARS` is the fixture's own `const`. The synthesised closure chains
+/// two steps onto the item, which the rule fires on when hand-written,
+/// so only the proc-macro guard keeps the fixture silent.
+#[proc_macro_derive(
+    SynthSplittableAdapterStepChain,
+    attributes(synth_splittable_adapter_step_chain)
+)]
+pub fn synth_splittable_adapter_step_chain(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_splittable_adapter_step_chain").expect(
+        "`#[derive(SynthSplittableAdapterStepChain)]` requires a \
+         `#[synth_splittable_adapter_step_chain]`",
+    );
+    let source = r#"
+        fn _synth_splittable_adapter_step_chain() -> Vec<usize> {
+            VARS.iter().map(|entry| entry.trim().len()).collect()
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
+/// `#[derive(SynthSplittableAdapterPredicate)]` +
+/// `#[synth_splittable_adapter_predicate]` → `source`, every token of
+/// which inherits the user-span of `synth_splittable_adapter_predicate`.
+///
+/// `VARS` is the fixture's own `const`. The synthesised predicate runs
+/// two tests on the item, which the rule fires on when hand-written, so
+/// only the proc-macro guard keeps the fixture silent.
+#[proc_macro_derive(
+    SynthSplittableAdapterPredicate,
+    attributes(synth_splittable_adapter_predicate)
+)]
+pub fn synth_splittable_adapter_predicate(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_splittable_adapter_predicate").expect(
+        "`#[derive(SynthSplittableAdapterPredicate)]` requires a \
+         `#[synth_splittable_adapter_predicate]`",
+    );
+    let source = r#"
+        fn _synth_splittable_adapter_predicate() -> Vec<&'static str> {
+            VARS.iter().copied().filter(|entry| !entry.is_empty() && entry.ends_with(' ')).collect()
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
+/// `#[derive(SynthSplittableAdapterOptionChain)]` +
+/// `#[synth_splittable_adapter_option_chain]` → `source`, every token of
+/// which inherits the user-span of
+/// `synth_splittable_adapter_option_chain`.
+///
+/// `VARS` is the fixture's own `const`. The synthesised closure welds a
+/// guard to a value, which the rule fires on when hand-written, so only
+/// the proc-macro guard keeps the fixture silent.
+#[proc_macro_derive(
+    SynthSplittableAdapterOptionChain,
+    attributes(synth_splittable_adapter_option_chain)
+)]
+pub fn synth_splittable_adapter_option_chain(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_splittable_adapter_option_chain").expect(
+        "`#[derive(SynthSplittableAdapterOptionChain)]` requires a \
+         `#[synth_splittable_adapter_option_chain]`",
+    );
+    let source = r#"
+        fn _synth_splittable_adapter_option_chain() -> Vec<usize> {
+            VARS.iter()
+                .filter_map(|entry| (!entry.is_empty()).then(|| entry.len()))
+                .collect()
+        }
+    "#;
+    respan(
+        source.parse().expect("the synthesised source is valid Rust"),
+        attr_span,
+    )
+}
+
 /// `#[derive(SynthSomeBoolComparison)]` +
 /// `#[synth_some_bool_comparison]` →
 /// `fn _synth_some_bool_comparison() { let _ = FLAG == Some(true); }`,
