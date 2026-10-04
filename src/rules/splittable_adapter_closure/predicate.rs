@@ -125,7 +125,7 @@ fn fix<'tcx>(
         [hir::Ty {
             kind: TyKind::Infer(()),
             ..
-        }]
+        },],
     ) {
         return None;
     }

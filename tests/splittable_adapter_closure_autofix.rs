@@ -143,7 +143,7 @@ fn fix() -> (TempDir, String, String) {
     let (stderr, success) = run_dylint_fix(temp.path(), &shared_target_dir());
     assert!(
         success,
-        "`cargo dylint --fix` failed; stderr was:\n{stderr}"
+        "`cargo dylint --fix` failed; stderr was:\n{stderr}",
     );
     let fixed = fs::read_to_string(temp.path().join("src/lib.rs")).expect("read fixed fixture");
     (temp, fixed, stderr)
