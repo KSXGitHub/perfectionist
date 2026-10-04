@@ -75,9 +75,13 @@ crate's own source:
 
 Not implemented, and the rest of this file is their active spec:
 
-- No autofix. The point-free form a split invites asks more of each step
-  than the split does, so the text a rewrite would have to choose is not
-  the text a reader wants.
+- No autofix for the chain or the guard-and-value shapes, each having more
+  than one reasonable text. A conjunction has one, so that one is applied:
+  one adapter per test, each keeping the closure the test was written in,
+  with `clippy::redundant_closure_for_method_calls` left to reduce the ones
+  that reduce. Nothing in `clippy::all`, `pedantic`, `nursery` or
+  `restriction` asks for the closure form back, so the two fixes compose in
+  that order and stop.
 - Both `## Deferred` sections below.
 
 ## Statement
