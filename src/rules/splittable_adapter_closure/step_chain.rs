@@ -19,7 +19,7 @@
 
 use super::adapter::{self, Adapter};
 use super::family::Family;
-use super::{Finding, anchoring, chain};
+use super::{Call, Finding, anchoring, chain};
 use crate::binding_uses::{names, uses};
 use crate::common::borrows;
 use crate::exclusive_captures::exclusive;
@@ -34,10 +34,10 @@ use rustc_span::Symbol;
 /// long.
 pub(super) fn check<'tcx>(
     cx: &LateContext<'tcx>,
-    method: Symbol,
-    arguments: &'tcx [Expr<'tcx>],
+    call: &Call<'tcx>,
     family: Family,
 ) -> Option<Finding> {
+    let (method, arguments) = (call.method, call.arguments);
     let adapter = adapter::adapter(family, method)?;
     let argument = arguments.get(adapter.closure_argument)?;
     let ExprKind::Closure(closure) = argument.kind else {
@@ -106,6 +106,7 @@ pub(super) fn check<'tcx>(
         ),
         help: help(adapter, method, lifted.len()),
         moves_the_receiver: !adapter.head_keeps_the_method,
+        fix: None,
     })
 }
 

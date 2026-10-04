@@ -452,3 +452,20 @@ pub(crate) fn is_author_written_match(source: hir::MatchSource) -> bool {
 pub(crate) fn plural(count: usize, singular: &'static str, plural: &'static str) -> &'static str {
     if count == 1 { singular } else { plural }
 }
+
+/// Whether a rewrite built from `kept` would drop a comment that `whole`
+/// holds.
+///
+/// A suggestion is assembled from the text of the parts it keeps, so a
+/// comment anywhere else inside the expression it replaces is text the
+/// reader loses. Counting is enough: a comment inside a kept part is
+/// carried along with it, and the sum can only fall short where one sits
+/// between them.
+pub(crate) fn drops_a_comment(
+    cx: &LateContext<'_>,
+    whole: Span,
+    kept: impl IntoIterator<Item = Span>,
+) -> bool {
+    let count = |span| clippy_utils::span_extract_comments(cx.tcx, span).len();
+    count(whole) > kept.into_iter().map(count).sum::<usize>()
+}

@@ -12,13 +12,15 @@
 //! none of the position care the chain's does.
 
 use super::family::Family;
-use super::{Finding, only_closure};
+use super::{Call, Finding, Fix, only_closure};
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
-use crate::common::{binding_hir_id, binds_mutably};
+use crate::common::{binding_hir_id, binds_mutably, drops_a_comment};
 use crate::exclusive_captures::exclusive;
 use crate::extra_reference::survives;
-use rustc_hir::{BinOpKind, Expr, ExprKind};
+use clippy_utils::source::snippet_with_applicability;
+use rustc_errors::Applicability;
+use rustc_hir::{self as hir, BinOpKind, CaptureBy, Closure, Expr, ExprKind, Pat, TyKind};
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
@@ -26,12 +28,12 @@ use rustc_span::Symbol;
 /// tests on the item.
 pub(super) fn check<'tcx>(
     cx: &LateContext<'tcx>,
-    method: Symbol,
-    arguments: &'tcx [Expr<'tcx>],
+    call: &Call<'tcx>,
     family: Family,
 ) -> Option<Finding> {
+    let method = call.method;
     let discipline = discipline(family, method)?;
-    let closure = only_closure(arguments)?;
+    let closure = only_closure(call.arguments)?;
     let body = cx.tcx.hir_body(closure.body);
     let [parameter] = body.params else {
         return None;
@@ -93,7 +95,79 @@ pub(super) fn check<'tcx>(
             discipline.lift_target(),
         ),
         moves_the_receiver: true,
+        fix: fix(cx, call, closure, parameter.pat, &conjuncts, discipline),
     })
+}
+
+/// The rewrite: one adapter per test, in the order the conjunction asked
+/// them.
+///
+/// Each test keeps its own text and gets a closure naming the item the way
+/// the folded one did, which is always in scope, each closure having a
+/// scope of its own. The closures are not reduced to paths:
+/// `clippy::redundant_closure_for_method_calls` is the lint that reduces
+/// the ones that can be reduced, and it knows which those are.
+///
+/// `None` where the text cannot be assembled from the parts: a parameter
+/// whose type is written out names a type the lifted adapter hands one
+/// reference deeper, and a pattern other than a plain binding would have to
+/// be reproduced per closure.
+fn fix<'tcx>(
+    cx: &LateContext<'tcx>,
+    call: &Call<'tcx>,
+    closure: &'tcx Closure<'tcx>,
+    parameter: &'tcx Pat<'tcx>,
+    conjuncts: &[&'tcx Expr<'tcx>],
+    discipline: Discipline,
+) -> Option<Fix> {
+    if !matches!(
+        closure.fn_decl.inputs,
+        [hir::Ty {
+            kind: TyKind::Infer(()),
+            ..
+        }]
+    ) {
+        return None;
+    }
+    let (last, lifted) = conjuncts.split_last()?;
+    let mut applicability = match drops_a_comment(
+        cx,
+        call.fix_span,
+        conjuncts.iter().map(|conjunct| conjunct.span),
+    ) {
+        true => Applicability::Unspecified,
+        false => Applicability::MachineApplicable,
+    };
+    // A `move` closure's captures are each held by a copy or a shared
+    // borrow, which the gates above answered for, so every closure the
+    // split writes keeps the keyword.
+    let moves = match closure.capture_clause {
+        CaptureBy::Value { .. } => "move ",
+        _ => "",
+    };
+    let item = snippet_with_applicability(cx, parameter.span, "..", &mut applicability);
+    let mut test = |conjunct: &Expr<'tcx>, adapter: &str| -> String {
+        format!(
+            "{adapter}({moves}|{item}| {})",
+            snippet_with_applicability(cx, conjunct.span, "..", &mut applicability),
+        )
+    };
+    let mut suggestion = String::new();
+    for conjunct in lifted {
+        suggestion.push_str(&test(conjunct, discipline.lift_target()));
+        suggestion.push('.');
+    }
+    suggestion.push_str(&test(last, &method_name(call)));
+    Some(Fix {
+        span: call.fix_span,
+        suggestion,
+        applicability,
+    })
+}
+
+/// The adapter's name as the reader wrote it, which the last test keeps.
+fn method_name(call: &Call<'_>) -> String {
+    call.method.to_string()
 }
 
 /// The discipline of `method`'s answer on `family`, or `None` for a

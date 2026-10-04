@@ -86,6 +86,21 @@ or handing it to something wanting the value is left alone. And a
 discipline: a leading `filter_map` in front of it would drop the
 item that would have stopped it.
 
+## Applicability
+
+A conjunction is rewritten for you, one adapter per test. The other
+two shapes are described rather than rewritten, their splits having
+more than one reasonable text.
+
+The rewrite keeps the closure each test was written in rather than
+reducing it to a path. A path asks more of a test than the split
+does, so `clippy::redundant_closure_for_method_calls` is what
+reduces the ones that can be reduced, and the two fixes compose in
+that order.
+
+A rewrite that would drop a comment the predicate holds is offered
+as advice rather than applied.
+
 ## Example
 
 **Avoid:**

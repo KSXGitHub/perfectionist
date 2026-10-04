@@ -16,19 +16,18 @@
 
 use super::combinator::{self, Yield};
 use super::family::Family;
-use super::{Finding, only_closure};
+use super::{Call, Finding, only_closure};
 use crate::adapter_discipline::Discipline;
-use rustc_hir::Expr;
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
 /// The guard and value this adapter's closure holds.
 pub(super) fn check<'tcx>(
     cx: &LateContext<'tcx>,
-    method: Symbol,
-    arguments: &'tcx [Expr<'tcx>],
+    call: &Call<'tcx>,
     family: Family,
 ) -> Option<Finding> {
+    let (method, arguments) = (call.method, call.arguments);
     if family != Family::Iterator {
         return None;
     }
@@ -50,6 +49,7 @@ pub(super) fn check<'tcx>(
         message: format!("this closure {}, so `{method}` does both", split.summary()),
         help: split.help(),
         moves_the_receiver: true,
+        fix: None,
     })
 }
 

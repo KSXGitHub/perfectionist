@@ -53,7 +53,11 @@ warning: this predicate runs 2 tests on the item, so `any` does all of them
 LL |     items.any(|text| wanted(text) && text.starts_with('#'))
    |           ^^^
    |
-   = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).any(|text| text.starts_with('#'))
+   |
 
 warning: this closure chains 2 steps onto the item, so `pipe_ref` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -245,7 +249,11 @@ warning: this predicate runs 2 tests on the item, so `find_first` does all of th
 LL |     items.find_first(|text| wanted(text) && text.starts_with('#'))
    |           ^^^^^^^^^^
    |
-   = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.find_first(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).find_first(|text| text.starts_with('#'))
+   |
 
 warning: this predicate runs 2 tests on the item, so `find_any` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -253,7 +261,11 @@ warning: this predicate runs 2 tests on the item, so `find_any` does all of them
 LL |     items.find_any(|text| wanted(text) && text.starts_with('#'))
    |           ^^^^^^^^
    |
-   = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.find_any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).find_any(|text| text.starts_with('#'))
+   |
 
 warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC

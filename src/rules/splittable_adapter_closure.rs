@@ -24,9 +24,11 @@ use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::is_from_proc_macro;
+use rustc_errors::Applicability;
 use rustc_hir::{Closure, Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
+use rustc_span::{Span, Symbol};
 
 mod adapter;
 mod anchoring;
@@ -117,6 +119,21 @@ declare_tool_lint! {
     /// discipline: a leading `filter_map` in front of it would drop the
     /// item that would have stopped it.
     ///
+    /// ### Applicability
+    ///
+    /// A conjunction is rewritten for you, one adapter per test. The other
+    /// two shapes are described rather than rewritten, their splits having
+    /// more than one reasonable text.
+    ///
+    /// The rewrite keeps the closure each test was written in rather than
+    /// reducing it to a path. A path asks more of a test than the split
+    /// does, so `clippy::redundant_closure_for_method_calls` is what
+    /// reduces the ones that can be reduced, and the two fixes compose in
+    /// that order.
+    ///
+    /// A rewrite that would drop a comment the predicate holds is offered
+    /// as advice rather than applied.
+    ///
     /// ### Example
     ///
     /// **Avoid:**
@@ -183,6 +200,43 @@ struct Finding {
     /// adapter borrows the receiver as the folded one does needs no move
     /// taken from it.
     moves_the_receiver: bool,
+    /// The rewrite, where the trigger can write one.
+    fix: Option<Fix>,
+}
+
+/// A rewrite the reader can take as it stands.
+///
+/// The span runs from the adapter's own name to the end of its call, so the
+/// receiver is never reproduced: whatever it is, however long, it stays
+/// where it is and the text replaces only what follows the dot.
+///
+/// Every suggestion keeps the closures the folded form had rather than
+/// reducing them to paths. A path asks more of a step than the split does,
+/// `.map(Path::components)` being `E0631` where `.map(|p| p.components())`
+/// compiles, and `clippy::redundant_closure_for_method_calls` is the lint
+/// that reduces the ones that can be reduced. Nothing in Clippy asks for
+/// the closure form, so the two fixes compose in that order and stop.
+struct Fix {
+    /// What to replace, which is the adapter's name through its closing
+    /// bracket.
+    span: Span,
+    /// What to put there, which ends in the adapter the folded form had.
+    suggestion: String,
+    /// `MachineApplicable` only where the text is known to compile and to
+    /// behave as the folded form did.
+    applicability: Applicability,
+}
+
+/// The adapter call a trigger reads, so each one is handed the parts
+/// rather than destructuring the same expression again.
+struct Call<'tcx> {
+    /// The adapter's own name.
+    method: Symbol,
+    /// Its arguments, among which is the closure.
+    arguments: &'tcx [Expr<'tcx>],
+    /// What a [`Fix`] replaces: the adapter's name through the end of its
+    /// call, which leaves the receiver where it is.
+    fix_span: Span,
 }
 
 /// The closure an adapter holds, where it holds exactly one.
@@ -205,10 +259,14 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(family) = family(cx, expr, receiver) else {
             return;
         };
-        let method = segment.ident.name;
-        let found = option_chain::check(cx, method, arguments, family)
-            .or_else(|| predicate::check(cx, method, arguments, family))
-            .or_else(|| step_chain::check(cx, method, arguments, family));
+        let call = Call {
+            method: segment.ident.name,
+            arguments,
+            fix_span: segment.ident.span.with_hi(expr.span.hi()),
+        };
+        let found = option_chain::check(cx, &call, family)
+            .or_else(|| predicate::check(cx, &call, family))
+            .or_else(|| step_chain::check(cx, &call, family));
         let Some(found) = found else {
             return;
         };
@@ -232,8 +290,20 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
             SPLITTABLE_ADAPTER_CLOSURE,
             segment.ident.span,
             found.message,
-            |diagnostic| {
-                diagnostic.help(found.help);
+            |diagnostic| match found.fix {
+                // The help text is the suggestion's own label, so a reader
+                // seeing the rewrite reads why it is that shape.
+                Some(fix) => {
+                    diagnostic.span_suggestion(
+                        fix.span,
+                        found.help,
+                        fix.suggestion,
+                        fix.applicability,
+                    );
+                }
+                None => {
+                    diagnostic.help(found.help);
+                }
             },
         );
     }
