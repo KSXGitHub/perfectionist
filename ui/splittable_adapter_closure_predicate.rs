@@ -64,7 +64,7 @@ fn two_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
 }
 
 // Good: one adapter per test, which is what the rule asks for.
-fn split_pair(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+fn split_two_tests(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .filter(|line| wanted(line))
         .filter(|line| line.starts_with('#'))

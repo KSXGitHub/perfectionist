@@ -184,7 +184,7 @@ fn piped_by_reference(value: String) -> usize {
 
 // Good: the head keeps the method, which is what keeps the receiver
 // borrowed rather than moved.
-fn split_by_reference(value: String) -> usize {
+fn split_piped_by_reference(value: String) -> usize {
     value.pipe_ref(|text| text.trim()).pipe(str::len)
 }
 
