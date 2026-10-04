@@ -51,7 +51,8 @@ fn split_fold_with_a_let(lines: std::vec::IntoIter<&'static str>) -> usize {
         .fold(0, |total, length| total + length)
 }
 
-// Bad: a scrutinee runs.
+// Bad: a `match` evaluates its scrutinee before any arm, so a chain
+// there is reached whenever the closure is.
 fn scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| match line.trim().len() {
         0 => total,
@@ -70,7 +71,8 @@ fn split_scrutinee_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
         })
 }
 
-// Bad: an `if` condition runs too.
+// Bad: an `if` evaluates its condition before either branch, so a chain
+// there is reached whenever the closure is.
 fn condition_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if line.trim().is_empty() {
@@ -112,7 +114,8 @@ fn let_else_fold(fallback: Option<usize>, lines: std::vec::IntoIter<&'static str
     })
 }
 
-// Not flagged: nor does an arm of a `match`.
+// Not flagged: an arm of a `match` runs only where its pattern is the one
+// that matched.
 fn arm_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| match flag {
         true => total + line.trim().len(),
@@ -120,9 +123,8 @@ fn arm_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     })
 }
 
-// Not flagged: a `loop` runs its body any number of times including
-// none, and every shape the rule does not recognise answers the same
-// way.
+// Not flagged: a `loop` runs its body any number of times, including
+// none, so a chain inside one is not a chain the closure always reaches.
 fn looping_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| loop {
         break total + line.trim().len();
@@ -158,7 +160,9 @@ fn early_return_fold(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usi
     })
 }
 
-// Not flagged: a `?` before the chain leaves it the same way.
+// Not flagged: a `?` before the chain can leave the closure first, so a
+// leading `map` would run the step for every item where the closure ran it
+// for none.
 fn try_before_the_chain(
     first: Option<usize>,
     mut lines: std::vec::IntoIter<&'static str>,
@@ -175,9 +179,9 @@ fn one_step_through_try(
     lines.try_fold(0usize, |total, line| Ok(total + line.parse::<usize>()?))
 }
 
-// Not flagged: a `loop` runs its body any number of times including
-// none, and every shape the rule does not recognise answers the same
-// way. The `break` sits after the chain, so nothing diverts first.
+// Not flagged: a `loop` runs its body any number of times, including
+// none, which is what declines a chain inside one. The `break` here sits
+// after the chain, so what declines it is the `loop` and not a diversion.
 fn loop_after_the_chain(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         let mut sum = total;
@@ -205,9 +209,8 @@ fn let_else_diverting_after(
 }
 
 // Not flagged: a `panic!` before the chain leaves the closure without
-// evaluating it, which a leading `map` would do for every item. What
-// leaves is read from the type, so an `exit`, a call to a `-> !` function
-// and a `loop {}` answer the same way.
+// evaluating it, which a leading `map` would do for every item. What leaves
+// is read from the type rather than from the name it is written as.
 fn panics_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if flag {
@@ -217,9 +220,9 @@ fn panics_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) 
     })
 }
 
-// Not flagged: the same program as a `match`, which the `if` above does
-// not establish on its own. A `panic!` expands in `core`, so what runs
-// first cannot be read from a span.
+// Not flagged: an arm that diverges leaves the closure before the chain,
+// for whichever scrutinee reaches it. A `panic!` expands in `core`, so what
+// runs first cannot be read from a span.
 fn panics_in_an_arm(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         match flag {
@@ -251,8 +254,8 @@ fn diverges_in_a_let(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usi
     })
 }
 
-// Not flagged: an `exit` is read from the type the same way a `panic!`
-// is.
+// Not flagged: an `exit` never returns, which the rule reads from its type
+// rather than from the name it is called by.
 fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| {
         if flag {

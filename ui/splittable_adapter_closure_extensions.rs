@@ -465,8 +465,8 @@ fn split_parallel_total(items: Parallel<&'static str>) -> Parallel<usize> {
         .fold(|| 0, |total, length| total + length)
 }
 
-// Bad: rayon's `try_fold` can stop early, its item likewise the second
-// parameter of the closure it takes.
+// Bad: rayon's `try_fold` can stop early, and takes the item as its
+// closure's second parameter, the per-thread accumulator being the first.
 fn parallel_try_total(items: Parallel<&'static str>) -> Parallel<Option<usize>> {
     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
 }
@@ -494,7 +494,7 @@ fn split_parallel_first(items: Parallel<&'static str>) -> Option<&'static str> {
         .find_first(|text| text.starts_with('#'))
 }
 
-// Bad: `find_any` hands the closure a borrow too, so the conjunction
+// Bad: `find_any` hands the closure a borrow of the item, so the conjunction
 // trigger is the one with a split for it.
 fn parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
     items.find_any(|text| wanted(text) && text.starts_with('#'))

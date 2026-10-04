@@ -54,7 +54,8 @@ fn split_three_steps(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
-// Bad: a call whose sole argument is the chain is a step too.
+// Bad: a call whose sole argument is the chain is a step, the chain being
+// what it is applied to.
 fn call_step(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map(|line| parse(line.trim())).collect()
 }

@@ -220,7 +220,8 @@ fn mutable_item_by_value(counters: &mut [Counter]) -> bool {
     counters.iter_mut().any(|counter| counter.bump() && counter.flagged())
 }
 
-// Not flagged: `Option::is_some_and` hands it over the same way.
+// Not flagged: `Option::is_some_and` hands the item over by value, where
+// the `filter` a test lifts into hands a reference.
 fn mutable_option_item(slot: Option<&mut Counter>) -> bool {
     slot.is_some_and(|counter| counter.bump() && counter.flagged())
 }
@@ -405,8 +406,8 @@ fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> Vec<(usize,
         .collect()
 }
 
-// Bad: `Option::filter` is set-shaped too, so its tests lift into a
-// leading `filter` of its own.
+// Bad: `Option::filter` keeps whichever values pass rather than stopping at
+// one, so its tests lift into a leading `filter` of its own.
 fn option_filter(line: Option<&'static str>) -> Option<&'static str> {
     line.filter(|line| wanted(line) && line.starts_with('#'))
 }
@@ -434,8 +435,8 @@ fn option_is_none_or(line: Option<&'static str>) -> bool {
     line.is_none_or(|line| wanted(line) && line.starts_with('#'))
 }
 
-// Not flagged: `Result` has no filtering adapter to lift into, so these
-// stay folded however they are written.
+// Not flagged: `Result` has no filtering adapter to lift into, so a
+// conjunction on one stays folded however it is written.
 fn result_is_ok_and(outcome: Result<&'static str, usize>) -> bool {
     outcome.is_ok_and(|line| wanted(line) && line.starts_with('#'))
 }

@@ -123,8 +123,8 @@ fn filtering(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines.filter(|line| line.trim().is_empty()).collect()
 }
 
-// Not flagged: `inspect` passes the item on unchanged, for the same
-// reason.
+// Not flagged: `inspect` passes the item on unchanged, so a leading `map`
+// would change what it and every later adapter sees.
 fn inspecting(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines.inspect(|line| record(line.trim().len())).collect()
 }
@@ -139,8 +139,8 @@ impl Mapper for &'static str {
     }
 }
 
-// Not flagged: nor is a trait of one's own, whose method of that name
-// says nothing about how the item arrives.
+// Not flagged: a trait of one's own is out of scope, its method of that name
+// saying nothing about how the item arrives.
 fn another_trait_map(header: &'static str) -> usize {
     header.map(|text| text.trim().len())
 }
@@ -234,8 +234,8 @@ fn split_try_total(lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
         .try_fold(0, |total, length| Some(total + length))
 }
 
-// Bad: `rfold` accumulates from the right, its item likewise the second
-// parameter of the closure it takes.
+// Bad: `rfold` accumulates from the right, and takes the item as its
+// closure's second parameter, the accumulator being the first.
 fn total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.rfold(0, |total, line| total + line.trim().len())
 }
@@ -248,8 +248,8 @@ fn split_total_from_the_right(lines: std::vec::IntoIter<&'static str>) -> usize 
         .rfold(0, |total, length| total + length)
 }
 
-// Bad: `try_rfold` accumulates from the right and can stop early, and its
-// item is the second parameter for the same reason.
+// Bad: `try_rfold` accumulates from the right and can stop early, and takes
+// the item as its closure's second parameter.
 fn try_total_from_the_right(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
 }

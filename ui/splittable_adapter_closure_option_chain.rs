@@ -137,8 +137,8 @@ fn split_guarded_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.take_while(|line| wanted(line)).map(|line| render(line)).collect()
 }
 
-// Bad: a trailing `map` drops nothing, so it suits a prefix-shaped
-// adapter too.
+// Bad: a trailing `map` drops nothing, which is what suits it to a
+// prefix-shaped adapter, whose run no dropped item may shorten.
 fn infallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map_while(|line| parse(line).map(double)).collect()
 }
@@ -167,8 +167,8 @@ fn split_fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> 
         .collect()
 }
 
-// Bad: for the same reason, a trailing `filter` moves where the run
-// stops.
+// Bad: a trailing `filter` under a prefix-shaped adapter moves where the run
+// stops, so the guard it holds lifts into a `take_while`.
 fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map_while(|line| parse(line).filter(positive))
@@ -197,8 +197,8 @@ fn split_found_filtering(lines: std::vec::IntoIter<&'static str>) -> Option<usiz
     lines.map(parse).find_map(|parsed| parsed.filter(positive))
 }
 
-// Not flagged: nor has it anywhere to put a guard's value, the one value
-// being gone once a leading adapter has made a stream of them.
+// Not flagged: a one-value adapter has nowhere to put a guard's value, that
+// value being gone once a leading adapter has made a stream of them.
 fn found_guarded(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| wanted(line).then(|| render(line)))
 }
@@ -230,13 +230,14 @@ fn split_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
         .collect()
 }
 
-// Bad: for the same reason, a `map_while` guard lifts into a
-// `take_while`, which hands it by reference too.
+// Bad: a `map_while` guard lifts into a `take_while`, which hands the item
+// by reference where `map_while` hands it over.
 fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.map_while(|name| consume(name).then_some(1)).collect()
 }
 
-// Good: the same, under the prefix-shaped adapter.
+// Good: one adapter per half, the guard in the `take_while` that stops the
+// run where the folded form stopped it.
 fn split_prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names
         .map(consume)
@@ -379,7 +380,8 @@ fn split_method_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usi
         .collect()
 }
 
-// Not flagged: nor is `then_some` on something that is not a `bool`.
+// Not flagged: `then_some` on something that is not a `bool` is out of
+// scope, the guard the trigger reads being the one a `bool` answers.
 fn guard_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .filter_map(|line| sieve(line).then_some(line.len()))
@@ -419,7 +421,7 @@ fn split_map_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<usize>
 }
 
 // Bad: a `filter` whose receiver is the `Option` the step before it made is
-// likewise a step, the name saying nothing about what it is called on.
+// an ordinary step, the name saying nothing about what it is called on.
 fn filter_of_that_name(lines: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
     lines
         .filter_map(|line| sieve(line).filter(|text| wanted(text)))

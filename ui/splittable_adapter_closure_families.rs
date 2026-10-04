@@ -189,8 +189,8 @@ fn split_result_map_or(outcome: Result<&'static str, usize>) -> usize {
     outcome.map(str::trim).map_or(0, str::len)
 }
 
-// Bad: one closure per channel, both holding a chain. The value one is
-// read, and the error one is the narrowing below.
+// Bad: one closure per channel, both holding a chain. The table holds one
+// adapter per method name, so the value closure is the one read.
 fn result_both_channels(outcome: Result<&'static str, &'static str>) -> usize {
     outcome.map_or_else(|text| text.trim().len(), |text| text.trim().len())
 }
