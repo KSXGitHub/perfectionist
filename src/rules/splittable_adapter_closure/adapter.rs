@@ -37,6 +37,13 @@ pub(super) struct Adapter {
     /// The adapter a lifted step goes into, which is the one mapping
     /// this channel and doing nothing else.
     pub(super) lift_target: &'static str,
+    /// Whether the first lifted step goes into the adapter's own method
+    /// rather than into `lift_target`. The piping methods that hand the
+    /// closure a borrow are the case: the conversion each performs happens
+    /// at the head of the chain, and every step above the head is handed a
+    /// value. It also says the split borrows the receiver where the folded
+    /// form did, so no move has to be taken from it.
+    pub(super) head_keeps_the_method: bool,
 }
 
 /// A unary adapter on the only channel its family has.
@@ -46,6 +53,7 @@ const fn unary(lift_target: &'static str) -> Adapter {
         item_parameter: 0,
         keeps_the_last_step: true,
         lift_target,
+        head_keeps_the_method: false,
     }
 }
 
@@ -57,6 +65,7 @@ const fn defaulted(lift_target: &'static str) -> Adapter {
         item_parameter: 0,
         keeps_the_last_step: true,
         lift_target,
+        head_keeps_the_method: false,
     }
 }
 
@@ -67,6 +76,19 @@ const fn stateful(lift_target: &'static str) -> Adapter {
         item_parameter: 1,
         keeps_the_last_step: false,
         lift_target,
+        head_keeps_the_method: false,
+    }
+}
+
+/// A piping method that hands the closure a borrow, where the head of the
+/// split keeps the method and every later step takes a value.
+const fn borrowing_pipe() -> Adapter {
+    Adapter {
+        closure_argument: 0,
+        item_parameter: 0,
+        keeps_the_last_step: true,
+        lift_target: "pipe",
+        head_keeps_the_method: true,
     }
 }
 
@@ -182,11 +204,17 @@ fn rayon(method: Symbol) -> Option<Adapter> {
 }
 
 fn pipe(method: Symbol) -> Option<Adapter> {
-    // Only the by-value form meets the condition. `pipe_ref`,
-    // `pipe_mut` and their kin hand the closure a borrow, which a
-    // leading `pipe` would be handing something else.
+    // `pipe` is the only one taking the receiver by value. The rest hand
+    // the closure a borrow, or a borrow of what the receiver converts to,
+    // and that conversion happens once at the head of the chain: the first
+    // lifted step keeps the method, and every step above the head is
+    // handed the value the one before it made.
     Some(match method.as_str() {
         "pipe" => unary("pipe"),
+        "pipe_ref" | "pipe_mut" => borrowing_pipe(),
+        "pipe_as_ref" | "pipe_as_mut" => borrowing_pipe(),
+        "pipe_deref" | "pipe_deref_mut" => borrowing_pipe(),
+        "pipe_borrow" | "pipe_borrow_mut" => borrowing_pipe(),
         _ => return None,
     })
 }

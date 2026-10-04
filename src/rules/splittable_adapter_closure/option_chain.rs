@@ -49,6 +49,7 @@ pub(super) fn check<'tcx>(
     Some(Finding {
         message: format!("this closure {}, so `{method}` does both", split.summary()),
         help: split.help(),
+        moves_the_receiver: true,
     })
 }
 

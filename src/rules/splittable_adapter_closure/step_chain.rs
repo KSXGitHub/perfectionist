@@ -103,13 +103,28 @@ pub(super) fn check<'tcx>(
             "this closure chains {} steps onto the item, so `{method}` does all of them",
             steps.len(),
         ),
-        help: help(adapter),
+        help: help(adapter, method, lifted.len()),
+        moves_the_receiver: !adapter.head_keeps_the_method,
     })
 }
 
 /// What to tell the reader to do, which differs by whether the adapter
-/// keeps a step.
-fn help(adapter: Adapter) -> String {
+/// keeps a step and by whether the head of the split keeps the method.
+fn help(adapter: Adapter, method: Symbol, lifted: usize) -> String {
+    if adapter.head_keeps_the_method {
+        return match lifted {
+            1 => format!(
+                "lift the first step into a leading `{method}` of its own, leaving \
+                 the closure the step that is the adapter's",
+            ),
+            _ => format!(
+                "lift the first step into a leading `{method}` and each later one \
+                 into a `{}` of its own, leaving the closure the step that is the \
+                 adapter's",
+                adapter.lift_target,
+            ),
+        };
+    }
     match adapter.keeps_the_last_step {
         true => format!(
             "lift all but the last step into a leading `{}` of its own, leaving \

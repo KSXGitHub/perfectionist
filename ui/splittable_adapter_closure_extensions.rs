@@ -129,10 +129,68 @@ fn not_sendable(items: Parallel<&'static str>) -> Parallel<usize> {
     items.map(|text| Rc::new(text).len())
 }
 
-// Not flagged: `pipe_ref` hands the closure a borrow, so a leading `pipe`
-// would be handing it something else.
+// Not flagged: `pipe` moves the receiver into the closure, so a step
+// returning a borrow of it dies with the closure. The same body under
+// `pipe_ref` below does split, the borrow there being of what the receiver
+// lent the closure.
+fn piped_borrowing(value: String) -> usize {
+    value.pipe(|owned| owned.trim().len())
+}
+
+// Bad: the piping methods that hand the closure a borrow. The conversion
+// each performs happens at the head of the chain, so the first lifted step
+// keeps the method and every later one takes the value a `pipe` hands it.
+// One case per table entry, so an entry naming the wrong method would show
+// up here.
 fn piped_by_reference(value: String) -> usize {
     value.pipe_ref(|text| text.trim().len())
+}
+
+// Good: the head keeps the method, which is what keeps the receiver
+// borrowed rather than moved.
+fn split_by_reference(value: String) -> usize {
+    value.pipe_ref(|text| text.trim()).pipe(str::len)
+}
+
+// Bad: three steps, where the two above the head take a value.
+fn piped_by_reference_thrice(value: String) -> usize {
+    value.pipe_ref(|text| text.trim().to_uppercase().len())
+}
+
+fn piped_mutably(mut value: Vec<usize>) -> usize {
+    value.pipe_mut(|all| all.as_mut_slice().len())
+}
+
+fn piped_as_reference(value: String) -> usize {
+    value.pipe_as_ref(|text: &str| text.trim().len())
+}
+
+fn piped_as_mutable(mut value: String) -> usize {
+    value.pipe_as_mut(|text: &mut str| text.trim().len())
+}
+
+fn piped_through_deref(value: String) -> usize {
+    value.pipe_deref(|text: &str| text.trim().len())
+}
+
+fn piped_through_deref_mut(mut value: String) -> usize {
+    value.pipe_deref_mut(|text: &mut str| text.trim().len())
+}
+
+fn piped_through_borrow(value: String) -> usize {
+    value.pipe_borrow(|text: &str| text.trim().len())
+}
+
+fn piped_through_borrow_mut(mut value: String) -> usize {
+    value.pipe_borrow_mut(|text: &mut str| text.trim().len())
+}
+
+// Bad: a receiver named again after the call, which the split borrows
+// rather than moves, so there is nothing for the receiver-move gate to
+// decline.
+fn piped_by_reference_then_used(value: String) -> (usize, String) {
+    let length = value.pipe_ref(|text| text.trim().len());
+    (length, value)
 }
 
 // Bad: `filter_map_ok`'s closure returns an `Option`, and the

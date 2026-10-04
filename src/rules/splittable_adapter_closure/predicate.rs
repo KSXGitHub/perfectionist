@@ -92,6 +92,7 @@ pub(super) fn check<'tcx>(
              adapter asks one question",
             discipline.lift_target(),
         ),
+        moves_the_receiver: true,
     })
 }
 

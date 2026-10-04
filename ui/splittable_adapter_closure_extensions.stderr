@@ -55,6 +55,86 @@ LL |     items.any(|text| wanted(text) && text.starts_with('#'))
    |
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
+warning: this closure chains 2 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_ref(|text| text.trim().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_ref(|text| text.trim().to_uppercase().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` and each later one into a `pipe` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_mut(|all| all.as_mut_slice().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_as_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_as_ref(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_as_ref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_as_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_as_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_as_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_deref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_deref(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_deref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_deref_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_deref_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_deref_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_borrow` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_borrow(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_borrow` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_borrow_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_borrow_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_borrow_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     let length = value.pipe_ref(|text| text.trim().len());
+   |                        ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 3 steps onto the item, so `filter_map_ok` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
    |

@@ -178,6 +178,11 @@ struct Finding {
     /// What to do about it, which differs by what the split hands the
     /// work to.
     help: String,
+    /// Whether the split hands the receiver to an adapter taking it by
+    /// value, which is what [`movable`] answers for. A split whose leading
+    /// adapter borrows the receiver as the folded one does needs no move
+    /// taken from it.
+    moves_the_receiver: bool,
 }
 
 /// The closure an adapter holds, where it holds exactly one.
@@ -207,10 +212,10 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
         let Some(found) = found else {
             return;
         };
-        // Every split lifts work into an adapter taking the iterator by
-        // value, where the adapter it came from need not, so the receiver
-        // has to be one a move can be taken from.
-        if !movable(cx, expr, receiver) {
+        // A split lifting work into an adapter that takes the iterator by
+        // value, where the adapter it came from need not, needs a receiver
+        // a move can be taken from.
+        if found.moves_the_receiver && !movable(cx, expr, receiver) {
             return;
         }
         // The diagnostic span is the adapter's method segment, which a
