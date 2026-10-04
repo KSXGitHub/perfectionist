@@ -18,18 +18,21 @@ if let Some(targets) = manifest.get("target").and_then(Value::as_table) {
 
 `into_iter().flatten()` is the same control flow with the absent
 case folded into the iterator, where it belongs — no items to
-iterate:
+iterate. The scrutinee keeps the name the guard gave it, so the
+`for` header stays one line:
 
 ```rust
-for (cfg, target) in manifest
-    .get("target")
-    .and_then(Value::as_table)
-    .into_iter()
-    .flatten()
-{
+let targets = manifest.get("target").and_then(Value::as_table);
+for (cfg, target) in targets.into_iter().flatten() {
     collect(target, cfg);
 }
 ```
+
+Folding the scrutinee into the header instead is right only where it
+is already one short expression — `for x in opt.into_iter().flatten()`.
+A chained one does not fit: rustfmt breaks the header across a line
+per call and leaves the brace on its own, which spends more lines
+than the level it saves.
 
 ## Why restrict this?
 
