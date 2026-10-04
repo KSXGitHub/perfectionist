@@ -48,8 +48,10 @@ declare_tool_lint! {
     ///
     /// - A chain of two or more steps rooted at the closure's item, where
     ///   each step is a leading `map` of its own. The receivers in scope
-    ///   are iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and
-    ///   the `Itertools`, `ParallelIterator` and `Pipe` traits.
+    ///   are iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and the
+    ///   [`itertools::Itertools`](https://docs.rs/itertools),
+    ///   [`rayon::iter::ParallelIterator`](https://docs.rs/rayon) and
+    ///   [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) traits.
     /// - A predicate that is a conjunction of two or more tests, each
     ///   naming the item, where each test is a filtering adapter of its
     ///   own.
