@@ -228,6 +228,16 @@ fn stage_borrows(names: std::vec::IntoIter<String>) -> Vec<usize> {
         .collect()
 }
 
+// Bad, by the chain trigger: this stage borrows what the item points at,
+// which outlives the closure, so the chain's split compiles. This trigger
+// declines it all the same, telling that borrow from one of a local the
+// closure made needing the regions the erased types no longer carry.
+fn stage_borrows_the_item(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .filter_map(|line| line.strip_prefix("# ").map(str::len))
+        .collect()
+}
+
 macro_rules! staged {
     ($line:expr) => {
         parse($line).map(double)

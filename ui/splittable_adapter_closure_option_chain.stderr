@@ -114,6 +114,14 @@ LL |     names.map_while(|name| consume(name).then_some(1)).collect()
 warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
   --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
    |
+LL |         .filter_map(|line| line.strip_prefix("# ").map(str::len))
+   |          ^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_chain.rs:LL:CC
+   |
 LL |     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
    |           ^^^^^^^^^^
    |

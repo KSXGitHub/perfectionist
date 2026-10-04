@@ -27,6 +27,7 @@ use clippy_utils::sym;
 use clippy_utils::ty::implements_trait;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::LateContext;
+use rustc_middle::ty::{self, Ty};
 use rustc_span::Symbol;
 
 /// The chain this adapter's closure holds, where it is two or more steps
@@ -156,10 +157,9 @@ fn help(adapter: Adapter, method: Symbol, lifted: usize) -> String {
 /// owned `String` under its `trim` however the item arrived.
 ///
 /// A borrowing result is only the receiver's to answer for where nothing
-/// else it was handed could have lent it: `s.max(&String::from("m")[..])`
+/// else the step was handed could have lent it: `s.max(&String::from("m")[..])`
 /// returns the shorter of two lifetimes, and the shorter one belongs to a
-/// temporary the closure made. So an argument that carries a region at
-/// all leaves the question unanswerable, and the step declines.
+/// temporary the closure made. [`lends_nothing`] is that question.
 ///
 /// Regions are erased by the time typeck results are read, so a
 /// result's lifetime cannot be matched against the receiver's. These
@@ -177,8 +177,19 @@ fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
     lends_nothing(cx, step)
 }
 
-/// Whether nothing `step` was handed besides its receiver carries a
-/// region of its own.
+/// Whether nothing `step` was handed besides its receiver could have lent
+/// it the borrow its result carries.
+///
+/// A method call's arguments are read from the method's **declared**
+/// signature rather than from the types the call instantiated. The
+/// instantiated ones have their regions erased, where the signature still
+/// names the regions and the type parameters each input and the output are
+/// made of, so the question is whether the output shares any of them with
+/// an argument. `str::strip_prefix<P>(&self, prefix: P) -> Option<&str>`
+/// shares none: its result is made of the receiver's region, and the
+/// pattern is a parameter of its own. `Ord::max(self, other: Self) -> Self`
+/// shares `Self` with its argument, which is how it returns the shorter of
+/// two lifetimes.
 ///
 /// A call's sole argument is the chain, which is the receiver here, so
 /// what is left to ask about is the callee: an expression yielding an
@@ -186,14 +197,44 @@ fn is_liftable<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
 /// a function is not one, its regions belonging to the signature rather
 /// than to anything the zero-sized item holds.
 fn lends_nothing<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
-    let lenders: Vec<&Expr<'tcx>> = match step.kind {
-        ExprKind::MethodCall(_, _, arguments, _) => arguments.iter().collect(),
-        ExprKind::Call(callee, _) if !matches!(callee.kind, ExprKind::Path(_)) => vec![callee],
-        _ => return true,
+    match step.kind {
+        ExprKind::MethodCall(..) => arguments_lend_nothing(cx, step),
+        ExprKind::Call(callee, _) if !matches!(callee.kind, ExprKind::Path(_)) => {
+            !borrows(cx.typeck_results().expr_ty(callee))
+        }
+        _ => true,
+    }
+}
+
+/// Whether the declared signature of the method `step` calls makes its
+/// output of nothing an argument carries.
+fn arguments_lend_nothing<'tcx>(cx: &LateContext<'tcx>, step: &'tcx Expr<'tcx>) -> bool {
+    let Some(method) = cx.typeck_results().type_dependent_def_id(step.hir_id) else {
+        return false;
     };
-    !lenders
+    let signature = cx.tcx.fn_sig(method).skip_binder().skip_binder();
+    // The receiver is the step's own, which `is_liftable` has answered for.
+    let [_receiver, arguments @ ..] = signature.inputs() else {
+        return false;
+    };
+    let output = made_of(signature.output());
+    !arguments
         .iter()
-        .any(|lender| borrows(cx.typeck_results().expr_ty(lender)))
+        .flat_map(|argument| made_of(*argument))
+        .any(|part| output.contains(&part))
+}
+
+/// The regions and type parameters `ty` is made of, which is what two
+/// declared types share where a value of the one can be made out of a
+/// value of the other.
+fn made_of<'tcx>(ty: Ty<'tcx>) -> Vec<ty::GenericArg<'tcx>> {
+    ty.walk()
+        .filter(|part| match part.kind() {
+            ty::GenericArgKind::Lifetime(_) => true,
+            ty::GenericArgKind::Type(inner) => matches!(inner.kind(), ty::Param(_)),
+            ty::GenericArgKind::Const(_) => false,
+        })
+        .collect()
 }
 
 /// What `step` applies itself to: a method call's receiver, or the sole

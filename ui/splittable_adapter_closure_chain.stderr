@@ -215,6 +215,14 @@ LL |         .map(|line| std::rc::Rc::new(line).len())
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |         .map(|line| line.trim_start_matches("# ").len())
+   |          ^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
    |

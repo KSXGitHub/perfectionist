@@ -493,6 +493,35 @@ fn exits_before_the_chain(flag: bool, lines: std::vec::IntoIter<&'static str>) -
     })
 }
 
+// Bad: an argument that is a parameter of the method's own lends the
+// result nothing, however the call instantiates it. `trim_start_matches`
+// takes a `P: Pattern`, so the `&str` passed here carries a region the
+// erased types cannot tell from the result's, where the declared signature
+// can.
+fn trimmed_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map(|line| line.trim_start_matches("# ").len())
+        .collect()
+}
+
+struct Lender(&'static str);
+
+impl Lender {
+    fn pick<'a>(&'a self, fallback: &'a str) -> &'a str {
+        match self.0.is_empty() {
+            true => fallback,
+            false => self.0,
+        }
+    }
+}
+
+// Not flagged: this signature gives the result the argument's own region,
+// so what the result borrows may be the temporary the closure made. That
+// is the other half of what the declared signature answers.
+fn region_from_an_argument(rows: std::slice::Iter<'static, Lender>) -> Vec<usize> {
+    rows.map(|row| row.pick(&String::from("m")).len()).collect()
+}
+
 // Not flagged: the step's result borrows the shorter of two lifetimes,
 // and the shorter one is a temporary this closure made, so the receiver
 // being a reference does not answer for it.
