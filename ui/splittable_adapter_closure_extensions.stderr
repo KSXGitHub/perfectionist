@@ -55,11 +55,27 @@ LL |     items.any(|text| wanted(text) && text.starts_with('#'))
    |
    = help: give every test but the last a leading `filter` of its own, so each adapter asks one question
 
+warning: this closure chains 3 steps onto the item, so `filter_map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |         .filter_map_ok(|text| text.trim().parse().ok())
+   |          ^^^^^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+
 warning: this closure chains 2 steps onto the item, so `counts_by` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
    |
 LL |     lines.counts_by(|text| text.trim().len())
    |           ^^^^^^^^^
+   |
+   = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `partition_map` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     lines.partition_map(|text| classify(text.trim()))
+   |           ^^^^^^^^^^^^^
    |
    = help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
 

@@ -122,11 +122,6 @@ fn control_flow(method: Symbol) -> Option<Adapter> {
 }
 
 fn itertools(method: Symbol) -> Option<Adapter> {
-    // `filter_map_ok`'s closure returns an `Option`, so what splits
-    // inside it is `Option` work rather than a chain, and the
-    // guard-and-value trigger reaches `Iterator` alone, so nothing lints
-    // it yet. `partition_map` returns an `Either`, which the chain
-    // trigger has no lift target for, and
     // `tree_reduce` takes the item twice as `Iterator::reduce` does.
     // Excluded for taking the item by reference: `unique_by`,
     // `filter_ok`, `update`, `find_position`, `into_group_map_by`,
@@ -134,10 +129,15 @@ fn itertools(method: Symbol) -> Option<Adapter> {
     Some(match method.as_str() {
         // The item here is the `Ok` inside a `Result` item, a channel
         // nested one level inside the iterator's own, so it lifts into
-        // the adapter mapping that channel.
-        "map_ok" => unary("map_ok"),
+        // the adapter mapping that channel. `filter_map_ok`'s closure
+        // returns an `Option`, which the guard-and-value trigger has no
+        // split for on this channel, so the chain is what is left to read.
+        "map_ok" | "filter_map_ok" => unary("map_ok"),
         "fold_ok" => stateful("map_ok"),
-        "counts_by" => unary("map"),
+        // `partition_map`'s closure returns an `Either`, which is a value
+        // it makes rather than the item handed back, so the steps under it
+        // lift like any other adapter's.
+        "counts_by" | "partition_map" => unary("map"),
         "fold_while" => stateful("map"),
         _ => return None,
     })

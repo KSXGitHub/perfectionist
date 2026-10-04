@@ -43,6 +43,13 @@ fn wanted(text: &str) -> bool {
     !text.is_empty()
 }
 
+fn classify(text: &'static str) -> itertools::Either<usize, &'static str> {
+    match text.len() > 3 {
+        true => itertools::Either::Left(text.len()),
+        false => itertools::Either::Right(text),
+    }
+}
+
 fn results() -> std::vec::IntoIter<Result<&'static str, usize>> {
     vec![Ok(" a "), Err(7)].into_iter()
 }
@@ -128,9 +135,9 @@ fn piped_by_reference(value: String) -> usize {
     value.pipe_ref(|text| text.trim().len())
 }
 
-// Not flagged: `filter_map_ok`'s closure returns an `Option`, so what
-// splits inside it is `Option` work rather than a chain, which no rule
-// lints yet.
+// Bad: `filter_map_ok`'s closure returns an `Option`, and the
+// guard-and-value trigger has no split for that on the `Ok` channel, so
+// the chain is what is left to read.
 fn nested_filter_map(
     items: std::vec::IntoIter<Result<&'static str, usize>>,
 ) -> Vec<Result<usize, usize>> {
@@ -150,6 +157,10 @@ fn one_step(
 // naming the wrong parameter or the wrong shape would show up here.
 fn counting(lines: std::vec::IntoIter<&'static str>) -> HashMap<usize, usize> {
     lines.counts_by(|text| text.trim().len())
+}
+
+fn partitioned(lines: std::vec::IntoIter<&'static str>) -> (Vec<usize>, Vec<&'static str>) {
+    lines.partition_map(|text| classify(text.trim()))
 }
 
 fn parallel_each(items: Parallel<&'static str>) {
