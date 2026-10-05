@@ -16,7 +16,10 @@
 //! about an adapter's contract, which no type exposes. Each entry below
 //! was checked against that contract by hand.
 
+use super::Call;
 use super::family::Family;
+use super::signature::{self, Handing};
+use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
 /// One adapter the chain trigger speaks about.
@@ -92,9 +95,17 @@ const fn borrowing_pipe() -> Adapter {
     }
 }
 
-/// The adapter `method` is on `family`, or `None` for a method the chain
-/// trigger does not speak about.
-pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
+/// The adapter `call` names, or `None` for a method the chain trigger does
+/// not speak about.
+///
+/// Most families answer from a table of names, their APIs having been
+/// stable for as long as the rule has named them. `orx-parallel` is read
+/// from the signatures instead, which [`super::signature`] is about.
+pub(super) fn adapter(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Adapter> {
+    let (family, method) = (call.receiver.family, call.method);
+    if family == Family::Orx {
+        return derived(cx, call);
+    }
     match family {
         Family::Iterator => iterator(method),
         Family::Option => option(method),
@@ -104,8 +115,45 @@ pub(super) fn adapter(family: Family, method: Symbol) -> Option<Adapter> {
         Family::Itertools => itertools(method),
         Family::Rayon => rayon(method),
         Family::Pipe => pipe(method),
+        // Answered above, where the signature rather than the name says
+        // what the adapter is.
+        Family::Orx => None,
     }
 }
+
+/// The adapter `call` names, read from the signature it was declared with.
+///
+/// A method whose closure is handed the item behind a reference hands it
+/// back downstream, so a leading `map` would change what it and every later
+/// adapter sees: that is `filter` and `inspect`, and the conjunction
+/// trigger is the one with a split for them.
+///
+/// The lift target is asked of the trait rather than assumed, so a trait
+/// without a `map` offers no split at all.
+fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Adapter> {
+    let declaring = call.receiver.declaring?;
+    let closure = signature::closure(cx, call.receiver.method, declaring)?;
+    if closure.handing != Handing::ByValue {
+        return None;
+    }
+    if !signature::declares(cx, declaring, LIFT_TARGET) {
+        return None;
+    }
+    Some(Adapter {
+        closure_argument: closure.argument,
+        item_parameter: closure.parameter,
+        keeps_the_last_step: closure.takes_the_item_alone(),
+        lift_target: LIFT_TARGET,
+        head_keeps_the_method: false,
+    })
+}
+
+/// The adapter a lifted step goes into, where the family is read rather
+/// than tabled.
+///
+/// Every family the rule speaks about calls it `map`, and a trait that
+/// does not declare one is left alone rather than guessed at.
+const LIFT_TARGET: &str = "map";
 
 fn iterator(method: Symbol) -> Option<Adapter> {
     // The guard-and-value trigger answers first for `filter_map`,

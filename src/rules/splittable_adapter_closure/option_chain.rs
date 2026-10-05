@@ -22,11 +22,8 @@ use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
 /// The guard and value this adapter's closure holds.
-pub(super) fn check<'tcx>(
-    cx: &LateContext<'tcx>,
-    call: &Call<'tcx>,
-    family: Family,
-) -> Option<Finding> {
+pub(super) fn check<'tcx>(cx: &LateContext<'tcx>, call: &Call<'tcx>) -> Option<Finding> {
+    let family = call.receiver.family;
     let (method, arguments) = (call.method, call.arguments);
     if family != Family::Iterator {
         return None;

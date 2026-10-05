@@ -17,8 +17,14 @@ adapter does all of them. Three shapes trigger it:
   each step is a leading `map` of its own. The receivers in scope
   are iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and the
   [`itertools::Itertools`](https://docs.rs/itertools),
-  [`rayon::iter::ParallelIterator`](https://docs.rs/rayon) and
-  [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) traits.
+  [`rayon::iter::ParallelIterator`](https://docs.rs/rayon),
+  [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) and
+  [`orx_parallel::Par`](https://docs.rs/orx-parallel) traits.
+
+`orx-parallel`'s adapters are read from the signatures they are
+declared with rather than from their names, so the trait is answered
+for under either name it has carried, and a method it drops or adds
+needs nothing said about the version that did so.
 - A predicate that is a conjunction of two or more tests, each
   naming the item, where each test is a filtering adapter of its
   own.

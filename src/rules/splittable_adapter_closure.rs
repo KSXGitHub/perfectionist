@@ -18,7 +18,7 @@
 //! families [`family::Family`] names. `planned-rules/splittable-adapter-closure.md`
 //! records what of the planning file is left.
 
-use self::family::family;
+use self::family::{Receiver, family};
 use crate::common::{DefaultState, hir_in_external_macro};
 use crate::receiver_move::movable;
 use crate::rule_index::{Register, rule};
@@ -37,6 +37,7 @@ mod combinator;
 mod family;
 mod option_chain;
 mod predicate;
+mod signature;
 mod step_chain;
 
 declare_tool_lint! {
@@ -50,8 +51,14 @@ declare_tool_lint! {
     ///   each step is a leading `map` of its own. The receivers in scope
     ///   are iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and the
     ///   [`itertools::Itertools`](https://docs.rs/itertools),
-    ///   [`rayon::iter::ParallelIterator`](https://docs.rs/rayon) and
-    ///   [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) traits.
+    ///   [`rayon::iter::ParallelIterator`](https://docs.rs/rayon),
+    ///   [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) and
+    ///   [`orx_parallel::Par`](https://docs.rs/orx-parallel) traits.
+    ///
+    /// `orx-parallel`'s adapters are read from the signatures they are
+    /// declared with rather than from their names, so the trait is answered
+    /// for under either name it has carried, and a method it drops or adds
+    /// needs nothing said about the version that did so.
     /// - A predicate that is a conjunction of two or more tests, each
     ///   naming the item, where each test is a filtering adapter of its
     ///   own.
@@ -220,6 +227,8 @@ struct Fix {
 /// The adapter call a trigger reads, so each one is handed the parts
 /// rather than destructuring the same expression again.
 struct Call<'tcx> {
+    /// Which family the receiver belongs to, and what identified it.
+    receiver: Receiver,
     /// The adapter's own name.
     method: Symbol,
     /// Its arguments, among which is the closure.
@@ -250,13 +259,14 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
             return;
         };
         let call = Call {
+            receiver: family,
             method: segment.ident.name,
             arguments,
             fix_span: segment.ident.span.with_hi(expr.span.hi()),
         };
-        let found = option_chain::check(cx, &call, family)
-            .or_else(|| predicate::check(cx, &call, family))
-            .or_else(|| step_chain::check(cx, &call, family));
+        let found = option_chain::check(cx, &call)
+            .or_else(|| predicate::check(cx, &call))
+            .or_else(|| step_chain::check(cx, &call));
         let Some(found) = found else {
             return;
         };

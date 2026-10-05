@@ -19,7 +19,6 @@
 
 use super::adapter::{self, Adapter};
 use super::chain::Step;
-use super::family::Family;
 use super::{Call, Finding, Fix, anchoring, chain};
 use crate::binding_uses::{names, uses};
 use crate::common::{borrows, drops_a_comment};
@@ -35,13 +34,10 @@ use rustc_span::Symbol;
 
 /// The chain this adapter's closure holds, where it is two or more steps
 /// long.
-pub(super) fn check<'tcx>(
-    cx: &LateContext<'tcx>,
-    call: &Call<'tcx>,
-    family: Family,
-) -> Option<Finding> {
+pub(super) fn check<'tcx>(cx: &LateContext<'tcx>, call: &Call<'tcx>) -> Option<Finding> {
+    let family = call.receiver.family;
     let (method, arguments) = (call.method, call.arguments);
-    let adapter = adapter::adapter(family, method)?;
+    let adapter = adapter::adapter(cx, call)?;
     let argument = arguments.get(adapter.closure_argument)?;
     let ExprKind::Closure(closure) = argument.kind else {
         return None;

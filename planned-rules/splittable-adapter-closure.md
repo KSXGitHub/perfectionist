@@ -33,7 +33,19 @@ holds it.
 The triggers are asked in that order and the first finding wins.
 
 Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
-`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator` and `Pipe`.
+`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator`, `Pipe` and
+`orx-parallel`'s own.
+
+The last is read from the signatures its methods are declared with rather
+than from a table of names, which
+[`src/rules/splittable_adapter_closure/signature.rs`](../src/rules/splittable_adapter_closure/signature.rs)
+is about. A table is a copy of a dependency's API: `orx-parallel` renamed its
+trait from `ParIter` to `Par`, dropped `take_while` and `map_while` and gained
+`fold` across one major release, and a copy would have stopped matching
+silently. What did not change is how each closure is declared, which is what
+the rule needs, so the reading answers both generations. `ui/auxiliary/`
+carries a stub per generation and a fixture apiece holds the rule to each,
+the way the `command-extra` stubs do for the rules naming that trait.
 
 Narrower than this file describes, each narrowing measured against this
 crate's own source:

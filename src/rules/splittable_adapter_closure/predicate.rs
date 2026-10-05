@@ -12,6 +12,7 @@
 //! none of the position care the chain's does.
 
 use super::family::Family;
+use super::signature::{self, Handing};
 use super::{Call, Finding, Fix, only_closure};
 use crate::adapter_discipline::Discipline;
 use crate::binding_uses::names;
@@ -23,17 +24,12 @@ use clippy_utils::source::snippet_with_applicability;
 use rustc_errors::Applicability;
 use rustc_hir::{self as hir, BinOpKind, CaptureBy, Closure, Expr, ExprKind, Pat, TyKind};
 use rustc_lint::LateContext;
-use rustc_span::Symbol;
 
 /// The conjunction this adapter's predicate is, where it runs two or more
 /// tests on the item.
-pub(super) fn check<'tcx>(
-    cx: &LateContext<'tcx>,
-    call: &Call<'tcx>,
-    family: Family,
-) -> Option<Finding> {
+pub(super) fn check<'tcx>(cx: &LateContext<'tcx>, call: &Call<'tcx>) -> Option<Finding> {
     let method = call.method;
-    let discipline = discipline(family, method)?;
+    let discipline = discipline(cx, call)?;
     let closure = only_closure(call.arguments)?;
     let body = cx.tcx.hir_body(closure.body);
     let [parameter] = body.params else {
@@ -41,7 +37,7 @@ pub(super) fn check<'tcx>(
     };
     let item = binding_hir_id(parameter.pat)?;
     let item_ty = cx.typeck_results().pat_ty(parameter.pat);
-    if hands_the_item_over(method) && (item_ty.is_mutable_ptr() || binds_mutably(parameter.pat)) {
+    if hands_the_item_over(cx, call) && (item_ty.is_mutable_ptr() || binds_mutably(parameter.pat)) {
         return None;
     }
     // A conjunction the reader did not write has no `&&` they can cut:
@@ -70,7 +66,8 @@ pub(super) fn check<'tcx>(
     // Only the lifted tests are asked. The last one stays where it is,
     // with the item it always had.
     let lifted = &conjuncts[..conjuncts.len() - 1];
-    if hands_the_item_over(method) && !lifted.iter().all(|test| survives(cx, test, item, item_ty)) {
+    if hands_the_item_over(cx, call) && !lifted.iter().all(|test| survives(cx, test, item, item_ty))
+    {
         return None;
     }
     // Each test gets a closure of its own after the split, and a capture
@@ -173,7 +170,11 @@ fn method_name(call: &Call<'_>) -> String {
 
 /// The discipline of `method`'s answer on `family`, or `None` for a
 /// method this trigger does not speak about.
-fn discipline(family: Family, method: Symbol) -> Option<Discipline> {
+fn discipline(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
+    let (family, method) = (call.receiver.family, call.method);
+    if family == Family::Orx {
+        return derived(cx, call);
+    }
     // `all`, `position`, `rposition`, `partition`, `skip_while` and
     // `Option::is_none_or` take a predicate of the same shape and have no
     // lift target: filtering first flips what `all` and `is_none_or`
@@ -189,14 +190,60 @@ fn discipline(family: Family, method: Symbol) -> Option<Discipline> {
     })
 }
 
+/// The discipline `call` answers with, read from the signature it was
+/// declared with where the family is not tabled.
+///
+/// A filtering adapter is one handed the item behind a reference and
+/// answering `bool`, which is what `filter` and its kin are and what
+/// separates them from the mapping adapters the chain trigger reads.
+///
+/// Two facts a signature cannot carry stay by name. A prefix-shaped
+/// adapter is declared exactly as a set-shaped one, `Fn(&Item) -> bool`
+/// either way, so which of them stops the run is the name's to say; asking
+/// the trait whether it declares one is what keeps a version without it
+/// from being assumed. And `all` is excluded because filtering before it
+/// makes an item that failed the first test vacuously fine, which is a
+/// property of the answer rather than of the signature.
+fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
+    let declaring = call.receiver.declaring?;
+    if call.method.as_str() == "all" {
+        return None;
+    }
+    let closure = signature::closure(cx, call.receiver.method, declaring)?;
+    if closure.handing != Handing::ByReference || !closure.takes_the_item_alone() {
+        return None;
+    }
+    let prefix_shaped = call.method.as_str() == PREFIX_SHAPED;
+    if prefix_shaped || signature::declares(cx, declaring, PREFIX_SHAPED) {
+        return Some(match prefix_shaped {
+            true => Discipline::Prefix,
+            false => Discipline::Set,
+        });
+    }
+    Some(Discipline::Set)
+}
+
+/// The adapter that stops a run rather than sieving it, where the family
+/// declares one.
+const PREFIX_SHAPED: &str = "take_while";
+
 /// Whether `method` hands the item to its closure by value, where the
 /// lift target hands it by reference.
 ///
 /// `filter` and `take_while` take `&Item`, so a test lifted out of an
 /// adapter that was handed the item itself gets one reference more than
 /// it had, and [`crate::extra_reference`] is about what survives that.
-fn hands_the_item_over(method: Symbol) -> bool {
-    matches!(method.as_str(), "any" | "is_some_and")
+fn hands_the_item_over(cx: &LateContext<'_>, call: &Call<'_>) -> bool {
+    // Where the signature is what the family is read from, it answers this
+    // too: `orx-parallel`'s `any` lends the item where `Iterator`'s hands it
+    // over, and the name is the same either way.
+    if let Some(declaring) = call.receiver.declaring
+        && call.receiver.family == Family::Orx
+    {
+        return signature::closure(cx, call.receiver.method, declaring)
+            .is_some_and(|closure| closure.handing == Handing::ByValue);
+    }
+    matches!(call.method.as_str(), "any" | "is_some_and")
 }
 
 /// Flattens `a && b && c` into its conjuncts, outermost last.
