@@ -25,9 +25,16 @@
 // threshold into `FILTER_MIN_SCORE` below is part of that contract: if
 // match.js never ran, the read throws here, long before any reveal.
 //
-// Closing a box clears its query. A hidden input still filtering the list
-// would otherwise leave entries missing with nothing on screen to explain
-// why.
+// ---- Closing a box --------------------------------------------------------
+//
+// Escape and the funnel both dismiss one, and both mean the same thing:
+// the query is cleared, the list is put back as the page rendered it, and
+// the box goes away. Closing never leaves a hidden input still narrowing
+// a list, which would strand the reader with entries missing and nothing
+// on screen to say why.
+//
+// Enter is not a way out. It re-runs the filter, which is all it was ever
+// for: insurance for a browser whose `input` event never arrived.
 //
 // Filtering runs synchronously on every keystroke, with no debounce: it is
 // a string scan over a few dozen lint names, so the list keeps up with the
@@ -236,38 +243,64 @@
       }
     }
 
-    /** @param {boolean} open */
-    function setOpen(open) {
-      toggle.setAttribute("aria-expanded", String(open));
-      box.hidden = !open;
-      if (open) {
-        input.focus();
-        return;
-      }
-      // A closed box must not keep filtering, so clear the query and put
-      // the list back.
+    /** Show the box and put the caret in it. */
+    function openBox() {
+      toggle.setAttribute("aria-expanded", "true");
+      box.hidden = false;
+      input.focus();
+    }
+
+    /**
+     * Clear the query, put the list back as the page rendered it, and hide
+     * the box. Focus goes to the funnel: Escape dismisses from inside the
+     * input, which is about to be hidden, and focus would otherwise drop
+     * to <body>. Dismissing by the funnel click already has focus there,
+     * so the move is a no-op on that path.
+     */
+    function dismiss() {
       input.value = "";
       reset();
+      toggle.setAttribute("aria-expanded", "false");
+      box.hidden = true;
+      toggle.focus({ preventScroll: true });
     }
 
     toggle.addEventListener("click", function () {
-      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+      if (toggle.getAttribute("aria-expanded") === "true") {
+        dismiss();
+      } else {
+        openBox();
+      }
     });
 
     // `input` is the event that covers every way text arrives — physical
     // keyboard, on-screen keyboard, IME, paste, drag, the native clear
-    // button. The others are belt and braces: `search` is what a
-    // `type="search"` input fires on its clear button in older WebKit, and
-    // Enter is the explicit re-run for a browser whose `input` event never
-    // came.
+    // button. `search` is belt and braces: it is what a `type="search"`
+    // input fires on its clear button in older WebKit.
     input.addEventListener("input", apply);
     input.addEventListener("search", apply);
     input.addEventListener("keydown", function (event) {
-      if (event.key !== "Enter") return;
-      // The input is in no form, so Enter submits nothing; suppressing the
-      // default only keeps a stray form association from navigating.
+      // Neither key means anything to an IME mid-composition, where Enter
+      // accepts the candidate and Escape abandons it.
+      if (event.isComposing) return;
+      if (event.key === "Enter") {
+        // The input is in no form, so Enter submits nothing; suppressing
+        // the default only keeps a stray form association from navigating.
+        event.preventDefault();
+        apply();
+        return;
+      }
+      if (event.key !== "Escape") return;
+      // A `type="search"` input clears itself on Escape in WebKit and
+      // Blink, which is half of what should happen here; suppressing the
+      // default and doing the whole of it keeps every engine alike.
       event.preventDefault();
-      apply();
+      // The innermost thing Escape can dismiss should be the only thing it
+      // dismisses. theme_toggle.js listens for Escape on the document to
+      // close the Settings panel, so without this one keystroke would shut
+      // both the filter box and a panel the reader had left open.
+      event.stopPropagation();
+      dismiss();
     });
 
     // Wired up, so the button that opens it can appear.
@@ -281,7 +314,7 @@
        * @param {string} seed
        */
       openWith: function (seed) {
-        setOpen(true);
+        openBox();
         input.value = seed;
         apply();
       },
