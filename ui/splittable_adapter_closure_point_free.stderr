@@ -1,0 +1,59 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     counts.into_iter().map(|count| count.to_string().len()).collect()
+   |                        ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL |     counts.into_iter().map(|count| count.to_string()).map(|/* name */| /* name */.len()).collect()
+   |                                                     +++++++++++++++++++++++++++++
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     offsets.into_iter().map(|offset| offset.abs().to_string()).collect()
+   |                         ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     offsets.into_iter().map(|offset| offset.abs().to_string()).collect()
+LL +     offsets.into_iter().map(i32::abs).map(|/* name */| /* name */.to_string()).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     sizes.into_iter().map(|size| size.abs().to_string()).collect()
+   |                       ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     sizes.into_iter().map(|size| size.abs().to_string()).collect()
+LL +     sizes.into_iter().map(f64::abs).map(|/* name */| /* name */.to_string()).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     flags.into_iter().map(|flag| flag.to_string().len()).collect()
+   |                       ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL |     flags.into_iter().map(|flag| flag.to_string()).map(|/* name */| /* name */.len()).collect()
+   |                                                  +++++++++++++++++++++++++++++
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     letters.into_iter().map(|letter| letter.to_string().len()).collect()
+   |                         ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL |     letters.into_iter().map(|letter| letter.to_string()).map(|/* name */| /* name */.len()).collect()
+   |                                                        +++++++++++++++++++++++++++++
+
+warning: N warnings emitted
