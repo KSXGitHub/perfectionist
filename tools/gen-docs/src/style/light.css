@@ -306,14 +306,17 @@ article.rule table code {
   outline-color: #0969da;
 }
 .search-close {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.82);
   border-color: #d0d7de;
-  color: #1f2328;
+  color: #57606a;
 }
 .search-close:hover {
-  background: #f6f8fa;
+  background: #ffffff;
+  color: #1f2328;
 }
 .search-close:focus-visible {
+  background: #ffffff;
+  color: #1f2328;
   outline-color: #0969da;
 }
 .search-result {

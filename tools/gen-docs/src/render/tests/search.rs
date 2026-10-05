@@ -92,6 +92,81 @@ fn search_overlay_markup_lives_only_inside_its_template() {
 }
 
 #[test]
+fn the_close_button_sits_in_the_results_corner_not_the_search_box() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    let template = template_with_id(&html, SEARCH_OVERLAY_TEMPLATE_ID);
+    // The search box holds the input and nothing else, so it and the
+    // results list still account for the whole of the dialog's height
+    // between them.
+    assert!(
+        template.contains(r#"<div class="search-box"><input class="search-input""#),
+        "the search box must hold the input alone",
+    );
+    // The button follows the results list as the dialog's last child,
+    // which is what lets search.css park it in the results' bottom corner
+    // and what puts it after the results in the tab order.
+    assert!(
+        template.contains(r#"</ul><button class="search-close" type="button">"#),
+        "the close button must follow the results list, got: {template}",
+    );
+    assert!(
+        template.contains(r#"</button></div></div></template>"#),
+        "the close button must be the dialog's last child, got: {template}",
+    );
+}
+
+#[test]
+fn the_close_button_is_fused_into_the_dialog_corner() {
+    // The part of the design the markup cannot carry: parked against the
+    // dialog's bottom-right — the dialog's, not the list's, so it never
+    // scrolls out of reach — bordered and rounded only on the two edges
+    // facing the dialog's interior, so it reads as the corner folding up
+    // rather than a button dropped on one, and half-transparent until
+    // hovered, which is what licenses it to cover the last row of
+    // results.
+    let search = stylesheet("search.css");
+    let rule = declaration_block(search, ".search-close {");
+    for declaration in [
+        "position: absolute",
+        "right: 0",
+        "bottom: 0",
+        "border: 0",
+        "border-top: 1px solid",
+        "border-left: 1px solid",
+        "border-radius: 6px 0 0 0",
+        "opacity: 0.55",
+    ] {
+        assert!(
+            rule.contains(declaration),
+            "search.css's .search-close must set `{declaration}`, got: {rule}",
+        );
+    }
+    assert!(
+        search.contains(".search-close:hover,\n.search-close:focus-visible {\n  opacity: 1;\n}"),
+        "hover and keyboard focus must bring the button to full opacity",
+    );
+    // Without this the corner offsets resolve against the viewport.
+    assert!(
+        declaration_block(search, ".search-dialog {").contains("position: relative"),
+        "the dialog must be the close button's positioning context",
+    );
+}
+
+/// The declarations of the rule `css` opens with `selector`, which must
+/// be written with its brace (`.foo {`) so a longer selector sharing the
+/// prefix can't match.
+fn declaration_block<'a>(css: &'a str, selector: &str) -> &'a str {
+    let start = css
+        .find(selector)
+        .unwrap_or_else(|| panic!("no `{selector}` rule"));
+    let end = start
+        + css[start..]
+            .find('}')
+            .unwrap_or_else(|| panic!("`{selector}` is unterminated"));
+    &css[start..end]
+}
+
+#[test]
 fn search_result_template_carries_the_shape_the_script_fills_in() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     // One result's markup, cloned per result. It is a template of its own

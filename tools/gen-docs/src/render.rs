@@ -343,6 +343,11 @@ fn search_toggle() -> Markup {
 /// The result template is a separate `<template>` rather than one nested
 /// in the overlay's results list, because that list is emptied on every
 /// keystroke and would take its own blueprint with it.
+///
+/// The close button is the dialog's last child, not the search box's, so
+/// search.css can park it in the results' bottom corner: out of the
+/// search box's row, out of the results list's scrolling, and after the
+/// results in the tab order.
 fn search_templates() -> Markup {
     html! {
         template id=(SEARCH_OVERLAY_TEMPLATE_ID) {
@@ -353,15 +358,18 @@ fn search_templates() -> Markup {
                     aria-label="Search lints" {
                     div.search-box {
                         (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
-                        button.search-close type="button" {
-                            // The ✕ is decoration beside the word; hiding
-                            // it from assistive tech keeps the button's
-                            // accessible name the word alone.
-                            span.search-close-glyph aria-hidden="true" { "\u{2715}" }
-                            "Close"
-                        }
                     }
                     ul.search-results aria-label="Search results" {}
+                    // Last, so it sits in the results' corner rather than
+                    // in the search box, and so Tab reaches it after the
+                    // results rather than before them.
+                    button.search-close type="button" {
+                        // The ✕ is decoration beside the word; hiding it
+                        // from assistive tech keeps the button's
+                        // accessible name the word alone.
+                        span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                        "Close"
+                    }
                 }
             }
         }

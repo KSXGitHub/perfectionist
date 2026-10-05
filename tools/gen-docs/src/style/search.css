@@ -199,15 +199,17 @@ h2.index-heading {
   border: 1px solid;
   border-radius: 10px;
   box-sizing: border-box;
-  /* Keeps the results list's scrolling edge inside the rounded corners. */
+  /* Keeps the results list's scrolling edge — and the close button parked
+     in the bottom corner — inside the rounded corners. */
   overflow: hidden;
+  /* The positioning context for that button. */
+  position: relative;
 }
 
 .search-box {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   padding: 0.75rem;
   border-bottom: 1px solid;
 }
@@ -229,22 +231,44 @@ h2.index-heading {
   outline-offset: 1px;
 }
 
+/* Fused into the results' bottom-right corner rather than placed on top
+   of it: the two edges facing the dialog's interior carry the border and
+   the rounded corner, the two meeting the dialog's own edge carry
+   neither, so it reads as the corner itself folding up.
+
+   Positioned against the dialog, not the list, so it never scrolls out of
+   reach. It is half-transparent at rest and full on hover or focus, and
+   that half-transparency is what licenses it to cover the last row or two
+   of results. Being the dialog's last child, it paints over the
+   (unpositioned) list without needing a z-index. */
 .search-close {
-  flex: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid;
-  border-radius: 6px;
+  gap: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+  border-radius: 6px 0 0 0;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   line-height: 1;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.search-close:hover,
+.search-close:focus-visible {
+  opacity: 1;
 }
 
 .search-close:focus-visible {
   outline: 2px solid;
-  outline-offset: 2px;
+  /* Inset, so the outline is not clipped by the dialog's `overflow`. */
+  outline-offset: -2px;
 }
 
 /* The ✕ is decoration beside the word "Close"; like the hamburger, the
@@ -253,7 +277,7 @@ h2.index-heading {
    of falling back out of a text face. */
 .search-close-glyph {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 1rem;
+  font-size: 0.85rem;
 }
 
 .search-results {
