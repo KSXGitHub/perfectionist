@@ -8,22 +8,37 @@
 // called twice and holds no knowledge of which list it drives; the scoring,
 // the score threshold and the highlight rendering all come from match.js.
 //
-// Each box lives inside an empty `<div class="filter-container">` the Rust
-// template emits. The container has no box of its own, so a page whose
-// script never runs is pixel-identical to one without the feature — the
-// input only exists once this file builds it. The toggle buttons follow the
-// same "reveal only once functional" contract the nav hamburger, the
-// settings gear and the Configuration bulk buttons do: the template emits
-// them `hidden` and `installFilter` clears that as its last act, so a
-// CSP-blocked, stripped or mid-parse-error script leaves no dead control
-// behind (the `[hidden] { display: none !important }` reset in
-// style/base.css is what keeps `hidden` authoritative). Reading match.js's
+// Neither box's markup is written here. Each lives in an inert
+// `<template>` inside its `<div class="filter-container">`, rendered by the
+// Rust template; this file clones that into the container and wires up the
+// behaviour. A `<template>`'s contents are parsed but kept out of the
+// document, so a page whose script never runs is pixel-identical to one
+// without the feature, and the markup still gets reviewed and tested where
+// the rest of the page's markup is.
+//
+// The toggle buttons follow the same "reveal only once functional" contract
+// the nav hamburger, the settings gear and the Configuration bulk buttons
+// do: the template emits them `hidden` and `wireFilter` clears that as its
+// last act, so a CSP-blocked, stripped or mid-parse-error script leaves no
+// dead control behind (the `[hidden] { display: none !important }` reset
+// in style/base.css is what keeps `hidden` authoritative). Reading match.js's
 // threshold into `FILTER_MIN_SCORE` below is part of that contract: if
 // match.js never ran, the read throws here, long before any reveal.
 //
-// Closing a box clears its query. A hidden input still filtering the list
-// would otherwise leave entries missing with nothing on screen to explain
-// why.
+// ---- Closing a box --------------------------------------------------------
+//
+// There are two ways to close one, and they mean different things:
+//
+//   * Enter commits. The box goes away and the list stays narrowed, which
+//     is what a reader wants once they can see the handful of rules they
+//     were after — and on a phone it is what puts the on-screen keyboard
+//     away. The query stays in the input, so reopening the box resumes it.
+//   * The funnel dismisses. The query is cleared and the list put back.
+//
+// A box closed by Enter is still filtering, so its funnel takes
+// `data-filtering`, which the stylesheet renders as the lit "a filter is
+// active" state. Without it the reader would be left with entries missing
+// and nothing on screen to say why.
 //
 // Filtering runs synchronously on every keystroke, with no debounce: it is
 // a string scan over a few dozen lint names, so the list keeps up with the
@@ -133,59 +148,53 @@
    * @param {string} listSelector  the parent whose children are the entries
    * @param {string} itemSelector  which children count as entries
    * @param {string} nameSelector  the element inside an entry spelling the name
-   * @param {string} label         the input's accessible name
    * @returns {FilterBox | null}
    */
-  function installFilter(kind, listSelector, itemSelector, nameSelector, label) {
+  function installFilter(kind, listSelector, itemSelector, nameSelector) {
     var toggle = document.querySelector("." + kind + "-filter-toggle");
     var container = document.querySelector("." + kind + "-filter-container");
     var list = document.querySelector(listSelector);
     if (!(toggle instanceof HTMLElement)) return null;
     if (!(container instanceof HTMLElement)) return null;
     if (!(list instanceof HTMLElement)) return null;
-    return wireFilter(toggle, container, list, itemSelector, nameSelector, label);
+    return wireFilter(toggle, container, list, itemSelector, nameSelector);
   }
 
   /**
-   * Build a filter input into `container`, let `toggle` show and hide it,
+   * Clone one filter box into `container`, let `toggle` show and hide it,
    * narrow the list's entries to whatever is typed, and finally reveal
-   * `toggle`. Returns `null` for an empty list, leaving that toggle
-   * hidden.
+   * `toggle`. Returns `null` when the list is empty or the container holds
+   * no blueprint, leaving that toggle hidden.
    * @param {HTMLElement} toggle
    * @param {HTMLElement} container
    * @param {HTMLElement} list
    * @param {string} itemSelector
    * @param {string} nameSelector
-   * @param {string} label
    * @returns {FilterBox | null}
    */
-  function wireFilter(toggle, container, list, itemSelector, nameSelector, label) {
+  function wireFilter(toggle, container, list, itemSelector, nameSelector) {
     var items = collectItems(list, itemSelector, nameSelector);
     // Nothing to narrow means nothing to reveal: a toggle over an empty
     // list would open a box that can only ever hide nothing.
     if (items.length === 0) return null;
 
-    var box = document.createElement("div");
-    box.className = "filter-box";
-    box.hidden = true;
-
-    var input = document.createElement("input");
-    input.className = "filter-input";
-    // `type="search"` earns the platform's search affordances: a clear
-    // button on desktop, a dedicated key on phone and tablet keyboards.
-    input.type = "search";
-    input.placeholder = "Filter by name\u2026";
-    input.setAttribute("aria-label", label);
-    // Phone and tablet keyboards otherwise capitalise the first letter and
-    // autocorrect a half-typed lint name into a dictionary word, neither of
-    // which can match a snake_case identifier.
-    input.setAttribute("autocapitalize", "none");
-    input.setAttribute("autocorrect", "off");
-    input.setAttribute("autocomplete", "off");
-    input.setAttribute("enterkeyhint", "search");
-    input.spellcheck = false;
-    box.appendChild(input);
-    container.appendChild(box);
+    // The box's markup is the container's `<template>`. `querySelector`
+    // does not descend into a template's contents, so the clone is the only
+    // thing the two lookups below can find. A browser without `<template>`
+    // parses it as an unknown element, fails this check and leaves the
+    // funnel hidden, which is the right outcome.
+    var blueprint = container.querySelector("template");
+    if (!(blueprint instanceof HTMLTemplateElement)) return null;
+    container.appendChild(blueprint.content.cloneNode(true));
+    // Cast rather than narrowed: the guard below still rejects a missing
+    // element at runtime, but TypeScript does not carry a guard's narrowing
+    // of a `var` into a closure, and every handler below is one. See the
+    // matching note in nav_toggle.js.
+    var box = /** @type {HTMLElement} */ (container.querySelector(".filter-box"));
+    var input = /** @type {HTMLInputElement} */ (
+      container.querySelector(".filter-input")
+    );
+    if (!box || !input) return null;
 
     /**
      * Put every entry back the way the page rendered it: visible, in
@@ -238,38 +247,66 @@
       }
     }
 
-    /** @param {boolean} open */
-    function setOpen(open) {
-      toggle.setAttribute("aria-expanded", String(open));
-      box.hidden = !open;
-      if (open) {
-        input.focus();
-        return;
+    /** Show the box and put the caret in it, query and all. */
+    function openBox() {
+      toggle.setAttribute("aria-expanded", "true");
+      toggle.removeAttribute("data-filtering");
+      box.hidden = false;
+      input.focus();
+    }
+
+    /**
+     * Hide the box, keeping whatever it is filtering by. Focus goes to the
+     * funnel, since the input it was in is now hidden and focus would
+     * otherwise drop to <body>.
+     */
+    function commit() {
+      toggle.setAttribute("aria-expanded", "false");
+      if (input.value.trim() === "") {
+        toggle.removeAttribute("data-filtering");
+      } else {
+        toggle.setAttribute("data-filtering", "true");
       }
-      // A closed box must not keep filtering, so clear the query and put
-      // the list back.
+      box.hidden = true;
+      toggle.focus({ preventScroll: true });
+    }
+
+    /** Hide the box and put the list back as the page rendered it. */
+    function dismiss() {
       input.value = "";
       reset();
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.removeAttribute("data-filtering");
+      box.hidden = true;
     }
 
     toggle.addEventListener("click", function () {
-      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+      if (toggle.getAttribute("aria-expanded") === "true") {
+        dismiss();
+      } else {
+        openBox();
+      }
     });
 
     // `input` is the event that covers every way text arrives — physical
     // keyboard, on-screen keyboard, IME, paste, drag, the native clear
-    // button. The others are belt and braces: `search` is what a
-    // `type="search"` input fires on its clear button in older WebKit, and
-    // Enter is the explicit re-run for a browser whose `input` event never
-    // came.
+    // button. `search` is belt and braces: it is what a `type="search"`
+    // input fires on its clear button in older WebKit.
     input.addEventListener("input", apply);
     input.addEventListener("search", apply);
     input.addEventListener("keydown", function (event) {
       if (event.key !== "Enter") return;
+      // Not while an IME is mid-composition, where Enter accepts the
+      // candidate rather than ending the query.
+      if (event.isComposing) return;
       // The input is in no form, so Enter submits nothing; suppressing the
       // default only keeps a stray form association from navigating.
       event.preventDefault();
+      // `apply` first: it is also the re-run for a browser whose `input`
+      // event never came, so a committed box is never left showing a list
+      // that does not match its query.
       apply();
+      commit();
     });
 
     // Wired up, so the button that opens it can appear.
@@ -283,7 +320,7 @@
        * @param {string} seed
        */
       openWith: function (seed) {
-        setOpen(true);
+        openBox();
         input.value = seed;
         apply();
       },
@@ -294,17 +331,10 @@
     "index",
     "table.index tbody",
     "tr",
-    "td:first-child code",
-    "Filter the index by lint name"
+    "td:first-child code"
   );
 
-  installFilter(
-    "nav",
-    "ul.nav-sidebar-list",
-    "li",
-    "a code",
-    "Filter the navigation by lint name"
-  );
+  installFilter("nav", "ul.nav-sidebar-list", "li", "a code");
 
   // ---- Keyboard entry into the Index box --------------------------------
   //

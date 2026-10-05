@@ -8,11 +8,19 @@
 // — the same fragment the index table and the sidebar point at, so a
 // result lands the reader on the rule article itself.
 //
-// Everything but the button is built here. The Rust template emits the
-// button `hidden` and this file clears that as its last act, the same
-// "reveal only once functional" contract the rest of the page's controls
-// follow (the `[hidden] { display: none !important }` reset in
-// style/base.css keeps `hidden` authoritative). Reading match.js's
+// No markup is written here. The overlay and one search result each live
+// in an inert `<template>` rendered by the Rust template; this file clones
+// them and wires up the behaviour. A `<template>`'s contents are parsed but
+// kept out of the document — nothing renders, nothing is focusable,
+// assistive tech never reaches them, and `document.querySelector` does not
+// descend into them — so a page whose script never runs has no overlay in
+// any sense that counts, while the markup stays where the rest of the
+// page's markup is reviewed and tested.
+//
+// The Rust template emits the button `hidden` and this file clears that as
+// its last act, the same "reveal only once functional" contract the rest of
+// the page's controls follow (the `[hidden] { display: none !important }`
+// reset in style/base.css keeps `hidden` authoritative). Reading match.js's
 // threshold into `SEARCH_MIN_SCORE` below is part of it: if match.js never
 // ran, that read throws here, long before the reveal.
 //
@@ -79,63 +87,36 @@
   var toggle = /** @type {HTMLElement} */ (document.querySelector(".search-toggle"));
   if (!toggle) return;
 
-  // ---- The overlay's markup ---------------------------------------------
+  // ---- Cloning the overlay into the page --------------------------------
 
-  var overlay = document.createElement("div");
-  overlay.className = "search-overlay";
-  overlay.id = "search-overlay";
-  overlay.hidden = true;
+  var overlayBlueprint = document.getElementById("search-overlay-template");
+  var resultBlueprint = document.getElementById("search-result-template");
+  // A browser without `<template>` parses both as unknown elements, fails
+  // these checks and leaves the magnifier hidden, which is the right
+  // outcome: there is nothing for it to open.
+  if (!(overlayBlueprint instanceof HTMLTemplateElement)) return;
+  if (!(resultBlueprint instanceof HTMLTemplateElement)) return;
+  // The result blueprint's shape is checked once, here, rather than per
+  // result: it is fixed markup, so if it is wrong it is wrong every time —
+  // and failing now, before the reveal, leaves no dead button behind.
+  if (!resultBlueprint.content.querySelector(".search-result")) return;
+  if (!resultBlueprint.content.querySelector(".search-result-name")) return;
+  if (!resultBlueprint.content.querySelector(".search-result-text")) return;
+  // Bound to a local the guard above has already narrowed, because
+  // `renderResult` is a closure and TypeScript does not carry a guard's
+  // narrowing of a `var` into one.
+  var resultTemplate = resultBlueprint;
 
-  var dialog = document.createElement("div");
-  dialog.className = "search-dialog";
-  dialog.setAttribute("role", "dialog");
-  dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-label", "Search lints");
-
-  // The search box: the full width of the dialog, and its fixed-height
-  // part. The results list below takes whatever height is left.
-  var box = document.createElement("div");
-  box.className = "search-box";
-
-  var input = document.createElement("input");
-  input.className = "search-input";
-  // `type="search"` earns the platform's search affordances: a clear
-  // button on desktop, a dedicated key on phone and tablet keyboards.
-  input.type = "search";
-  input.placeholder = "Search lints\u2026";
-  input.setAttribute("aria-label", "Search lints");
-  // Phone and tablet keyboards otherwise capitalise the first letter and
-  // autocorrect a half-typed lint name into a dictionary word.
-  input.setAttribute("autocapitalize", "none");
-  input.setAttribute("autocorrect", "off");
-  input.setAttribute("autocomplete", "off");
-  input.setAttribute("enterkeyhint", "search");
-  input.spellcheck = false;
-
-  var close = document.createElement("button");
-  close.type = "button";
-  close.className = "search-close";
-  // The ✕ is decoration; "Close" is the label, so the glyph is hidden from
-  // assistive tech and the button's accessible name stays the word alone.
-  var closeGlyph = document.createElement("span");
-  closeGlyph.className = "search-close-glyph";
-  closeGlyph.setAttribute("aria-hidden", "true");
-  closeGlyph.appendChild(document.createTextNode("\u2715"));
-  close.appendChild(closeGlyph);
-  close.appendChild(document.createTextNode("Close"));
-
-  var results = document.createElement("ul");
-  results.className = "search-results";
-  results.setAttribute("aria-label", "Search results");
-
-  box.appendChild(input);
-  box.appendChild(close);
-  dialog.appendChild(box);
-  dialog.appendChild(results);
-  overlay.appendChild(dialog);
-  document.body.appendChild(overlay);
-  // Only now that the overlay exists does the button control anything.
-  toggle.setAttribute("aria-controls", overlay.id);
+  document.body.appendChild(overlayBlueprint.content.cloneNode(true));
+  // Cast rather than narrowed, for the same reason: every handler below is
+  // a closure. The guard still rejects a missing element at runtime.
+  var overlay = /** @type {HTMLElement} */ (document.querySelector(".search-overlay"));
+  if (!overlay) return;
+  var dialog = /** @type {HTMLElement} */ (overlay.querySelector(".search-dialog"));
+  var input = /** @type {HTMLInputElement} */ (overlay.querySelector(".search-input"));
+  var close = /** @type {HTMLElement} */ (overlay.querySelector(".search-close"));
+  var results = /** @type {HTMLElement} */ (overlay.querySelector(".search-results"));
+  if (!dialog || !input || !close || !results) return;
 
   // ---- Scraping the page ------------------------------------------------
 
@@ -364,24 +345,22 @@
 
   // ---- Rendering --------------------------------------------------------
 
-  /** @param {Result} result */
+  /**
+   * Clone the result blueprint and fill it in. The casts are safe because
+   * the blueprint's shape was checked once at setup.
+   * @param {Result} result
+   */
   function renderResult(result) {
-    var item = document.createElement("li");
-    var link = document.createElement("a");
-    link.className = "search-result";
+    var item = /** @type {DocumentFragment} */ (resultTemplate.content.cloneNode(true));
+    var link = /** @type {HTMLAnchorElement} */ (item.querySelector(".search-result"));
+    var name = /** @type {HTMLElement} */ (item.querySelector(".search-result-name"));
+    var text = /** @type {HTMLElement} */ (item.querySelector(".search-result-text"));
     link.href = result.entry.href;
     // The score the result was ranked by, for whoever is debugging a
     // ranking that reads wrong.
     link.setAttribute("data-score", result.score.toFixed(4));
-    var name = document.createElement("code");
-    name.className = "search-result-name";
     perfectionistMatch.renderName(name, result.entry.name, result.nameRanges);
-    var text = document.createElement("span");
-    text.className = "search-result-text";
     perfectionistMatch.renderText(text, result.text, result.textRanges);
-    link.appendChild(name);
-    link.appendChild(text);
-    item.appendChild(link);
     results.appendChild(item);
   }
 

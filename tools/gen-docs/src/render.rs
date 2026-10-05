@@ -144,6 +144,30 @@ pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
     ("filter.svg", include_str!("assets/filter.svg")),
 ];
 
+/// `id` of the search overlay itself, shared by the overlay markup in
+/// [`search_templates`] and the [`search_toggle`] button's
+/// `aria-controls`; the two must agree, or the button names a target
+/// that isn't there.
+pub(crate) const SEARCH_OVERLAY_ID: &str = "search-overlay";
+
+/// `id` shared by the inert `<template>` holding the search overlay's
+/// markup ([`search_templates`]) and the `search_overlay.js` lookup that
+/// clones it into the page; the two must agree.
+pub(crate) const SEARCH_OVERLAY_TEMPLATE_ID: &str = "search-overlay-template";
+
+/// `id` shared by the inert `<template>` holding one search result's
+/// markup ([`search_templates`]) and the `search_overlay.js` lookup that
+/// clones it per result; the two must agree.
+pub(crate) const SEARCH_RESULT_TEMPLATE_ID: &str = "search-result-template";
+
+/// Accessible name of the Index filter, carried by both its funnel
+/// button and the input the button opens. One phrase for both, so the
+/// control and the box it opens announce as the same thing.
+const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
+
+/// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
+const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
+
 /// `id` shared by the inert prefetch `<template>`
 /// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
 /// activates it; the two must agree.
@@ -186,6 +210,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
                 (search_toggle())
+                (search_templates())
                 (settings_panel())
                 (theme_icon_prefetch_template())
                 div.banner {
@@ -199,9 +224,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
                 h2.index-heading {
                     "Index"
-                    (filter_toggle("index", "Filter the index by lint name"))
+                    (filter_toggle("index", INDEX_FILTER_LABEL))
                 }
-                (filter_container("index"))
+                (filter_container("index", INDEX_FILTER_LABEL))
                 table.index {
                     thead {
                         tr {
@@ -278,24 +303,101 @@ fn settings_panel() -> Markup {
 }
 
 /// The Search affordance's button: a magnifier fixed at the top-right,
-/// one slot left of the settings gear, which opens the search overlay.
+/// one slot left of the settings gear, which opens the search overlay
+/// (see [`search_templates`]).
 ///
-/// Only the button is rendered here — `search_overlay.js` builds the
-/// overlay itself — and like the gear and the hamburger it carries the
-/// HTML `hidden` attribute, cleared by that script once the overlay
-/// exists and its handlers are wired up, so a page whose script never
-/// runs shows no dead magnifier (the `[hidden]` reset in base.css makes
-/// that unconditional). It carries no `aria-controls`: there is no
-/// overlay to point at until the script builds one, so the script is
-/// what sets the attribute.
+/// Like the gear and the hamburger it carries the HTML `hidden`
+/// attribute, cleared by `search_overlay.js` once the overlay is in the
+/// page and its handlers are wired up, so a page whose script never runs
+/// shows no dead magnifier (the `[hidden]` reset in base.css makes that
+/// unconditional). That is also the window in which its `aria-controls`
+/// names an element not yet in the document: the button is `hidden`
+/// throughout it, so nothing — assistive tech included — can follow the
+/// reference before the overlay exists.
 fn search_toggle() -> Markup {
     html! {
         button.search-toggle
             type="button"
             hidden
+            aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
             title="Search lints" {}
+    }
+}
+
+/// The search overlay's markup, and one search result's, each inside an
+/// inert `<template>`.
+///
+/// A `<template>`'s contents are parsed but kept out of the document:
+/// nothing renders, nothing is focusable, assistive tech never reaches
+/// them, and `document.querySelector` does not descend into them. So a
+/// page whose script never runs has no overlay in any sense that counts
+/// — exactly what building the overlay in JS achieved — while the markup
+/// itself stays here, where it is reviewed alongside the rest of the page
+/// and tested without a browser. `search_overlay.js` clones these and
+/// wires up the behaviour; it builds no elements of its own. The
+/// colour-scheme icons' prefetch hints
+/// ([`theme_icon_prefetch_template`]) use the same device.
+///
+/// The result template is a separate `<template>` rather than one nested
+/// in the overlay's results list, because that list is emptied on every
+/// keystroke and would take its own blueprint with it.
+fn search_templates() -> Markup {
+    html! {
+        template id=(SEARCH_OVERLAY_TEMPLATE_ID) {
+            div.search-overlay id=(SEARCH_OVERLAY_ID) hidden {
+                div.search-dialog
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Search lints" {
+                    div.search-box {
+                        (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
+                        button.search-close type="button" {
+                            // The ✕ is decoration beside the word; hiding
+                            // it from assistive tech keeps the button's
+                            // accessible name the word alone.
+                            span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                            "Close"
+                        }
+                    }
+                    ul.search-results aria-label="Search results" {}
+                }
+            }
+        }
+        template id=(SEARCH_RESULT_TEMPLATE_ID) {
+            li {
+                // No `href` until a result fills it in: the blueprint
+                // points nowhere.
+                a.search-result {
+                    code.search-result-name {}
+                    span.search-result-text {}
+                }
+            }
+        }
+    }
+}
+
+/// One query input, as both the search overlay and the filter boxes want
+/// it.
+///
+/// `type="search"` earns the platform's search affordances: a clear
+/// button on desktop, a dedicated key on phone and tablet keyboards. The
+/// four attributes after it are what keep a phone or tablet keyboard from
+/// capitalising the first letter and autocorrecting a half-typed lint
+/// name into a dictionary word, neither of which can match a snake_case
+/// identifier.
+fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
+    html! {
+        input class=(class)
+            type="search"
+            placeholder=(placeholder)
+            aria-label=(label)
+            autocapitalize="none"
+            autocorrect="off"
+            autocomplete="off"
+            enterkeyhint="search"
+            spellcheck="false";
     }
 }
 
@@ -307,6 +409,8 @@ fn search_toggle() -> Markup {
 /// `<kind>-filter-container` class are what `filter_boxes.js` selects
 /// on, and `<kind>-filter` is the container's `id`, which is what this
 /// button's `aria-controls` names. The page's are `index` and `nav`.
+/// `label` is the whole affordance's accessible name, carried by this
+/// button and by the input it opens alike.
 ///
 /// Emitted `hidden` and revealed by that script only once the box it
 /// opens has been built, on the same contract as the gear and the
@@ -325,17 +429,28 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
     }
 }
 
-/// Where `filter_boxes.js` builds one filter box's input.
+/// Where one filter box goes, holding the inert `<template>` that is
+/// its blueprint.
 ///
-/// It is emitted empty, and search.css gives it no box of its own, so a
-/// page whose script never runs lays out exactly as it would without the
-/// feature: the input is not merely hidden, it does not exist. See
-/// [`filter_toggle`] for what `kind` ties together.
-fn filter_container(kind: &str) -> Markup {
+/// `filter_boxes.js` clones that template into this container and wires
+/// it up; until it does, the container renders nothing and search.css
+/// gives it no box of its own, so a page whose script never runs lays out
+/// exactly as it would without the feature. The box inside the template
+/// is itself `hidden`, so the clone starts closed and the funnel opens
+/// it. See [`search_templates`] for why a `<template>` is the right
+/// container for markup that must not count as present, and
+/// [`filter_toggle`] for what `kind` and `label` tie together.
+fn filter_container(kind: &str, label: &str) -> Markup {
     let class = format!("filter-container {kind}-filter-container");
     let id = format!("{kind}-filter");
     html! {
-        div class=(class) id=(id) {}
+        div class=(class) id=(id) {
+            template {
+                div.filter-box hidden {
+                    (search_text_input("filter-input", "Filter by name\u{2026}", label))
+                }
+            }
+        }
     }
 }
 
@@ -457,9 +572,9 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                     aria-label="Close navigation"
                     title="Close navigation" { "\u{2715}" }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
-                (filter_toggle("nav", "Filter the navigation by lint name"))
+                (filter_toggle("nav", NAV_FILTER_LABEL))
             }
-            (filter_container("nav"))
+            (filter_container("nav", NAV_FILTER_LABEL))
             ul.nav-sidebar-list {
                 @for rule in rules {
                     li {
