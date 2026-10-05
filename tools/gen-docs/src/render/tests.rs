@@ -1,4 +1,13 @@
-mod search;
+// The search and filter affordances' tests, grouped by what each group
+// reads rather than by which affordance it covers — which is where the
+// seams fall anyway: the markup group shares a `<template>` reader, the
+// style group shares a rule reader, and the script group needs neither.
+// Grouping by affordance would leave both halves wanting both readers.
+// They are children of this module so they can use its fixtures, which
+// are private to it and its descendants.
+mod search_markup;
+mod search_scripts;
+mod search_style;
 
 use super::{
     CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,

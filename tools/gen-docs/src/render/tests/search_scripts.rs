@@ -7,7 +7,7 @@
 //! these lines would still drive a working page, so running it proves
 //! nothing and only reading it will do.
 
-use crate::render::tests::{fake_context, fake_rule};
+use super::{fake_context, fake_rule};
 use crate::render::{
     FILTER_BOXES_SCRIPT, FILTER_BOXES_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME,
     PAGE_SCRIPTS, SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME, render_page,
