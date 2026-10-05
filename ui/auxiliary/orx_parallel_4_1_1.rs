@@ -5,7 +5,8 @@
 // Which adapter is which is read from these signatures rather than from
 // their names, so the shapes are the point: `map` and `for_each` are handed
 // the item, `filter`, `any`, `all` and `find` are lent it, and `fold` takes
-// state first so its item is the second parameter. `take_while` and
+// state first so its item is the second parameter, and `reduce` and
+// `max_by` are handed the item twice. `take_while` and
 // `map_while` are absent as they are upstream from 4.0, which is what a
 // companion fixture against the older trait is for.
 //
@@ -14,6 +15,8 @@
 
 #![crate_name = "orx_parallel"]
 #![allow(dead_code, unused, reason = "aux fixture")]
+
+use std::cmp::Ordering;
 
 /// A stand-in receiver, which no `Iterator` impl covers.
 pub struct Parallel<Item>(pub Vec<Item>);
@@ -107,6 +110,13 @@ pub trait Par: Sized {
         vec![accumulator]
     }
 
+    fn max_by<F>(self, f: F) -> Option<Self::Item>
+    where
+        F: Fn(&Self::Item, &Self::Item) -> Ordering + Sync,
+    {
+        self.into_items().into_iter().max_by(|left, right| f(left, right))
+    }
+
     fn reduce<F>(self, f: F) -> Option<Self::Item>
     where
         F: Fn(Self::Item, Self::Item) -> Self::Item + Send + Copy,
@@ -120,5 +130,37 @@ impl<Item> Par for Parallel<Item> {
 
     fn into_items(self) -> Vec<Item> {
         self.0
+    }
+}
+
+/// A generation of the trait that declares no `map`.
+///
+/// `orx-parallel` has dropped methods across a major release before, so the
+/// lift target is asked of the trait rather than assumed. This is the trait
+/// that answers no, and it is reached the same way the others are, by the
+/// crate it is in and the name it carries.
+pub mod mapless {
+    /// A stand-in receiver for the map-less trait.
+    pub struct Parallel<Item>(pub Vec<Item>);
+
+    pub trait Par: Sized {
+        type Item;
+
+        fn into_items(self) -> Vec<Self::Item>;
+
+        fn for_each<F>(self, f: F)
+        where
+            F: Fn(Self::Item) + Send + Copy,
+        {
+            self.into_items().into_iter().for_each(f);
+        }
+    }
+
+    impl<Item> Par for Parallel<Item> {
+        type Item = Item;
+
+        fn into_items(self) -> Vec<Item> {
+            self.0
+        }
     }
 }

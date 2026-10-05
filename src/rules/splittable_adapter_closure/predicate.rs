@@ -195,32 +195,33 @@ fn discipline(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
 ///
 /// A filtering adapter is one handed the item behind a reference and
 /// answering `bool`, which is what `filter` and its kin are and what
-/// separates them from the mapping adapters the chain trigger reads.
+/// separates them from the mapping adapters the chain trigger reads. How
+/// many parameters it takes is not asked here, because [`check`] reads the
+/// closure's only parameter and turns away a closure with any other number.
 ///
 /// Two facts a signature cannot carry stay by name. A prefix-shaped
 /// adapter is declared exactly as a set-shaped one, `Fn(&Item) -> bool`
-/// either way, so which of them stops the run is the name's to say; asking
-/// the trait whether it declares one is what keeps a version without it
-/// from being assumed. And `all` is excluded because filtering before it
-/// makes an item that failed the first test vacuously fine, which is a
-/// property of the answer rather than of the signature.
+/// either way, so which of them stops the run is the name's to say. And
+/// `all` is excluded because filtering before it makes an item that failed
+/// the first test vacuously fine, which is a property of the answer rather
+/// than of the signature.
+///
+/// The trait is not asked whether it declares the prefix-shaped adapter,
+/// because the name having matched is already that answer: a call resolved
+/// to `take_while` is a `take_while` the trait declares.
 fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
     let declaring = call.receiver.declaring?;
     if call.method.as_str() == "all" {
         return None;
     }
     let closure = signature::closure(cx, call.receiver.method, declaring)?;
-    if closure.handing != Handing::ByReference || !closure.takes_the_item_alone() {
+    if closure.handing != Handing::ByReference {
         return None;
     }
-    let prefix_shaped = call.method.as_str() == PREFIX_SHAPED;
-    if prefix_shaped || signature::declares(cx, declaring, PREFIX_SHAPED) {
-        return Some(match prefix_shaped {
-            true => Discipline::Prefix,
-            false => Discipline::Set,
-        });
-    }
-    Some(Discipline::Set)
+    Some(match call.method.as_str() == PREFIX_SHAPED {
+        true => Discipline::Prefix,
+        false => Discipline::Set,
+    })
 }
 
 /// The adapter that stops a run rather than sieving it, where the family

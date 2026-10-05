@@ -59,14 +59,22 @@ impl Closure {
     }
 }
 
-/// The closure `method` takes that carries `declaring`'s item, or `None`
-/// where it takes no such closure.
+/// The closure `method` takes that carries `declaring`'s item once, or
+/// `None` where it takes no such closure.
 ///
 /// A method may take more than one closure, and one of them may not
 /// mention the item at all: `fold` is handed a `Fn() -> B` to make the
 /// accumulator alongside the `Fn(&mut B, Self::Item)` that uses it. The
 /// one naming the item is the one asked about, which is what tells them
 /// apart without naming either.
+///
+/// A closure handed the item *twice* is no adapter of a single item, and
+/// answers `None`. `reduce` is declared `Fn(Self::Item, Self::Item)` and
+/// `max_by` is declared `Fn(&Self::Item, &Self::Item)`: both parameters
+/// are the item, so a step lifted out of one of them would be applied to
+/// the other as well, which is a different program. Reading only the first
+/// such parameter would make `reduce` look like `fold`, where the first
+/// parameter is an accumulator the lift does not touch.
 pub(super) fn closure(cx: &LateContext<'_>, method: DefId, declaring: DefId) -> Option<Closure> {
     let item = associated_item(cx, declaring)?;
     let signature = cx.tcx.fn_sig(method).skip_binder().skip_binder();
@@ -86,10 +94,14 @@ pub(super) fn closure(cx: &LateContext<'_>, method: DefId, declaring: DefId) -> 
             let ty::Tuple(parameters) = bound.trait_ref.args.type_at(1).kind() else {
                 return None;
             };
-            let (parameter, handing) = parameters
+            let carried: Vec<_> = parameters
                 .iter()
                 .enumerate()
-                .find_map(|(index, held)| handing(held, item).map(|how| (index, how)))?;
+                .filter_map(|(index, held)| handing(held, item).map(|how| (index, how)))
+                .collect();
+            let [(parameter, handing)] = *carried.as_slice() else {
+                return None;
+            };
             let closure = bound.self_ty();
             let argument = arguments.iter().position(|held| *held == closure)?;
             Some(Closure {

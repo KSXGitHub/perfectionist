@@ -8,6 +8,11 @@
 // and those did not change across the rename, so the same reading answers
 // both generations with no version to consult.
 //
+// It carries the methods the companion fixture calls, which are the ones
+// this generation declares differently. A method the fixture never calls is
+// read by nothing, so the shapes they share are held by the fixture for the
+// current generation instead.
+//
 // The crate name is `orx_parallel` so that the crate the rule asks for is
 // the crate the real trait is in.
 
@@ -36,42 +41,9 @@ pub trait ParIter: Sized {
         Parallel(self.into_items().into_iter().filter(|held| h(held)).collect())
     }
 
-    fn filter_map<Out, H>(self, h: H) -> Parallel<Out>
-    where
-        H: Fn(Self::Item) -> Option<Out> + Copy + Send,
-    {
-        Parallel(self.into_items().into_iter().filter_map(h).collect())
-    }
 
-    fn flat_map<V, H>(self, h: H) -> Parallel<V::Item>
-    where
-        V: IntoIterator,
-        H: Fn(Self::Item) -> V + Copy + Send,
-    {
-        let mut all = Vec::new();
-        for item in self.into_items() {
-            all.extend(h(item));
-        }
-        Parallel(all)
-    }
 
-    fn inspect<H>(self, h: H) -> Parallel<Self::Item>
-    where
-        H: Fn(&Self::Item) + Copy + Send,
-    {
-        let items = self.into_items();
-        for item in &items {
-            h(item);
-        }
-        Parallel(items)
-    }
 
-    fn for_each<F>(self, f: F)
-    where
-        F: Fn(Self::Item) + Send + Copy,
-    {
-        self.into_items().into_iter().for_each(f);
-    }
 
     fn any<F>(self, f: F) -> bool
     where
@@ -80,19 +52,7 @@ pub trait ParIter: Sized {
         self.into_items().iter().any(f)
     }
 
-    fn all<F>(self, f: F) -> bool
-    where
-        F: Fn(&Self::Item) -> bool + Sync,
-    {
-        self.into_items().iter().all(f)
-    }
 
-    fn find<F>(self, f: F) -> Option<Self::Item>
-    where
-        F: Fn(&Self::Item) -> bool + Sync,
-    {
-        self.into_items().into_iter().find(|held| f(held))
-    }
 
 
     fn take_while<W>(self, w: W) -> Parallel<Self::Item>
@@ -114,12 +74,7 @@ pub trait ParIter: Sized {
         Parallel(self.into_items().into_iter().map_while(m).collect())
     }
 
-    fn reduce<F>(self, f: F) -> Option<Self::Item>
-    where
-        F: Fn(Self::Item, Self::Item) -> Self::Item + Send + Copy,
-    {
-        self.into_items().into_iter().reduce(f)
-    }
+
 }
 
 impl<Item> ParIter for Parallel<Item> {

@@ -14,6 +14,8 @@
 
 extern crate orx_parallel;
 
+use mine::Par as _;
+use orx_parallel::mapless::{self, Par as _};
 use orx_parallel::{Par, Parallel};
 
 fn record(length: usize) {}
@@ -97,13 +99,109 @@ fn every(items: Parallel<&'static str>) -> bool {
     items.all(|text| wanted(text) && text.starts_with('#'))
 }
 
-// Not flagged: `reduce` is handed two items rather than state and an item,
-// so no leading `map` holds what it accumulates.
+// Not flagged: `reduce` is handed the item twice, so a step lifted out of
+// the first parameter would be applied to the second as well. The first
+// parameter is mentioned once here, which is what reaches the gate; reading
+// only that parameter would make `reduce` look like `fold`, whose first
+// parameter is an accumulator no lift touches.
 fn reducing(items: Parallel<&'static str>) -> Option<&'static str> {
-    items.reduce(|left, right| match left.len() > right.len() {
-        true => left,
+    items.reduce(|left, right| match left.trim().is_empty() {
+        true => right,
         false => right,
     })
+}
+
+// Not flagged: `max_by` is handed the item twice as well, and behind a
+// reference, so neither trigger has a split for it.
+fn largest(items: Parallel<&'static str>) -> Option<&'static str> {
+    items.max_by(|left, right| left.len().cmp(&right.len()))
+}
+
+// Bad: `filter_map` is handed the item and answers an `Option`.
+fn parsing(items: Parallel<&'static str>) -> Vec<usize> {
+    items
+        .filter_map(|text| text.trim().parse::<usize>().ok())
+        .into_items()
+}
+
+// Good: one adapter per step, `filter_map` left the question of the
+// `Option`.
+fn split_parsing(items: Parallel<&'static str>) -> Vec<usize> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .filter_map(Result::ok)
+        .into_items()
+}
+
+// Bad: `flat_map` is handed the item too, and flattens what it answers.
+fn letters(items: Parallel<&'static str>) -> Vec<char> {
+    items.flat_map(|text| text.trim().chars()).into_items()
+}
+
+// Good: one adapter per step, `flat_map` left the flattening.
+fn split_letters(items: Parallel<&'static str>) -> Vec<char> {
+    items.map(str::trim).flat_map(str::chars).into_items()
+}
+
+// Bad: the item is lent to `any`, so binding it mutably rebinds the
+// reference and a lifted test still reads the same item.
+fn either_rebound(items: Parallel<&'static str>) -> bool {
+    items.any(|mut text| wanted(text) && text.starts_with('#'))
+}
+
+// Good: one adapter per test, the rebinding left where it is read.
+fn split_either_rebound(items: Parallel<&'static str>) -> bool {
+    items
+        .filter(|text| wanted(text))
+        .any(|mut text| text.starts_with('#'))
+}
+
+// Not flagged: a conjunction inside a `map` is the value the adapter
+// answers, not a test it runs, so a leading `filter` would drop items
+// `map` has to keep.
+fn mapped_conjunction(items: Parallel<&'static str>) -> Vec<bool> {
+    items
+        .map(|text| wanted(text) && text.starts_with('#'))
+        .into_items()
+}
+
+// Not flagged: this trait declares no `map`, so there is no adapter for a
+// lifted step to go into.
+fn without_a_lift_target(items: mapless::Parallel<&'static str>) {
+    items.for_each(|text| record(text.trim().len()));
+}
+
+// Not flagged: a `Par` of the author's own is not `orx-parallel`'s, so its
+// signatures are not read the way that crate's are.
+fn own_trait(items: mine::Parallel<&'static str>) -> Vec<usize> {
+    items.map(|text| text.trim().len()).into_items()
+}
+
+/// A trait of the author's own that happens to carry the name.
+mod mine {
+    pub struct Parallel<Item>(pub Vec<Item>);
+
+    pub trait Par: Sized {
+        type Item;
+
+        fn into_items(self) -> Vec<Self::Item>;
+
+        fn map<Out, H>(self, h: H) -> Parallel<Out>
+        where
+            H: Fn(Self::Item) -> Out,
+        {
+            Parallel(self.into_items().into_iter().map(h).collect())
+        }
+    }
+
+    impl<Item> Par for Parallel<Item> {
+        type Item = Item;
+
+        fn into_items(self) -> Vec<Item> {
+            self.0
+        }
+    }
 }
 
 fn main() {}

@@ -103,9 +103,6 @@ const fn borrowing_pipe() -> Adapter {
 /// from the signatures instead, which [`super::signature`] is about.
 pub(super) fn adapter(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Adapter> {
     let (family, method) = (call.receiver.family, call.method);
-    if family == Family::Orx {
-        return derived(cx, call);
-    }
     match family {
         Family::Iterator => iterator(method),
         Family::Option => option(method),
@@ -115,9 +112,7 @@ pub(super) fn adapter(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Adapter> 
         Family::Itertools => itertools(method),
         Family::Rayon => rayon(method),
         Family::Pipe => pipe(method),
-        // Answered above, where the signature rather than the name says
-        // what the adapter is.
-        Family::Orx => None,
+        Family::Orx => derived(cx, call),
     }
 }
 
