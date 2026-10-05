@@ -70,14 +70,9 @@
   transition: opacity 0.18s ease;
 }
 
-/* `data-filtering` marks a box closed by Enter, which keeps narrowing its
-   list. The lit funnel is then the only thing on screen explaining the
-   missing entries, so it reads as the "a filter is active" state the
-   colour layer paints it as. */
 .filter-toggle:hover,
 .filter-toggle:focus-visible,
-.filter-toggle[aria-expanded="true"],
-.filter-toggle[data-filtering="true"] {
+.filter-toggle[aria-expanded="true"] {
   opacity: 1;
 }
 

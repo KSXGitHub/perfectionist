@@ -25,20 +25,9 @@
 // threshold into `FILTER_MIN_SCORE` below is part of that contract: if
 // match.js never ran, the read throws here, long before any reveal.
 //
-// ---- Closing a box --------------------------------------------------------
-//
-// There are two ways to close one, and they mean different things:
-//
-//   * Enter commits. The box goes away and the list stays narrowed, which
-//     is what a reader wants once they can see the handful of rules they
-//     were after — and on a phone it is what puts the on-screen keyboard
-//     away. The query stays in the input, so reopening the box resumes it.
-//   * The funnel dismisses. The query is cleared and the list put back.
-//
-// A box closed by Enter is still filtering, so its funnel takes
-// `data-filtering`, which the stylesheet renders as the lit "a filter is
-// active" state. Without it the reader would be left with entries missing
-// and nothing on screen to say why.
+// Closing a box clears its query. A hidden input still filtering the list
+// would otherwise leave entries missing with nothing on screen to explain
+// why.
 //
 // Filtering runs synchronously on every keystroke, with no debounce: it is
 // a string scan over a few dozen lint names, so the list keeps up with the
@@ -247,66 +236,38 @@
       }
     }
 
-    /** Show the box and put the caret in it, query and all. */
-    function openBox() {
-      toggle.setAttribute("aria-expanded", "true");
-      toggle.removeAttribute("data-filtering");
-      box.hidden = false;
-      input.focus();
-    }
-
-    /**
-     * Hide the box, keeping whatever it is filtering by. Focus goes to the
-     * funnel, since the input it was in is now hidden and focus would
-     * otherwise drop to <body>.
-     */
-    function commit() {
-      toggle.setAttribute("aria-expanded", "false");
-      if (input.value.trim() === "") {
-        toggle.removeAttribute("data-filtering");
-      } else {
-        toggle.setAttribute("data-filtering", "true");
+    /** @param {boolean} open */
+    function setOpen(open) {
+      toggle.setAttribute("aria-expanded", String(open));
+      box.hidden = !open;
+      if (open) {
+        input.focus();
+        return;
       }
-      box.hidden = true;
-      toggle.focus({ preventScroll: true });
-    }
-
-    /** Hide the box and put the list back as the page rendered it. */
-    function dismiss() {
+      // A closed box must not keep filtering, so clear the query and put
+      // the list back.
       input.value = "";
       reset();
-      toggle.setAttribute("aria-expanded", "false");
-      toggle.removeAttribute("data-filtering");
-      box.hidden = true;
     }
 
     toggle.addEventListener("click", function () {
-      if (toggle.getAttribute("aria-expanded") === "true") {
-        dismiss();
-      } else {
-        openBox();
-      }
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
     });
 
     // `input` is the event that covers every way text arrives — physical
     // keyboard, on-screen keyboard, IME, paste, drag, the native clear
-    // button. `search` is belt and braces: it is what a `type="search"`
-    // input fires on its clear button in older WebKit.
+    // button. The others are belt and braces: `search` is what a
+    // `type="search"` input fires on its clear button in older WebKit, and
+    // Enter is the explicit re-run for a browser whose `input` event never
+    // came.
     input.addEventListener("input", apply);
     input.addEventListener("search", apply);
     input.addEventListener("keydown", function (event) {
       if (event.key !== "Enter") return;
-      // Not while an IME is mid-composition, where Enter accepts the
-      // candidate rather than ending the query.
-      if (event.isComposing) return;
       // The input is in no form, so Enter submits nothing; suppressing the
       // default only keeps a stray form association from navigating.
       event.preventDefault();
-      // `apply` first: it is also the re-run for a browser whose `input`
-      // event never came, so a committed box is never left showing a list
-      // that does not match its query.
       apply();
-      commit();
     });
 
     // Wired up, so the button that opens it can appear.
@@ -320,7 +281,7 @@
        * @param {string} seed
        */
       openWith: function (seed) {
-        openBox();
+        setOpen(true);
         input.value = seed;
         apply();
       },

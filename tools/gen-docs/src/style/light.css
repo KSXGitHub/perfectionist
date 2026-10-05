@@ -273,11 +273,6 @@ article.rule table code {
 .filter-toggle:focus-visible {
   outline-color: #0969da;
 }
-.filter-toggle[data-filtering="true"] {
-  color: #0969da;
-  border-color: #0969da;
-  background: #ddf4ff;
-}
 .filter-input {
   background: #ffffff;
   border-color: #d0d7de;
