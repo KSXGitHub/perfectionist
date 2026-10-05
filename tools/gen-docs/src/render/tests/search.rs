@@ -92,6 +92,62 @@ fn search_overlay_markup_lives_only_inside_its_template() {
 }
 
 #[test]
+fn an_empty_results_list_says_why_it_is_empty() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    let template = template_with_id(&html, SEARCH_OVERLAY_TEMPLATE_ID);
+    // A blank panel reads the same whether nothing has been typed or
+    // nothing matched, so each case has its own wording — written here
+    // rather than in the script, which owns only which one shows.
+    assert!(
+        template.contains(
+            r#"<p class="search-empty search-empty-prompt" role="status">Type to search lint names and documentation.</p>"#
+        ),
+        "the overlay must carry the prompt shown before anything is typed, got: {template}",
+    );
+    assert!(
+        template.contains(
+            r#"<p class="search-empty search-empty-no-match" role="status" hidden>No lint matches that search.</p>"#
+        ),
+        "the overlay must carry the wording for a query that matches nothing, got: {template}",
+    );
+    // The overlay opens on the prompt: nothing has been typed, so the
+    // list and the no-match wording are the two that start hidden. An
+    // empty `<ul>` left showing would claim the dialog's whole remaining
+    // height and push the prompt below it.
+    assert!(
+        template.contains(r#"<ul class="search-results" aria-label="Search results" hidden>"#),
+        "the results list must start hidden, got: {template}",
+    );
+    assert_eq!(
+        template.matches(r#"class="search-empty "#).count(),
+        2,
+        "exactly two empty-state messages, got: {template}",
+    );
+    assert_eq!(
+        template.matches(r#"role="status" hidden>"#).count(),
+        1,
+        "exactly one of the two must start hidden, got: {template}",
+    );
+}
+
+#[test]
+fn the_script_chooses_the_empty_state_but_does_not_word_it() {
+    // The wording is markup; the script owns only which of the three
+    // panels shows. A string of prose here would be text that escaped the
+    // Rust template, where the rest of the page's text lives.
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("function showOnly("));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("showOnly(emptyPrompt)"));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("showOnly(emptyNoMatch)"));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("showOnly(results)"));
+    for wording in ["Type to search", "No lint matches"] {
+        assert!(
+            !SEARCH_OVERLAY_SCRIPT.contains(wording),
+            "the script must not carry the empty-state wording ({wording})",
+        );
+    }
+}
+
+#[test]
 fn the_close_button_sits_in_the_results_corner_not_the_search_box() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     let template = template_with_id(&html, SEARCH_OVERLAY_TEMPLATE_ID);
@@ -102,11 +158,19 @@ fn the_close_button_sits_in_the_results_corner_not_the_search_box() {
         template.contains(r#"<div class="search-box"><input class="search-input""#),
         "the search box must hold the input alone",
     );
-    // The button follows the results list as the dialog's last child,
-    // which is what lets search.css park it in the results' bottom corner
-    // and what puts it after the results in the tab order.
+    // The button comes after the results list and the two messages that
+    // stand in for it, as the dialog's last child, which is what lets
+    // search.css park it in the results' bottom corner and what puts it
+    // after the results in the tab order. Pinned as an ordering rather
+    // than an adjacency so a further panel between them doesn't break it.
+    let results = template
+        .find(r#"<ul class="search-results""#)
+        .expect("results list missing");
+    let button = template
+        .find(r#"<button class="search-close""#)
+        .expect("close button missing");
     assert!(
-        template.contains(r#"</ul><button class="search-close" type="button">"#),
+        results < button,
         "the close button must follow the results list, got: {template}",
     );
     assert!(

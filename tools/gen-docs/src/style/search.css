@@ -290,6 +290,20 @@ h2.index-heading {
   margin: 0;
 }
 
+/* Whichever message is showing stands in for the results list, so it
+   takes the same share of the dialog and centres its one line in it
+   rather than perching at the top of an otherwise empty panel. */
+.search-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
 .search-result {
   display: block;
   padding: 0.45rem 0.6rem;

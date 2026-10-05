@@ -348,6 +348,12 @@ fn search_toggle() -> Markup {
 /// search.css can park it in the results' bottom corner: out of the
 /// search box's row, out of the results list's scrolling, and after the
 /// results in the tab order.
+///
+/// Exactly one of the results list and the two `.search-empty` messages
+/// is ever shown, which is what keeps the search box and whichever is
+/// showing accounting for the dialog's whole height between them. The
+/// template's own state is the one the overlay opens in: nothing typed,
+/// so the prompt.
 fn search_templates() -> Markup {
     html! {
         template id=(SEARCH_OVERLAY_TEMPLATE_ID) {
@@ -359,7 +365,24 @@ fn search_templates() -> Markup {
                     div.search-box {
                         (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
                     }
-                    ul.search-results aria-label="Search results" {}
+                    // Hidden until there is something to list: an
+                    // empty `<ul>` still claims the dialog's whole
+                    // remaining height, which would push either message
+                    // below it.
+                    ul.search-results aria-label="Search results" hidden {}
+                    // What the reader sees instead, one at a time. Both
+                    // are rendered here rather than written by the script
+                    // so the wording lives with the rest of the page's
+                    // text. `role="status"` asks assistive tech to read
+                    // whichever is revealed; support for that on an
+                    // un-hidden region varies, so it is a courtesy, not
+                    // the only way to learn the result.
+                    p.search-empty.search-empty-prompt role="status" {
+                        "Type to search lint names and documentation."
+                    }
+                    p.search-empty.search-empty-no-match role="status" hidden {
+                        "No lint matches that search."
+                    }
                     // Last, so it sits in the results' corner rather than
                     // in the search box, and so Tab reaches it after the
                     // results rather than before them.

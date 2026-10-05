@@ -116,7 +116,14 @@
   var input = /** @type {HTMLInputElement} */ (overlay.querySelector(".search-input"));
   var close = /** @type {HTMLElement} */ (overlay.querySelector(".search-close"));
   var results = /** @type {HTMLElement} */ (overlay.querySelector(".search-results"));
+  var emptyPrompt = /** @type {HTMLElement} */ (
+    overlay.querySelector(".search-empty-prompt")
+  );
+  var emptyNoMatch = /** @type {HTMLElement} */ (
+    overlay.querySelector(".search-empty-no-match")
+  );
   if (!dialog || !input || !close || !results) return;
+  if (!emptyPrompt || !emptyNoMatch) return;
 
   // ---- Scraping the page ------------------------------------------------
 
@@ -364,13 +371,35 @@
     results.appendChild(item);
   }
 
+  /**
+   * Reveal one of the results list and the two messages, and hide the
+   * other two. Each claims the dialog's whole remaining height, so
+   * leaving two showing would halve both.
+   * @param {HTMLElement} shown
+   */
+  function showOnly(shown) {
+    results.hidden = shown !== results;
+    emptyPrompt.hidden = shown !== emptyPrompt;
+    emptyNoMatch.hidden = shown !== emptyNoMatch;
+  }
+
   function apply() {
     while (results.firstChild) results.removeChild(results.firstChild);
     var query = input.value.trim();
-    // An empty query has nothing to rank, and a query nothing matches
-    // ranks nothing: either way the list stays empty.
-    if (query === "") return;
+    // Nothing typed yet, so say what typing will do rather than leave the
+    // dialog a blank panel.
+    if (query === "") {
+      showOnly(emptyPrompt);
+      return;
+    }
     var ranked = rank(query);
+    // A query that matches nothing is worth saying so: an empty list
+    // reads the same as one that has not been searched yet.
+    if (ranked.length === 0) {
+      showOnly(emptyNoMatch);
+      return;
+    }
+    showOnly(results);
     for (var i = 0; i < ranked.length; i++) renderResult(ranked[i]);
   }
 

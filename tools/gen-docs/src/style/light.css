@@ -327,6 +327,9 @@ article.rule table code {
 .search-result-text {
   color: #57606a;
 }
+.search-empty {
+  color: #57606a;
+}
 .match-highlight {
   background: #fff8c5;
   color: #1f2328;
