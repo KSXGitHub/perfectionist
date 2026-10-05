@@ -250,3 +250,81 @@ article.rule table code {
   border-color: #0969da;
   background: #ddf4ff;
 }
+.search-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+  box-shadow: 0 1px 3px rgba(31, 35, 40, 0.08);
+}
+.search-toggle:hover {
+  background: #f6f8fa;
+}
+.search-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.filter-toggle {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.filter-toggle:hover {
+  background: #f6f8fa;
+}
+.filter-toggle:focus-visible {
+  outline-color: #0969da;
+}
+.filter-input {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.filter-input:focus-visible {
+  outline-color: #0969da;
+}
+.search-overlay {
+  background: rgba(31, 35, 40, 0.45);
+}
+.search-dialog {
+  background: #ffffff;
+  border-color: #d0d7de;
+  box-shadow: 0 8px 32px rgba(31, 35, 40, 0.18);
+}
+.search-box {
+  border-bottom-color: #eaeef2;
+}
+.search-input {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.search-input:focus-visible {
+  outline-color: #0969da;
+}
+.search-close {
+  background: #ffffff;
+  border-color: #d0d7de;
+  color: #1f2328;
+}
+.search-close:hover {
+  background: #f6f8fa;
+}
+.search-close:focus-visible {
+  outline-color: #0969da;
+}
+.search-result {
+  color: #1f2328;
+}
+.search-result:hover {
+  background: #f6f8fa;
+}
+.search-result-name {
+  color: #0969da;
+  background: none;
+}
+.search-result-text {
+  color: #57606a;
+}
+.match-highlight {
+  background: #fff8c5;
+  color: #1f2328;
+}

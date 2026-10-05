@@ -1,8 +1,10 @@
 use super::{
-    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
-    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS,
-    RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID,
-    THEME_ICONS, THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
+    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, FILTER_BOXES_SCRIPT,
+    FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
+    MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME,
+    PAGE_SCRIPTS, RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, SEARCH_OVERLAY_SCRIPT,
+    SEARCH_OVERLAY_SCRIPT_FILENAME, STYLESHEETS, THEME_ICON_PREFETCH_TEMPLATE_ID, THEME_ICONS,
+    THEME_TOGGLE_SCRIPT, THEME_TOGGLE_SCRIPT_FILENAME, anchor_for, render_page,
 };
 use crate::fonts::DOWNLOADS;
 use crate::model::{ConfigDoc, ConfigField, DefaultState, Optionality, RenderContext, Rule};
@@ -425,6 +427,11 @@ fn pseudo_icons_opt_out_of_the_body_font() {
         stylesheet("settings.css").contains(icon_stack),
         "settings.css must keep the gear on the system font stack, off Cantarell",
     );
+    assert!(
+        stylesheet("search.css").contains(icon_stack),
+        "search.css must keep the search overlay's close ✕ on the system font stack, \
+         off Cantarell",
+    );
 }
 
 #[test]
@@ -714,7 +721,13 @@ fn structural_sheets_carry_no_literal_colours() {
     // edit in the colour layer. `currentColor` (a structural reference,
     // not a theme value) and `#id` selectors like `#catalogue` are
     // fine — only literal `#rrggbb` hexes and `rgb(`/`rgba(` are colours.
-    for name in ["base.css", "nav.css", "rules.css", "settings.css"] {
+    for name in [
+        "base.css",
+        "nav.css",
+        "rules.css",
+        "search.css",
+        "settings.css",
+    ] {
         // Strip comments first: prose may mention colours or `var()`.
         let code = strip_css_comments(stylesheet(name));
         assert!(
@@ -824,4 +837,270 @@ fn config_section_keeps_both_quotes_around_the_dylint_toml_key() {
         html.contains("[&quot;perfectionist::demo&quot;]"),
         "config heading must wrap the key in both quotes, got: {html}",
     );
+}
+
+#[test]
+fn page_emits_search_toggle_hidden_and_uncontrolling() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The magnifier mirrors the gear: a plain <button> driven by
+    // `aria-expanded` and emitted with the HTML `hidden` attribute, so it
+    // appears only once search_overlay.js has built the overlay and wired
+    // up its handlers. Anchor to the opening tag so a refactor that drops
+    // `hidden` is caught.
+    assert!(html.contains(r#"<button class="search-toggle" type="button" hidden "#));
+    assert!(html.contains(r#"aria-label="Search lints""#));
+    // And it must NOT claim to control anything: the overlay does not
+    // exist until the script creates it, so a rendered `aria-controls`
+    // would point at nothing. The script sets the attribute itself.
+    let toggle_start = html
+        .find(r#"<button class="search-toggle""#)
+        .expect("search toggle missing");
+    let toggle_end = toggle_start
+        + html[toggle_start..]
+            .find('>')
+            .expect("search toggle tag unterminated");
+    assert!(
+        !html[toggle_start..toggle_end].contains("aria-controls"),
+        "the search toggle must not name a control target the page has not rendered",
+    );
+}
+
+#[test]
+fn page_emits_a_hidden_filter_toggle_and_an_empty_container_per_list() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // One pair per filtered list. The toggle carries the `<kind>-filter-
+    // toggle` class filter_boxes.js selects on and points at the
+    // container's id; the container carries the matching
+    // `<kind>-filter-container` class and is rendered EMPTY — the input is
+    // built into it at runtime, so a page whose script never runs lays out
+    // as though the feature did not exist.
+    for kind in ["index", "nav"] {
+        assert!(
+            html.contains(&format!(
+                r#"<button class="filter-toggle {kind}-filter-toggle" type="button" hidden aria-controls="{kind}-filter" aria-expanded="false""#
+            )),
+            "expected a hidden {kind} filter toggle pointing at its container",
+        );
+        assert!(
+            html.contains(&format!(
+                r#"<div class="filter-container {kind}-filter-container" id="{kind}-filter"></div>"#
+            )),
+            "expected an empty {kind} filter container",
+        );
+    }
+}
+
+#[test]
+fn index_filter_container_sits_between_the_heading_and_the_table() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The heading itself is the flex row that right-aligns the funnel
+    // against the word "Index" (search.css keys off `.index-heading`), and
+    // the box the funnel opens belongs between that heading and the table
+    // it filters. Pin the order so a refactor can't float the input
+    // somewhere else on the page.
+    let heading = html
+        .find(r#"<h2 class="index-heading">Index<button class="filter-toggle index-filter-toggle""#)
+        .expect("the Index heading must carry its filter toggle on the same line");
+    let container = html
+        .find(r#"<div class="filter-container index-filter-container""#)
+        .expect("index filter container missing");
+    let table = html
+        .find(r#"<table class="index">"#)
+        .expect("index table missing");
+    assert!(
+        heading < container && container < table,
+        "the index filter container must sit between the Index heading and the table",
+    );
+}
+
+#[test]
+fn nav_filter_container_sits_under_the_sidebar_header() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // The funnel is the header's last item, right-aligned against the
+    // drawer's title, and the box it opens sits directly below the header
+    // — before the list it filters.
+    assert!(
+        html.contains(r#"perfectionist lints</a><button class="filter-toggle nav-filter-toggle""#),
+        "the sidebar header's filter toggle must follow the title, right-aligned against it",
+    );
+    assert!(
+        html.contains(
+            r#"</div><div class="filter-container nav-filter-container" id="nav-filter"></div><ul class="nav-sidebar-list">"#
+        ),
+        "the nav filter container must sit between the sidebar header and its list",
+    );
+}
+
+#[test]
+fn page_links_the_search_scripts_externally() {
+    let html = render_page(&[fake_rule("only")], &fake_context());
+    // All three ship as sibling files loaded via `<script src>`, not
+    // inlined — the same contract as the nav, theme and config scripts.
+    for name in [
+        MATCH_SCRIPT_FILENAME,
+        FILTER_BOXES_SCRIPT_FILENAME,
+        SEARCH_OVERLAY_SCRIPT_FILENAME,
+    ] {
+        assert!(
+            html.contains(&format!(r#"<script src="{name}"></script>"#)),
+            "expected {name} to be referenced via <script src>",
+        );
+    }
+}
+
+#[test]
+fn match_library_loads_before_the_scripts_that_read_it() {
+    // The page loads classic scripts in order, and both consumers read
+    // `perfectionistMatch` during their own setup (that read is what makes
+    // a missing library leave their controls hidden rather than dead), so
+    // the library has to have run first.
+    let position = |name: &str| {
+        PAGE_SCRIPTS
+            .iter()
+            .position(|&script| script == name)
+            .unwrap_or_else(|| panic!("{name} is not in PAGE_SCRIPTS"))
+    };
+    let library = position(MATCH_SCRIPT_FILENAME);
+    assert!(library < position(FILTER_BOXES_SCRIPT_FILENAME));
+    assert!(library < position(SEARCH_OVERLAY_SCRIPT_FILENAME));
+}
+
+#[test]
+fn the_two_filter_boxes_share_one_implementation() {
+    // "The two filterings use completely identical logic": one
+    // `installFilter`, defined once and called once per list. A second
+    // definition — the obvious way to let the two drift — would push the
+    // count past three.
+    assert_eq!(
+        FILTER_BOXES_SCRIPT.matches("installFilter(").count(),
+        3,
+        "expected one `installFilter` definition and exactly two calls",
+    );
+}
+
+#[test]
+fn the_score_bounds_live_only_in_the_match_library() {
+    // One bound per kind of matching, held in match.js, read by its
+    // consumers. A consumer that hard-coded a number instead could drift
+    // from the other filter box, which the bound exists to prevent.
+    assert!(MATCH_SCRIPT.contains("FILTER_MIN_SCORE:"));
+    assert!(MATCH_SCRIPT.contains("SEARCH_MIN_SCORE:"));
+    assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.FILTER_MIN_SCORE"));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.SEARCH_MIN_SCORE"));
+    assert!(
+        !FILTER_BOXES_SCRIPT.contains("SEARCH_MIN_SCORE"),
+        "the filter boxes must use the filter bound, not the search one",
+    );
+    assert!(
+        !SEARCH_OVERLAY_SCRIPT.contains("FILTER_MIN_SCORE"),
+        "the search must use the search bound, not the filter one",
+    );
+}
+
+#[test]
+fn the_search_matches_names_loosely_and_prose_verbatim() {
+    // A lint name is typed from memory, so its characters may be
+    // scattered; prose is typed as words, and a long enough paragraph
+    // contains almost any scattered sequence. The library offers both, and
+    // the overlay has to pick the right one per field or every rule on the
+    // page matches every query.
+    assert!(MATCH_SCRIPT.contains("function matchFuzzy("));
+    assert!(MATCH_SCRIPT.contains("function matchPhrase("));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.matchPhrase("));
+    // The filter boxes match names only, so they never want the prose
+    // variant.
+    assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
+    assert!(!FILTER_BOXES_SCRIPT.contains("matchPhrase"));
+}
+
+#[test]
+fn search_scripts_are_each_a_single_iife() {
+    // Same structural sanity check as `nav_toggle_script_is_a_single_iife`
+    // — see that test for the bug it guards against. match.js wraps its
+    // IIFE in an assignment, so its opener reads differently.
+    assert_eq!(
+        MATCH_SCRIPT
+            .matches("var perfectionistMatch = (function () {")
+            .count(),
+        1,
+    );
+    assert_eq!(MATCH_SCRIPT.matches("})();").count(), 1);
+    assert_eq!(FILTER_BOXES_SCRIPT.matches("(function () {").count(), 1);
+    assert_eq!(FILTER_BOXES_SCRIPT.matches("})();").count(), 1);
+    assert_eq!(SEARCH_OVERLAY_SCRIPT.matches("(function () {").count(), 1);
+    assert_eq!(SEARCH_OVERLAY_SCRIPT.matches("})();").count(), 1);
+}
+
+#[test]
+fn search_css_masks_the_bundled_control_icons() {
+    // The CSS `url(...)` and the written filenames must agree, or the
+    // icons 404 and both buttons render blank.
+    let search = stylesheet("search.css");
+    for (name, _) in SEARCH_ICONS {
+        assert!(
+            search.contains(&format!(r#"url("{name}")"#)),
+            "search.css must reference the control icon {name} as a mask",
+        );
+    }
+    for (name, content) in SEARCH_ICONS {
+        assert!(
+            content.contains("Octicons") && content.contains("MIT"),
+            "the bundled {name} must retain its Octicons MIT attribution",
+        );
+    }
+}
+
+#[test]
+fn search_and_filter_colours_live_in_both_theme_layers() {
+    // Every surface the feature adds is themed in the colour layer, not
+    // the structural sheet. Both layers must carry each selector, or the
+    // surface silently loses its colours in one theme — the dark one being
+    // the easy half to forget, since it is written twice over.
+    let light = stylesheet("light.css");
+    let dark = stylesheet("dark.css");
+    for selector in [
+        ".search-toggle",
+        ".filter-toggle",
+        ".filter-input",
+        ".search-overlay",
+        ".search-dialog",
+        ".search-input",
+        ".search-close",
+        ".search-result",
+        ".match-highlight",
+    ] {
+        assert!(light.contains(selector), "light.css must colour {selector}");
+        // Once per dark tier: system preference, then explicit override.
+        assert!(
+            dark.contains(&format!(
+                r#"html:not([color-scheme-override="light"]) {selector} "#
+            )),
+            "dark.css must colour {selector} under the system-preference tier",
+        );
+        assert!(
+            dark.contains(&format!(
+                r#"html[color-scheme-override="dark"] {selector} "#
+            )),
+            "dark.css must colour {selector} under the explicit-Dark tier",
+        );
+    }
+}
+
+#[test]
+fn the_search_overlay_backdrop_is_partly_transparent() {
+    // The overlay dims the page rather than replacing it, so the reader
+    // keeps their place while they search. An opaque backdrop would read
+    // as a different page.
+    for name in ["light.css", "dark.css"] {
+        let sheet = stylesheet(name);
+        let start = sheet
+            .find(".search-overlay {")
+            .unwrap_or_else(|| panic!("{name} must colour .search-overlay"));
+        let rule = &sheet[start..start + sheet[start..].find('}').expect("unterminated rule")];
+        assert!(
+            rule.contains("rgba("),
+            "{name}'s .search-overlay background must carry an alpha channel",
+        );
+    }
 }
