@@ -508,4 +508,11 @@ fn split_parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
         .find_any(|text| text.starts_with('#'))
 }
 
+// Not flagged: `unique_by` is lent the item rather than handed it, so a
+// leading `map` would change what it and every later adapter sees. It is one
+// of the `itertools` adapters the table leaves out for that reason.
+fn unique(items: std::vec::IntoIter<&'static str>) -> Vec<&'static str> {
+    items.unique_by(|text| text.trim().len()).collect()
+}
+
 fn main() {}

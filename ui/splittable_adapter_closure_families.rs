@@ -76,6 +76,23 @@ fn split_poll_ok(state: Poll<Result<&'static str, usize>>) -> Poll<Result<usize,
     state.map_ok(str::trim).map_ok(str::len)
 }
 
+// Bad: a `Poll`'s `Err` channel, where a lifted step goes into a
+// `map_err` of its own rather than the `map_ok` the value channel takes.
+fn poll_err(state: Poll<Result<usize, &'static str>>) -> Poll<Result<usize, usize>> {
+    state.map_err(|text| text.trim().len())
+}
+
+// Good: one `map_err` per step.
+fn split_poll_err(state: Poll<Result<usize, &'static str>>) -> Poll<Result<usize, usize>> {
+    state.map_err(str::trim).map_err(str::len)
+}
+
+// Not flagged: a method the family's adapters do not include, which has no
+// channel for a lifted step to go into.
+fn poll_readiness(state: Poll<&'static str>) -> bool {
+    state.is_ready()
+}
+
 // Bad: a `ControlFlow` break channel.
 fn control_flow_break(flow: ControlFlow<&'static str, usize>) -> ControlFlow<usize, usize> {
     flow.map_break(|text| text.trim().len())
@@ -96,6 +113,11 @@ fn split_control_flow_continue(
     flow: ControlFlow<usize, &'static str>,
 ) -> ControlFlow<usize, usize> {
     flow.map_continue(str::trim).map_continue(str::len)
+}
+
+// Not flagged: a method this family's adapters do not include either.
+fn control_flow_broke(flow: ControlFlow<&'static str, usize>) -> bool {
+    flow.is_break()
 }
 
 // A fallible, defaulted or predicate-shaped adapter takes the item by

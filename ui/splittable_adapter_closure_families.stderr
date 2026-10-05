@@ -59,6 +59,18 @@ LL -     state.map_ok(|text| text.trim().len())
 LL +     state.map_ok(str::trim).map_ok(str::len)
    |
 
+warning: this closure chains 2 steps onto the item, so `map_err` does all of them
+  --> $DIR/splittable_adapter_closure_families.rs:LL:CC
+   |
+LL |     state.map_err(|text| text.trim().len())
+   |           ^^^^^^^
+   |
+help: lift all but the last step into a leading `map_err` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     state.map_err(|text| text.trim().len())
+LL +     state.map_err(str::trim).map_err(str::len)
+   |
+
 warning: this closure chains 2 steps onto the item, so `map_break` does all of them
   --> $DIR/splittable_adapter_closure_families.rs:LL:CC
    |
