@@ -28,6 +28,10 @@ pub(crate) const TEST_PAGE_CSS: &str = include_str!("style/tests.css");
 /// agree.
 pub(crate) const TEST_PAGE_CSS_FILENAME: &str = "tests.css";
 
+/// The catalogue page this one links back to, so a reader who arrives
+/// at this URL has somewhere to go.
+const CATALOGUE_FILENAME: &str = "index.html";
+
 /// The catalogue sheet this page borrows its font, body width and
 /// `[hidden]` reset from. It is the first entry of
 /// `crate::render::STYLESHEETS`, and a test below holds it to that
@@ -100,16 +104,18 @@ pub(crate) fn render_test_page() -> String {
             body {
                 h1 { "docs-site JS tests" }
                 p {
-                    "The same cases "
-                    code { "just test-js" }
-                    " runs headlessly, run here by this browser against the "
-                    "catalogue's own "
-                    code { "match.js" }
-                    " and "
-                    code { "rank.js" }
-                    "."
+                    "This page runs the search code behind the "
+                    a href=(CATALOGUE_FILENAME) { "perfectionist lint catalogue" }
+                    " — the matching and ranking its rule search and filter "
+                    "boxes are built on — in this browser, now. Every case "
+                    "below calls that code directly, so a failure here means "
+                    "the catalogue's search cannot be relied on in this "
+                    "browser: either its engine is missing something the code "
+                    "assumes, or the code is wrong and fails the same case "
+                    "everywhere."
                 }
                 p id="summary" {}
+                p id="engine" {}
                 ul id="cases" {}
                 @for src in test_page_scripts() {
                     script src=(src) {}

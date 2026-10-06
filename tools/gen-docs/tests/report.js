@@ -18,7 +18,14 @@
 (function () {
   var list = /** @type {HTMLElement} */ (document.querySelector("#cases"));
   var summary = /** @type {HTMLElement} */ (document.querySelector("#summary"));
-  if (!list || !summary) return;
+  var engine = /** @type {HTMLElement} */ (document.querySelector("#engine"));
+  if (!list || !summary || !engine) return;
+
+  // Which engine produced the result below. The page's whole point is
+  // that the answer differs between browsers, so a result that does not
+  // say which one it came from is half an answer — and a screenshot of
+  // one is unreportable.
+  engine.textContent = navigator.userAgent;
 
   var cases = perfectionistTests.all();
   var failed = 0;

@@ -91,6 +91,34 @@ fn the_page_loads_the_libraries_it_tests_and_every_asset_it_ships() {
 }
 
 #[test]
+fn the_page_carries_every_id_the_reporter_looks_up() {
+    // report.js finds its elements by id and bails when one is missing,
+    // which would leave the page blank with nothing on it to say why. The
+    // ids come out of its source rather than a list here, so one added
+    // later is covered with no edit.
+    let html = render_test_page();
+    let opener = r##"querySelector("#"##;
+    let mut looked_up = 0;
+    let mut rest = TEST_REPORT_SCRIPT.1;
+    while let Some(at) = rest.find(opener) {
+        rest = &rest[at + opener.len()..];
+        let id = rest
+            .split('"')
+            .next()
+            .expect("unterminated querySelector argument");
+        assert!(
+            html.contains(&format!(r#"id="{id}""#)),
+            "report.js looks up #{id}, which the page does not carry",
+        );
+        looked_up += 1;
+    }
+    assert!(
+        looked_up > 0,
+        "no id lookups found in report.js, so the scan above checked nothing",
+    );
+}
+
+#[test]
 fn the_page_asks_not_to_be_indexed() {
     assert!(render_test_page().contains(r#"<meta name="robots" content="noindex">"#));
 }

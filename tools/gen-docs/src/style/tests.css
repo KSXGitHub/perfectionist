@@ -21,6 +21,18 @@
   font-style: italic;
 }
 
+/* Secondary to the summary above it, and empty until the reporter runs. */
+#engine {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  color: #57606a;
+  overflow-wrap: break-word;
+}
+
+#engine:empty {
+  display: none;
+}
+
 #cases {
   list-style: none;
   padding: 0;
@@ -71,5 +83,9 @@
 
   .name {
     color: #e6edf3;
+  }
+
+  #engine {
+    color: #9198a1;
   }
 }
