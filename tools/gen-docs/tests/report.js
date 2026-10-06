@@ -25,7 +25,7 @@
   engine.textContent = navigator.userAgent;
 
   // The glyph each state shows before a case's name. Text symbols rather
-  // than emoji, for two reasons. They take `currentcolor`, so the shape
+  // than emoji, for these reasons. They take `currentcolor`, so the shape
   // and the colour of a state cannot disagree, and a reader who sees
   // neither colour still has the shape. And this page exists to be opened
   // on engines old enough that an emoji font is the thing most likely to
@@ -37,10 +37,10 @@
   };
 
   /**
-   * Put a row into one of the three states: the attribute tests.css
-   * reads, the glyph a reader sees, and the name a screen reader hears
-   * in its place — the state is carried by all three rather than by a
-   * class that only CSS understands.
+   * Put a row into one of its states: the attribute tests.css reads, the
+   * glyph a reader sees, and the name a screen reader hears in its place
+   * — the state is carried by each of them rather than by a class that
+   * only CSS understands.
    * @param {HTMLElement} row
    * @param {HTMLElement} indicator
    * @param {"untested" | "passed" | "failed"} state

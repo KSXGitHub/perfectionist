@@ -19,8 +19,7 @@
 // that CI runs on every change regardless.
 //
 // `node:test` ran these until the output became the problem: six lines a
-// case in TAP, 214 of them for thirty-four cases, behind a banner naming
-// a protocol nothing here speaks. Its other reporters trade that for a
+// case in TAP, behind a banner naming a protocol nothing here speaks. Its other reporters trade that for a
 // tick and a duration per case, or for rows of dots. What it was doing
 // for us was a registry, an exit code and a try/catch, and the harness is
 // already the registry — so the rest is written out below, in the shape
