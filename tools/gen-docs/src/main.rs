@@ -15,7 +15,9 @@
 //!
 //! - `html` writes the `index.html` GitHub Pages reads (the
 //!   project's public catalogue) plus the sibling assets it links —
-//!   one file per stylesheet, per page script, and per icon.
+//!   one file per stylesheet, per page script, and per icon — and,
+//!   beside it, the `tests.html` that runs the page's own JavaScript
+//!   unit tests in whatever browser opens it.
 //! - `write-md` writes a `rules/` directory with one markdown file
 //!   per rule plus a `README.md` index, intended for in-repo
 //!   browsing alongside `src/rules/` and `planned-rules/`.
@@ -31,6 +33,7 @@ mod fonts;
 mod model;
 mod render;
 mod render_md;
+mod test_page;
 
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
 use crate::extract::collect_rules;
@@ -45,6 +48,7 @@ use crate::render::{
     SEARCH_OVERLAY_SCRIPT_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
     THEME_TOGGLE_SCRIPT_FILENAME, render_page,
 };
+use crate::test_page::{TEST_PAGE_FILENAME, render_test_page, test_page_assets};
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
 use command_extra::CommandExtra;
@@ -227,6 +231,16 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         SEARCH_OVERLAY_SCRIPT,
     )
     .expect("failed to write search-overlay script");
+
+    // The JavaScript test page, plus the harness, cases and reporter it
+    // loads. It reads `match.js` and `rank.js` from where the catalogue
+    // already writes them, so only its own files are added here.
+    fs::write(out_dir.join(TEST_PAGE_FILENAME), render_test_page())
+        .unwrap_or_else(|error| panic!("failed to write {TEST_PAGE_FILENAME}: {error}"));
+    for (name, content) in test_page_assets() {
+        let path = out_dir.join(name);
+        fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
+    }
 
     // Lands beside index.html so the stylesheet's relative `url(...)`
     // resolves.

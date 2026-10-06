@@ -17,6 +17,12 @@
 // this file is not type-checked: tsconfig.json declares no ambient Node
 // types, and pulling them in for one runner would mean a dev dependency to
 // serve a file that CI runs on every change anyway.
+//
+// Every `*.test.js` beside this file is loaded, so a case file added here
+// is picked up with no edit. The other runner — `tests.html`, rendered by
+// tools/gen-docs/src/test_page.rs and shipped with the catalogue — loads a
+// list it cannot glob, so a Rust test reads this directory and holds that
+// list to it. That is what keeps the two runners running the same suite.
 // ============================================================================
 
 import { readdir, readFile } from "node:fs/promises";
@@ -30,15 +36,6 @@ const src = join(here, "..", "src");
 
 const cases = (await readdir(here)).filter((name) => name.endsWith(".test.js")).sort();
 if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
-
-// The browser page lists its scripts in markup, so a case file added here
-// reaches that runner only if someone remembers to add the tag. Rather
-// than leave the two lists to drift, hold the page to this one.
-const page = await readFile(join(here, "index.html"), "utf8");
-for (const name of cases) {
-  if (page.includes(`src="${name}"`)) continue;
-  throw new Error(`index.html does not load ${name}, so the browser would skip it`);
-}
 
 const context = createContext({});
 const load = [join(src, "match.js"), join(src, "rank.js"), join(here, "harness.js")].concat(

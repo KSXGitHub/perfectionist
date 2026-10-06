@@ -1,5 +1,5 @@
 // ============================================================================
-// Reports the cases on the page, for whoever is reading index.html in a
+// Reports the cases on the page, for whoever is reading `tests.html` in a
 // browser.
 //
 // This is the second of the two runners, and the reason it exists is that
@@ -7,12 +7,12 @@
 // libraries under test ship to browsers years older than the Node that runs
 // them in CI, and nothing in `run.mjs` would catch a construct V8 accepts
 // today and an older engine rejects outright. Opening this page in one of
-// those engines does.
+// those engines does — which is why the page ships with the catalogue
+// rather than waiting in a checkout: an old device can be pointed at a URL.
 //
-// It is the only file here that touches the DOM, and it is not part of the
-// generated site: the page is opened from the checkout over `file://`,
-// loading the libraries straight out of `../src/`. Nothing about the tests
-// is published.
+// It is the only file here that touches the DOM. The page around it is
+// rendered by tools/gen-docs/src/test_page.rs, where the rest of the site's
+// markup lives.
 // ============================================================================
 
 (function () {

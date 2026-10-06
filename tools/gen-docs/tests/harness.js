@@ -6,7 +6,7 @@
 // what makes them testable at all without a module system — and it is also
 // what lets one set of cases serve both runners. A case registers itself
 // here; `run.mjs` loads this file and the case files into a bare V8 context
-// and hands each case to `node:test`, while `index.html` loads the same
+// and hands each case to `node:test`, while `tests.html` loads the same
 // files into a browser and reports them on the page. Neither runner knows
 // anything about the other.
 //

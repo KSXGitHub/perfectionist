@@ -1,0 +1,75 @@
+/* The JavaScript test page (tests.html), linked after base.css so it
+   inherits the catalogue's font, body width and `[hidden]` reset.
+
+   Unlike the catalogue's sheets this one carries its own colours rather
+   than leaving them to light.css / dark.css. Those two mirror the
+   catalogue's selectors and exist as a pair because the Settings panel
+   can override the system preference; this page has no such control, so
+   one `prefers-color-scheme` block says everything it needs. */
+
+#summary {
+  font-weight: 700;
+}
+
+/* The reporter fills this last, so an empty one means it never ran —
+   scripting off, a blocked script, a parse error before the handlers
+   attach. Saying so beats an unexplained blank line above an empty
+   list. */
+#summary:empty::before {
+  content: "the reporter did not run";
+  font-weight: 400;
+  font-style: italic;
+}
+
+#cases {
+  list-style: none;
+  padding: 0;
+}
+
+/* The pass / fail colour is carried by the rule's own border, which is
+   why the bar is `currentcolor` and the name below it is not: a row
+   reading as a block of red would drown out the message that says what
+   failed. */
+#cases li {
+  border-left: 0.25rem solid currentcolor;
+  margin: 0.5rem 0;
+  padding: 0 0 0 0.75rem;
+}
+
+.pass {
+  color: #0a7d32;
+}
+
+.fail {
+  color: #b3261e;
+}
+
+.name {
+  display: block;
+  color: #1f2328;
+}
+
+.why {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+  }
+
+  .pass {
+    color: #3fb950;
+  }
+
+  .fail {
+    color: #ff7b72;
+  }
+
+  .name {
+    color: #e6edf3;
+  }
+}

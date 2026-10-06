@@ -129,8 +129,8 @@ check-js-types:
 
 # Run the docs-site JavaScript unit tests (tools/gen-docs/tests/) under
 # `node:test`, in a context with no DOM in it. Installs nothing: the runner
-# is built into Node. `tools/gen-docs/tests/index.html` runs the same cases
-# in a browser; open it from the checkout.
+# is built into Node. `just gen-docs` renders a browser runner for the same
+# cases to `gh-pages/tests.html`, which ships with the catalogue.
 test-js:
   node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
