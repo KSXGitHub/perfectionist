@@ -38,6 +38,19 @@
     t.ok(m.matchPhrase("bare url", "bare_url"), "and verbatim matching folds them too");
   });
 
+  t.add("a range indexes the string as it was handed in", function () {
+    // Folding is one character in, one character out, which every range
+    // rests on: `\u0130` lower-cases to two code units, and one of those
+    // ahead of a match would shift the range one along from what matched.
+    var target = "\u0130stanbul_rule";
+    var hit = t.found(m.matchFuzzy("stanbul", target), "`stanbul` is in there");
+    t.equal(
+      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
+      "stanbul",
+      "the range covers what matched",
+    );
+  });
+
   t.add("a run of separators folds to a run of spaces, not to one", function () {
     // Each separator becomes one space rather than a run becoming one,
     // so the folded string indexes exactly like the string handed in —

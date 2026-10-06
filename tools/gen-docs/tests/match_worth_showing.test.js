@@ -95,6 +95,18 @@
     t.equal(m.matchFuzzy("brl", "bare_url"), null, "two slips are a coincidence");
   });
 
+  t.add("an earlier coincidence does not cost a name its real match", function () {
+    // `nic` sits inside `unicode`, where the reader aimed nothing, and
+    // finishes `panic`, where they did. The two score alike, so a tier
+    // choosing between its own placements by score alone kept the first
+    // and the rule was not offered at all.
+    var hit = t.found(
+      m.matchFuzzy("nic", "unicode_ellipsis_in_panic_messages"),
+      "`nic` finds the rule",
+    );
+    t.deepEqual(hit.ranges, [[22, 25]], "marked where `panic` ends, not inside `unicode`");
+  });
+
   t.add("a match once made is not lost to the next keystroke", function () {
     // Typing `cloned_getter` out passes through `cloned ` and `cloned g`,
     // where little of the query has landed yet. The score may dip — it

@@ -52,6 +52,21 @@
     );
   });
 
+  t.add("a match longer than the window is marked through it", function () {
+    var text = "the quick brown fox jumps over the lazy dog";
+    // The whole text matched, which is more than the window holds. Every
+    // character the reader can see is still part of what they typed, so
+    // the range comes back cut to the window rather than dropped for not
+    // fitting inside it.
+    var windowed = m.excerpt(text, [[0, text.length]], 20);
+    t.equal(windowed.ranges.length, 1, "the range survives the window");
+    t.equal(
+      windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
+      "the quick brown fox ",
+      "cut to what the window shows of it",
+    );
+  });
+
   t.add("a window that cuts either end says so", function () {
     var text = "the quick brown fox jumps over the lazy dog";
     t.equal(m.excerpt(text, [[20, 25]], 20).text.indexOf("…"), 0, "a cut head is marked");
