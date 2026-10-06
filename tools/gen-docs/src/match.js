@@ -17,21 +17,25 @@
 //
 // ---- Two kinds of match ---------------------------------------------------
 //
-// `matchFuzzy` lets the query's characters be scattered through the target,
-// as long as they occur in order. `matchPhrase` does not: it keeps the
-// query's words whole. Which one a caller wants follows from what it is
-// matching against:
+// `matchFuzzy` lets the query come apart: its characters may be scattered
+// through the target so long as they occur in order, and its words may
+// arrive in any order at all. `matchPhrase` lets neither. Which one a
+// caller wants follows from what it is matching against:
 //
 //   * A lint name is an identifier, and a reader types it from memory —
-//     skipping the underscores (`bareurl`), or typing a word's initials
-//     (`bur`). Scattering is the point, so names get `matchFuzzy`.
-//   * Prose is words. A reader searching it types some of them, never
-//     their initials — and a paragraph a few hundred characters long
-//     contains almost any short sequence of letters in order, so letting
-//     the characters scatter there finds a high-scoring match in nearly
-//     every rule on the page. Prose gets `matchPhrase`.
+//     skipping the underscores (`bareurl`), typing a word's initials
+//     (`bur`), or naming its words in whatever order they come to mind
+//     (`std core instead`). It is a handful of words with no sentence to
+//     put them in order, so names get `matchFuzzy`.
+//   * Prose is words in an order that means something. A reader searching
+//     it types some of them as they are written, never their initials —
+//     and a paragraph a few hundred characters long contains almost any
+//     short sequence of letters in order, and almost any two words
+//     somewhere apart from each other, so both of those freedoms find a
+//     high-scoring match in nearly every rule on the page. Prose gets
+//     `matchPhrase`.
 //
-// Everything short of scattering is shared, so a different spelling of a
+// Everything short of those two is shared, so a different spelling of a
 // separator and a different ending of a word are met by both. The two also
 // share one scoring model, so their scores stay comparable and a caller
 // matching both can rank the results against each other.
@@ -106,7 +110,14 @@
 //      are scored, and a mark spans a run of separators but never a run
 //      of letters, so a phrase reads as the phrase while `clone` stops
 //      short of `cloning`'s `ing`.
-//   4. Scattered — the query's characters occur in order with anything at
+//   4. Reordered — every word of the query is a word of the target, each
+//      a different one, and the target may carry words the query left
+//      out. So `core_instead_of_std` answers `core std instead` and
+//      `std core` as well as the order it is written in. A word still has
+//      to open a target word by the reading above, so this adds only the
+//      leave to arrive out of order and to pass a word by. Names only,
+//      per the section above.
+//   5. Scattered — the query's characters occur in order with anything at
 //      all between them. Names only, per the section above.
 //
 // Every tier below the first is weaker than it by construction rather than
@@ -119,10 +130,10 @@
 //
 // What a tier counts as the query differs, because what it is able to
 // place does. Verbatim and respaced place every character the query
-// holds, separators and all, and are charged for all of them. The
-// variants tier never matches a target character against a separator — a
-// separator is how the reader marks where one word ends — so it is
-// charged for the query's words alone. Charging it for the delimiters
+// holds, separators and all, and are charged for all of them. The two
+// word-wise tiers never match a target character against a separator — a
+// separator is how the reader marks where one word ends — so they are
+// charged for the query's words alone. Charging them for the delimiters
 // too would mean a reader who has typed `cloned ` and is about to type
 // `getter` scoring below one who stopped at `cloned`, which is a result
 // vanishing halfway through being typed.
@@ -316,19 +327,32 @@ var perfectionistMatch = (function () {
   }
 
   /**
+   * Where each of `text`'s words begins and ends, in order.
+   * @param {string} text
+   * @returns {number[][]}
+   */
+  function wordSpans(text) {
+    /** @type {number[][]} */
+    var out = [];
+    var at = nextWord(text, 0);
+    while (at >= 0) {
+      var end = wordEnd(text, at);
+      out.push([at, end]);
+      at = nextWord(text, end);
+    }
+    return out;
+  }
+
+  /**
    * `text`'s words, in order.
    * @param {string} text
    * @returns {string[]}
    */
   function words(text) {
+    var spans = wordSpans(text);
     /** @type {string[]} */
     var out = [];
-    var at = nextWord(text, 0);
-    while (at >= 0) {
-      var end = wordEnd(text, at);
-      out.push(text.slice(at, end));
-      at = nextWord(text, end);
-    }
+    for (var i = 0; i < spans.length; i++) out.push(text.slice(spans[i][0], spans[i][1]));
     return out;
   }
 
@@ -608,6 +632,134 @@ var perfectionistMatch = (function () {
     return best;
   }
 
+  // ---- Reordered ----------------------------------------------------------
+
+  /**
+   * What one of the query's words earns against one of the target's, and
+   * how much of the target's it marks.
+   * @param {string} part       a word of the query
+   * @param {string} haystack   folded target
+   * @param {number[]} span     where the target's word begins and ends
+   * @returns {{ raw: number, range: number[] }}
+   */
+  function wordAgainstWord(part, haystack, span) {
+    var shared = commonPrefix(part, haystack.slice(span[0], span[1]));
+    return {
+      raw: opening(haystack, span[0]) + (BASE + RUN_BONUS) * (shared - 1),
+      range: [span[0], span[0] + shared],
+    };
+  }
+
+  /**
+   * Give each of the query's words a different word of the target to
+   * stand on, best-scoring choice first, or `null` when they cannot all
+   * be housed. A word of the target may hold one word of the query and no
+   * more, so a query that says `core` twice needs a target that does.
+   *
+   * The search is exhaustive, which it can afford to be: this tier runs
+   * against lint names, and a lint name is a handful of words. A query
+   * word with nowhere to go ends it before the search begins.
+   * @param {string[]} parts    the query's words
+   * @param {string[]} stems    their stems, in the same order
+   * @param {string} haystack   folded target
+   * @param {number[][]} spans  where each of the target's words sits
+   * @returns {number[] | null} one span index per query word
+   */
+  function houseWords(parts, stems, haystack, spans) {
+    /** @type {number[][]} */
+    var options = [];
+    for (var i = 0; i < parts.length; i++) {
+      /** @type {number[]} */
+      var fits = [];
+      for (var j = 0; j < spans.length; j++) {
+        if (haystack.slice(spans[j][0], spans[j][1]).indexOf(stems[i]) === 0) fits.push(j);
+      }
+      if (fits.length === 0) return null;
+      options.push(fits);
+    }
+    /** @type {boolean[]} */
+    var taken = [];
+    /**
+     * The best way to house the query's words from `i` on, or `null` when
+     * there is none. It hands its answer back rather than keeping a
+     * running best in the enclosing scope, which TypeScript cannot follow
+     * across a call — the same reason the page's other scripts bind their
+     * guarded elements to locals.
+     * @param {number} i
+     * @returns {{ raw: number, choice: number[] } | null}
+     */
+    function walk(i) {
+      if (i === parts.length) return { raw: 0, choice: [] };
+      /** @type {{ raw: number, choice: number[] } | null} */
+      var best = null;
+      for (var k = 0; k < options[i].length; k++) {
+        var j = options[i][k];
+        if (taken[j]) continue;
+        taken[j] = true;
+        var rest = walk(i + 1);
+        taken[j] = false;
+        if (!rest) continue;
+        var raw = rest.raw + wordAgainstWord(parts[i], haystack, spans[j]).raw;
+        if (best && best.raw >= raw) continue;
+        best = { raw: raw, choice: [j].concat(rest.choice) };
+      }
+      return best;
+    }
+    var housed = walk(0);
+    return housed ? housed.choice : null;
+  }
+
+  /**
+   * Score the query against the haystack with its words in any order:
+   * every word of the query has to be a word of the target, each a
+   * different one, and the target may carry words the query left out. So
+   * `core_instead_of_std` answers `core std instead` and `std core` as
+   * well as the order it is written in.
+   *
+   * A word still opens a target word, by the same reading as the variants
+   * tier — a stem it shares with its variants — so what this adds over
+   * that tier is only the leave to arrive in another order, and to pass
+   * over a word of the target on the way.
+   *
+   * One word has no order to be out of, and the variants tier already
+   * takes it wherever it sits, so this starts at two.
+   * @param {string} needle    folded query
+   * @param {string} haystack  folded target
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function matchReordered(needle, haystack) {
+    var parts = words(needle);
+    if (parts.length < 2) return null;
+    var spans = wordSpans(haystack);
+    // Each word of the query needs one of its own.
+    if (parts.length > spans.length) return null;
+    /** @type {string[]} */
+    var stems = [];
+    var span = 0;
+    for (var i = 0; i < parts.length; i++) {
+      stems.push(stem(parts[i]));
+      span += parts[i].length;
+    }
+    var housed = houseWords(parts, stems, haystack, spans);
+    if (!housed) return null;
+    // Marked where the target reads them, not where the query typed them.
+    var chosen = housed.slice().sort(function (left, right) {
+      return left - right;
+    });
+    var raw = 0;
+    /** @type {number[][]} */
+    var ranges = [];
+    for (var k = 0; k < chosen.length; k++) {
+      var at = spans[chosen[k]][0];
+      var found = wordAgainstWord(parts[housed.indexOf(chosen[k])], haystack, spans[chosen[k]]);
+      raw += found.raw;
+      var last = ranges[ranges.length - 1];
+      if (last && onlySeparators(haystack, last[1], at)) last[1] = found.range[1];
+      else ranges.push(found.range);
+    }
+    return { score: blend(raw, span, haystack.length), ranges: ranges };
+  }
+
   // ---- Admission ----------------------------------------------------------
 
   // How many of a match's runs may begin inside a word. A reader typing a
@@ -776,6 +928,7 @@ var perfectionistMatch = (function () {
     var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
+    found = betterAdmitted(found, matchReordered(needle, haystack), haystack);
     return betterAdmitted(found, matchScattered(needle, haystack), haystack);
   }
 
