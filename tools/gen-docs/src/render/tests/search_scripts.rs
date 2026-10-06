@@ -1,7 +1,7 @@
 //! The contracts the browser scripts keep: how the page loads them, the
 //! shape each file holds to, and the division of labour between them —
 //! markup cloned rather than built, wording left in the template, one
-//! matcher and one pair of score bounds for all of them, and the two
+//! matcher for all of them deciding what a query reaches, and the two
 //! libraries kept clear of the DOM so they can be run without one.
 //!
 //! These read the scripts as source text. A script that crossed any of
@@ -234,23 +234,31 @@ fn every_way_out_of_a_filter_box_clears_it() {
 }
 
 #[test]
-fn the_score_bounds_live_only_in_the_match_library() {
-    // One bound per kind of matching, held in match.js, read by whoever
-    // applies it: the filter boxes directly, the search through rank.js. A
-    // consumer that hard-coded a number instead could drift from the other
-    // filter box, which the bound exists to prevent.
-    assert!(MATCH_SCRIPT.contains("FILTER_MIN_SCORE:"));
-    assert!(MATCH_SCRIPT.contains("SEARCH_MIN_SCORE:"));
-    assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.FILTER_MIN_SCORE"));
-    assert!(RANK_SCRIPT.contains("perfectionistMatch.SEARCH_MIN_SCORE"));
+fn what_a_query_reaches_is_decided_only_in_the_match_library() {
+    // match.js answers both questions a search asks — which targets a
+    // query reaches, and how well it reaches them — and only the second is
+    // a number. The first is `admits`, which reads no score. A bar on the
+    // number that orders results would tie what a reader can find to how
+    // the weights happen to be tuned, and would let one more character
+    // push a result back over a bar it had fallen under, so a rule would
+    // leave the list and come back.
+    let code = strip_js_comments(MATCH_SCRIPT);
+    assert!(code.contains("function admits("));
     assert!(
-        !FILTER_BOXES_SCRIPT.contains("SEARCH_MIN_SCORE"),
-        "the filter boxes must use the filter bound, not the search one",
+        code.matches("admits(").count() > 1,
+        "`admits` has to be consulted, not merely defined",
     );
-    assert!(
-        !RANK_SCRIPT.contains("FILTER_MIN_SCORE"),
-        "the search must use the search bound, not the filter one",
-    );
+    // The bounds that used to answer it are gone from every script, not
+    // just unread in one of them — a consumer holding one could only put
+    // the old answer back in one list and not the other.
+    for (name, script, _) in SEARCH_SCRIPTS {
+        for bound in ["FILTER_MIN_SCORE", "SEARCH_MIN_SCORE"] {
+            assert!(
+                !script.contains(bound),
+                "{name} still carries {bound}; what a query reaches is structural now",
+            );
+        }
+    }
 }
 
 #[test]
@@ -273,11 +281,13 @@ fn the_search_scatters_a_name_but_keeps_a_word_in_prose() {
         2,
         "the subsequence scan should have one definition and one caller, in matchFuzzy",
     );
-    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
-    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchPhrase("));
+    // Both consumers reach the matchers through the one global, whether
+    // they call them where they stand or bind them to a local first.
+    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchFuzzy"));
+    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchPhrase"));
     // The filter boxes match names only, so they never want the prose
     // variant.
-    assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
+    assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.matchFuzzy"));
     assert!(!FILTER_BOXES_SCRIPT.contains("matchPhrase"));
 }
 

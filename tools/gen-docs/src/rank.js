@@ -92,31 +92,12 @@ var perfectionistRank = (function () {
     return text;
   }
 
-  /**
-   * Score `query` against a lint name, or `null` when the match is too
-   * weak to count as one.
-   * @param {string} query
-   * @param {string} name
-   * @returns {{ score: number, ranges: number[][] } | null}
-   */
-  function nameHit(query, name) {
-    var found = perfectionistMatch.matchFuzzy(query, name);
-    if (!found || found.score < perfectionistMatch.SEARCH_MIN_SCORE) return null;
-    return found;
-  }
-
-  /**
-   * Score `query` against a run of prose, or `null` when the match is too
-   * weak to count as one.
-   * @param {string} query
-   * @param {string} text
-   * @returns {{ score: number, ranges: number[][] } | null}
-   */
-  function proseHit(query, text) {
-    var found = perfectionistMatch.matchPhrase(query, text);
-    if (!found || found.score < perfectionistMatch.SEARCH_MIN_SCORE) return null;
-    return found;
-  }
+  // Whether a match is worth showing is match.js's to decide, and it
+  // decides it without reading the score; nothing is re-checked here. The
+  // scores below are what orders the results against each other, which is
+  // the only question this file asks of them.
+  var nameHit = perfectionistMatch.matchFuzzy;
+  var proseHit = perfectionistMatch.matchPhrase;
 
   /**
    * The best-matching of a rule's prose paragraphs.

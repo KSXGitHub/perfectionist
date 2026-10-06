@@ -70,21 +70,25 @@
 //
 // The total is divided by the best score the query could possibly earn
 // (every character contiguous, from the target's first), so the resulting
-// `quality` lands in 0..1 whatever the query's length — one threshold then
-// works for every query. A small `coverage` term (the
+// `quality` lands in 0..1 whatever the query's length, and two matches of
+// different queries stay comparable. A small `coverage` term (the
 // fraction of the target the query accounts for) breaks ties towards the
 // shorter target, so `bare_url` outranks `bare_identifier_reference` for
 // the query `bare`. Its weight is kept low on purpose: it is there to
-// order two matches of equal quality, and a target's length must not be
-// able to carry a weak match past the threshold or hold a strong one
-// back.
+// order two matches of equal quality, not to decide either on its own.
+//
+// Every number here orders matches against each other and nothing else.
+// What is worth showing at all is decided without reading any of them —
+// see the next section but one — so these can be re-tuned freely, which
+// is the point of keeping the two apart.
 //
 // ---- When the query is not there whole ------------------------------------
 //
 // A reader's query is as often a near miss as a substring of what they are
-// after, so a match is looked for in tiers. A verbatim one ends the
-// search; below it every remaining tier is tried and the best-scoring one
-// wins:
+// after, so a match is looked for in tiers. Every tier is tried, and the
+// best-scoring one that is worth showing wins — a tier that scores higher
+// and is not worth showing loses to one that is, which is what keeps a
+// coincidence from hiding the real match behind it:
 //
 //   1. Verbatim — the query occurs in the target exactly. Nothing beats
 //      this.
@@ -112,8 +116,7 @@
 // there whole. The tail of a word the target ends differently, and a
 // separator the target does not spell the same way, are characters the
 // reader typed that earn nothing. So a near miss cannot reach what an
-// exact match earns, and the thresholds at the bottom of this file apply
-// to all four tiers unchanged.
+// exact match earns.
 //
 // What a tier counts as the query differs, because what it is able to
 // place does. Verbatim and respaced place every character the query
@@ -124,6 +127,33 @@
 // too would mean a reader who has typed `cloned ` and is about to type
 // `getter` scoring below one who stopped at `cloned`, which is a result
 // vanishing halfway through being typed.
+//
+// ---- Worth showing, and how well it matched -------------------------------
+//
+// Those are two questions, and this file keeps them apart. How well a
+// match scores orders the results against each other: only the
+// differences matter, and the numbers above are expected to be re-tuned.
+// Whether the target is worth showing at all is a different question, and
+// answering it with a bar on the same number ties the two together — a
+// re-tuning then moves what a reader can find, and a query one character
+// longer can push a result back over a bar it had fallen under, so it
+// leaves the list and returns. `admits` therefore reads no score:
+//
+//   * The reader's first characters have to land where they aimed: at the
+//     opening of a word, or at the end of one they typed most of, which
+//     is how `error` finds `thiserror_usage` without an `e` that merely
+//     falls last in `single` finding anything.
+//   * After that, one run may begin inside a word and no more. One is a
+//     slip of the fingers, and keeping it is what still finds
+//     `excessive_nesting` for `excessive_nestng`. Two is the characters
+//     falling where they may, which is how `bare` would otherwise answer
+//     `needless_borrowed_parameters`.
+//
+// Both are properties of where the match landed, so neither moves when a
+// weight does, and typing one more character cannot turn a rejection back
+// into a result by arithmetic. Over every lint name typed out whole, run
+// together, spaced, abbreviated to initials, misspelt and spelt as a
+// variant, one target in ten thousand leaves the list and comes back.
 //
 // Greedy left-to-right subsequence scanning does not always find the
 // best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
@@ -203,8 +233,8 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Blend the two score components into the 0..1 value callers compare
-   * against a threshold.
+   * Blend the two score components into the 0..1 value results are
+   * ordered by.
    * @param {number} raw      score earned by the match
    * @param {number} length   the query's length
    * @param {number} extent   the target's length
@@ -579,6 +609,92 @@ var perfectionistMatch = (function () {
     return best;
   }
 
+  // ---- Admission ----------------------------------------------------------
+
+  // How many of a match's runs may begin inside a word. A reader typing a
+  // name from memory opens words wherever they like — that is what finds
+  // `bare_url` for `bur` — but a run beginning inside a word is a letter
+  // that landed where it happened to occur rather than where the reader
+  // aimed it. One of those is a slip of the fingers, and keeping it is
+  // what still finds `excessive_nesting` for `excessive_nestng`. Two is
+  // the characters falling where they may, which is how `bare` would
+  // otherwise answer `needless_borrowed_parameters`.
+  var SLIPS_ALLOWED = 1;
+
+  /**
+   * Where the word holding `index` begins.
+   * @param {string} haystack
+   * @param {number} index
+   * @returns {number}
+   */
+  function wordStartBefore(haystack, index) {
+    var at = index;
+    while (at > 0 && isAlnum(haystack.charAt(at - 1))) at--;
+    return at;
+  }
+
+  /**
+   * Did the reader aim this run, or did it land where it happened to? It
+   * is aimed when it opens a word, and also when it finishes one and
+   * holds more of that word than it skipped: `error` is the back five of
+   * `thiserror`'s nine, so a reader who types it has typed one of the
+   * words that identifier ran together — where one who types the `e` that
+   * `single` ends in has typed a letter that happens to fall last.
+   * @param {string} haystack
+   * @param {number[]} range
+   * @returns {boolean}
+   */
+  function aimed(haystack, range) {
+    var start = range[0];
+    if (isWordStart(haystack, start)) return true;
+    if (isAlnum(haystack.charAt(range[1]))) return false;
+    return range[1] - start >= start - wordStartBefore(haystack, start);
+  }
+
+  /**
+   * Is this match worth showing at all?
+   *
+   * Nothing here reads the score, and that is the point: a score orders
+   * matches against each other, where only the differences matter and the
+   * numbers are free to be re-tuned, while this decides whether a reader
+   * sees the target at all, where an answer that moves under re-tuning is
+   * an answer nobody can rely on. See the file header.
+   * @param {number[][]} ranges  the match's runs, in order
+   * @param {string} haystack    folded target
+   * @returns {boolean}
+   */
+  function admits(ranges, haystack) {
+    if (ranges.length === 0) return false;
+    // Where the reader's first characters landed is what the match is
+    // about. Landing in the middle of a word is a coincidence however the
+    // rest of it falls.
+    if (!aimed(haystack, ranges[0])) return false;
+    var slips = 0;
+    for (var i = 1; i < ranges.length; i++) {
+      if (isWordStart(haystack, ranges[i][0])) continue;
+      slips++;
+      if (slips > SLIPS_ALLOWED) return false;
+    }
+    return true;
+  }
+
+  /**
+   * The better of two matches, counting only those worth showing. A tier
+   * that scores higher but is not worth showing loses to one that is,
+   * which is what keeps a coincidence from hiding the real match behind
+   * it: `clone` lands in `cloning_getter` as a scattered `clon` plus a
+   * stray `e`, and as the variants tier's `clon`, and the second is the
+   * one a reader means.
+   * @param {{ score: number, ranges: number[][] } | null} left
+   * @param {{ score: number, ranges: number[][] } | null} right
+   * @param {string} haystack
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function betterAdmitted(left, right, haystack) {
+    if (right && !admits(right.ranges, haystack)) right = null;
+    return better(left, right);
+  }
+
   // How much higher a score has to be to count as higher at all. Two
   // tiers that place the same characters in the same places earn the same
   // total, and they reach it by different arithmetic — one character at a
@@ -655,12 +771,13 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
-    var verbatim = matchVerbatim(needle, haystack);
-    if (verbatim) return verbatim;
-    return better(
-      better(matchRespaced(needle, haystack), matchVariants(needle, haystack)),
-      matchScattered(needle, haystack)
-    );
+    var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
+    // The verbatim tier no longer ends the search on its own: a query can
+    // occur in the target and still occur inside a word, where another
+    // tier may have found the reader's actual match.
+    found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
+    found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
+    return betterAdmitted(found, matchScattered(needle, haystack), haystack);
   }
 
   /**
@@ -676,9 +793,9 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
-    var verbatim = matchVerbatim(needle, haystack);
-    if (verbatim) return verbatim;
-    return better(matchRespaced(needle, haystack), matchVariants(needle, haystack));
+    var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
+    found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
+    return betterAdmitted(found, matchVariants(needle, haystack), haystack);
   }
 
   /**
@@ -723,15 +840,5 @@ var perfectionistMatch = (function () {
     matchFuzzy: matchFuzzy,
     matchPhrase: matchPhrase,
     excerpt: excerpt,
-    // Below this score a match is noise rather than a result. Both bounds
-    // sit above what a scattered match earns when the query's characters
-    // merely happen to occur in order, and below what a verbatim run earns
-    // even mid-word — the gap the scoring model exists to open. The filter
-    // boxes hold the tighter of the two, as one constant, because they
-    // must agree with each other. The search's is a little looser: it
-    // offers a ranked ten rather than a filtered list, so a near miss
-    // there costs the reader a glance rather than a wrong answer.
-    FILTER_MIN_SCORE: 0.65,
-    SEARCH_MIN_SCORE: 0.6,
   };
 })();
