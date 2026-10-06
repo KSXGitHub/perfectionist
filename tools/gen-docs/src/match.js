@@ -968,7 +968,10 @@ var perfectionistMatch = (function () {
    * Narrow `text` to a window around its first matched range, so one long
    * paragraph can't swamp a result list. An elided end is marked with a
    * horizontal ellipsis, and the ranges come back shifted onto the window.
-   * Ranges that fall outside it are dropped.
+   * A range the window cuts through comes back cut to it, and one that
+   * falls outside altogether is dropped: what the reader can see of a
+   * match is marked, and a match longer than the window is still most of
+   * what they are looking at.
    * @param {string} text
    * @param {number[][]} ranges
    * @param {number} limit  the longest window to keep, in characters
@@ -986,8 +989,11 @@ var perfectionistMatch = (function () {
     /** @type {number[][]} */
     var shifted = [];
     for (var i = 0; i < ranges.length; i++) {
-      if (ranges[i][0] < start || ranges[i][1] > end) continue;
-      shifted.push([ranges[i][0] - start, ranges[i][1] - start]);
+      var from = Math.max(ranges[i][0], start);
+      var to = Math.min(ranges[i][1], end);
+      // Nothing of this one is inside the window.
+      if (from >= to) continue;
+      shifted.push([from - start, to - start]);
     }
     var prefix = start > 0 ? "\u2026" : "";
     if (prefix) {
