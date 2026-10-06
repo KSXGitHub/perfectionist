@@ -93,8 +93,7 @@
 // and is not worth showing loses to one that is, which is what keeps a
 // coincidence from hiding the real match behind it:
 //
-//   1. Verbatim — the query occurs in the target exactly. Nothing beats
-//      this.
+//   1. Verbatim — the query occurs in the target exactly.
 //   2. Respaced — the query occurs except that its separators do not line
 //      up: one the query wrote is missing from the target, one the target
 //      carries is absent from the query, or a run of either stands where a
@@ -125,8 +124,7 @@
 // against what those characters would have earned had the query been
 // there whole. The tail of a word the target ends differently, and a
 // separator the target does not spell the same way, are characters the
-// reader typed that earn nothing. So a near miss cannot reach what an
-// exact match earns.
+// reader typed that earn nothing.
 //
 // What a tier counts as the query differs, because what it is able to
 // place does. Verbatim and respaced place every character the query
@@ -161,15 +159,15 @@
 //
 // Both are properties of where the match landed, so neither moves when a
 // weight does, and typing one more character cannot turn a rejection back
-// into a result by arithmetic. Over every lint name typed out whole, run
-// together, spaced, abbreviated to initials, misspelt and spelt as a
-// variant, one target in ten thousand leaves the list and comes back.
+// into a result by arithmetic. What a longer query can still change is
+// which tier answers it, so a target is not proof against leaving the
+// list and returning — only against doing so because a weight moved.
 //
 // Greedy left-to-right subsequence scanning does not always find the
 // best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
 // missing the contiguous `ab` at 3). That is why the verbatim tier is
-// tried first and exactly — scanning the occurrences of the whole query
-// and keeping the one that opens a word, else the first — and why the
+// tried first and exactly — scanning every occurrence of the whole query
+// and keeping the one worth showing, else the best-scoring — and why the
 // subsequence scan is the last resort rather than the only method.
 // ============================================================================
 
@@ -437,7 +435,8 @@ var perfectionistMatch = (function () {
    *
    * A stripper over the regular English endings and nothing more — no
    * dictionary, no irregular forms, and no ending that rewrites the word
-   * rather than extending it, so `getter` and `getting` stay two words.
+   * rather than extending it, so `getter` stems to itself and never
+   * reaches `getting`.
    * Every rule takes characters off the end only, which leaves a stem
    * that is always a prefix of the word it came from; `matchVariants`
    * is built on that.
