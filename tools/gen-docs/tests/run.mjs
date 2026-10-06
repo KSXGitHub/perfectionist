@@ -15,15 +15,17 @@
 // Node needs no packages for this: `node:vm` and the rest are built in,
 // which is why `just test-js` installs nothing. Nor is this file
 // type-checked — tsconfig.json declares no ambient Node types, and pulling
-// them in for one runner would mean a dev dependency to serve a file that
-// every run of `just all` executes anyway.
+// them in for one runner would mean a dev dependency to serve one file
+// that CI runs on every change regardless.
 //
-// `node:test` ran these until the output became the problem. Its reporters
-// are TAP (six lines a case) or a tick-and-duration list, and `just all`
-// prints this run directly after `cargo test`, where neither reads as the
-// same suite continuing. What it was doing for us was a registry, an exit
-// code and a try/catch, and the harness is already the registry — so the
-// rest is written out below and the lines match the run above them.
+// `node:test` ran these until the output became the problem: six lines a
+// case in TAP, 214 of them for thirty-four cases, behind a banner naming
+// a protocol nothing here speaks. Its other reporters trade that for a
+// tick and a duration per case, or for rows of dots. What it was doing
+// for us was a registry, an exit code and a try/catch, and the harness is
+// already the registry — so the rest is written out below, in the shape
+// `cargo test` reports its own, which is the shape a reader of this
+// repository already knows how to read.
 //
 // Every `*.test.js` beside this file is loaded, so a case file added here
 // is picked up with no edit. The other runner — `tests.html`, rendered by

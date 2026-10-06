@@ -31,7 +31,6 @@ all:
   just doc
   just lint
   just test
-  just test-js
   just self-lint
 
 # Check format
