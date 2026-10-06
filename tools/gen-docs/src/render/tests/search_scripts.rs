@@ -165,6 +165,24 @@ fn the_search_scripts_clone_only_where_repetition_is_the_point() {
 }
 
 #[test]
+fn the_overlay_moves_focus_rather_than_faking_a_keystroke() {
+    // Up and Down walk the overlay's focusable elements by focusing one.
+    // The obvious alternative — building a Tab `KeyboardEvent` and
+    // dispatching it — does nothing whatever: an event constructed in
+    // script is untrusted, and an untrusted event performs no default
+    // action, so focus stays where it was. It fails silently, which is
+    // why it is worth pinning that it is not what is here.
+    assert!(
+        SEARCH_OVERLAY_SCRIPT.contains(".focus()"),
+        "the overlay should move focus by focusing an element",
+    );
+    assert!(
+        !SEARCH_OVERLAY_SCRIPT.contains("new KeyboardEvent"),
+        "a dispatched Tab moves nothing; focus the element instead",
+    );
+}
+
+#[test]
 fn the_script_chooses_the_empty_state_but_does_not_word_it() {
     // The wording is markup; the script owns only which of the three
     // panels shows. A string of prose here would be text that escaped the
