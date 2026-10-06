@@ -77,8 +77,9 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
 /// The query-matching library the filter boxes and the search overlay
 /// share, written beside `index.html` and loaded via `<script src>`
-/// rather than inlined. It defines the scoring and the score thresholds
-/// and nothing else; it draws no element and binds no handler of its own.
+/// rather than inlined. It decides which targets a query matches and how
+/// well, and nothing else; it draws no element and binds no handler of its
+/// own.
 /// The page loads classic scripts, so its consumers reach it through one
 /// global — see the file's own header for why that is the shape, rather
 /// than a module.
@@ -135,8 +136,8 @@ pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 /// so they can't drift.
 ///
 /// The three libraries precede the scripts that read their globals, and
-/// `match.js` precedes `rank.js`, which reads its threshold — so every
-/// one is in place before anything can reach it.
+/// `match.js` precedes `rank.js`, which reads its matchers — so every one
+/// is in place before anything can reach it.
 pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     NAV_TOGGLE_SCRIPT_FILENAME,
     THEME_TOGGLE_SCRIPT_FILENAME,
