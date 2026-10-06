@@ -31,6 +31,7 @@ all:
   just doc
   just lint
   just test
+  just test-js
   just self-lint
 
 # Check format
@@ -110,16 +111,16 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Check the docs-site JavaScript: types, then unit tests. Not in `just all`.
+# Check the docs-site JavaScript: the type-check, then the unit tests.
 check-js:
   just check-js-types
   just test-js
 
 # Type-check the docs-site JavaScript (tools/gen-docs/src/*.js and the test
 # files beside them) from its JSDoc annotations with the TypeScript compiler.
-# Emits nothing; tsconfig.json drives the check. Neither this nor `test-js`
-# needs the Rust toolchain, so the two are kept out of `just all` and run in
-# their own CI (.github/workflows/check-js.yaml).
+# Emits nothing; tsconfig.json drives the check. This is the one check
+# `just all` leaves out, because it installs packages and no step of that
+# recipe does; CI runs it in .github/workflows/check-js.yaml.
 check-js-types:
   #!/usr/bin/env bash
   set -euo pipefail
