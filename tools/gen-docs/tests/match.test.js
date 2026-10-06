@@ -261,6 +261,19 @@
     t.greater(run.score, broken.score, "crossing the separator costs the run");
   });
 
+  t.add("one phrase is marked one way however its separators were typed", function () {
+    // The respaced and variants tiers place the same characters here and
+    // so score the same, and they mark differently — the one span against
+    // one per word. Which was taken used to come down to the last bit of
+    // a double, since the two reach the same total by different
+    // arithmetic, and the reader saw the phrase marked whole for one
+    // query and word by word for the next.
+    var target = "Flags closure parameters whose identifier is one letter";
+    var joined = t.found(m.matchPhrase("flagsclosureparameters", target), "run together");
+    var padded = t.found(m.matchPhrase("flags  closure   parameters", target), "padded");
+    t.deepEqual(padded.ranges, joined.ranges, "the phrase is marked as the phrase either way");
+  });
+
   t.add("a query whose separators line up scores above one whose do not", function () {
     var target = "Flags closure parameters whose identifier is one letter";
     var exact = t.found(m.matchPhrase("flags closure parameters", target), "as written");
