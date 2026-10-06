@@ -589,8 +589,11 @@ var perfectionistMatch = (function () {
 
   /**
    * Whichever of two matches scores higher, where either may be absent. A
-   * tie keeps the first, which is the stronger tier, and whose ranges say
-   * more for it: a phrase marked as the phrase rather than word by word.
+   * tie keeps the first, which is the stronger tier, so which tier
+   * answers a tie is a rule and not a rounding. No query now tells the
+   * two apart — tiers that tie place the same characters, and the
+   * ranges they hand back agree — so this settles the order rather than
+   * any answer.
    * @param {{ score: number, ranges: number[][] } | null} left
    * @param {{ score: number, ranges: number[][] } | null} right
    * @returns {{ score: number, ranges: number[][] } | null}
