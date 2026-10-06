@@ -277,6 +277,11 @@ var perfectionistMatch = (function () {
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function matchVerbatim(needle, haystack) {
+    // `indexOf("")` answers at every index and clamps past the end, so an
+    // empty needle would never take the loop below to -1. Both matchers
+    // turn an empty query away before any tier runs; this keeps the tier
+    // safe to call on its own.
+    if (needle.length === 0) return null;
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null;
     var at = haystack.indexOf(needle);
