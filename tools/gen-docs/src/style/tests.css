@@ -89,7 +89,10 @@
 }
 
 /* Indented to the name rather than to the glyph, so the message reads as
-   belonging to the case above it. */
+   belonging to the case above it. `samp` is already monospace by default;
+   naming a stack picks a better face than the generic family, and the
+   explicit size heads off the smaller default some engines give any
+   element that asks for `monospace`. */
 .why {
   display: block;
   margin-left: 1.25em;

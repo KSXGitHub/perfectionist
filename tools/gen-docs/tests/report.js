@@ -96,7 +96,17 @@
       }
       setState(pending[j].row, pending[j].indicator, failure ? "failed" : "passed");
       if (!failure) continue;
-      var why = document.createElement("span");
+      // The harness's message, verbatim from the run, which is what
+      // `samp` is for: sample output from a program. Monospace is its
+      // default rendering too, which is what this was already being
+      // given by hand.
+      //
+      // `output` is the other candidate and is wrong twice over. It is
+      // for a value the page itself computed and would hand back to a
+      // form, not for a program's own words quoted into the page; and
+      // its implicit role is `status`, a live region, so a screen reader
+      // would announce every failure message as the run injects it.
+      var why = document.createElement("samp");
       why.className = "why";
       why.textContent = failure;
       pending[j].row.appendChild(why);
