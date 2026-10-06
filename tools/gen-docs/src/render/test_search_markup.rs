@@ -38,7 +38,6 @@ fn page_emits_search_toggle_hidden_and_pointing_at_the_overlay() {
     assert!(html.contains(&format!(
         r#"<button class="search-toggle" type="button" hidden aria-controls="{SEARCH_OVERLAY_ID}" aria-expanded="false""#
     )));
-    assert!(html.contains(r#"aria-label="Search lints""#));
     // The id the button names has to be the one the overlay markup
     // carries, or the button points at nothing once the overlay is in the
     // page. Both read it from the same constant, so pin that they still

@@ -312,6 +312,10 @@
   // Escape handler.
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
+    // Mid-composition the key belongs to the IME, which abandons the
+    // candidate on it. Closing the overlay here would dismiss the dialog
+    // and commit the half-composed text into the input it just hid.
+    if (event.isComposing) return;
     if (!isOpen()) return;
     event.preventDefault();
     closeOverlay();
@@ -379,6 +383,9 @@
   input.addEventListener("search", apply);
   input.addEventListener("keydown", function (event) {
     if (event.key !== "Enter") return;
+    // Mid-composition Enter accepts the IME's candidate, and the `input`
+    // event that follows re-runs the query anyway.
+    if (event.isComposing) return;
     // The input is in no form, so Enter submits nothing; suppressing the
     // default only keeps a stray form association from navigating.
     event.preventDefault();
