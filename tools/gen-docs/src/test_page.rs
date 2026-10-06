@@ -166,7 +166,10 @@ pub(crate) fn render_test_page() -> String {
                 }
                 p id="summary" {}
                 p id="engine" {}
-                div id="cases" {}
+                // How many case files the page loaded, which report.js
+                // has no other way of knowing: see its own note on what
+                // a file an engine rejects leaves behind.
+                div id="cases" data-expected-groups=(TEST_CASE_SCRIPTS.len()) {}
                 @for src in test_page_scripts() {
                     script src=(src) {}
                 }

@@ -51,6 +51,20 @@
     indicator.setAttribute("aria-label", state);
   }
 
+  /**
+   * What a case threw, as one line. Duck-typed rather than tested with
+   * `instanceof`, which is how `run.mjs` reads it too: the two runners
+   * report the same suite, so a throw has to read alike in both.
+   * @param {unknown} thrown
+   * @returns {string}
+   */
+  function reason(thrown) {
+    if (thrown !== null && typeof thrown === "object" && "message" in thrown) {
+      return String(thrown.message);
+    }
+    return String(thrown);
+  }
+
   var groups = perfectionistTests.all();
   var total = 0;
   var failed = 0;
@@ -87,14 +101,20 @@
     list.appendChild(rows);
 
     for (var j = 0; j < pending.length; j++) {
+      // Whether it threw, kept apart from what it said: a throw carrying
+      // no message would otherwise read as having passed while still
+      // counting against the total, and the summary would contradict
+      // every row on the page.
+      var broke = false;
       var failure = "";
       try {
         pending[j].run();
       } catch (thrown) {
-        failure = thrown instanceof Error ? thrown.message : String(thrown);
+        broke = true;
+        failure = reason(thrown);
         failed += 1;
       }
-      setState(pending[j].row, pending[j].indicator, failure ? "failed" : "passed");
+      setState(pending[j].row, pending[j].indicator, broke ? "failed" : "passed");
       if (!failure) continue;
       // The harness's message, quoted verbatim: output from a program,
       // which is what `samp` is for.
@@ -105,8 +125,21 @@
     }
   }
 
-  summary.textContent = failed
-    ? failed + " of " + total + " cases failed"
-    : "all " + total + " cases passed";
-  summary.setAttribute("data-result", failed ? "failed" : "passed");
+  // A case file an engine rejects outright — the failure this page exists
+  // to find — is skipped whole, and registers nothing. The groups that did
+  // register would then report green for a suite that had silently shrunk,
+  // so the page carries how many files it loaded and this holds the
+  // registered groups to that count. A missing attribute reads as 0 and
+  // asks for nothing; a test beside test_page.rs keeps it there.
+  var expected = Number(list.getAttribute("data-expected-groups"));
+  var missing = expected > groups.length ? expected - groups.length : 0;
+  var verdict = [];
+  if (missing > 0) {
+    verdict.push(missing + " of " + expected + " case files did not load");
+  }
+  if (failed > 0) {
+    verdict.push(failed + " of " + total + " cases failed");
+  }
+  summary.textContent = verdict.length > 0 ? verdict.join("; ") : "all " + total + " cases passed";
+  summary.setAttribute("data-result", verdict.length > 0 ? "failed" : "passed");
 })();

@@ -205,6 +205,27 @@ fn every_state_the_reporter_sets_is_styled() {
 }
 
 #[test]
+fn the_page_says_how_many_case_files_it_loaded() {
+    // report.js reports whatever registered, and a case file an engine
+    // rejects outright registers nothing — the one failure this page
+    // exists to find. The count is the page's to supply, so a reporter
+    // reading it back can tell a shrunken suite from a passing one.
+    assert!(
+        render_test_page().contains(&format!(
+            r#"data-expected-groups="{}""#,
+            TEST_CASE_SCRIPTS.len()
+        )),
+        "the page must carry one expected group per case file",
+    );
+    assert!(
+        TEST_REPORT_SCRIPT
+            .1
+            .contains(r#"getAttribute("data-expected-groups")"#),
+        "report.js must read the count the page carries",
+    );
+}
+
+#[test]
 fn the_page_asks_not_to_be_indexed() {
     assert!(render_test_page().contains(r#"<meta name="robots" content="noindex">"#));
 }
