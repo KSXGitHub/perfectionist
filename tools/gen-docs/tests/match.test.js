@@ -57,6 +57,20 @@
     t.ok(m.matchPhrase("bare url", "bare_url"), "and verbatim matching folds them too");
   });
 
+  t.add("a run of separators folds to a run of spaces, not to one", function () {
+    // Each separator becomes one space rather than a run becoming one,
+    // so the folded string indexes exactly like the string handed in —
+    // which is what lets a range be used to highlight that string.
+    // Collapsing would shift every index after the run.
+    var target = "a  bare  url";
+    var hit = t.found(m.matchPhrase("bare", target), "`bare` appears");
+    t.equal(
+      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
+      "bare",
+      "the range still cuts the word out of the string as it was given",
+    );
+  });
+
   // ---- Which occurrence is taken ------------------------------------------
 
   t.add("a verbatim match prefers the occurrence that opens a word", function () {
@@ -203,6 +217,9 @@
     var text = "the quick brown fox jumps over the lazy dog";
     var windowed = m.excerpt(text, [[20, 25]], 20);
     t.greater(text.length, windowed.text.length, "the text is cut down");
+    // Asserted before the range is read, so a window that lost it fails
+    // on this claim rather than crashing on the next line.
+    t.equal(windowed.ranges.length, 1, "the match is inside the window the match anchored");
     t.equal(
       windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
       "jumps",

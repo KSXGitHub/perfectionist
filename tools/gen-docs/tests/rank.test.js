@@ -189,6 +189,30 @@
     }
   });
 
+  t.add("a letter buried mid-word is not a prose match", function () {
+    // `matchPhrase` finds a single character almost anywhere, so without
+    // the score bound on prose a letter typed into the search would match
+    // the statement of nearly every rule on the page.
+    t.deepEqual(
+      r.rank([entry({ statement: "an example of prose" })], "x"),
+      [],
+      "`x` sits inside `example` and nowhere else, so it finds nothing",
+    );
+  });
+
+  t.add("a rule matching in two fields scores by the better of them", function () {
+    // The three field scores are weighed against each other, not summed:
+    // a second, weaker match cannot push a rule past one whose name
+    // matched just as well, and no score may leave 0..1.
+    var both = only(
+      [entry({ name: "bare_url", statement: "a bare URL in a comment" })],
+      "bare url",
+    );
+    var nameOnly = only([entry({ name: "bare_url" })], "bare url");
+    t.ok(both.score <= 1, "a score is still a fraction");
+    t.equal(both.score, nameOnly.score, "the statement match adds nothing to the better one");
+  });
+
   t.add("a coincidence is kept out of the list", function () {
     // `bare` occurs, strewn, in a name that has nothing to do with it; the
     // score bound is what stops every rule on the page from matching every
