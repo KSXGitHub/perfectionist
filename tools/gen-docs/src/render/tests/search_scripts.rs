@@ -165,6 +165,29 @@ fn the_search_scripts_clone_only_where_repetition_is_the_point() {
 }
 
 #[test]
+fn every_key_handler_declines_a_composition() {
+    // Mid-composition a key belongs to the IME: Enter accepts its
+    // candidate and Escape abandons it. A handler that acted on one
+    // anyway would dismiss the box or the dialog the reader was still
+    // typing into and commit the half-composed text behind it. So every
+    // `keydown` listener in the two control scripts declines one, which
+    // is counted rather than listed so a listener added later is covered
+    // the moment it is written.
+    for (name, script) in [
+        ("filter_boxes.js", FILTER_BOXES_SCRIPT),
+        ("search_overlay.js", SEARCH_OVERLAY_SCRIPT),
+    ] {
+        let listeners = script.matches(r#"addEventListener("keydown""#).count();
+        assert!(listeners > 0, "{name} should listen for keydown at all");
+        assert_eq!(
+            script.matches("event.isComposing").count(),
+            listeners,
+            "each of {name}'s keydown listeners must decline a composition",
+        );
+    }
+}
+
+#[test]
 fn the_overlay_moves_focus_rather_than_faking_a_keystroke() {
     // Up and Down walk the overlay's focusable elements by focusing one.
     // The obvious alternative — building a Tab `KeyboardEvent` and
