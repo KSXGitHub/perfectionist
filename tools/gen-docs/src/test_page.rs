@@ -110,7 +110,7 @@ pub(crate) fn render_test_page() -> String {
                 }
                 p id="summary" {}
                 p id="engine" {}
-                ul id="cases" {}
+                div id="cases" {}
                 @for src in test_page_scripts() {
                     script src=(src) {}
                 }

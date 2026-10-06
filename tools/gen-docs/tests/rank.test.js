@@ -13,6 +13,8 @@
   var t = perfectionistTests;
   var r = perfectionistRank;
 
+  t.group("rank.test.js");
+
   /**
    * One entry. The defaults match no query any case here types, so a
    * fixture names only the field it is about.

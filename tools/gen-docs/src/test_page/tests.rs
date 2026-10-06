@@ -91,6 +91,20 @@ fn the_page_loads_the_libraries_it_tests_and_every_asset_it_ships() {
 }
 
 #[test]
+fn every_case_file_opens_a_group_named_after_itself() {
+    // Both runners head a file's cases with the name it opened its group
+    // under, so a file copied from its neighbour and edited would file
+    // its cases under the neighbour's heading, in both runners at once.
+    for (name, source) in TEST_CASE_SCRIPTS {
+        let declaration = format!(r#"group("{name}")"#);
+        assert!(
+            source.contains(&declaration),
+            "{name} should open its group with {declaration}",
+        );
+    }
+}
+
+#[test]
 fn the_page_carries_every_id_the_reporter_looks_up() {
     // report.js finds its elements by id and bails when one is missing,
     // which would leave the page blank with nothing on it to say why. The

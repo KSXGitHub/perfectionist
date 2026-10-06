@@ -14,6 +14,8 @@
   var t = perfectionistTests;
   var m = perfectionistMatch;
 
+  t.group("match.test.js");
+
   // ---- What counts as a match ---------------------------------------------
 
   t.add("matchPhrase wants the whole query verbatim", function () {

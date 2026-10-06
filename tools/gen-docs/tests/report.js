@@ -24,34 +24,45 @@
   // The result below means little without the engine that produced it.
   engine.textContent = navigator.userAgent;
 
-  var cases = perfectionistTests.all();
+  var groups = perfectionistTests.all();
+  var total = 0;
   var failed = 0;
 
-  for (var i = 0; i < cases.length; i++) {
-    var failure = "";
-    try {
-      cases[i].run();
-    } catch (thrown) {
-      failure = thrown instanceof Error ? thrown.message : String(thrown);
-      failed += 1;
+  for (var g = 0; g < groups.length; g++) {
+    var heading = document.createElement("h2");
+    heading.textContent = groups[g].name;
+    list.appendChild(heading);
+
+    var rows = document.createElement("ul");
+    var cases = groups[g].cases;
+    total += cases.length;
+    for (var i = 0; i < cases.length; i++) {
+      var failure = "";
+      try {
+        cases[i].run();
+      } catch (thrown) {
+        failure = thrown instanceof Error ? thrown.message : String(thrown);
+        failed += 1;
+      }
+      var row = document.createElement("li");
+      row.className = failure ? "fail" : "pass";
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = cases[i].name;
+      row.appendChild(name);
+      if (failure) {
+        var why = document.createElement("span");
+        why.className = "why";
+        why.textContent = failure;
+        row.appendChild(why);
+      }
+      rows.appendChild(row);
     }
-    var row = document.createElement("li");
-    row.className = failure ? "fail" : "pass";
-    var name = document.createElement("span");
-    name.className = "name";
-    name.textContent = cases[i].name;
-    row.appendChild(name);
-    if (failure) {
-      var why = document.createElement("span");
-      why.className = "why";
-      why.textContent = failure;
-      row.appendChild(why);
-    }
-    list.appendChild(row);
+    list.appendChild(rows);
   }
 
   summary.textContent = failed
-    ? failed + " of " + cases.length + " cases failed"
-    : "all " + cases.length + " cases passed";
+    ? failed + " of " + total + " cases failed"
+    : "all " + total + " cases passed";
   summary.className = failed ? "fail" : "pass";
 })();

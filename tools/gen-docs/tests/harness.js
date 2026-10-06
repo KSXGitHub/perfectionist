@@ -5,10 +5,10 @@
 // The page's libraries are classic scripts that publish a global, which is
 // what makes them testable at all without a module system — and it is also
 // what lets one set of cases serve both runners. A case registers itself
-// here; `run.mjs` loads this file and the case files into a bare V8 context
-// and runs each case from the terminal, while `tests.html` loads the same
-// files into a browser and reports them on the page. Neither runner knows
-// anything about the other.
+// here, against the group its file opened; `run.mjs` loads this file and
+// the case files into a bare V8 context and runs each group from the
+// terminal, while `tests.html` loads the same files into a browser and
+// reports them on the page. Neither runner knows anything about the other.
 //
 // The assertions are deliberately few. These cases check scores, orderings
 // and ranges, so what is wanted is equality, deep equality on small arrays,
@@ -17,23 +17,51 @@
 // to report a failure.
 // ============================================================================
 
+/**
+ * One case: the claim it makes, and the function that checks it.
+ * @typedef {object} TestCase
+ * @property {string} name
+ * @property {() => void} run
+ */
+
+/**
+ * One file's cases, which both runners report as a block.
+ * @typedef {object} TestGroup
+ * @property {string} name
+ * @property {TestCase[]} cases
+ */
+
 var perfectionistTests = (function () {
-  /** @type {{ name: string, run: () => void }[]} */
-  var cases = [];
+  /** @type {TestGroup[]} */
+  var groups = [];
 
   /**
-   * Register a case. The name is what both runners print, so it should
-   * read as the claim being made rather than as a label.
+   * Open a group, which a case file does once at the top with its own
+   * name. Both runners report a group at a time, the way `cargo test`
+   * reports a test target at a time.
+   * @param {string} name
+   */
+  function group(name) {
+    groups.push({ name: name, cases: [] });
+  }
+
+  /**
+   * Register a case against the open group. The name is what both
+   * runners print, so it should read as the claim being made rather than
+   * as a label.
    * @param {string} name
    * @param {() => void} run
    */
   function add(name, run) {
-    cases.push({ name: name, run: run });
+    if (groups.length === 0) {
+      throw new Error("`" + name + "` was registered before any group was opened");
+    }
+    groups[groups.length - 1].cases.push({ name: name, run: run });
   }
 
-  /** @returns {{ name: string, run: () => void }[]} */
+  /** @returns {TestGroup[]} */
   function all() {
-    return cases;
+    return groups;
   }
 
   /**
@@ -109,6 +137,7 @@ var perfectionistTests = (function () {
   }
 
   return {
+    group: group,
     add: add,
     all: all,
     ok: ok,

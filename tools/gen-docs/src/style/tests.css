@@ -33,9 +33,15 @@
   display: none;
 }
 
-#cases {
+#cases ul {
   list-style: none;
   padding: 0;
+}
+
+/* The file a block of cases came from, set like the filename it is. */
+#cases h2 {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1em;
 }
 
 /* The pass / fail colour is carried by the rule's own border, which is

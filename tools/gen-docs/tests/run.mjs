@@ -67,37 +67,40 @@ function reason(thrown) {
   return String(thrown);
 }
 
-const registered = context.perfectionistTests.all();
-const started = process.hrtime.bigint();
-const failures = [];
+for (const group of context.perfectionistTests.all()) {
+  const started = process.hrtime.bigint();
+  const failures = [];
 
-console.log(`\nrunning ${registered.length} ${registered.length === 1 ? "test" : "tests"}`);
-for (const item of registered) {
-  try {
-    item.run();
-    console.log(`test ${item.name} ... ok`);
-  } catch (thrown) {
-    failures.push({ name: item.name, why: reason(thrown) });
-    console.log(`test ${item.name} ... FAILED`);
+  console.log(`\n     Running ${group.name}\n`);
+  console.log(`running ${group.cases.length} ${group.cases.length === 1 ? "test" : "tests"}`);
+  for (const item of group.cases) {
+    try {
+      item.run();
+      console.log(`test ${item.name} ... ok`);
+    } catch (thrown) {
+      failures.push({ name: item.name, why: reason(thrown) });
+      console.log(`test ${item.name} ... FAILED`);
+    }
   }
+
+  if (failures.length > 0) {
+    console.log("\nfailures:\n");
+    for (const failure of failures) {
+      console.log(`---- ${failure.name} ----`);
+      console.log(`${failure.why}\n`);
+    }
+    console.log("failures:");
+    for (const failure of failures) {
+      console.log(`    ${failure.name}`);
+    }
+    process.exitCode = 1;
+  }
+
+  const seconds = Number(process.hrtime.bigint() - started) / 1e9;
+  console.log(
+    `\ntest result: ${failures.length === 0 ? "ok" : "FAILED"}. ` +
+      `${group.cases.length - failures.length} passed; ${failures.length} failed; ` +
+      `finished in ${seconds.toFixed(2)}s`,
+  );
 }
-
-if (failures.length > 0) {
-  console.log("\nfailures:\n");
-  for (const failure of failures) {
-    console.log(`---- ${failure.name} ----`);
-    console.log(`${failure.why}\n`);
-  }
-  console.log("failures:");
-  for (const failure of failures) {
-    console.log(`    ${failure.name}`);
-  }
-  process.exitCode = 1;
-}
-
-const seconds = Number(process.hrtime.bigint() - started) / 1e9;
-console.log(
-  `\ntest result: ${failures.length === 0 ? "ok" : "FAILED"}. ` +
-    `${registered.length - failures.length} passed; ${failures.length} failed; ` +
-    `finished in ${seconds.toFixed(2)}s\n`,
-);
+console.log();
