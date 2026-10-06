@@ -191,12 +191,21 @@ var perfectionistMatch = (function () {
   /**
    * Case-fold a string and flatten its separators, as the file header
    * describes. One character in, one character out, so the result indexes
-   * exactly like the input.
+   * exactly like the input — which every range handed back depends on,
+   * since they index the folded string and are read against the original.
+   *
+   * Lower-casing is not length-preserving for every character: `İ` comes
+   * back as two code units, and one of those ahead of a match would shift
+   * every range after it. So where it grows the string, the case is left
+   * as it stands and only the separators are flattened. A query typed in
+   * another case then misses such a target, which is the smaller of the
+   * two wrongs — the other is a highlight on text the reader never typed.
    * @param {string} text
    * @returns {string}
    */
   function fold(text) {
-    return text.toLowerCase().replace(/[-_\s]/g, " ");
+    var lowered = text.toLowerCase();
+    return (lowered.length === text.length ? lowered : text).replace(/[-_\s]/g, " ");
   }
 
   /**
