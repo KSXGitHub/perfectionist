@@ -37,22 +37,28 @@ fn every_case_and_fixture_file_is_on_the_page() {
         found.sort();
         found
     };
+    // Left unsorted, against a sorted directory listing, so the lists are
+    // held to the order the headless runner reads the same files in —
+    // which it gets from `readdir().sort()`. Membership alone would let
+    // one fixture load after another that reads it in one runner and
+    // before it in the other.
     let listed = |scripts: &[(&str, &str)]| {
-        let mut out: Vec<String> = scripts.iter().map(|&(name, _)| name.to_owned()).collect();
-        out.sort();
-        out
+        scripts
+            .iter()
+            .map(|&(name, _)| name.to_owned())
+            .collect::<Vec<String>>()
     };
     // `.test.js` ends with `.js`, so the fixtures are looked for by the
     // longer suffix and the cases excluded from what that finds.
     assert_eq!(
         names(".test.js"),
         listed(TEST_CASE_SCRIPTS),
-        "every *.test.js in {dir} must be listed in TEST_CASE_SCRIPTS",
+        "every *.test.js in {dir} must be listed in TEST_CASE_SCRIPTS, in that order",
     );
     assert_eq!(
         names(".fixtures.js"),
         listed(TEST_FIXTURE_SCRIPTS),
-        "every *.fixtures.js in {dir} must be listed in TEST_FIXTURE_SCRIPTS",
+        "every *.fixtures.js in {dir} must be listed in TEST_FIXTURE_SCRIPTS, in that order",
     );
     assert!(!TEST_CASE_SCRIPTS.is_empty(), "the suite cannot be empty");
 }
@@ -151,6 +157,17 @@ fn the_page_carries_every_id_the_reporter_looks_up() {
         looked_up > 0,
         "no id lookups found in report.js, so the scan above checked nothing",
     );
+    // The scan knows one way of looking an element up, so every way the
+    // reporter reaches the document has to be that one or a `createElement`.
+    // Without this it could look an element up by some other call, go
+    // unscanned, and still leave a count above zero here.
+    let source = TEST_REPORT_SCRIPT.1;
+    assert_eq!(
+        source.matches("document.").count(),
+        looked_up + source.matches("document.createElement(").count(),
+        "report.js should reach the document only to look an id up the one way \
+         this scans for, or to build an element, or the scan above misses a lookup",
+    );
 }
 
 #[test]
@@ -169,9 +186,13 @@ fn every_state_the_reporter_sets_is_styled() {
         .split_once("};")
         .expect("report.js's MARKS table should be terminated")
         .0;
+    // Split on the separator between entries rather than on newlines: a
+    // table written on one line would otherwise yield one "state" — the
+    // first — and the count below would still pass while the rest went
+    // unchecked.
     let mut styled = 0;
-    for line in table.lines() {
-        let Some((name, _)) = line.trim().split_once(':') else {
+    for entry in table.split(',') {
+        let Some((name, _)) = entry.trim().split_once(':') else {
             continue;
         };
         assert!(
