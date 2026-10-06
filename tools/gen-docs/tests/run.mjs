@@ -28,8 +28,8 @@ import { createContext, runInContext } from "node:vm";
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, "..", "src");
 
-const cases = (await readdir(here)).filter((name) => name.endsWith("_test.js")).sort();
-if (cases.length === 0) throw new Error(`no *_test.js in ${here}`);
+const cases = (await readdir(here)).filter((name) => name.endsWith(".test.js")).sort();
+if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
 
 // The browser page lists its scripts in markup, so a case file added here
 // reaches that runner only if someone remembers to add the tag. Rather
