@@ -66,8 +66,10 @@
 // ============================================================================
 
 (function () {
-  // Also the load-bearing check that match.js ran: see the file header.
+  // Also the load-bearing check that the two libraries this file is
+  // nothing without have run: see the file header.
   var FILTER_MIN_SCORE = perfectionistMatch.FILTER_MIN_SCORE;
+  var renderName = perfectionistHighlight.renderName;
 
   /**
    * One filterable entry: the row or list item to show, hide and reorder,
@@ -200,7 +202,7 @@
       for (var i = 0; i < items.length; i++) {
         items[i].element.hidden = false;
         items[i].element.removeAttribute("data-score");
-        perfectionistMatch.renderName(items[i].nameHost, items[i].name, []);
+        renderName(items[i].nameHost, items[i].name, []);
         // Re-appending in `items` order restores the rendered order, since
         // `items` was collected in it.
         list.appendChild(items[i].element);
@@ -223,7 +225,7 @@
         }
         items[i].element.hidden = true;
         items[i].element.removeAttribute("data-score");
-        perfectionistMatch.renderName(items[i].nameHost, items[i].name, []);
+        renderName(items[i].nameHost, items[i].name, []);
       }
       // Best match first, ties broken by rendered order. The tie-break is
       // explicit rather than left to the sort's stability, which engines
@@ -238,7 +240,7 @@
         // The score the entry was ranked by, for whoever is debugging a
         // ranking that reads wrong.
         entry.item.element.setAttribute("data-score", entry.score.toFixed(4));
-        perfectionistMatch.renderName(entry.item.nameHost, entry.item.name, entry.ranges);
+        renderName(entry.item.nameHost, entry.item.name, entry.ranges);
         list.appendChild(entry.item.element);
       }
     }

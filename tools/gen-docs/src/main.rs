@@ -39,7 +39,8 @@ use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
     CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, FILTER_BOXES_SCRIPT,
     FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
-    MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME,
+    HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME,
+    NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RANK_SCRIPT, RANK_SCRIPT_FILENAME,
     RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, SEARCH_OVERLAY_SCRIPT,
     SEARCH_OVERLAY_SCRIPT_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
     THEME_TOGGLE_SCRIPT_FILENAME, render_page,
@@ -212,6 +213,10 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     .expect("failed to write config-toggle script");
     fs::write(out_dir.join(MATCH_SCRIPT_FILENAME), MATCH_SCRIPT)
         .expect("failed to write match script");
+    fs::write(out_dir.join(RANK_SCRIPT_FILENAME), RANK_SCRIPT)
+        .expect("failed to write rank script");
+    fs::write(out_dir.join(HIGHLIGHT_SCRIPT_FILENAME), HIGHLIGHT_SCRIPT)
+        .expect("failed to write highlight script");
     fs::write(
         out_dir.join(FILTER_BOXES_SCRIPT_FILENAME),
         FILTER_BOXES_SCRIPT,
