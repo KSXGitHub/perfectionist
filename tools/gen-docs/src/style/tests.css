@@ -21,10 +21,15 @@
   font-style: italic;
 }
 
+/* `word-wrap` is the name engines older than `overflow-wrap` know this
+   by, and lightningcss does not add it for them even when told to target
+   one. A user-agent string is a long run of barely-breakable tokens, so
+   without it the page scrolls sideways on a narrow screen. */
 #engine {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
   color: #57606a;
+  word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
@@ -98,6 +103,10 @@
   margin-left: 1.25em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
+  /* A failure message routinely quotes a serialised value with no space
+     in it, which offers nowhere to break. See the note above #engine. */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 @media (prefers-color-scheme: dark) {
