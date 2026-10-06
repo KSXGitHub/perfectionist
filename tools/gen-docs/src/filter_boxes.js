@@ -27,11 +27,16 @@
 //
 // ---- Closing a box --------------------------------------------------------
 //
-// Escape and the funnel both dismiss one, and both mean the same thing:
-// the query is cleared, the list is put back as the page rendered it, and
-// the box goes away. Closing never leaves a hidden input still narrowing
-// a list, which would strand the reader with entries missing and nothing
-// on screen to say why.
+// Escape, the funnel and following one of the entries all dismiss one,
+// and all mean the same thing: the query is cleared, the list is put back
+// as the page rendered it, and the box goes away. Closing never leaves a
+// hidden input still narrowing a list, which would strand the reader with
+// entries missing and nothing on screen to say why.
+//
+// Following an entry is the one of the three the reader does not aim at
+// the box. They have found what they were looking for and are on their
+// way to it; what they leave behind should be the list they started from,
+// not the tail of a query they have finished with.
 //
 // Enter is not a way out. It re-runs the filter, which is all it was ever
 // for: insurance for a browser whose `input` event never arrived.
@@ -252,18 +257,22 @@
       input.focus();
     }
 
-    /**
-     * Clear the query, put the list back as the page rendered it, and hide
-     * the box. Focus goes to the funnel: Escape dismisses from inside the
-     * input, which is about to be hidden, and focus would otherwise drop
-     * to <body>. Dismissing by the funnel click already has focus there,
-     * so the move is a no-op on that path.
-     */
-    function dismiss() {
+/** Clear the query, put the list back, and hide the box. */
+    function closeBox() {
       input.value = "";
       reset();
       toggle.setAttribute("aria-expanded", "false");
       box.hidden = true;
+    }
+
+    /**
+     * Close the box and put focus on the funnel. Escape dismisses from
+     * inside the input, which is about to be hidden, and focus would
+     * otherwise drop to <body>. Dismissing by the funnel click already has
+     * focus there, so the move is a no-op on that path.
+     */
+    function dismiss() {
+      closeBox();
       toggle.focus({ preventScroll: true });
     }
 
@@ -303,6 +312,23 @@
       // both the filter box and a panel the reader had left open.
       event.stopPropagation();
       dismiss();
+    });
+
+    // A click that follows an entry closes the box behind it, so the list
+    // the reader scrolls back to is the whole list. Focus is left where
+    // the click sends it, unlike the two paths above: this one is on its
+    // way somewhere, and for the sidebar's copy of the list nav_toggle.js
+    // moves focus to the rule itself.
+    //
+    // A modifier-key click and a non-primary button are the standard "open
+    // in a new tab" gestures: this page stays where it was, so its query
+    // has to as well. Same guards as the sidebar and the search results.
+    list.addEventListener("click", function (event) {
+      var link = /** @type {Element} */ (event.target).closest("a");
+      if (!link) return;
+      if (event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      closeBox();
     });
 
     // Wired up, so the button that opens it can appear.

@@ -195,6 +195,27 @@ fn the_two_filter_boxes_share_one_implementation() {
 }
 
 #[test]
+fn every_way_out_of_a_filter_box_clears_it() {
+    // Escape, the funnel and following one of the entries all dismiss a
+    // box, and all three have to clear it: a box that hid while its query
+    // still narrowed the list would leave the reader with entries missing
+    // and nothing on screen to say why. One `closeBox` does that for all
+    // three — clearing by hand on a second path is how they would drift —
+    // so the count below is its definition plus the two paths that reach
+    // it, `dismiss` and the entry-click handler.
+    assert_eq!(
+        FILTER_BOXES_SCRIPT.matches("closeBox(").count(),
+        3,
+        "expected one `closeBox` definition and exactly two calls",
+    );
+    assert_eq!(
+        FILTER_BOXES_SCRIPT.matches(r#"input.value = """#).count(),
+        1,
+        "only `closeBox` should clear the query",
+    );
+}
+
+#[test]
 fn the_score_bounds_live_only_in_the_match_library() {
     // One bound per kind of matching, held in match.js, read by whoever
     // applies it: the filter boxes directly, the search through rank.js. A
