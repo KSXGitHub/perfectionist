@@ -280,7 +280,14 @@
     var joined = t.found(m.matchPhrase("flagsclosureparameters", target), "run together");
     var padded = t.found(m.matchPhrase("flags  closure   parameters", target), "padded");
     t.greater(exact.score, joined.score, "the separators as the target spells them win");
-    t.greater(joined.score, padded.score, "a separator typed and absent costs more than one absent and typed");
+    t.greater(exact.score, padded.score, "and win over too many of them as well");
+    // The two misspellings are not ordered against each other, and
+    // nothing is owed between them: one is the three words with no
+    // delimiter and the other the three words with several, the target
+    // spells neither, and which tier answers which is an implementation
+    // detail. What they owe is to stay results at all.
+    t.greater(joined.score, m.SEARCH_MIN_SCORE, "run together is still a result");
+    t.greater(padded.score, m.SEARCH_MIN_SCORE, "and so is padded");
   });
 
   // ---- Words that end differently -----------------------------------------
@@ -325,6 +332,36 @@
       null,
       "a word in between is not",
     );
+  });
+
+  t.add("a word still being typed is still a match", function () {
+    // The reader is partway through the last word, which is every
+    // keystroke but the final one. Wanting the word finished before the
+    // tier would look at it is what used to hold `cloning_getter` back
+    // until `clone_getter` was complete.
+    var tail = "getter";
+    for (var i = 1; i <= tail.length; i++) {
+      var query = "clone " + tail.slice(0, i);
+      t.ok(m.matchFuzzy(query, "cloning_getter"), query + " finds the lint");
+    }
+  });
+
+  t.add("a match once made is not lost to the next keystroke", function () {
+    // Typing `cloned_getter` out passes through `cloned ` and `cloned g`,
+    // where little of the query has landed yet. The score may dip — it
+    // is an ordering, and orderings move — but the rule must not leave
+    // the list and come back, which is the one thing a reader reads as
+    // the search being broken.
+    var full = "cloned_getter";
+    var seen = false;
+    for (var i = 1; i <= full.length; i++) {
+      var typed = full.slice(0, i);
+      var hit = m.matchFuzzy(typed, "cloning_getter");
+      var shown = !!hit && hit.score >= m.FILTER_MIN_SCORE;
+      if (seen) t.ok(shown, JSON.stringify(typed) + " still finds cloning_getter");
+      seen = seen || shown;
+    }
+    t.ok(seen, "and it was found somewhere along the way");
   });
 
   t.add("a variant scores below the word itself", function () {
