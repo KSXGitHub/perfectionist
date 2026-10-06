@@ -29,7 +29,7 @@
   });
 
   t.add("matchFuzzy falls back to scattered characters", function () {
-    t.ok(m.matchFuzzy("brl", "bare_url"), "`b`, `r`, `l` occur in that order");
+    t.ok(m.matchFuzzy("bur", "bare_url"), "`b` and `ur` open the two words in order");
     t.equal(m.matchFuzzy("lrb", "bare_url"), null, "out of order is not a match");
     t.equal(m.matchFuzzy("zzz", "bare_url"), null, "absent characters are not a match");
   });
@@ -84,8 +84,9 @@
   });
 
   t.add("a verbatim match falls back to the first occurrence", function () {
-    // No occurrence opens a word, so the earliest stands.
-    var hit = t.found(m.matchPhrase("ite", "bitembite"), "`ite` appears");
+    // Neither occurrence opens a word — each finishes one — so the
+    // earliest stands.
+    var hit = t.found(m.matchPhrase("ite", "bite_site"), "`ite` appears");
     t.deepEqual(hit.ranges, [[1, 4]], "the earliest occurrence is the one taken");
   });
 
@@ -102,14 +103,16 @@
   // ---- Ordering -----------------------------------------------------------
 
   t.add("a contiguous match beats a scattered one", function () {
-    var contiguous = t.found(m.matchFuzzy("bare", "bare_url"), "whole").score;
-    var scattered = t.found(m.matchFuzzy("bare", "needless_borrowed_parameters"), "strewn").score;
-    t.greater(contiguous, scattered, "`bare` sits whole in one and is strewn through the other");
+    // One query, two names it reaches: in the first its three characters
+    // open the two words, in the second they are spread over three.
+    var tight = t.found(m.matchFuzzy("bur", "bare_url"), "two words opened").score;
+    var strewn = t.found(m.matchFuzzy("bur", "bare_issue_reference"), "spread out").score;
+    t.greater(tight, strewn, "characters closer together are worth more");
   });
 
   t.add("a word-opening match beats a mid-word one", function () {
     var opening = t.found(m.matchPhrase("url", "bare_url"), "opens a word").score;
-    var midWord = t.found(m.matchPhrase("url", "blurline"), "sits mid-word").score;
+    var midWord = t.found(m.matchPhrase("url", "curl"), "finishes one").score;
     t.greater(opening, midWord, "opening a word is worth more than landing inside one");
   });
 
@@ -134,11 +137,7 @@
     // The point of the bonus is the order, not an exclusion: a reader who
     // types `n` should still be offered `excessive_nesting`, under the
     // two that begin with one.
-    t.greater(
-      t.found(m.matchFuzzy("n", "excessive_nesting"), "contains `n`").score,
-      m.FILTER_MIN_SCORE,
-      "it clears the filter bound",
-    );
+    t.ok(m.matchFuzzy("n", "excessive_nesting"), "it is still offered");
   });
 
   t.add("the head start fades as the query grows", function () {
@@ -167,23 +166,27 @@
     t.greater(brief, lengthy, "both match `bare` perfectly, so length is all that separates them");
   });
 
-  t.add("initials score well against a snake_case name", function () {
+  t.add("initials find a snake_case name", function () {
     // Typing a word's initials is a thing readers do with identifiers, and
     // it is why `_` earns a word-start bonus.
-    t.greater(
-      t.found(m.matchFuzzy("bur", "bare_url"), "`bur` matches").score,
-      m.FILTER_MIN_SCORE,
-      "`bur` should find `bare_url`",
+    var hit = t.found(m.matchFuzzy("bur", "bare_url"), "`bur` finds `bare_url`");
+    t.deepEqual(
+      hit.ranges,
+      [
+        [0, 1],
+        [5, 7],
+      ],
+      "`b` opens one word and `ur` the other",
     );
   });
 
-  // ---- The bounds ---------------------------------------------------------
+  // ---- What is worth showing ----------------------------------------------
 
   t.add("a score is a fraction", function () {
     var samples = [
       t.found(m.matchFuzzy("bare_url", "bare_url"), "the whole name"),
       t.found(m.matchFuzzy("b", "bare_url"), "one character"),
-      t.found(m.matchFuzzy("brl", "bare_url"), "scattered characters"),
+      t.found(m.matchFuzzy("bur", "bare_url"), "scattered characters"),
       t.found(m.matchPhrase("are", "bare_url"), "a mid-word phrase"),
     ];
     for (var i = 0; i < samples.length; i++) {
@@ -192,20 +195,61 @@
     }
   });
 
-  t.add("the bounds separate a real match from a coincidence", function () {
-    // The reason the bounds exist: `bare` happens to occur, strewn, in a
-    // name that has nothing to do with it.
-    t.greater(
-      t.found(m.matchFuzzy("bare", "bare_url"), "a real match").score,
-      m.FILTER_MIN_SCORE,
-      "a real match clears the filter bound",
+  t.add("a real match is one and a coincidence is not", function () {
+    // What a pair of score bounds used to answer, and a rule answers now:
+    // `bare` sits whole in one name and is strewn through another that
+    // has nothing to do with it, landing twice inside words.
+    t.ok(m.matchFuzzy("bare", "bare_url"), "a real match is a match");
+    t.equal(
+      m.matchFuzzy("bare", "needless_borrowed_parameters"),
+      null,
+      "and a coincidence is nothing at all",
     );
-    t.greater(
-      m.FILTER_MIN_SCORE,
-      t.found(m.matchFuzzy("bare", "needless_borrowed_parameters"), "a coincidence").score,
-      "a coincidence does not",
+  });
+
+  t.add("the first characters have to land where the reader aimed", function () {
+    // Landing in the middle of a word is a coincidence however the rest
+    // of the match falls: `letter` reaches `cloning_getter` by the `l` of
+    // `cloning` and the whole of `getter`, and scores well doing it.
+    t.equal(m.matchFuzzy("letter", "cloning_getter"), null, "a mid-word start is not a match");
+    t.ok(m.matchFuzzy("letter", "single_letter_generic"), "the same query opening a word is");
+  });
+
+  t.add("a word an identifier ran together is aimed, a last letter is not", function () {
+    // `error` is the back five of `thiserror`'s nine, so a reader who
+    // types it has typed one of the words that name ran together.
+    t.ok(m.matchFuzzy("error", "thiserror_usage"), "most of a word is aimed");
+    // The `e` that `single` ends in is a letter that happens to fall
+    // last, and the reader skipped five to reach it.
+    t.equal(m.matchPhrase("e", "single_letter_generic"), null, "one letter of six is not");
+    // Where the line falls: `error` is five of `thiserror`'s nine and
+    // `rror` four, so the first is more of the word than was skipped and
+    // the second is not.
+    t.equal(m.matchPhrase("rror", "thiserror"), null, "four of nine is not most of it");
+    t.ok(m.matchPhrase("error", "thiserror"), "five of nine is");
+  });
+
+  t.add("one run may begin inside a word and no more", function () {
+    // A dropped letter leaves the rest of its word trailing off a word
+    // opening. One of those is a slip of the fingers and the reader still
+    // meant the name; two is the characters falling where they may.
+    t.ok(
+      m.matchFuzzy("excessive_nestng", "excessive_nesting"),
+      "a dropped letter is still the name",
     );
-    t.greater(m.FILTER_MIN_SCORE, m.SEARCH_MIN_SCORE, "the filter bound is the tighter one");
+    t.equal(m.matchFuzzy("brl", "bare_url"), null, "two slips are a coincidence");
+  });
+
+  t.add("what is worth showing does not move when a weight does", function () {
+    // The scoring exists to order results and is expected to be re-tuned;
+    // what a reader can find must not follow it about. Nothing above is
+    // asserted against a bound, because there is none to assert against:
+    // the library offers the two matchers and `excerpt`, and no number a
+    // caller could weigh a match against.
+    var offered = [];
+    for (var key in m) offered.push(key);
+    offered.sort();
+    t.deepEqual(offered, ["excerpt", "matchFuzzy", "matchPhrase"], "no bound is exported");
   });
 
   // ---- Separators that do not line up -------------------------------------
@@ -286,8 +330,9 @@
     // delimiter and the other the three words with several, the target
     // spells neither, and which tier answers which is an implementation
     // detail. What they owe is to stay results at all.
-    t.greater(joined.score, m.SEARCH_MIN_SCORE, "run together is still a result");
-    t.greater(padded.score, m.SEARCH_MIN_SCORE, "and so is padded");
+    // That both are matches at all is what `t.found` above has already
+    // asserted; neither is weighed against a bound, because there is
+    // none.
   });
 
   // ---- Words that end differently -----------------------------------------
@@ -356,12 +401,22 @@
     var seen = false;
     for (var i = 1; i <= full.length; i++) {
       var typed = full.slice(0, i);
-      var hit = m.matchFuzzy(typed, "cloning_getter");
-      var shown = !!hit && hit.score >= m.FILTER_MIN_SCORE;
+      var shown = !!m.matchFuzzy(typed, "cloning_getter");
       if (seen) t.ok(shown, JSON.stringify(typed) + " still finds cloning_getter");
       seen = seen || shown;
     }
     t.ok(seen, "and it was found somewhere along the way");
+  });
+
+  t.add("how the query spaces its words does not change what they earn", function () {
+    // This tier never matches a target character against a separator, so
+    // the query's own are not charged for — which is what keeps a reader
+    // who has typed `cloned ` from scoring below one who stopped at
+    // `cloned`. Two spellings of the same two words therefore score alike
+    // where a tier charged for them would separate the spellings.
+    var one = t.found(m.matchFuzzy("clone getter", "cloning_getter"), "one space");
+    var three = t.found(m.matchFuzzy("clone   getter", "cloning_getter"), "three spaces");
+    t.equal(one.score, three.score, "a delimiter is not content, so it costs nothing");
   });
 
   t.add("a variant scores below the word itself", function () {
