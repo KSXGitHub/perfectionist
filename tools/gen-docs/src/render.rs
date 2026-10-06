@@ -337,6 +337,11 @@ fn settings_panel() -> Markup {
 /// names an element not yet in the document: the button is `hidden`
 /// throughout it, so nothing — assistive tech included — can follow the
 /// reference before the overlay exists.
+///
+/// `search_overlay.js` also binds `/` to the same toggle, so the `title`
+/// names the key while the `aria-label` stays the bare name: the label is
+/// the button's accessible name, which a screen reader reads on every
+/// visit, and a keyboard hint in it would be read along with it.
 fn search_toggle() -> Markup {
     html! {
         button.search-toggle
@@ -345,7 +350,7 @@ fn search_toggle() -> Markup {
             aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
-            title="Search lints" {}
+            title="Search lints (press /)" {}
     }
 }
 

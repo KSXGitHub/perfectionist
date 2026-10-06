@@ -3,10 +3,11 @@
 // against a query, rather than narrowing one list of names the way the
 // filter boxes do.
 //
-// The magnifier button beside the settings gear opens it, Escape and the
-// ✕ Close button dismiss it, and each result is a link to `#/rule/<name>`
-// — the same fragment the index table and the sidebar point at, so a
-// result lands the reader on the rule article itself.
+// The magnifier button beside the settings gear opens it, as does the `/`
+// key from anywhere on the page; Escape and the ✕ Close button dismiss
+// it, and each result is a link to `#/rule/<name>` — the same fragment the
+// index table and the sidebar point at, so a result lands the reader on
+// the rule article itself.
 //
 // No markup is written here. The overlay and one search result each live
 // in an inert `<template>` rendered by the Rust template; this file clones
@@ -314,6 +315,64 @@
     if (!isOpen()) return;
     event.preventDefault();
     closeOverlay();
+  });
+
+  // ---- `/` toggles the overlay ------------------------------------------
+  //
+  // The magnifier's keyboard equivalent: one key that opens the overlay
+  // from anywhere on the page and closes it again. `/` is what a reader
+  // arriving from the rest of the Rust documentation already has in their
+  // fingers — rustdoc puts the caret in its own search box on it — and it
+  // is one of the few keys this page has left, since every letter seeds
+  // the Index filter box (filter_boxes.js) and Escape, Enter, Tab and the
+  // arrows are all spoken for.
+  //
+  // Where a `/` means a slash it stays one, so the key toggles everywhere
+  // except inside text entry: in a filter box, and in the overlay's own
+  // input, a query may want the character. Escape, the ✕ and a click on
+  // the backdrop are the ways out from there.
+
+  /**
+   * Does a keystroke aimed at this element belong to the element rather
+   * than to the page? filter_boxes.js asks the same question of its own
+   * keyboard entry and answers it for itself: the two scripts are kept
+   * apart so the two affordances degrade independently, which a shared
+   * global would undo.
+   * @param {EventTarget | null} target
+   * @returns {boolean}
+   */
+  function isEditable(target) {
+    if (!(target instanceof HTMLElement)) return false;
+    if (target.isContentEditable) return true;
+    var tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "/") return;
+    // A modifier turns the keystroke into something the browser or the OS
+    // owns. Shift is not among them: on a layout where `/` is a shifted
+    // key it is how the character is typed at all, and `key` is the
+    // character either way.
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.isComposing) return;
+    if (isEditable(event.target)) return;
+    // `preventDefault` goes only on the keystroke each branch handles,
+    // never on one it declined. On the way in it is load-bearing twice
+    // over: it keeps Firefox's Quick Find shut, and it keeps the browser
+    // from inserting the slash into the input this is about to focus.
+    if (isOpen()) {
+      event.preventDefault();
+      closeOverlay();
+      return;
+    }
+    // `inert` is how the nav drawer marks the page behind it, and the
+    // magnifier is one of the children it covers, so a `/` typed over the
+    // drawer belongs to the drawer. Opening the overlay inerts the button
+    // too, which is why this is asked only on the way in.
+    if (toggle.closest("[inert]")) return;
+    event.preventDefault();
+    openOverlay();
   });
 
   input.addEventListener("input", apply);
