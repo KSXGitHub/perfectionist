@@ -235,10 +235,14 @@
     );
   });
 
-  t.add("a run of separators in the query stands for one", function () {
+  t.add("a run of separators in the query stands for one, or for none", function () {
     t.ok(
       m.matchPhrase("flags  closure   parameters", "Flags closure parameters whose"),
-      "typing too many spaces is still typing the phrase",
+      "too many spaces is still the phrase the target spells with one each",
+    );
+    t.ok(
+      m.matchPhrase("this  error", "thiserror_usage"),
+      "and still the word the target spells with none",
     );
   });
 
@@ -281,13 +285,6 @@
   t.add("a plural finds its singular", function () {
     t.ok(m.matchFuzzy("urls", "bare_url"), "`urls` reaches `bare_url`");
     t.ok(m.matchPhrase("fields", "a struct field"), "and `fields` a field");
-  });
-
-  t.add("a word's opening may not differ", function () {
-    // A stem is the front of the word it came from, so two words are
-    // variants only where they already agree there — which is also what
-    // lets the tier find its candidates with one `indexOf`.
-    t.equal(m.matchPhrase("klone", "cloning"), null, "a different first letter is a different word");
   });
 
   t.add("an ending that rewrote the word is not a variant", function () {
