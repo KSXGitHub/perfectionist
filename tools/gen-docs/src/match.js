@@ -522,8 +522,19 @@ var perfectionistMatch = (function () {
     return best;
   }
 
+  // How much higher a score has to be to count as higher at all. Two
+  // tiers that place the same characters in the same places earn the same
+  // total, and they reach it by different arithmetic — one character at a
+  // time against one multiplication per word — which doubles do not
+  // always agree on to the last bit. The tolerance is many orders of
+  // magnitude below the smallest difference the scoring can mean, so it
+  // can only ever absorb that noise.
+  var SCORE_EPSILON = 1e-9;
+
   /**
-   * Whichever of two matches scores higher, where either may be absent.
+   * Whichever of two matches scores higher, where either may be absent. A
+   * tie keeps the first, which is the stronger tier, and whose ranges say
+   * more for it: a phrase marked as the phrase rather than word by word.
    * @param {{ score: number, ranges: number[][] } | null} left
    * @param {{ score: number, ranges: number[][] } | null} right
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -531,7 +542,7 @@ var perfectionistMatch = (function () {
   function better(left, right) {
     if (!left) return right;
     if (!right) return left;
-    return right.score > left.score ? right : left;
+    return right.score > left.score + SCORE_EPSILON ? right : left;
   }
 
   /**
