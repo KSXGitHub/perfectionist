@@ -1,5 +1,5 @@
-/* The JavaScript test page (tests.html), linked after base.css so it
-   inherits the catalogue's font, body width and `[hidden]` reset.
+/* The JavaScript test page, linked after base.css so the catalogue's own
+   base rules apply to it too.
 
    Unlike the catalogue's sheets this one carries its own colours rather
    than leaving them to light.css / dark.css. Those two mirror the

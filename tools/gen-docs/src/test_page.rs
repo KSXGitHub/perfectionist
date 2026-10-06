@@ -1,21 +1,16 @@
-//! Render `tests.html`: the browser runner for the catalogue's
-//! JavaScript unit tests, written into the same output directory as the
-//! catalogue and deployed with it.
+//! Render the browser runner for the catalogue's JavaScript unit tests,
+//! into the same output directory as the catalogue, so that whatever
+//! deploys the one deploys the other.
 //!
-//! The cases also run headlessly, and that is the run CI gates on. This
-//! page is what makes them runnable in an engine no headless runner here
-//! reaches: the scripts ship to browsers years older than the Node the
-//! cases run under, and nothing on that side would catch a construct V8
-//! accepts today and an older engine rejects outright. Shipped with the
-//! site, it is a URL to open on whatever device is in question rather
-//! than a file whose reader must first clone the repository.
+//! Why it ships rather than waiting in a checkout: the whole point of a
+//! browser runner is the engines a headless one cannot reach, and
+//! reaching one of those means opening a URL on it. A page whose reader
+//! must clone the repository first is the one form that does not serve
+//! its own purpose.
 //!
-//! It loads the same `match.js` and `rank.js` the catalogue loads — the
-//! shipped files sitting beside it, not copies of them — so what it
-//! reports is what the catalogue is running.
-//!
-//! Nothing links to it. It is a contributor's page on a consumer's site,
-//! and a reader looking for a lint has no use for a list of assertions.
+//! The libraries it exercises are the catalogue's own files, loaded from
+//! where the catalogue writes them rather than copied in, so what the
+//! page reports is what the catalogue is running.
 
 use crate::render::{MATCH_SCRIPT_FILENAME, RANK_SCRIPT_FILENAME};
 use maud::{DOCTYPE, Markup, html};
@@ -59,9 +54,9 @@ pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
 pub(crate) const TEST_REPORT_SCRIPT: (&str, &str) =
     ("report.js", include_str!("../tests/report.js"));
 
-/// Every script the page loads, in load order: the two libraries under
-/// test (already shipped for the catalogue, so only named here), the
-/// harness, the cases, then the reporter.
+/// Every script the page loads, in load order. The two libraries under
+/// test are named rather than carried: the catalogue already ships
+/// them.
 pub(crate) fn test_page_scripts() -> Vec<&'static str> {
     let mut scripts = vec![
         MATCH_SCRIPT_FILENAME,

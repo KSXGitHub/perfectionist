@@ -232,9 +232,9 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     )
     .expect("failed to write search-overlay script");
 
-    // The JavaScript test page, plus the harness, cases and reporter it
-    // loads. It reads `match.js` and `rank.js` from where the catalogue
-    // already writes them, so only its own files are added here.
+    // The JavaScript test page and the files only it loads. The two
+    // libraries it tests are not among them: it reads the catalogue's
+    // own copies rather than being given its own.
     fs::write(out_dir.join(TEST_PAGE_FILENAME), render_test_page())
         .unwrap_or_else(|error| panic!("failed to write {TEST_PAGE_FILENAME}: {error}"));
     for (name, content) in test_page_assets() {

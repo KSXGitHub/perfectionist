@@ -1,7 +1,9 @@
-//! What the JavaScript test page has to hold to: that the catalogue
-//! sheet it borrows is one the catalogue writes, that every case file on
-//! disk is one it loads, that the harness and the reporter bracket the
-//! cases, and that the markup names every file shipped for it.
+//! What the JavaScript test page has to hold to.
+//!
+//! Its lists of scripts and assets are written by hand, while everything
+//! they name moves on its own: the catalogue renames a sheet, a case
+//! file joins the directory beside this crate. These check that the two
+//! still agree.
 
 use super::{
     BASE_STYLESHEET_FILENAME, TEST_CASE_SCRIPTS, TEST_HARNESS_SCRIPT, TEST_REPORT_SCRIPT,
