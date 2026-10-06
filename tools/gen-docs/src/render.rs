@@ -698,5 +698,23 @@ fn unnamespaced(namespaced: &str) -> &str {
     namespaced.strip_prefix(NAMESPACE).unwrap_or(namespaced)
 }
 
+// The page's tests, one module per part of the page it renders, plus the
+// fixtures they share. Each is `#[cfg(test)]` in its own right rather
+// than nested under one gate, so the set reads as a list of what is
+// covered.
 #[cfg(test)]
-mod tests;
+mod test_assets;
+#[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
+mod test_nav;
+#[cfg(test)]
+mod test_rules;
+#[cfg(test)]
+mod test_search_markup;
+#[cfg(test)]
+mod test_search_scripts;
+#[cfg(test)]
+mod test_search_style;
+#[cfg(test)]
+mod test_settings;

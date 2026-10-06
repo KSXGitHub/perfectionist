@@ -5,8 +5,8 @@
 //! All of it is checked against the rendered string, so a change to the
 //! markup shows up without a browser.
 
-use super::{fake_context, fake_rule};
-use crate::render::{
+use super::test_fixtures::{fake_context, fake_rule};
+use super::{
     SEARCH_OVERLAY_ID, SEARCH_OVERLAY_TEMPLATE_ID, SEARCH_RESULT_TEMPLATE_ID, render_page,
 };
 
