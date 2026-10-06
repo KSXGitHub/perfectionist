@@ -18,9 +18,9 @@
 // ---- Two kinds of match ---------------------------------------------------
 //
 // `matchFuzzy` lets the query's characters be scattered through the target,
-// as long as they occur in order. `matchPhrase` requires the whole query
-// verbatim. Which one a caller wants follows from what it is matching
-// against:
+// as long as they occur in order. `matchPhrase` does not: it keeps the
+// query's words whole. Which one a caller wants follows from what it is
+// matching against:
 //
 //   * A lint name is an identifier, and a reader types it from memory —
 //     skipping the underscores (`bareurl`), or typing a word's initials
@@ -31,8 +31,10 @@
 //     the characters scatter there finds a high-scoring match in nearly
 //     every rule on the page. Prose gets `matchPhrase`.
 //
-// The two share one scoring model, so their scores stay comparable and a
-// caller matching both can rank the results against each other.
+// Everything short of scattering is shared, so a different spelling of a
+// separator and a different ending of a word are met by both. The two also
+// share one scoring model, so their scores stay comparable and a caller
+// matching both can rank the results against each other.
 //
 // Both compare case-insensitively, and both treat `_`, `-` and a space as
 // the same character, because one thing goes by all three spellings here:
@@ -76,13 +78,43 @@
 // able to carry a weak match past the threshold or hold a strong one
 // back.
 //
+// ---- When the query is not there whole ------------------------------------
+//
+// A reader's query is as often a near miss as a substring of what they are
+// after, so a match is looked for in tiers. A verbatim one ends the
+// search; below it every remaining tier is tried and the best-scoring one
+// wins:
+//
+//   1. Verbatim — the query occurs in the target exactly. Nothing beats
+//      this.
+//   2. Respaced — the query occurs except that its separators do not line
+//      up: one the query wrote is missing from the target, one the target
+//      carries is absent from the query, or a run of either stands where a
+//      single one does. This is what finds `thiserror_usage` for
+//      `this error`, and a statement reading "Flags closure parameters"
+//      for `flagsclosureparameters` or for `Flags  closure   parameters`.
+//   3. Variants — the query's words align one for one with a run of the
+//      target's consecutive words, each matching by its stem where it does
+//      not match in full, so `clone_getter` and `cloned_getter` both reach
+//      `cloning_getter`. Only the letters the two words share are scored
+//      and marked.
+//   4. Scattered — the query's characters occur in order with anything at
+//      all between them. Names only, per the section above.
+//
+// Every tier below the first is weaker than it by construction rather than
+// by a penalty: each scores only the characters it actually placed, while
+// the divisor it is scored against counts the whole query. A separator the
+// target does not spell the same way, and the tail of a word the target
+// ends differently, are characters the reader typed that earn nothing. So
+// a near miss cannot reach what an exact match earns, and the thresholds
+// at the bottom of this file apply to all four tiers unchanged.
+//
 // Greedy left-to-right subsequence scanning does not always find the
 // best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
-// missing the contiguous `ab` at 3). Rather than search exhaustively,
-// `matchFuzzy` tries the verbatim match first and exactly — scanning the
-// occurrences of the whole query and keeping the one that opens a word,
-// else the first — and falls back to the subsequence scan only for a query
-// that appears nowhere whole. `matchPhrase` is that first half alone.
+// missing the contiguous `ab` at 3). That is why the verbatim tier is
+// tried first and exactly — scanning the occurrences of the whole query
+// and keeping the one that opens a word, else the first — and why the
+// subsequence scan is the last resort rather than the only method.
 // ============================================================================
 
 var perfectionistMatch = (function () {
@@ -164,7 +196,10 @@ var perfectionistMatch = (function () {
    */
   function blend(raw, length, extent) {
     var quality = raw / idealScore(length);
-    var coverage = length / Math.max(extent, 1);
+    // Clamped because a query can be longer than what it matched: a
+    // separator the target does not spell the same way is a character the
+    // query carries and the target does not.
+    var coverage = Math.min(1, length / Math.max(extent, 1));
     return QUALITY_WEIGHT * quality + COVERAGE_WEIGHT * coverage;
   }
 
@@ -192,6 +227,310 @@ var perfectionistMatch = (function () {
       score: blend(raw, needle.length, haystack.length),
       ranges: [[best, best + needle.length]],
     };
+  }
+
+  // ---- Words ------------------------------------------------------------
+  //
+  // A word, to the variants tier, is a run of letters and digits. Both
+  // strings are folded by the time it runs, so every separator reads as
+  // the space it became, and the punctuation a paragraph carries — a
+  // comma, a full stop, a bracket — bounds a word without belonging to
+  // one.
+
+  /**
+   * @param {string} ch
+   * @returns {boolean}
+   */
+  function isAlnum(ch) {
+    return (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9");
+  }
+
+  /**
+   * Where the word starting at `from` ends.
+   * @param {string} text
+   * @param {number} from
+   * @returns {number}
+   */
+  function wordEnd(text, from) {
+    var at = from;
+    while (at < text.length && isAlnum(text.charAt(at))) at++;
+    return at;
+  }
+
+  /**
+   * Where the first word at or after `from` starts, or -1 when none does.
+   * @param {string} text
+   * @param {number} from
+   * @returns {number}
+   */
+  function nextWord(text, from) {
+    var at = from;
+    while (at < text.length && !isAlnum(text.charAt(at))) at++;
+    return at < text.length ? at : -1;
+  }
+
+  /**
+   * `text`'s words, in order.
+   * @param {string} text
+   * @returns {string[]}
+   */
+  function words(text) {
+    /** @type {string[]} */
+    var out = [];
+    var at = nextWord(text, 0);
+    while (at >= 0) {
+      var end = wordEnd(text, at);
+      out.push(text.slice(at, end));
+      at = nextWord(text, end);
+    }
+    return out;
+  }
+
+  /**
+   * How many characters two strings share from the front.
+   * @param {string} left
+   * @param {string} right
+   * @returns {number}
+   */
+  function commonPrefix(left, right) {
+    var limit = Math.min(left.length, right.length);
+    var at = 0;
+    while (at < limit && left.charAt(at) === right.charAt(at)) at++;
+    return at;
+  }
+
+  // ---- Stems ------------------------------------------------------------
+
+  // The shortest word a suffix comes off, and the shortest stem left
+  // behind. `bed` is too short to take an ending off at all, and `doing`
+  // would leave too little of itself to tell from another word.
+  var MIN_STEM_WORD = 4;
+  var MIN_STEM = 3;
+
+  /**
+   * Does `text` end with `suffix`? Spelled out rather than
+   * `String.prototype.endsWith`, which the page's oldest engines predate.
+   * @param {string} text
+   * @param {string} suffix
+   * @returns {boolean}
+   */
+  function endsWith(text, suffix) {
+    var at = text.length - suffix.length;
+    return at >= 0 && text.indexOf(suffix, at) === at;
+  }
+
+  /**
+   * Drop one of a doubled final consonant, which is what English put
+   * there when the ending went on: `getting` leaves `gett`, and the word
+   * behind it is `get`. An `ll`, `ss` or `zz` is the word's own doubling
+   * — `fall`, `pass` — and stays.
+   * @param {string} word
+   * @returns {string}
+   */
+  function undouble(word) {
+    if (word.length - 1 < MIN_STEM) return word;
+    var last = word.charAt(word.length - 1);
+    if (last !== word.charAt(word.length - 2)) return word;
+    if (last === "l" || last === "s" || last === "z") return word;
+    return word.slice(0, word.length - 1);
+  }
+
+  /**
+   * The stem a word shares with its variants: `cloning`, `cloned`,
+   * `clones` and `clone` all come back `clon`, which is what lets a
+   * reader who types one of them find a lint named with another.
+   *
+   * A stripper over the regular English endings and nothing more — no
+   * dictionary, no irregular forms, and no ending that rewrites the word
+   * rather than extending it, so `getter` and `getting` stay two words.
+   * Every rule takes characters off the end only, which leaves a stem
+   * that is always a prefix of the word it came from; `matchVariants`
+   * is built on that.
+   * @param {string} word
+   * @returns {string}
+   */
+  function stem(word) {
+    if (word.length < MIN_STEM_WORD) return word;
+    var out = word;
+    // A plural or a third person. An `ss` or a `us` is neither: `pass`
+    // and `status` end that way on their own account.
+    if (
+      endsWith(out, "s") &&
+      !endsWith(out, "ss") &&
+      !endsWith(out, "us") &&
+      out.length - 1 >= MIN_STEM
+    ) {
+      out = out.slice(0, out.length - 1);
+    }
+    if (endsWith(out, "ing") && out.length - 3 >= MIN_STEM) {
+      out = undouble(out.slice(0, out.length - 3));
+    } else if (endsWith(out, "ed") && out.length - 2 >= MIN_STEM) {
+      out = undouble(out.slice(0, out.length - 2));
+    }
+    // The `e` an `-ing` or an `-ed` form drops anyway, so `clone` is met
+    // where `cloning` and `cloned` already are.
+    if (endsWith(out, "e") && out.length - 1 >= MIN_STEM) {
+      out = out.slice(0, out.length - 1);
+    }
+    return out;
+  }
+
+  // ---- Respaced -----------------------------------------------------------
+
+  /**
+   * One haystack index per non-separator character of the query, starting
+   * from `start`, or `null` when they don't all land. Skipping the
+   * haystack's separators is what lets a query written without them
+   * match; skipping a run of them is what lets a query written with too
+   * many; and passing over the query's own costs them their score.
+   * @param {string} needle    folded query
+   * @param {string} haystack  folded target
+   * @param {number} start
+   * @returns {number[] | null}
+   */
+  function placeRespaced(needle, haystack, start) {
+    /** @type {number[]} */
+    var places = [];
+    var at = start;
+    for (var i = 0; i < needle.length; i++) {
+      if (needle.charAt(i) === " ") continue;
+      while (at < haystack.length && haystack.charAt(at) === " ") at++;
+      if (haystack.charAt(at) !== needle.charAt(i)) return null;
+      places.push(at);
+      at++;
+    }
+    return places.length > 0 ? places : null;
+  }
+
+  /**
+   * The score and the highlight for a run of matched haystack positions.
+   * A position directly after the last one continues a run; one the
+   * haystack's separators pushed along opens a word instead, which is how
+   * a query whose separators don't line up scores below one whose do.
+   *
+   * The highlight is the whole span, the separators it stepped over
+   * included: a reader who typed a phrase expects to see the phrase
+   * marked, not its words marked one at a time.
+   * @param {number[]} places
+   * @param {number} length    the query's length
+   * @param {string} haystack  folded target
+   * @returns {{ score: number, ranges: number[][] }}
+   */
+  function scorePlaces(places, length, haystack) {
+    var raw = 0;
+    // -2 so the first position can never read as contiguous with it.
+    var previous = -2;
+    for (var i = 0; i < places.length; i++) {
+      if (places[i] === previous + 1) raw += BASE + RUN_BONUS;
+      else raw += opening(haystack, places[i]);
+      previous = places[i];
+    }
+    return {
+      score: blend(raw, length, haystack.length),
+      ranges: [[places[0], places[places.length - 1] + 1]],
+    };
+  }
+
+  /**
+   * Score the query against the haystack where only their separators
+   * differ.
+   * @param {string} needle    folded query
+   * @param {string} haystack  folded target
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function matchRespaced(needle, haystack) {
+    // The query's first character that is not a separator: every
+    // candidate match begins on one of its occurrences, and a query of
+    // nothing but separators has none to begin on.
+    var lead = 0;
+    while (lead < needle.length && needle.charAt(lead) === " ") lead++;
+    if (lead >= needle.length) return null;
+    var head = needle.charAt(lead);
+    /** @type {{ score: number, ranges: number[][] } | null} */
+    var best = null;
+    var at = haystack.indexOf(head);
+    while (at >= 0) {
+      var places = placeRespaced(needle, haystack, at);
+      if (places) best = better(best, scorePlaces(places, needle.length, haystack));
+      at = haystack.indexOf(head, at + 1);
+    }
+    return best;
+  }
+
+  // ---- Variants -----------------------------------------------------------
+
+  /**
+   * Align the query's words to the haystack's, one for one, from the word
+   * starting at `start`.
+   * @param {string[]} parts     the query's words
+   * @param {string[]} stems     their stems, in the same order
+   * @param {number} length      the query's length
+   * @param {string} haystack    folded target
+   * @param {number} start
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function alignWords(parts, stems, length, haystack, start) {
+    /** @type {number[][]} */
+    var ranges = [];
+    var raw = 0;
+    var at = start;
+    for (var i = 0; i < parts.length; i++) {
+      if (i > 0) {
+        at = nextWord(haystack, at);
+        if (at < 0) return null;
+      }
+      var end = wordEnd(haystack, at);
+      var word = haystack.slice(at, end);
+      if (stem(word) !== stems[i]) return null;
+      var shared = commonPrefix(parts[i], word);
+      raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1);
+      ranges.push([at, at + shared]);
+      at = end;
+    }
+    return { score: blend(raw, length, haystack.length), ranges: ranges };
+  }
+
+  /**
+   * Score the query against the haystack word for word, taking a word
+   * whose stem matches where the word itself does not. The query's words
+   * have to align with a run of consecutive haystack words, which is what
+   * keeps this from answering a paragraph that merely carries the same
+   * words somewhere apart from each other.
+   * @param {string} needle    folded query
+   * @param {string} haystack  folded target
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function matchVariants(needle, haystack) {
+    var parts = words(needle);
+    if (parts.length === 0) return null;
+    /** @type {string[]} */
+    var stems = [];
+    for (var i = 0; i < parts.length; i++) stems.push(stem(parts[i]));
+    /** @type {{ score: number, ranges: number[][] } | null} */
+    var best = null;
+    // A stem is a prefix of every word it came from, so every haystack
+    // word that could align with the query's first starts with that
+    // word's stem — which is one `indexOf` away.
+    var at = haystack.indexOf(stems[0]);
+    while (at >= 0) {
+      if (isWordStart(haystack, at)) {
+        best = better(best, alignWords(parts, stems, needle.length, haystack, at));
+      }
+      at = haystack.indexOf(stems[0], at + 1);
+    }
+    return best;
+  }
+
+  /**
+   * Whichever of two matches scores higher, where either may be absent.
+   * @param {{ score: number, ranges: number[][] } | null} left
+   * @param {{ score: number, ranges: number[][] } | null} right
+   * @returns {{ score: number, ranges: number[][] } | null}
+   */
+  function better(left, right) {
+    if (!left) return right;
+    if (!right) return left;
+    return right.score > left.score ? right : left;
   }
 
   /**
@@ -246,7 +585,10 @@ var perfectionistMatch = (function () {
     if (needle.length === 0 || haystack.length === 0) return null;
     var verbatim = matchVerbatim(needle, haystack);
     if (verbatim) return verbatim;
-    return matchScattered(needle, haystack);
+    return better(
+      better(matchRespaced(needle, haystack), matchVariants(needle, haystack)),
+      matchScattered(needle, haystack)
+    );
   }
 
   /**
@@ -262,7 +604,9 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
-    return matchVerbatim(needle, haystack);
+    var verbatim = matchVerbatim(needle, haystack);
+    if (verbatim) return verbatim;
+    return better(matchRespaced(needle, haystack), matchVariants(needle, haystack));
   }
 
   /**
