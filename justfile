@@ -111,16 +111,12 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Check the docs-site JavaScript: the type-check, then the unit tests.
+# Check the docs-site JavaScript: types, then unit tests
 check-js:
   just check-js-types
   just test-js
 
-# Type-check the docs-site JavaScript (tools/gen-docs/src/*.js and the test
-# files beside them) from its JSDoc annotations with the TypeScript compiler.
-# Emits nothing; tsconfig.json drives the check. This is the one check
-# `just all` leaves out, because it installs packages and no step of that
-# recipe does; CI runs it in .github/workflows/check-js.yaml.
+# Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -128,11 +124,7 @@ check-js-types:
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
 
-# Run the docs-site JavaScript unit tests (tools/gen-docs/tests/) in a
-# context with no DOM in it, reported as `cargo test` reports its own.
-# Installs nothing: bare `node` is the whole requirement. `just gen-docs`
-# renders a browser runner for the same cases to `gh-pages/tests.html`,
-# which ships with the catalogue.
+# Run the docs-site JavaScript unit tests
 test-js:
   node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
