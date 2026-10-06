@@ -1,8 +1,9 @@
 name: Check JS Types
 
 # Type-checks the docs-site browser scripts (tools/gen-docs/src/*.js) from
-# their JSDoc annotations with the TypeScript compiler (`tsc --noEmit`, driven
-# by tsconfig.json).
+# their JSDoc annotations with the TypeScript compiler, by running the
+# justfile's `check-js-types` recipe (`tsc --noEmit`, driven by
+# tsconfig.json) — the same command a contributor runs locally.
 #
 # This workflow is intentionally independent of every other CI:
 #
@@ -10,18 +11,22 @@ name: Check JS Types
 #     of the Test or Pages workflows and not invoked via `workflow_call`, so it
 #     can never gate them — a red run here leaves Test and the Pages deploy
 #     free to pass and publish.
-#   * It only installs Node tooling (pnpm + the pinned TypeScript), never the
-#     Rust toolchain, so it shares no cache or step with the Rust suite.
+#   * It installs no Rust toolchain — only Node tooling (pnpm + the pinned
+#     TypeScript) and a prebuilt `just` binary — so it shares no cache or
+#     step with the Rust suite.
 #
 # An allow-list of trigger paths keeps it from running on unrelated changes.
-# Because it gates nothing, a path missed here only means a JS/JSDoc change
-# went unchecked by CI — never a blocked merge or a broken deploy.
+# The `justfile` is one of them because the recipe run below lives there, so
+# editing the recipe re-runs the check it drives. Because this workflow gates
+# nothing, a path missed here only means a JS/JSDoc change went unchecked by
+# CI — never a blocked merge or a broken deploy.
 on:
   push:
     branches: ['**']
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tsconfig.json'
+      - 'justfile'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -30,6 +35,7 @@ on:
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tsconfig.json'
+      - 'justfile'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
@@ -49,6 +55,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
       - name: Install pnpm
         uses: pnpm/action-setup@v6
 
@@ -67,10 +78,10 @@ jobs:
           restore-keys: |
             pnpm-tscheck-${{ runner.os }}-
 
-      - name: Install packages
-        shell: bash
-        run: pnpm install --frozen-lockfile
-
+      # The recipe installs the pinned packages
+      # (`pnpm install --frozen-lockfile`) before invoking `tsc`, so it
+      # covers both halves of the check and CI keeps no second copy of the
+      # commands to drift from.
       - name: Type-check JavaScript
         shell: bash
-        run: pnpm exec tsc --noEmit --project tsconfig.json
+        run: just check-js-types
