@@ -7,6 +7,41 @@
    can override the system preference; this page has no such control, so
    one `prefers-color-scheme` block says everything it needs. */
 
+/* base.css is structural only — it says so at the top — and leaves every
+   colour to the two sheets this page does not load. So each one it
+   leaves open is set here instead, in the catalogue's own values, and
+   the block below is the whole of them:
+
+     * `color-scheme`, which is what asks the browser to draw its own
+       furniture — the scrollbar, the canvas, a form control — for the
+       scheme the page is painted in;
+     * the body's two, which the user agent otherwise supplies in its own
+       black and white, leaving the prose a shade off the case names
+       below;
+     * `h1`'s rule, which base.css draws in `currentcolor` and would
+       otherwise land at the full weight of the body text;
+     * the link, where the user agent's blue and visited purple are
+       picked for a white background and reach 2.01:1 and 1.72:1 on the
+       dark one. An author rule on `a` beats the user agent's `a:visited`
+       by origin rather than by specificity, which is what colours a
+       followed link too. */
+html {
+  color-scheme: light;
+}
+
+body {
+  color: #1f2328;
+  background-color: #ffffff;
+}
+
+h1 {
+  border-bottom-color: #d0d7de;
+}
+
+a {
+  color: #0969da;
+}
+
 #summary {
   font-weight: 700;
 }
@@ -105,9 +140,21 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+
   body {
     background: #0d1117;
     color: #e6edf3;
+  }
+
+  h1 {
+    border-bottom-color: #30363d;
+  }
+
+  a {
+    color: #4493f8;
   }
 
   [data-result="untested"] {
