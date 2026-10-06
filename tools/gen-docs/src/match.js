@@ -681,33 +681,30 @@ var perfectionistMatch = (function () {
     /** @type {boolean[]} */
     var taken = [];
     /**
-     * The best way to house the query's words from `i` on, or `null` when
-     * there is none. It hands its answer back rather than keeping a
-     * running best in the enclosing scope, which TypeScript cannot follow
-     * across a call — the same reason the page's other scripts bind their
-     * guarded elements to locals.
+     * A way to house the query's words from `i` on, or `null` when there
+     * is none. The first found is the one taken: a second housing needs
+     * two of the target's words to open alike, which a lint name's words
+     * rarely do, and choosing between them would move a score rather than
+     * an answer. It hands its answer back rather than keeping it in the
+     * enclosing scope, which TypeScript cannot follow across a call — the
+     * same reason the page's other scripts bind their guarded elements to
+     * locals.
      * @param {number} i
-     * @returns {{ raw: number, choice: number[] } | null}
+     * @returns {number[] | null}
      */
     function walk(i) {
-      if (i === parts.length) return { raw: 0, choice: [] };
-      /** @type {{ raw: number, choice: number[] } | null} */
-      var best = null;
+      if (i === parts.length) return [];
       for (var k = 0; k < options[i].length; k++) {
         var j = options[i][k];
         if (taken[j]) continue;
         taken[j] = true;
         var rest = walk(i + 1);
         taken[j] = false;
-        if (!rest) continue;
-        var raw = rest.raw + wordAgainstWord(parts[i], haystack, spans[j]).raw;
-        if (best && best.raw >= raw) continue;
-        best = { raw: raw, choice: [j].concat(rest.choice) };
+        if (rest) return [j].concat(rest);
       }
-      return best;
+      return null;
     }
-    var housed = walk(0);
-    return housed ? housed.choice : null;
+    return walk(0);
   }
 
   /**
