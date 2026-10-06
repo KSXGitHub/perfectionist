@@ -385,8 +385,12 @@
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.isComposing) return;
     if (event.key.length !== 1) return;
-    var letter = event.key.toLowerCase();
-    if (letter < "a" || letter > "z") return;
+    // `key` already carries Shift and CapsLock, so it is the letter the
+    // reader meant to type and the one the box is seeded with. Only the
+    // range test folds, so that both cases reach it.
+    var letter = event.key;
+    var folded = letter.toLowerCase();
+    if (folded < "a" || folded > "z") return;
     if (isEditable(event.target)) return;
     // `inert` is how the nav drawer and the search overlay mark the page
     // behind them; a letter typed over either belongs to them, not here.
