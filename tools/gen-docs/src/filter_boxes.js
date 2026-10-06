@@ -34,8 +34,7 @@
 // hidden input still narrowing a list, which would strand the reader with
 // entries missing and nothing on screen to say why.
 //
-// Following an entry is the one of the three the reader does not aim at
-// the box. They have found what they were looking for and are on their
+// Following an entry is the one the reader does not aim at the box. They have found what they were looking for and are on their
 // way to it; what they leave behind should be the list they started from,
 // not the tail of a query they have finished with.
 //
