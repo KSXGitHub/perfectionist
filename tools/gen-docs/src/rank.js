@@ -10,8 +10,9 @@
 // Nothing here touches the DOM. Reading the rules off the page is
 // search_overlay.js's job and painting the result is highlight.js's; this
 // only decides. That is what lets the weights and the ordering be
-// exercised outside a browser, which matters more here than anywhere else
-// on the page, because every constant below was chosen by eye.
+// exercised outside a browser — see tools/gen-docs/tests/ — which matters
+// more here than anywhere else on the page, because every constant below
+// was chosen by eye.
 //
 // `perfectionistRank` is a global for the same reason `perfectionistMatch`
 // is: the page loads classic scripts, not modules. See match.js's header.

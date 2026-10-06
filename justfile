@@ -110,16 +110,29 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Type-check the docs-site JavaScript (tools/gen-docs/src/*.js) from its
-# JSDoc annotations with the TypeScript compiler. Emits nothing; tsconfig.json
-# drives the check. Not part of `just all` — it has no Rust toolchain
-# dependency and runs in its own CI (.github/workflows/check-js-types.yaml).
+# Check the docs-site JavaScript: types, then unit tests. Not in `just all`.
+check-js:
+  just check-js-types
+  just test-js
+
+# Type-check the docs-site JavaScript (tools/gen-docs/src/*.js and the test
+# files beside them) from its JSDoc annotations with the TypeScript compiler.
+# Emits nothing; tsconfig.json drives the check. Neither this nor `test-js`
+# needs the Rust toolchain, so the two are kept out of `just all` and run in
+# their own CI (.github/workflows/check-js.yaml).
 check-js-types:
   #!/usr/bin/env bash
   set -euo pipefail
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
+
+# Run the docs-site JavaScript unit tests (tools/gen-docs/tests/) under
+# `node:test`, in a context with no DOM in it. Installs nothing: the runner
+# is built into Node. `tools/gen-docs/tests/index.html` runs the same cases
+# in a browser; open it from the checkout.
+test-js:
+  node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
 # Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
 minify-docs site_dir="gh-pages":

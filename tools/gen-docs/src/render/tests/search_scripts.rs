@@ -235,10 +235,10 @@ fn the_search_matches_names_loosely_and_prose_verbatim() {
 fn the_libraries_touch_no_dom() {
     // match.js and rank.js are the page's two pure libraries, and that is
     // not an accident of how they happen to be written: it is what lets
-    // them be loaded and exercised outside a browser, which is the only
-    // way the scoring and the weights can be checked at all. A DOM
-    // reference in either would end that silently, since the page would go
-    // on working either way.
+    // tools/gen-docs/tests/ load them at all, which is the only way the
+    // scoring and the weights get checked. A DOM reference in either would
+    // end that silently — the page would go on working, and the unit tests
+    // would start wanting a fake document.
     //
     // Comments are stripped first: both files discuss the DOM at length
     // while touching none of it.

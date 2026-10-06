@@ -8,9 +8,9 @@
 // match.js scores, rank.js orders, and this draws the result.
 //
 // Kept apart from match.js and rank.js so those two stay loadable outside
-// a browser, which is what lets the scoring and the ranking be exercised
-// without one. A test in tools/gen-docs/src/render/ holds that line by
-// failing if either of them grows a DOM reference.
+// a browser, which is what lets tools/gen-docs/tests/ exercise the scoring
+// and the ranking without one. A test in tools/gen-docs/src/render/ holds
+// that line by failing if either of them grows a DOM reference.
 //
 // `perfectionistHighlight` is a global for the same reason
 // `perfectionistMatch` is: the page loads classic scripts, not modules.

@@ -5,7 +5,8 @@
 // Nothing here touches the DOM, and nothing here knows what a lint is. It
 // is the arithmetic the catalogue's search and its filter boxes are both
 // built on, and — along with rank.js, which ranks rules by their matches —
-// it can be loaded and run with no browser around it at all. Painting a
+// it can be loaded and run with no browser around it at all, which is what
+// lets tools/gen-docs/tests/ exercise the scoring directly. Painting a
 // match onto the page is highlight.js.
 //
 // `perfectionistMatch` is a global because the page loads classic scripts,
