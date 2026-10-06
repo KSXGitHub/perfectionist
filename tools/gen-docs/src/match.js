@@ -196,9 +196,10 @@ var perfectionistMatch = (function () {
    */
   function blend(raw, length, extent) {
     var quality = raw / idealScore(length);
-    // Clamped because a query can be longer than what it matched: a
-    // separator the target does not spell the same way is a character the
-    // query carries and the target does not.
+    // `coverage` is the fraction of the target the query accounts for, and
+    // a query can now be longer than what it matched — a separator the
+    // target spells differently is a character the query carries and the
+    // target does not — so the ratio is held to a fraction.
     var coverage = Math.min(1, length / Math.max(extent, 1));
     return QUALITY_WEIGHT * quality + COVERAGE_WEIGHT * coverage;
   }
