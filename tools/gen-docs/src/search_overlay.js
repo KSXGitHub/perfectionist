@@ -326,6 +326,62 @@
     apply();
   });
 
+  // ---- Up and Down move focus, as Tab does ------------------------------
+  //
+  // The browser's own sequential focus navigation cannot be asked for: a
+  // `KeyboardEvent` built in script carries `isTrusted: false`, and an
+  // untrusted event never performs a default action, so dispatching a
+  // synthetic Tab moves nothing. What is reused is the focus itself —
+  // `element.focus()` is the same focus Tab arrives at, `:focus-visible`
+  // and all — leaving only the order to be written out, which is the
+  // document order Tab already walks.
+  //
+  // The keys are taken while the caret is still in the input, so the
+  // default has to go with them: Up and Down would otherwise jump the
+  // caret to the ends of the value. Home and End still do that.
+
+  /**
+   * Everything in the overlay that can take focus, in the order Tab
+   * reaches it. The results list is `hidden` until there is something in
+   * it and the two empty states are hidden in turn, so filtering on
+   * whether an element is rendered is what keeps the order honest.
+   * @returns {HTMLElement[]}
+   */
+  function focusables() {
+    var found = overlay.querySelectorAll(
+      "a[href], button:not([disabled]), input:not([disabled])"
+    );
+    /** @type {HTMLElement[]} */
+    var out = [];
+    for (var i = 0; i < found.length; i++) {
+      var element = /** @type {HTMLElement} */ (found[i]);
+      if (element.getClientRects().length > 0) out.push(element);
+    }
+    return out;
+  }
+
+  overlay.addEventListener("keydown", function (event) {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    // A modifier turns these into something the browser or the OS owns,
+    // and an arrow mid-composition belongs to the IME.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.isComposing) return;
+    var items = focusables();
+    if (items.length === 0) return;
+    var step = event.key === "ArrowDown" ? 1 : -1;
+    var at = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+    // Wrapping is what Tab does here. Every other child of <body> is
+    // inert while the overlay is open, so there is nowhere else to go.
+    var next =
+      at < 0
+        ? step > 0
+          ? 0
+          : items.length - 1
+        : (at + step + items.length) % items.length;
+    event.preventDefault();
+    items[next].focus();
+  });
+
   // Following a result closes the overlay so the rule it lands on is
   // visible, and moves focus there so a keyboard reader keeps their place
   // — the link they just activated is inside a now-hidden overlay, and
