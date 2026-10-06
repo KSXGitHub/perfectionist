@@ -54,11 +54,21 @@
 //     anything after a separator. `_` is a separator, which is what makes
 //     `bur` score well against `bare_url` and lets a reader type the
 //     initials of a snake_case name.
+//   * START_BONUS on top of that when it is the target's own first
+//     character, because opening the name is not the same as opening a
+//     word inside it. Without it, the query `n` scores `excessive_nesting`
+//     and `named_prelude_imports` identically on quality — both open a
+//     word — and the only thing left to separate them is the coverage term
+//     below, which prefers the shorter name. The rule that merely contains
+//     an `n` then outranks the one that starts with it. The bonus is a
+//     fixed amount spread over the whole query, so it decides a
+//     one-character query and fades as the query grows specific enough to
+//     decide itself.
 //
 // The total is divided by the best score the query could possibly earn
-// (every character contiguous, starting at a word boundary), so the
-// resulting `quality` lands in 0..1 whatever the query's length — one
-// threshold then works for every query. A small `coverage` term (the
+// (every character contiguous, from the target's first), so the resulting
+// `quality` lands in 0..1 whatever the query's length — one threshold then
+// works for every query. A small `coverage` term (the
 // fraction of the target the query accounts for) breaks ties towards the
 // shorter target, so `bare_url` outranks `bare_identifier_reference` for
 // the query `bare`. Its weight is kept low on purpose: it is there to
@@ -82,6 +92,7 @@ var perfectionistMatch = (function () {
   var BASE = 0.4;
   var RUN_BONUS = 1;
   var WORD_BONUS = 0.6;
+  var START_BONUS = 0.3;
 
   // How the two score components are blended. `quality` carries the match,
   // `coverage` only breaks its ties, so the weights are lopsided; they sum
@@ -117,14 +128,30 @@ var perfectionistMatch = (function () {
   }
 
   /**
+   * What a character earns for where it sits, when it opens a run rather
+   * than continuing one: most at the target's first character, less at a
+   * word's, and only BASE anywhere else. See the file header for why the
+   * two kinds of opening are not worth the same.
+   * @param {string} haystack  folded target
+   * @param {number} index
+   * @returns {number}
+   */
+  function opening(haystack, index) {
+    if (index === 0) return BASE + WORD_BONUS + START_BONUS;
+    if (isWordStart(haystack, index)) return BASE + WORD_BONUS;
+    return BASE;
+  }
+
+  /**
    * The score a query of `length` characters earns when every one of them
-   * matches contiguously from a word boundary. Dividing by this is what
-   * makes scores comparable across queries of different lengths.
+   * matches contiguously from the target's first character. Dividing by
+   * this is what makes scores comparable across queries of different
+   * lengths.
    * @param {number} length
    * @returns {number}
    */
   function idealScore(length) {
-    return BASE + WORD_BONUS + (BASE + RUN_BONUS) * (length - 1);
+    return BASE + WORD_BONUS + START_BONUS + (BASE + RUN_BONUS) * (length - 1);
   }
 
   /**
@@ -160,8 +187,7 @@ var perfectionistMatch = (function () {
       at = haystack.indexOf(needle, at + 1);
     }
     if (best < 0) return null;
-    var head = isWordStart(haystack, best) ? BASE + WORD_BONUS : BASE;
-    var raw = head + (BASE + RUN_BONUS) * (needle.length - 1);
+    var raw = opening(haystack, best) + (BASE + RUN_BONUS) * (needle.length - 1);
     return {
       score: blend(raw, needle.length, haystack.length),
       ranges: [[best, best + needle.length]],
@@ -185,14 +211,13 @@ var perfectionistMatch = (function () {
     for (var i = 0; i < needle.length; i++) {
       var found = haystack.indexOf(needle.charAt(i), cursor);
       if (found < 0) return null;
-      raw += BASE;
       if (found === previous + 1) {
-        raw += RUN_BONUS;
+        raw += BASE + RUN_BONUS;
         // Extend the run in place rather than opening a second range, so
         // the highlight renders one <mark> per contiguous stretch.
         ranges[ranges.length - 1][1] = found + 1;
       } else {
-        if (isWordStart(haystack, found)) raw += WORD_BONUS;
+        raw += opening(haystack, found);
         ranges.push([found, found + 1]);
       }
       previous = found;
