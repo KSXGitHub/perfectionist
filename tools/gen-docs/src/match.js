@@ -261,29 +261,31 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Locate the whole query verbatim in the haystack, preferring an
-   * occurrence that opens a word over an earlier one that doesn't.
+   * Locate the whole query verbatim in the haystack. Every occurrence is
+   * a candidate, and `betterAdmitted` picks between them: one worth
+   * showing over one that is not, and otherwise the higher-scoring, which
+   * is the occurrence opening a word wherever one does.
    * @param {string} needle    folded query
    * @param {string} haystack  folded target
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function matchVerbatim(needle, haystack) {
-    var best = -1;
+    /** @type {{ score: number, ranges: number[][] } | null} */
+    var best = null;
     var at = haystack.indexOf(needle);
     while (at >= 0) {
-      if (best < 0) best = at;
-      if (isWordStart(haystack, at)) {
-        best = at;
-        break;
-      }
+      var raw = opening(haystack, at) + (BASE + RUN_BONUS) * (needle.length - 1);
+      best = betterAdmitted(
+        best,
+        {
+          score: blend(raw, needle.length, haystack.length),
+          ranges: [[at, at + needle.length]],
+        },
+        haystack,
+      );
       at = haystack.indexOf(needle, at + 1);
     }
-    if (best < 0) return null;
-    var raw = opening(haystack, best) + (BASE + RUN_BONUS) * (needle.length - 1);
-    return {
-      score: blend(raw, needle.length, haystack.length),
-      ranges: [[best, best + needle.length]],
-    };
+    return best;
   }
 
   // ---- Words ------------------------------------------------------------
@@ -535,7 +537,9 @@ var perfectionistMatch = (function () {
     var at = haystack.indexOf(head);
     while (at >= 0) {
       var places = placeRespaced(needle, haystack, at);
-      if (places) best = better(best, scorePlaces(places, needle.length, haystack));
+      if (places) {
+        best = betterAdmitted(best, scorePlaces(places, needle.length, haystack), haystack);
+      }
       at = haystack.indexOf(head, at + 1);
     }
     return best;
@@ -625,7 +629,7 @@ var perfectionistMatch = (function () {
     var at = haystack.indexOf(stems[0]);
     while (at >= 0) {
       if (isWordStart(haystack, at)) {
-        best = better(best, alignWords(parts, stems, span, haystack, at));
+        best = betterAdmitted(best, alignWords(parts, stems, span, haystack, at), haystack);
       }
       at = haystack.indexOf(stems[0], at + 1);
     }
@@ -826,19 +830,30 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * The better of two matches, counting only those worth showing. A tier
-   * that scores higher but is not worth showing loses to one that is,
-   * which is what keeps a coincidence from hiding the real match behind
-   * it: `clone` lands in `cloning_getter` as a scattered `clon` plus a
-   * stray `e`, and as the variants tier's `clon`, and the second is the
-   * one a reader means.
+   * The better of two matches, counting one worth showing above one that
+   * is not — whether the two come from different tiers or from two
+   * placements of the same tier. Applying the rule within a tier as well
+   * as between them is what keeps an earlier coincidence from costing a
+   * target its real match: `nic` occurs twice in
+   * `unicode_ellipsis_in_panic_messages`, inside `unicode` where the
+   * reader aimed nothing and finishing `panic` where they did, and the
+   * two score alike, so a tier choosing by score alone kept the earlier
+   * and the rule was not shown at all.
+   *
+   * Whether the winner is worth showing is for the caller to ask again:
+   * this orders two matches and nothing more, so a tier every placement
+   * of which is a coincidence still comes back, for the next tier to
+   * beat and for `matchFuzzy` to turn away if none does.
    * @param {{ score: number, ranges: number[][] } | null} left
    * @param {{ score: number, ranges: number[][] } | null} right
    * @param {string} haystack
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function betterAdmitted(left, right, haystack) {
-    if (right && !admits(right.ranges, haystack)) right = null;
+    if (!left) return right;
+    if (!right) return left;
+    var leftShown = admits(left.ranges, haystack);
+    if (leftShown !== admits(right.ranges, haystack)) return leftShown ? left : right;
     return better(left, right);
   }
 
@@ -922,11 +937,12 @@ var perfectionistMatch = (function () {
     // verbatim match that is not worth showing must not stand in the way
     // of one that is, which it would if finding the query whole ended the
     // search.
-    var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
+    var found = matchVerbatim(needle, haystack);
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
     found = betterAdmitted(found, matchReordered(needle, haystack), haystack);
-    return betterAdmitted(found, matchScattered(needle, haystack), haystack);
+    found = betterAdmitted(found, matchScattered(needle, haystack), haystack);
+    return found && admits(found.ranges, haystack) ? found : null;
   }
 
   /**
@@ -942,9 +958,10 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
-    var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
+    var found = matchVerbatim(needle, haystack);
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
-    return betterAdmitted(found, matchVariants(needle, haystack), haystack);
+    found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
+    return found && admits(found.ranges, haystack) ? found : null;
   }
 
   /**
