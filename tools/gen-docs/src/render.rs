@@ -78,15 +78,35 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 /// The query-matching library the filter boxes and the search overlay
 /// share, written beside `index.html` and loaded via `<script src>`
 /// rather than inlined. It defines the scoring, the score thresholds and
-/// the highlight rendering, and nothing else; it draws no element and
-/// binds no handler of its own. The page loads classic scripts, so the
-/// two consumers reach it through one global — see the file's own header
-/// for why that is the shape, rather than a module.
+/// and nothing else; it draws no element and binds no handler of its own.
+/// The page loads classic scripts, so its consumers reach it through one
+/// global — see the file's own header for why that is the shape, rather
+/// than a module.
 pub(crate) const MATCH_SCRIPT: &str = include_str!("match.js");
 
 /// File name [`MATCH_SCRIPT`] is written under; the page's
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const MATCH_SCRIPT_FILENAME: &str = "match.js";
+
+/// The ranking library: given the catalogue's rules as plain objects and
+/// a query, it returns the handful that match, best first. Like
+/// [`MATCH_SCRIPT`] it touches no DOM, which is what lets the weights it
+/// holds be exercised outside a browser.
+pub(crate) const RANK_SCRIPT: &str = include_str!("rank.js");
+
+/// File name [`RANK_SCRIPT`] is written under; the page's
+/// `<script src>` references the same name, so they must agree.
+pub(crate) const RANK_SCRIPT_FILENAME: &str = "rank.js";
+
+/// The highlight library: it rebuilds an element's contents with each
+/// matched range wrapped in a `<mark>`. The DOM half of what
+/// [`MATCH_SCRIPT`] used to hold, split off so that file stays loadable
+/// outside a browser.
+pub(crate) const HIGHLIGHT_SCRIPT: &str = include_str!("highlight.js");
+
+/// File name [`HIGHLIGHT_SCRIPT`] is written under; the page's
+/// `<script src>` references the same name, so they must agree.
+pub(crate) const HIGHLIGHT_SCRIPT_FILENAME: &str = "highlight.js";
 
 /// The filter-box script: it builds both filter inputs (see
 /// [`filter_container`]) and narrows the list each one sits over.
@@ -114,13 +134,16 @@ pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 /// `<link rel="preload" as="script">` hints are generated from this slice,
 /// so they can't drift.
 ///
-/// `match.js` precedes the scripts that read its global, so the library
-/// is in place before either of them can be reached.
+/// The three libraries precede the scripts that read their globals, and
+/// `match.js` precedes `rank.js`, which reads its threshold — so every
+/// one is in place before anything can reach it.
 pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     NAV_TOGGLE_SCRIPT_FILENAME,
     THEME_TOGGLE_SCRIPT_FILENAME,
     CONFIG_TOGGLE_SCRIPT_FILENAME,
     MATCH_SCRIPT_FILENAME,
+    RANK_SCRIPT_FILENAME,
+    HIGHLIGHT_SCRIPT_FILENAME,
     FILTER_BOXES_SCRIPT_FILENAME,
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];

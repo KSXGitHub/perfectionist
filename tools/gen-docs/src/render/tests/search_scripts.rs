@@ -1,7 +1,8 @@
-//! The contracts the three browser scripts keep: how the page loads
-//! them, the shape each file holds to, and the division of labour
-//! between them — markup cloned rather than built, wording left in the
-//! template, one matcher and one pair of score bounds for all of them.
+//! The contracts the browser scripts keep: how the page loads them, the
+//! shape each file holds to, and the division of labour between them —
+//! markup cloned rather than built, wording left in the template, one
+//! matcher and one pair of score bounds for all of them, and the two
+//! libraries kept clear of the DOM so they can be run without one.
 //!
 //! These read the scripts as source text. A script that crossed any of
 //! these lines would still drive a working page, so running it proves
@@ -9,20 +10,37 @@
 
 use super::{fake_context, fake_rule};
 use crate::render::{
-    FILTER_BOXES_SCRIPT, FILTER_BOXES_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME,
-    PAGE_SCRIPTS, SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME, render_page,
+    FILTER_BOXES_SCRIPT, FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME,
+    MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, PAGE_SCRIPTS, RANK_SCRIPT, RANK_SCRIPT_FILENAME,
+    SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME, render_page,
 };
+
+/// Every file the search is built from: the name it ships under, its
+/// source, and the one global it declares, where it declares one. The ones
+/// that declare a global are the libraries; the ones that don't are the
+/// controls, and each of those reads at least one library.
+const SEARCH_SCRIPTS: [(&str, &str, Option<&str>); 5] = [
+    (
+        MATCH_SCRIPT_FILENAME,
+        MATCH_SCRIPT,
+        Some("perfectionistMatch"),
+    ),
+    (RANK_SCRIPT_FILENAME, RANK_SCRIPT, Some("perfectionistRank")),
+    (
+        HIGHLIGHT_SCRIPT_FILENAME,
+        HIGHLIGHT_SCRIPT,
+        Some("perfectionistHighlight"),
+    ),
+    (FILTER_BOXES_SCRIPT_FILENAME, FILTER_BOXES_SCRIPT, None),
+    (SEARCH_OVERLAY_SCRIPT_FILENAME, SEARCH_OVERLAY_SCRIPT, None),
+];
 
 #[test]
 fn page_links_the_search_scripts_externally() {
     let html = render_page(&[fake_rule("only")], &fake_context());
-    // All three ship as sibling files loaded via `<script src>`, not
-    // inlined — the same contract as the nav, theme and config scripts.
-    for name in [
-        MATCH_SCRIPT_FILENAME,
-        FILTER_BOXES_SCRIPT_FILENAME,
-        SEARCH_OVERLAY_SCRIPT_FILENAME,
-    ] {
+    // Each ships as a sibling file loaded via `<script src>`, not inlined
+    // — the same contract as the nav, theme and config scripts.
+    for (name, _, _) in SEARCH_SCRIPTS {
         assert!(
             html.contains(&format!(r#"<script src="{name}"></script>"#)),
             "expected {name} to be referenced via <script src>",
@@ -31,38 +49,67 @@ fn page_links_the_search_scripts_externally() {
 }
 
 #[test]
-fn match_library_loads_before_the_scripts_that_read_it() {
-    // The page loads classic scripts in order, and both consumers read
-    // `perfectionistMatch` during their own setup (that read is what makes
-    // a missing library leave their controls hidden rather than dead), so
-    // the library has to have run first.
+fn every_library_loads_before_the_scripts_that_read_it() {
+    // The page loads classic scripts in order, so a file that reads
+    // another's global needs that other to have run already. Every such
+    // read happens during the reader's own setup — which is what makes a
+    // missing library leave a control hidden rather than dead — so the
+    // wrong order breaks the page outright instead of degrading.
+    //
+    // Which file reads which is scanned out of the sources rather than
+    // listed here, so a dependency added between any two of them is
+    // covered the moment it is written.
     let position = |name: &str| {
         PAGE_SCRIPTS
             .iter()
             .position(|&script| script == name)
             .unwrap_or_else(|| panic!("{name} is not in PAGE_SCRIPTS"))
     };
-    let library = position(MATCH_SCRIPT_FILENAME);
-    assert!(library < position(FILTER_BOXES_SCRIPT_FILENAME));
-    assert!(library < position(SEARCH_OVERLAY_SCRIPT_FILENAME));
+    for (reader, source, declares) in SEARCH_SCRIPTS {
+        let code = strip_js_comments(source);
+        let mut reads = 0;
+        for (library, _, global) in SEARCH_SCRIPTS {
+            let Some(global) = global else { continue };
+            if library == reader || !code.contains(&format!("{global}.")) {
+                continue;
+            }
+            assert!(
+                position(library) < position(reader),
+                "{reader} reads {global}, so {library} has to load first",
+            );
+            reads += 1;
+        }
+        // A file declaring no global of its own is one of the controls,
+        // and neither can filter or search without a library. So a zero
+        // here means the scan above matched nothing and left the ordering
+        // unchecked, not that the control stands alone.
+        if declares.is_none() {
+            assert!(reads > 0, "{reader} drives a control but reads no library");
+        }
+    }
 }
 
 #[test]
 fn search_scripts_are_each_a_single_iife() {
     // Same structural sanity check as `nav_toggle_script_is_a_single_iife`
-    // — see that test for the bug it guards against. match.js wraps its
+    // — see that test for the bug it guards against. A library wraps its
     // IIFE in an assignment, so its opener reads differently.
-    assert_eq!(
-        MATCH_SCRIPT
-            .matches("var perfectionistMatch = (function () {")
-            .count(),
-        1,
-    );
-    assert_eq!(MATCH_SCRIPT.matches("})();").count(), 1);
-    assert_eq!(FILTER_BOXES_SCRIPT.matches("(function () {").count(), 1);
-    assert_eq!(FILTER_BOXES_SCRIPT.matches("})();").count(), 1);
-    assert_eq!(SEARCH_OVERLAY_SCRIPT.matches("(function () {").count(), 1);
-    assert_eq!(SEARCH_OVERLAY_SCRIPT.matches("})();").count(), 1);
+    for (name, script, global) in SEARCH_SCRIPTS {
+        let opener = match global {
+            Some(global) => format!("var {global} = (function () {{"),
+            None => "(function () {".to_owned(),
+        };
+        assert_eq!(
+            script.matches(opener.as_str()).count(),
+            1,
+            "{name} should open exactly one IIFE",
+        );
+        assert_eq!(
+            script.matches("})();").count(),
+            1,
+            "{name} should close exactly one IIFE",
+        );
+    }
 }
 
 #[test]
@@ -85,12 +132,12 @@ fn the_search_scripts_clone_markup_rather_than_build_it() {
             "{name} must not build markup; clone the <template> instead",
         );
     }
-    // match.js is the exception, and deliberately: it wraps matched
+    // highlight.js is the exception, and deliberately: it wraps matched
     // substrings in `<mark>` and re-inserts the `<wbr>` break
     // opportunities a lint name needs, which is a run of elements whose
     // number and placement are decided per query. That is text rendering,
     // not page structure, and no fixed blueprint can express it.
-    assert!(MATCH_SCRIPT.contains("createElement"));
+    assert!(HIGHLIGHT_SCRIPT.contains("createElement"));
 }
 
 #[test]
@@ -149,19 +196,20 @@ fn the_two_filter_boxes_share_one_implementation() {
 
 #[test]
 fn the_score_bounds_live_only_in_the_match_library() {
-    // One bound per kind of matching, held in match.js, read by its
-    // consumers. A consumer that hard-coded a number instead could drift
-    // from the other filter box, which the bound exists to prevent.
+    // One bound per kind of matching, held in match.js, read by whoever
+    // applies it: the filter boxes directly, the search through rank.js. A
+    // consumer that hard-coded a number instead could drift from the other
+    // filter box, which the bound exists to prevent.
     assert!(MATCH_SCRIPT.contains("FILTER_MIN_SCORE:"));
     assert!(MATCH_SCRIPT.contains("SEARCH_MIN_SCORE:"));
     assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.FILTER_MIN_SCORE"));
-    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.SEARCH_MIN_SCORE"));
+    assert!(RANK_SCRIPT.contains("perfectionistMatch.SEARCH_MIN_SCORE"));
     assert!(
         !FILTER_BOXES_SCRIPT.contains("SEARCH_MIN_SCORE"),
         "the filter boxes must use the filter bound, not the search one",
     );
     assert!(
-        !SEARCH_OVERLAY_SCRIPT.contains("FILTER_MIN_SCORE"),
+        !RANK_SCRIPT.contains("FILTER_MIN_SCORE"),
         "the search must use the search bound, not the filter one",
     );
 }
@@ -170,15 +218,75 @@ fn the_score_bounds_live_only_in_the_match_library() {
 fn the_search_matches_names_loosely_and_prose_verbatim() {
     // A lint name is typed from memory, so its characters may be
     // scattered; prose is typed as words, and a long enough paragraph
-    // contains almost any scattered sequence. The library offers both, and
-    // the overlay has to pick the right one per field or every rule on the
+    // contains almost any scattered sequence. match.js offers both, and
+    // rank.js has to pick the right one per field or every rule on the
     // page matches every query.
     assert!(MATCH_SCRIPT.contains("function matchFuzzy("));
     assert!(MATCH_SCRIPT.contains("function matchPhrase("));
-    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
-    assert!(SEARCH_OVERLAY_SCRIPT.contains("perfectionistMatch.matchPhrase("));
+    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
+    assert!(RANK_SCRIPT.contains("perfectionistMatch.matchPhrase("));
     // The filter boxes match names only, so they never want the prose
     // variant.
     assert!(FILTER_BOXES_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
     assert!(!FILTER_BOXES_SCRIPT.contains("matchPhrase"));
+}
+
+#[test]
+fn the_libraries_touch_no_dom() {
+    // match.js and rank.js are the page's two pure libraries, and that is
+    // not an accident of how they happen to be written: it is what lets
+    // them be loaded and exercised outside a browser, which is the only
+    // way the scoring and the weights can be checked at all. A DOM
+    // reference in either would end that silently, since the page would go
+    // on working either way.
+    //
+    // Comments are stripped first: both files discuss the DOM at length
+    // while touching none of it.
+    for (name, script) in [("match.js", MATCH_SCRIPT), ("rank.js", RANK_SCRIPT)] {
+        let code = strip_js_comments(script);
+        for api in [
+            "document",
+            "window",
+            "HTMLElement",
+            "appendChild",
+            "querySelector",
+            "addEventListener",
+            "localStorage",
+        ] {
+            assert!(
+                !code.contains(api),
+                "{name} must stay loadable without a browser, but reaches for `{api}`",
+            );
+        }
+    }
+    // The DOM work they were split from still exists, in the one file that
+    // owns it.
+    assert!(HIGHLIGHT_SCRIPT.contains("document.createElement"));
+}
+
+/// A copy of `js` with `//` line comments and `/* */` block comments
+/// removed, so a scan for an API name can't be fooled by prose about it.
+/// Crude on purpose: it knows nothing of string or regex literals, which
+/// is adequate for scanning our own source and wrong for anything else.
+fn strip_js_comments(js: &str) -> String {
+    let mut out = String::new();
+    let mut rest = js;
+    loop {
+        let line = rest.find("//");
+        let block = rest.find("/*");
+        let (start, end_of) = match (line, block) {
+            (Some(l), Some(b)) if l < b => (l, rest[l..].find('\n').map(|i| l + i)),
+            (Some(_), Some(b)) => (b, rest[b..].find("*/").map(|i| b + i + "*/".len())),
+            (Some(l), None) => (l, rest[l..].find('\n').map(|i| l + i)),
+            (None, Some(b)) => (b, rest[b..].find("*/").map(|i| b + i + "*/".len())),
+            (None, None) => break,
+        };
+        out.push_str(&rest[..start]);
+        match end_of {
+            Some(end) => rest = &rest[end..],
+            None => return out, // unterminated; the tail is all comment
+        }
+    }
+    out.push_str(rest);
+    out
 }

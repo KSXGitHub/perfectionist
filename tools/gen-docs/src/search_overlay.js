@@ -20,9 +20,9 @@
 // The Rust template emits the button `hidden` and this file clears that as
 // its last act, the same "reveal only once functional" contract the rest of
 // the page's controls follow (the `[hidden] { display: none !important }`
-// reset in style/base.css keeps `hidden` authoritative). Reading match.js's
-// threshold into `SEARCH_MIN_SCORE` below is part of it: if match.js never
-// ran, that read throws here, long before the reveal.
+// reset in style/base.css keeps `hidden` authoritative). Reading rank.js's
+// and highlight.js's entry points into locals below is part of it: if
+// either never ran, that read throws here, long before the reveal.
 //
 // ---- Where the searchable text comes from ---------------------------------
 //
@@ -32,8 +32,8 @@
 // scrape costs nothing until the reader first opens the overlay, at which
 // point it runs once and is kept.
 //
-// The text that comes out of each `article.rule` is of these kinds, and
-// the ranking weights them in this order:
+// The text that comes out of each `article.rule` is of these kinds, which
+// rank.js weights in this order:
 //
 //   1. the lint name, from the heading;
 //   2. the rule's statement — its one-line description, the paragraph
@@ -42,10 +42,8 @@
 //
 // A weaker match on a name therefore still outranks a perfect match in
 // prose, which is what a reader scanning for a half-remembered lint wants.
-//
-// The name is matched loosely and the other two verbatim, for the reason
-// match.js's own header gives: a reader types a name from memory, but types
-// words out of prose.
+// How much weaker, and everything else about the ordering, is rank.js's;
+// this file only hands it the text.
 //
 // Text that every rule repeats is left out of the scrape, because matching
 // it tells the reader nothing about which rule they want. The section
@@ -60,29 +58,11 @@
 // ============================================================================
 
 (function () {
-  // Also the load-bearing check that match.js ran: see the file header.
-  var SEARCH_MIN_SCORE = perfectionistMatch.SEARCH_MIN_SCORE;
-
-  // How the three kinds of match are ranked against each other. A name
-  // match scores as itself; the other two are scaled down enough that they
-  // can't displace one.
-  var NAME_WEIGHT = 1;
-  var STATEMENT_WEIGHT = 0.65;
-  var TEXT_WEIGHT = 0.4;
-
-  // How many results the list shows. A starting point open to tuning once
-  // there is a feel for it, not a considered limit.
-  var RESULT_LIMIT = 10;
-
-  // The longest run of a paragraph a result shows, in characters. A rule's
-  // prose paragraph can run to several hundred, and a result list of those
-  // is unreadable; the window is taken around the match (see
-  // `perfectionistMatch.excerpt`).
-  var EXCERPT_LIMIT = 180;
-
-  // Stripped off the front of a paragraph that opens with one. These are
-  // the example sections' pseudo-headings, not prose.
-  var PSEUDO_HEADINGS = ["Avoid:", "Prefer:"];
+  // Also the load-bearing check that the two libraries this file is
+  // nothing without have run: see the file header.
+  var rank = perfectionistRank.rank;
+  var renderName = perfectionistHighlight.renderName;
+  var renderText = perfectionistHighlight.renderText;
 
   var toggle = /** @type {HTMLElement} */ (document.querySelector(".search-toggle"));
   if (!toggle) return;
@@ -127,16 +107,6 @@
 
   // ---- Scraping the page ------------------------------------------------
 
-  /**
-   * One rule, in the shape the ranking needs.
-   * @typedef {object} Entry
-   * @property {string} name
-   * @property {string} href
-   * @property {string} statement
-   * @property {string[]} paragraphs
-   * @property {number} order
-   */
-
   /** @type {Entry[] | null} */
   var entries = null;
 
@@ -157,16 +127,6 @@
   }
 
   /**
-   * Collapse the line breaks and indentation the rendered markdown carries
-   * into single spaces, so a match can span what reads as one sentence.
-   * @param {string} text
-   * @returns {string}
-   */
-  function flatten(text) {
-    return text.replace(/\s+/g, " ").trim();
-  }
-
-  /**
    * Does every rule repeat this block verbatim? See the file header for
    * which blocks qualify and why they are left out.
    * @param {HTMLElement} block
@@ -177,21 +137,6 @@
     if (block.classList.contains("config-none")) return true;
     var parent = block.parentElement;
     return !!parent && parent.matches("details.config-details");
-  }
-
-  /**
-   * The prose of one paragraph or list item, with an `Avoid:` / `Prefer:`
-   * pseudo-heading stripped off the front.
-   * @param {HTMLElement} block
-   * @returns {string}
-   */
-  function prose(block) {
-    var text = flatten(block.textContent || "");
-    for (var i = 0; i < PSEUDO_HEADINGS.length; i++) {
-      if (text.indexOf(PSEUDO_HEADINGS[i]) !== 0) continue;
-      return text.slice(PSEUDO_HEADINGS[i].length).trim();
-    }
-    return text;
   }
 
   /**
@@ -220,13 +165,15 @@
       );
       for (var j = 0; j < blocks.length; j++) {
         if (blocks[j] === statementHost || isRepeated(blocks[j])) continue;
-        var text = prose(blocks[j]);
+        var text = perfectionistRank.prose(blocks[j].textContent || "");
         if (text) paragraphs.push(text);
       }
       out.push({
-        name: flatten(nameHost.textContent || ""),
+        name: perfectionistRank.flatten(nameHost.textContent || ""),
         href: "#" + id,
-        statement: statementHost ? flatten(textWithout(statementHost, badge)) : "",
+        statement: statementHost
+          ? perfectionistRank.flatten(textWithout(statementHost, badge))
+          : "",
         paragraphs: paragraphs,
         order: out.length,
       });
@@ -235,120 +182,6 @@
   }
 
   // ---- Ranking ----------------------------------------------------------
-
-  /**
-   * One ranked result: the rule, the score it ranked by, the matched
-   * ranges of its name, and the text to show beneath the name with the
-   * matched ranges of *that* text.
-   * @typedef {object} Result
-   * @property {Entry} entry
-   * @property {number} score
-   * @property {number[][]} nameRanges
-   * @property {string} text
-   * @property {number[][]} textRanges
-   */
-
-  /**
-   * Score `query` against a lint name, or `null` when the match is too
-   * weak to count as one.
-   * @param {string} query
-   * @param {string} name
-   * @returns {{ score: number, ranges: number[][] } | null}
-   */
-  function nameHit(query, name) {
-    var found = perfectionistMatch.matchFuzzy(query, name);
-    if (!found || found.score < SEARCH_MIN_SCORE) return null;
-    return found;
-  }
-
-  /**
-   * Score `query` against a run of prose, or `null` when the match is too
-   * weak to count as one.
-   * @param {string} query
-   * @param {string} text
-   * @returns {{ score: number, ranges: number[][] } | null}
-   */
-  function proseHit(query, text) {
-    var found = perfectionistMatch.matchPhrase(query, text);
-    if (!found || found.score < SEARCH_MIN_SCORE) return null;
-    return found;
-  }
-
-  /**
-   * The best-matching of a rule's prose paragraphs.
-   * @param {string} query
-   * @param {string[]} paragraphs
-   * @returns {{ score: number, ranges: number[][], text: string } | null}
-   */
-  function bestParagraph(query, paragraphs) {
-    /** @type {{ score: number, ranges: number[][], text: string } | null} */
-    var best = null;
-    for (var i = 0; i < paragraphs.length; i++) {
-      var found = proseHit(query, paragraphs[i]);
-      if (!found) continue;
-      if (best && best.score >= found.score) continue;
-      best = { score: found.score, ranges: found.ranges, text: paragraphs[i] };
-    }
-    return best;
-  }
-
-  /**
-   * Rank every rule against `query`, best first, capped at
-   * `RESULT_LIMIT`.
-   * @param {string} query
-   * @returns {Result[]}
-   */
-  function rank(query) {
-    if (!entries) entries = scrape();
-    /** @type {Result[]} */
-    var out = [];
-    for (var i = 0; i < entries.length; i++) {
-      var entry = entries[i];
-      var matchedName = nameHit(query, entry.name);
-      var statementHit = proseHit(query, entry.statement);
-      var paragraphHit = bestParagraph(query, entry.paragraphs);
-      var nameScore = matchedName ? matchedName.score * NAME_WEIGHT : 0;
-      var statementScore = statementHit ? statementHit.score * STATEMENT_WEIGHT : 0;
-      var paragraphScore = paragraphHit ? paragraphHit.score * TEXT_WEIGHT : 0;
-      var score = Math.max(nameScore, statementScore, paragraphScore);
-      if (score <= 0) continue;
-      // The text beneath the name is the rule's statement, except where a
-      // prose paragraph is what matched — then it is that paragraph,
-      // windowed around the match. Either way the ranges handed to the
-      // renderer are the ones matched in the text actually shown, so a
-      // result highlights what the reader typed wherever they can see it.
-      /** @type {{ text: string, ranges: number[][] }} */
-      var shown;
-      if (paragraphHit && paragraphScore > nameScore && paragraphScore > statementScore) {
-        shown = perfectionistMatch.excerpt(
-          paragraphHit.text,
-          paragraphHit.ranges,
-          EXCERPT_LIMIT
-        );
-      } else {
-        shown = perfectionistMatch.excerpt(
-          entry.statement,
-          statementHit ? statementHit.ranges : [],
-          EXCERPT_LIMIT
-        );
-      }
-      out.push({
-        entry: entry,
-        score: score,
-        nameRanges: matchedName ? matchedName.ranges : [],
-        text: shown.text,
-        textRanges: shown.ranges,
-      });
-    }
-    // Best match first, ties broken by the page's own rule order. The
-    // tie-break is explicit rather than left to the sort's stability,
-    // which engines older than ES2019 don't guarantee.
-    out.sort(function (left, right) {
-      if (right.score !== left.score) return right.score - left.score;
-      return left.entry.order - right.entry.order;
-    });
-    return out.slice(0, RESULT_LIMIT);
-  }
 
   // ---- Rendering --------------------------------------------------------
 
@@ -366,8 +199,8 @@
     // The score the result was ranked by, for whoever is debugging a
     // ranking that reads wrong.
     link.setAttribute("data-score", result.score.toFixed(4));
-    perfectionistMatch.renderName(name, result.entry.name, result.nameRanges);
-    perfectionistMatch.renderText(text, result.text, result.textRanges);
+    renderName(name, result.entry.name, result.nameRanges);
+    renderText(text, result.text, result.textRanges);
     results.appendChild(item);
   }
 
@@ -392,7 +225,8 @@
       showOnly(emptyPrompt);
       return;
     }
-    var ranked = rank(query);
+    if (!entries) entries = scrape();
+    var ranked = rank(entries, query);
     // A query that matches nothing is worth saying so: an empty list
     // reads the same as one that has not been searched yet.
     if (ranked.length === 0) {
