@@ -43,14 +43,68 @@ const BASE_STYLESHEET_FILENAME: &str = "base.css";
 pub(crate) const TEST_HARNESS_SCRIPT: (&str, &str) =
     ("harness.js", include_str!("../tests/harness.js"));
 
+/// The fixtures the cases are built from. Loaded after the harness and
+/// before any case, since a case reads them as it is evaluated. Held to
+/// the directory by the same test as the cases below.
+pub(crate) const TEST_FIXTURE_SCRIPTS: &[(&str, &str)] = &[(
+    "rank.fixtures.js",
+    include_str!("../tests/rank.fixtures.js"),
+)];
+
 /// The cases, in the order the page runs them. Every `*.test.js` in
 /// `tools/gen-docs/tests/` belongs here, and a test below reads that
 /// directory and fails if one is missing, so the page and the headless
 /// runner (which globs the same directory) can never disagree about what
 /// the suite is.
 pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
-    ("match.test.js", include_str!("../tests/match.test.js")),
-    ("rank.test.js", include_str!("../tests/rank.test.js")),
+    (
+        "match_excerpt.test.js",
+        include_str!("../tests/match_excerpt.test.js"),
+    ),
+    (
+        "match_folding.test.js",
+        include_str!("../tests/match_folding.test.js"),
+    ),
+    (
+        "match_ordering.test.js",
+        include_str!("../tests/match_ordering.test.js"),
+    ),
+    (
+        "match_ranges.test.js",
+        include_str!("../tests/match_ranges.test.js"),
+    ),
+    (
+        "match_reordered.test.js",
+        include_str!("../tests/match_reordered.test.js"),
+    ),
+    (
+        "match_respaced.test.js",
+        include_str!("../tests/match_respaced.test.js"),
+    ),
+    (
+        "match_variants.test.js",
+        include_str!("../tests/match_variants.test.js"),
+    ),
+    (
+        "match_worth_showing.test.js",
+        include_str!("../tests/match_worth_showing.test.js"),
+    ),
+    (
+        "rank_finding.test.js",
+        include_str!("../tests/rank_finding.test.js"),
+    ),
+    (
+        "rank_ordering.test.js",
+        include_str!("../tests/rank_ordering.test.js"),
+    ),
+    (
+        "rank_result_text.test.js",
+        include_str!("../tests/rank_result_text.test.js"),
+    ),
+    (
+        "rank_text.test.js",
+        include_str!("../tests/rank_text.test.js"),
+    ),
 ];
 
 /// The reporter, which runs the registered cases and writes the result
@@ -67,6 +121,7 @@ pub(crate) fn test_page_scripts() -> Vec<&'static str> {
         RANK_SCRIPT_FILENAME,
         TEST_HARNESS_SCRIPT.0,
     ];
+    scripts.extend(TEST_FIXTURE_SCRIPTS.iter().map(|&(name, _)| name));
     scripts.extend(TEST_CASE_SCRIPTS.iter().map(|&(name, _)| name));
     scripts.push(TEST_REPORT_SCRIPT.0);
     scripts
@@ -76,6 +131,7 @@ pub(crate) fn test_page_scripts() -> Vec<&'static str> {
 /// not already ship, as `(filename, contents)`.
 pub(crate) fn test_page_assets() -> Vec<(&'static str, &'static str)> {
     let mut assets = vec![(TEST_PAGE_CSS_FILENAME, TEST_PAGE_CSS), TEST_HARNESS_SCRIPT];
+    assets.extend(TEST_FIXTURE_SCRIPTS.iter().copied());
     assets.extend(TEST_CASE_SCRIPTS.iter().copied());
     assets.push(TEST_REPORT_SCRIPT);
     assets

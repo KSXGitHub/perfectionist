@@ -15,6 +15,14 @@
 // and comparison — not a framework. Each throws an `Error` whose message
 // says what was expected and what arrived, which is all either runner needs
 // to report a failure.
+//
+// What a case should assert, wherever it can, is an ordering or a range
+// rather than an exact score. A score pins the arithmetic, which is the
+// part most likely to be deliberately changed — the weights behind it were
+// chosen by eye and are expected to be re-tuned — whereas "a contiguous
+// match beats a scattered one" is the property that has to survive any
+// re-tuning. Where a number is asserted it is a threshold relationship,
+// not a literal.
 // ============================================================================
 
 /**

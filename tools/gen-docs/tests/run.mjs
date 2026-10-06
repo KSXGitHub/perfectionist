@@ -28,7 +28,9 @@
 // repository already knows how to read.
 //
 // Every `*.test.js` beside this file is loaded, so a case file added here
-// is picked up with no edit. The other runner — `tests.html`, rendered by
+// is picked up with no edit, and every `*.fixtures.js` is loaded ahead of
+// them, since a case reads the fixtures it is built from as it is
+// evaluated. The other runner — `tests.html`, rendered by
 // tools/gen-docs/src/test_page.rs and shipped with the catalogue — loads a
 // list it cannot glob, so a Rust test reads this directory and holds that
 // list to it. That is what keeps the two runners running the same suite.
@@ -42,13 +44,15 @@ import { createContext, runInContext } from "node:vm";
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, "..", "src");
 
-const cases = (await readdir(here)).filter((name) => name.endsWith(".test.js")).sort();
+const beside = await readdir(here);
+const cases = beside.filter((name) => name.endsWith(".test.js")).sort();
+const fixtures = beside.filter((name) => name.endsWith(".fixtures.js")).sort();
 if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
 
 const context = createContext({});
-const load = [join(src, "match.js"), join(src, "rank.js"), join(here, "harness.js")].concat(
-  cases.map((name) => join(here, name)),
-);
+const load = [join(src, "match.js"), join(src, "rank.js"), join(here, "harness.js")]
+  .concat(fixtures.map((name) => join(here, name)))
+  .concat(cases.map((name) => join(here, name)));
 for (const file of load) {
   runInContext(await readFile(file, "utf8"), context, { filename: file });
 }
