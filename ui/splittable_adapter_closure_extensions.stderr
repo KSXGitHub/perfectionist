@@ -17,7 +17,11 @@ warning: this closure chains 2 steps onto the item, so `fold_ok` does all of the
 LL |     items.fold_ok(0, |total, text| total + text.trim().len())
    |           ^^^^^^^
    |
-   = help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold_ok(0, |total, text| total + text.trim().len())
+LL +     items.map_ok(str::trim).map_ok(str::len).fold_ok(0, |total, /* name */| total + /* name */)
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -25,7 +29,12 @@ warning: this closure chains 2 steps onto the item, so `fold_while` does all of 
 LL |         .fold_while(0, |total, text| {
    |          ^^^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~         .map(str::trim).map(str::len).fold_while(0, |total, /* name */| {
+LL +             itertools::FoldWhile::Continue(total + /* name */)
+LL +         })
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -293,7 +302,11 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     items.fold(|| 0, |total, text| total + text.trim().len())
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold(|| 0, |total, text| total + text.trim().len())
+LL +     items.map(str::trim).map(str::len).fold(|| 0, |total, /* name */| total + /* name */)
+   |
 
 warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
@@ -301,7 +314,11 @@ warning: this closure chains 2 steps onto the item, so `try_fold` does all of th
 LL |     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
    |           ^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
+LL +     items.map(str::trim).map(str::len).try_fold(|| 0, |total, /* name */| Some(total + /* name */))
+   |
 
 warning: this predicate runs 2 tests on the item, so `find_first` does all of them
   --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC

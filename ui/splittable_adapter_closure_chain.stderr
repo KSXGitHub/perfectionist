@@ -41,7 +41,11 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
+LL +     lines.map(str::trim).map(str::len).fold(1, |acc, /* name */| /* name */.wrapping_mul(acc))
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
@@ -49,6 +53,10 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
+LL +     lines.map(str::trim).map(str::parse).fold(0, |total, /* name */| /* name */.unwrap_or_else(|_| total))
+   |
 
 warning: N warnings emitted

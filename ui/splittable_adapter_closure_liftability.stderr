@@ -41,7 +41,11 @@ warning: this closure chains 3 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| total + line.trim().len().min(limit))
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(0, |total, line| total + line.trim().len().min(limit))
+LL +     lines.map(str::trim).map(str::len).map(|/* name */| /* name */.min(limit)).fold(0, |total, /* name */| total + /* name */)
+   |
 
 warning: this closure chains 2 steps onto the item, so `map` does all of them
   --> $DIR/splittable_adapter_closure_liftability.rs:LL:CC
@@ -73,6 +77,11 @@ warning: this closure chains 3 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, move |total, line| {
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~     lines.map(str::trim).map(str::len).map(move |/* name */| /* name */.min(limit)).fold(0, move |total, /* name */| {
+LL +         total + /* name */
+LL +     })
+   |
 
 warning: N warnings emitted

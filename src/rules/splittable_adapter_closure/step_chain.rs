@@ -23,7 +23,7 @@ use super::{Call, Finding, Fix, anchoring, chain};
 use crate::binding_uses::{names, uses};
 use crate::common::{borrows, drops_a_comment};
 use crate::exclusive_captures::exclusive;
-use clippy_utils::source::snippet_with_applicability;
+use clippy_utils::source::{snippet_opt, snippet_with_applicability};
 use clippy_utils::sym;
 use clippy_utils::ty::implements_trait;
 use rustc_errors::Applicability;
@@ -31,7 +31,7 @@ use rustc_hir::{CaptureBy, Closure, Expr, ExprKind, Pat};
 use rustc_lint::LateContext;
 use rustc_middle::ty::adjustment::{Adjust, Adjustment, DerefAdjustKind};
 use rustc_middle::ty::{self, Ty};
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
 
 /// The chain this adapter's closure holds, where it is two or more steps
 /// long.
@@ -285,10 +285,9 @@ fn fix<'tcx>(
     steps: &[Step<'tcx>],
     adapter: Adapter,
 ) -> Option<Fix> {
-    if !adapter.keeps_the_last_step || adapter.head_keeps_the_method {
+    if adapter.head_keeps_the_method {
         return None;
     }
-    let (last, lifted) = steps.split_last()?;
     let mut applicability = Applicability::MachineApplicable;
     let moves = match closure.capture_clause {
         CaptureBy::Value { .. } => "move ",
@@ -296,30 +295,31 @@ fn fix<'tcx>(
     };
     let item =
         snippet_with_applicability(cx, parameter.span, "..", &mut applicability).into_owned();
-    let mut written = Vec::with_capacity(steps.len());
-    let targets = lifted
-        .iter()
-        .map(|step| (step, adapter.lift_target))
-        .chain([(last, call.method.as_str())]);
-    for (index, (step, adapter_name)) in targets.enumerate() {
-        let written_step = match point_free(cx, step.expr, &mut applicability) {
-            Some(function) => function,
-            None => {
-                // The first step is handed the item, so the item's name is
-                // the one it had. Above it the name would describe the wrong
-                // value, and a placeholder says so rather than guessing.
-                let name = match index {
-                    0 => item.clone(),
-                    _ => {
-                        applicability = Applicability::HasPlaceholders;
-                        PLACEHOLDER.to_owned()
-                    }
-                };
-                let body = over_the_item(cx, step.expr, &name, &mut applicability)?;
-                format!("{moves}|{name}| {body}")
-            }
-        };
-        written.push(format!("{adapter_name}({written_step})"));
+    // The last step stays with the adapter where the closure takes the item
+    // alone, and the whole chain leaves otherwise.
+    let (kept, lifted) = match adapter.keeps_the_last_step {
+        true => steps.split_last().map(|(last, rest)| (Some(last), rest))?,
+        false => (None, steps),
+    };
+    let mut written = Vec::with_capacity(steps.len() + 1);
+    for (index, step) in lifted.iter().enumerate() {
+        let step = written_step(cx, step, index, &item, moves, &mut applicability)?;
+        written.push(format!("{}({step})", adapter.lift_target));
+    }
+    match kept {
+        Some(last) => {
+            let step = written_step(cx, last, lifted.len(), &item, moves, &mut applicability)?;
+            written.push(format!("{}({step})", call.method));
+        }
+        None => written.push(rebound_call(
+            cx,
+            call,
+            closure,
+            steps,
+            adapter,
+            moves,
+            &mut applicability,
+        )?),
     }
     if drops_a_comment(cx, call.fix_span, steps.iter().map(|step| step.expr.span)) {
         applicability = Applicability::Unspecified;
@@ -329,6 +329,101 @@ fn fix<'tcx>(
         suggestion: written.join("."),
         applicability,
     })
+}
+
+/// A step written for an adapter of its own: the function it already is, or a
+/// closure naming what the step was handed.
+fn written_step<'tcx>(
+    cx: &LateContext<'tcx>,
+    step: &Step<'tcx>,
+    index: usize,
+    item: &str,
+    moves: &str,
+    applicability: &mut Applicability,
+) -> Option<String> {
+    if let Some(function) = point_free(cx, step.expr, applicability) {
+        return Some(function);
+    }
+    // The first step is handed the item, so the item's name is the one it
+    // had. Above it the name would describe the wrong value, and a
+    // placeholder says so rather than guessing.
+    let name = match index {
+        0 => item.to_owned(),
+        _ => {
+            *applicability = Applicability::HasPlaceholders;
+            PLACEHOLDER.to_owned()
+        }
+    };
+    let body = over_the_item(cx, step.expr, &name, applicability)?;
+    Some(format!("{moves}|{name}| {body}"))
+}
+
+/// The adapter's own call, with the closure it keeps rebound to what the lift
+/// produced.
+///
+/// Where the whole chain leaves, the closure is edited rather than replaced.
+/// Its other parameters and the rest of its body are the reader's and stay as
+/// written; only the item's parameter and the chain inside the body become the
+/// lifted value. `fold`'s accumulator is the parameter this leaves alone.
+///
+/// The chain is found in the body by span rather than by searching, which the
+/// occurs-once gate is what makes sound: the item is mentioned exactly once,
+/// so the chain rooted at it appears exactly once too.
+///
+/// The name for the lifted value is the reader's to choose, the item's own
+/// name having described what the chain was handed rather than what it
+/// produced, so a placeholder stands in and the rewrite is offered rather than
+/// applied.
+fn rebound_call<'tcx>(
+    cx: &LateContext<'tcx>,
+    call: &Call<'tcx>,
+    closure: &'tcx Closure<'tcx>,
+    steps: &[Step<'tcx>],
+    adapter: Adapter,
+    moves: &str,
+    applicability: &mut Applicability,
+) -> Option<String> {
+    let body = cx.tcx.hir_body(closure.body);
+    let chain = steps.last()?.expr.span;
+    let parameters = body
+        .params
+        .iter()
+        .enumerate()
+        .map(|(index, parameter)| match index == adapter.item_parameter {
+            true => Some(PLACEHOLDER.to_owned()),
+            false => snippet_opt(cx, parameter.pat.span),
+        })
+        .collect::<Option<Vec<_>>>()?
+        .join(", ");
+    let rebound = spliced(cx, body.value.span, chain, PLACEHOLDER)?;
+    let arguments = call
+        .arguments
+        .iter()
+        .enumerate()
+        .map(
+            |(index, argument)| match index == adapter.closure_argument {
+                true => Some(format!("{moves}|{parameters}| {rebound}")),
+                false => snippet_opt(cx, argument.span),
+            },
+        )
+        .collect::<Option<Vec<_>>>()?
+        .join(", ");
+    *applicability = Applicability::HasPlaceholders;
+    Some(format!("{}({arguments})", call.method))
+}
+
+/// `whole`'s source with the part of it `part` covers replaced by `with`, or
+/// `None` where either span's source is unavailable or `part` does not sit
+/// inside `whole` on a character boundary.
+fn spliced(cx: &LateContext<'_>, whole: Span, part: Span, with: &str) -> Option<String> {
+    if !whole.contains(part) {
+        return None;
+    }
+    let text = snippet_opt(cx, whole)?;
+    let start = usize::try_from((part.lo() - whole.lo()).0).ok()?;
+    let end = usize::try_from((part.hi() - whole.lo()).0).ok()?;
+    let fits = end <= text.len() && text.is_char_boundary(start) && text.is_char_boundary(end);
+    fits.then(|| format!("{}{with}{}", &text[..start], &text[end..]))
 }
 
 /// What stands in for a name only the reader can choose.

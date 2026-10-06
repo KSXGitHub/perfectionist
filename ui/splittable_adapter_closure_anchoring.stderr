@@ -4,8 +4,14 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| {
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
    = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~     lines.map(str::trim).map(str::len).fold(0, |total, /* name */| {
+LL +         let length = /* name */;
+LL +         total + length
+LL +     })
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
@@ -13,7 +19,13 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| match line.trim().len() {
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~     lines.map(str::trim).map(str::len).fold(0, |total, /* name */| match /* name */ {
+LL +         0 => total,
+LL +         length => total + length,
+LL +     })
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
@@ -21,7 +33,16 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| {
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~     lines.map(str::trim).map(str::is_empty).fold(0, |total, /* name */| {
+LL +         if /* name */ {
+LL +             total
+LL +         } else {
+LL +             total + 1
+LL +         }
+LL +     })
+   |
 
 warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
   --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
@@ -29,7 +50,11 @@ warning: this closure chains 2 steps onto the item, so `try_fold` does all of th
 LL |     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
    |           ^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.try_fold(0usize, |total, line| Ok(total + line.trim().parse::<usize>()?))
+LL +     lines.map(str::trim).map(str::parse::<usize>).try_fold(0usize, |total, /* name */| Ok(total + /* name */?))
+   |
 
 warning: this closure chains 2 steps onto the item, so `fold` does all of them
   --> $DIR/splittable_adapter_closure_anchoring.rs:LL:CC
@@ -37,6 +62,15 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~     lines.map(str::trim).map(str::len).fold(Pair {
+LL +             first: 0,
+LL +             second: 0,
+LL +         }, |acc, /* name */| Pair {
+LL +             first: acc.first + /* name */,
+LL +             second: acc.second,
+LL +         })
+   |
 
 warning: N warnings emitted

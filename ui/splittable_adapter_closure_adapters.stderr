@@ -77,7 +77,11 @@ warning: this closure chains 2 steps onto the item, so `fold` does all of them
 LL |     lines.fold(0, |total, line| total + line.trim().len())
    |           ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(0, |total, line| total + line.trim().len())
+LL +     lines.map(str::trim).map(str::len).fold(0, |total, /* name */| total + /* name */)
+   |
 
 warning: this closure chains 2 steps onto the item, so `flat_map` does all of them
   --> $DIR/splittable_adapter_closure_adapters.rs:LL:CC
@@ -145,7 +149,11 @@ warning: this closure chains 2 steps onto the item, so `try_fold` does all of th
 LL |     lines.try_fold(0, |total, line| Some(total + line.trim().len()))
    |           ^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.try_fold(0, |total, line| Some(total + line.trim().len()))
+LL +     lines.map(str::trim).map(str::len).try_fold(0, |total, /* name */| Some(total + /* name */))
+   |
 
 warning: this closure chains 2 steps onto the item, so `rfold` does all of them
   --> $DIR/splittable_adapter_closure_adapters.rs:LL:CC
@@ -153,7 +161,11 @@ warning: this closure chains 2 steps onto the item, so `rfold` does all of them
 LL |     lines.rfold(0, |total, line| total + line.trim().len())
    |           ^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.rfold(0, |total, line| total + line.trim().len())
+LL +     lines.map(str::trim).map(str::len).rfold(0, |total, /* name */| total + /* name */)
+   |
 
 warning: this closure chains 2 steps onto the item, so `try_rfold` does all of them
   --> $DIR/splittable_adapter_closure_adapters.rs:LL:CC
@@ -161,7 +173,11 @@ warning: this closure chains 2 steps onto the item, so `try_rfold` does all of t
 LL |     lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
    |           ^^^^^^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.try_rfold(0, |total, line| Some(total + line.trim().len()))
+LL +     lines.map(str::trim).map(str::len).try_rfold(0, |total, /* name */| Some(total + /* name */))
+   |
 
 warning: this closure chains 2 steps onto the item, so `scan` does all of them
   --> $DIR/splittable_adapter_closure_adapters.rs:LL:CC
@@ -169,6 +185,10 @@ warning: this closure chains 2 steps onto the item, so `scan` does all of them
 LL |         .scan(0, |total, line| Some(*total + line.trim().len()))
    |          ^^^^
    |
-   = help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -         .scan(0, |total, line| Some(*total + line.trim().len()))
+LL +         .map(str::trim).map(str::len).scan(0, |total, /* name */| Some(*total + /* name */))
+   |
 
 warning: N warnings emitted
