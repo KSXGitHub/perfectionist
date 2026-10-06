@@ -95,20 +95,35 @@
 //      `this error`, and a statement reading "Flags closure parameters"
 //      for `flagsclosureparameters` or for `Flags  closure   parameters`.
 //   3. Variants — the query's words align one for one with a run of the
-//      target's consecutive words, each matching by its stem where it does
-//      not match in full, so `clone_getter` and `cloned_getter` both reach
-//      `cloning_getter`. Only the letters the two words share are scored
-//      and marked.
+//      target's consecutive words, each target word opening with the
+//      query's once the ending the query's would drop is allowed for. So
+//      `clone_getter` and `cloned_getter` both reach `cloning_getter`,
+//      and so does `clone_g`, where the reader is one letter into a word
+//      they have not finished typing. Only the letters two words share
+//      are scored, and a mark spans a run of separators but never a run
+//      of letters, so a phrase reads as the phrase while `clone` stops
+//      short of `cloning`'s `ing`.
 //   4. Scattered — the query's characters occur in order with anything at
 //      all between them. Names only, per the section above.
 //
 // Every tier below the first is weaker than it by construction rather than
-// by a penalty: each scores only the characters it actually placed, while
-// the divisor it is scored against counts the whole query. A separator the
-// target does not spell the same way, and the tail of a word the target
-// ends differently, are characters the reader typed that earn nothing. So
-// a near miss cannot reach what an exact match earns, and the thresholds
-// at the bottom of this file apply to all four tiers unchanged.
+// by a penalty: each scores only the characters it actually placed,
+// against what those characters would have earned had the query been
+// there whole. The tail of a word the target ends differently, and a
+// separator the target does not spell the same way, are characters the
+// reader typed that earn nothing. So a near miss cannot reach what an
+// exact match earns, and the thresholds at the bottom of this file apply
+// to all four tiers unchanged.
+//
+// What a tier counts as the query differs, because what it is able to
+// place does. Verbatim and respaced place every character the query
+// holds, separators and all, and are charged for all of them. The
+// variants tier never matches a target character against a separator — a
+// separator is how the reader marks where one word ends — so it is
+// charged for the query's words alone. Charging it for the delimiters
+// too would mean a reader who has typed `cloned ` and is about to type
+// `getter` scoring below one who stopped at `cloned`, which is a result
+// vanishing halfway through being typed.
 //
 // Greedy left-to-right subsequence scanning does not always find the
 // best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
@@ -289,6 +304,20 @@ var perfectionistMatch = (function () {
   }
 
   /**
+   * Does nothing but separators stand between `from` and `to`?
+   * @param {string} text
+   * @param {number} from
+   * @param {number} to
+   * @returns {boolean}
+   */
+  function onlySeparators(text, from, to) {
+    for (var at = from; at < to; at++) {
+      if (text.charAt(at) !== " ") return false;
+    }
+    return true;
+  }
+
+  /**
    * How many characters two strings share from the front.
    * @param {string} left
    * @param {string} right
@@ -466,7 +495,7 @@ var perfectionistMatch = (function () {
    * starting at `start`.
    * @param {string[]} parts     the query's words
    * @param {string[]} stems     their stems, in the same order
-   * @param {number} length      the query's length
+   * @param {number} length      how many characters the query's words hold
    * @param {string} haystack    folded target
    * @param {number} start
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -483,21 +512,36 @@ var perfectionistMatch = (function () {
       }
       var end = wordEnd(haystack, at);
       var word = haystack.slice(at, end);
-      if (stem(word) !== stems[i]) return null;
+      // The target's word has to open with the query's, once the ending
+      // the query's word would drop is allowed for. Equal stems are the
+      // case this started from — `cloned` against `cloning` — and the
+      // looser test is what also takes a word still being typed, where
+      // the reader is three letters into `getter` and the stem of what
+      // they have so far is `get`.
+      if (word.indexOf(stems[i]) !== 0) return null;
       var shared = commonPrefix(parts[i], word);
       raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1);
-      ranges.push([at, at + shared]);
+      // A phrase is marked as the phrase, the same as the respaced tier
+      // marks it: where only separators stand between this word and the
+      // last, the two marks are one. A gap holding letters — the `ing` of
+      // `cloning` that `clone` stopped short of — keeps them apart, so
+      // what is marked stays what was matched. Scoring is untouched: the
+      // word still opens a word rather than continuing a run.
+      var last = ranges[ranges.length - 1];
+      if (last && onlySeparators(haystack, last[1], at)) last[1] = at + shared;
+      else ranges.push([at, at + shared]);
       at = end;
     }
     return { score: blend(raw, length, haystack.length), ranges: ranges };
   }
 
   /**
-   * Score the query against the haystack word for word, taking a word
-   * whose stem matches where the word itself does not. The query's words
-   * have to align with a run of consecutive haystack words, which is what
-   * keeps this from answering a paragraph that merely carries the same
-   * words somewhere apart from each other.
+   * Score the query against the haystack word for word, each haystack
+   * word opening with the query's once the ending the query's word would
+   * drop is allowed for. The query's words have to align with a run of
+   * consecutive haystack words, which is what keeps this from answering a
+   * paragraph that merely carries the same words somewhere apart from
+   * each other.
    * @param {string} needle    folded query
    * @param {string} haystack  folded target
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -507,7 +551,19 @@ var perfectionistMatch = (function () {
     if (parts.length === 0) return null;
     /** @type {string[]} */
     var stems = [];
-    for (var i = 0; i < parts.length; i++) stems.push(stem(parts[i]));
+    // The characters this tier is able to place: the query's words, not
+    // the delimiters between them. A delimiter is how the reader marks
+    // where one word ends, and no target character is ever matched
+    // against it here, so charging the query for it would mean a reader
+    // who has typed `cloned ` and is about to type `getter` scoring
+    // worse than one who stopped at `cloned`. The verbatim and respaced
+    // tiers do charge for it, and must: there a separator is content,
+    // matched against the target's own or missing from it.
+    var span = 0;
+    for (var i = 0; i < parts.length; i++) {
+      stems.push(stem(parts[i]));
+      span += parts[i].length;
+    }
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null;
     // A stem is a prefix of every word it came from, so every haystack
@@ -516,7 +572,7 @@ var perfectionistMatch = (function () {
     var at = haystack.indexOf(stems[0]);
     while (at >= 0) {
       if (isWordStart(haystack, at)) {
-        best = better(best, alignWords(parts, stems, needle.length, haystack, at));
+        best = better(best, alignWords(parts, stems, span, haystack, at));
       }
       at = haystack.indexOf(stems[0], at + 1);
     }
