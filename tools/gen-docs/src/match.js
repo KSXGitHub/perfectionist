@@ -658,12 +658,11 @@ var perfectionistMatch = (function () {
    * numbers are free to be re-tuned, while this decides whether a reader
    * sees the target at all, where an answer that moves under re-tuning is
    * an answer nobody can rely on. See the file header.
-   * @param {number[][]} ranges  the match's runs, in order
+   * @param {number[][]} ranges  the match's runs, in order, at least one
    * @param {string} haystack    folded target
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    if (ranges.length === 0) return false;
     // Where the reader's first characters landed is what the match is
     // about. Landing in the middle of a word is a coincidence however the
     // rest of it falls.
@@ -770,10 +769,11 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
+    // Every tier is tried rather than the first that matches winning: a
+    // verbatim match that is not worth showing must not stand in the way
+    // of one that is, which it would if finding the query whole ended the
+    // search.
     var found = betterAdmitted(null, matchVerbatim(needle, haystack), haystack);
-    // The verbatim tier no longer ends the search on its own: a query can
-    // occur in the target and still occur inside a word, where another
-    // tier may have found the reader's actual match.
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
     return betterAdmitted(found, matchScattered(needle, haystack), haystack);
