@@ -122,7 +122,9 @@
 
   t.add("a long paragraph is cut down, and its marks come with it", function () {
     var padding = "";
-    while (padding.length < 400) padding += "words that say nothing in particular ";
+    while (padding.length < 400) {
+      padding += "words that say nothing in particular ";
+    }
     var long = padding + "and then a bare URL at the very end";
     var hit = only([entry({ paragraphs: [long] })], "bare url");
     t.greater(long.length, hit.text.length, "the paragraph does not show whole");
@@ -175,7 +177,9 @@
   t.add("the list is capped, and keeps the best of what it drops", function () {
     /** @type {Entry[]} */
     var entries = [];
-    for (var i = 0; i < 15; i++) entries.push(entry({ name: "bare_url", order: i }));
+    for (var i = 0; i < 15; i++) {
+      entries.push(entry({ name: "bare_url", order: i }));
+    }
     var ranked = r.rank(entries, "bare url");
     t.greater(entries.length, ranked.length, "more rules match than the list shows");
     for (var j = 0; j < ranked.length; j++) {
