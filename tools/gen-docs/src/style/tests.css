@@ -46,6 +46,19 @@ a {
   font-weight: 700;
 }
 
+/* The summary is a sentence, so its colour is read as text and 4.5:1 is
+   the bar. The state palette below does not clear it for passed, and
+   must not be moved to: that green is kept quiet on purpose, far enough
+   from failed in lightness that a dichromat can still sort one glyph
+   from the other down a list (see the note there). Every green that
+   clears the text bar moves towards failed, which is a trade worth
+   making here and not there — nothing sits beside the summary, and the
+   words say which it is. Failed needs no second weight: it clears the
+   text bar as it stands. */
+#summary[data-result="passed"] {
+  color: #1a7f37;
+}
+
 /* The reporter fills this last, so an empty one means it never ran —
    scripting off, a blocked script, a parse error before the handlers
    attach. Saying so beats an unexplained blank line above an empty
@@ -95,7 +108,9 @@ a {
 
    Passed and untested colour a glyph and a border, where 3:1 is the bar
    (WCAG 1.4.11); failed also colours the message under a failing case,
-   which is text, so it clears 4.5:1. */
+   which is text, so it clears 4.5:1. The summary is text as well, and
+   takes its own green above rather than pulling this one up to meet
+   it. */
 #cases li {
   border-left: 0.25rem solid currentcolor;
   margin: 0.5rem 0;
@@ -163,6 +178,10 @@ a {
 
   [data-result="passed"] {
     color: #238636;
+  }
+
+  #summary[data-result="passed"] {
+    color: #2ea043;
   }
 
   [data-result="failed"] {
