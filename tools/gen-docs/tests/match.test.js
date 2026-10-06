@@ -18,9 +18,13 @@
 
   // ---- What counts as a match ---------------------------------------------
 
-  t.add("matchPhrase wants the whole query verbatim", function () {
+  t.add("matchPhrase keeps the query's words whole", function () {
+    // It will meet a separator spelled differently and a word ended
+    // differently — the two sections further down — but never let the
+    // letters inside a word drift apart, which is the one thing
+    // `matchFuzzy` allows and it does not.
     t.ok(m.matchPhrase("url", "bare_url"), "`url` appears in `bare_url`");
-    t.equal(m.matchPhrase("brl", "bare_url"), null, "`brl` does not appear whole");
+    t.equal(m.matchPhrase("brl", "bare_url"), null, "`brl` is `bare_url` scattered");
     t.equal(m.matchPhrase("zzz", "bare_url"), null, "`zzz` does not appear at all");
   });
 
@@ -202,6 +206,135 @@
       "a coincidence does not",
     );
     t.greater(m.FILTER_MIN_SCORE, m.SEARCH_MIN_SCORE, "the filter bound is the tighter one");
+  });
+
+  // ---- Separators that do not line up -------------------------------------
+  //
+  // The second tier: the query is there, but its separators are not where
+  // the target's are. Each case below is one way that happens, and the
+  // last holds the orderings between them.
+
+  t.add("a separator the target does not have is not needed", function () {
+    var hit = t.found(
+      m.matchPhrase("this error", "thiserror_usage"),
+      "`this error` is `thiserror` with a separator the lint does not have",
+    );
+    t.deepEqual(hit.ranges, [[0, 9]], "the range covers the word it found");
+  });
+
+  t.add("a separator the target has need not be typed", function () {
+    var target = "Flags closure parameters whose identifier is one letter";
+    var hit = t.found(
+      m.matchPhrase("flagsclosureparameters", target),
+      "a query run together still finds the words it ran together",
+    );
+    t.equal(
+      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
+      "Flags closure parameters",
+      "the whole phrase is marked, the separators it stepped over included",
+    );
+  });
+
+  t.add("a run of separators in the query stands for one", function () {
+    t.ok(
+      m.matchPhrase("flags  closure   parameters", "Flags closure parameters whose"),
+      "typing too many spaces is still typing the phrase",
+    );
+  });
+
+  t.add("a separator the target interposes breaks the run", function () {
+    // The two targets are the same length, so their coverage is identical
+    // and only quality can separate them: the `c` the target's own
+    // separator pushed along is paid as a word's opening rather than as a
+    // run's continuation. That is the whole of why a respaced match
+    // scores below one whose separators line up, so pin it on its own
+    // rather than leave it to the comparison below, where the queries
+    // differ in length and the shorter-target term could carry the
+    // ordering by itself.
+    t.equal("abcdx".length, "ab cd".length, "the two targets are the same length");
+    var run = t.found(m.matchPhrase("abcd", "abcdx"), "`abcd` opens the first");
+    var broken = t.found(m.matchPhrase("abcd", "ab cd"), "and spans the second");
+    t.greater(run.score, broken.score, "crossing the separator costs the run");
+  });
+
+  t.add("a query whose separators line up scores above one whose do not", function () {
+    var target = "Flags closure parameters whose identifier is one letter";
+    var exact = t.found(m.matchPhrase("flags closure parameters", target), "as written");
+    var joined = t.found(m.matchPhrase("flagsclosureparameters", target), "run together");
+    var padded = t.found(m.matchPhrase("flags  closure   parameters", target), "padded");
+    t.greater(exact.score, joined.score, "the separators as the target spells them win");
+    t.greater(joined.score, padded.score, "a separator typed and absent costs more than one absent and typed");
+  });
+
+  // ---- Words that end differently -----------------------------------------
+  //
+  // The third tier: the query's words align with the target's one for one,
+  // a word matching by the stem it shares with its variants where it does
+  // not match in full.
+
+  t.add("a word's ending may differ", function () {
+    t.ok(m.matchFuzzy("clone_getter", "cloning_getter"), "`clone` reaches `cloning`");
+    t.ok(m.matchFuzzy("cloned_getter", "cloning_getter"), "and so does `cloned`");
+    t.ok(m.matchPhrase("cloning a field", "clones a field"), "prose gets the same");
+  });
+
+  t.add("a plural finds its singular", function () {
+    t.ok(m.matchFuzzy("urls", "bare_url"), "`urls` reaches `bare_url`");
+    t.ok(m.matchPhrase("fields", "a struct field"), "and `fields` a field");
+  });
+
+  t.add("a word's opening may not differ", function () {
+    // A stem is the front of the word it came from, so two words are
+    // variants only where they already agree there — which is also what
+    // lets the tier find its candidates with one `indexOf`.
+    t.equal(m.matchPhrase("klone", "cloning"), null, "a different first letter is a different word");
+  });
+
+  t.add("an ending that rewrote the word is not a variant", function () {
+    // Only the regular endings are stripped, so `getting` is `get`
+    // doubled rather than `getter` lengthened and the two stay two words.
+    // The first word has to be a variant that lands, or the second is
+    // never reached and the claim would hold for the wrong reason.
+    t.ok(
+      m.matchPhrase("clone getting", "cloning getting"),
+      "`clone` reaches `cloning`, which puts the word after it in reach",
+    );
+    t.equal(
+      m.matchPhrase("clone getter", "cloning getting"),
+      null,
+      "and there `getter` does not reach `getting`",
+    );
+  });
+
+  t.add("the query's words have to be consecutive in the target", function () {
+    // Without this the tier would answer any paragraph carrying the same
+    // words somewhere apart from each other.
+    t.ok(m.matchPhrase("clone getter", "cloning getter"), "one after the other is a match");
+    t.equal(
+      m.matchPhrase("clone getter", "cloning ref getter"),
+      null,
+      "a word in between is not",
+    );
+  });
+
+  t.add("a variant scores below the word itself", function () {
+    var itself = t.found(m.matchFuzzy("cloning_getter", "cloning_getter"), "the name");
+    var shorter = t.found(m.matchFuzzy("clone_getter", "cloning_getter"), "`clone`");
+    var other = t.found(m.matchFuzzy("cloned_getter", "cloning_getter"), "`cloned`");
+    t.greater(itself.score, shorter.score, "a variant cannot reach the word it varies from");
+    t.greater(shorter.score, other.score, "and the more of the word it shares, the closer it gets");
+  });
+
+  t.add("only the letters the two words share are marked", function () {
+    var hit = t.found(m.matchFuzzy("clone_getter", "cloning_getter"), "`clone_getter`");
+    t.deepEqual(
+      hit.ranges,
+      [
+        [0, 4],
+        [8, 14],
+      ],
+      "`clon` of `cloning` and the whole of `getter`, and not the `ing`",
+    );
   });
 
   // ---- Windowing ----------------------------------------------------------
