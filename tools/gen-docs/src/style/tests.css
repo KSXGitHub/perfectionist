@@ -44,31 +44,44 @@
   font-size: 1em;
 }
 
-/* The pass / fail colour is carried by the rule's own border, which is
-   why the bar is `currentcolor` and the name below it is not: a row
-   reading as a block of red would drown out the message that says what
-   failed. */
+/* A state's colour is carried by the row's border and its indicator, and
+   not by the name, which keeps its own: a row reading as a block of red
+   would drown out the message saying what failed. */
 #cases li {
   border-left: 0.25rem solid currentcolor;
   margin: 0.5rem 0;
   padding: 0 0 0 0.75rem;
 }
 
-.pass {
+[data-result="untested"] {
+  color: #57606a;
+}
+
+[data-result="passed"] {
   color: #0a7d32;
 }
 
-.fail {
+[data-result="failed"] {
   color: #b3261e;
 }
 
+/* A column of its own, so the names line up whatever glyph precedes
+   them. */
+.result {
+  display: inline-block;
+  width: 1.25em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .name {
-  display: block;
   color: #1f2328;
 }
 
+/* Indented to the name rather than to the glyph, so the message reads as
+   belonging to the case above it. */
 .why {
   display: block;
+  margin-left: 1.25em;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
 }
@@ -79,11 +92,15 @@
     color: #e6edf3;
   }
 
-  .pass {
+  [data-result="untested"] {
+    color: #9198a1;
+  }
+
+  [data-result="passed"] {
     color: #3fb950;
   }
 
-  .fail {
+  [data-result="failed"] {
     color: #ff7b72;
   }
 

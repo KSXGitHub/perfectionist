@@ -6,8 +6,8 @@
 //! still agree.
 
 use super::{
-    BASE_STYLESHEET_FILENAME, TEST_CASE_SCRIPTS, TEST_HARNESS_SCRIPT, TEST_REPORT_SCRIPT,
-    render_test_page, test_page_assets, test_page_scripts,
+    BASE_STYLESHEET_FILENAME, TEST_CASE_SCRIPTS, TEST_HARNESS_SCRIPT, TEST_PAGE_CSS,
+    TEST_REPORT_SCRIPT, render_test_page, test_page_assets, test_page_scripts,
 };
 use crate::render::STYLESHEETS;
 use std::fs;
@@ -130,6 +130,36 @@ fn the_page_carries_every_id_the_reporter_looks_up() {
         looked_up > 0,
         "no id lookups found in report.js, so the scan above checked nothing",
     );
+}
+
+#[test]
+fn every_state_the_reporter_sets_is_styled() {
+    // A row's state is carried by an attribute, a glyph and an accessible
+    // name, and tests.css colours it by that attribute. A state added to
+    // the reporter's table without a rule beside it would render in
+    // whatever colour it inherited, saying nothing. The states are read
+    // out of the table rather than listed here, so a fourth is covered
+    // the moment it is written.
+    let table = TEST_REPORT_SCRIPT
+        .1
+        .split_once("var MARKS = {")
+        .expect("report.js should declare a MARKS table")
+        .1
+        .split_once("};")
+        .expect("report.js's MARKS table should be terminated")
+        .0;
+    let mut styled = 0;
+    for line in table.lines() {
+        let Some((name, _)) = line.trim().split_once(':') else {
+            continue;
+        };
+        assert!(
+            TEST_PAGE_CSS.contains(&format!(r#"[data-result="{name}"]"#)),
+            "the reporter can set the state `{name}`, which tests.css does not style",
+        );
+        styled += 1;
+    }
+    assert!(styled > 0, "no states found in the reporter's MARKS table");
 }
 
 #[test]
