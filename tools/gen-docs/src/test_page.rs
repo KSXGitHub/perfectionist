@@ -104,15 +104,9 @@ pub(crate) fn render_test_page() -> String {
             body {
                 h1 { "docs-site JS tests" }
                 p {
-                    "This page runs the search code behind the "
+                    "The "
                     a href=(CATALOGUE_FILENAME) { "perfectionist lint catalogue" }
-                    " — the matching and ranking its rule search and filter "
-                    "boxes are built on — in this browser, now. Every case "
-                    "below calls that code directly, so a failure here means "
-                    "the catalogue's search cannot be relied on in this "
-                    "browser: either its engine is missing something the code "
-                    "assumes, or the code is wrong and fails the same case "
-                    "everywhere."
+                    "'s own JavaScript, tested in this browser."
                 }
                 p id="summary" {}
                 p id="engine" {}

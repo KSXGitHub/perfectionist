@@ -21,7 +21,6 @@
   font-style: italic;
 }
 
-/* Secondary to the summary above it, and empty until the reporter runs. */
 #engine {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.875em;
@@ -29,6 +28,7 @@
   overflow-wrap: break-word;
 }
 
+/* No empty gap above the list where the reporter never ran. */
 #engine:empty {
   display: none;
 }

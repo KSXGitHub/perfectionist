@@ -21,10 +21,7 @@
   var engine = /** @type {HTMLElement} */ (document.querySelector("#engine"));
   if (!list || !summary || !engine) return;
 
-  // Which engine produced the result below. The page's whole point is
-  // that the answer differs between browsers, so a result that does not
-  // say which one it came from is half an answer — and a screenshot of
-  // one is unreportable.
+  // The result below means little without the engine that produced it.
   engine.textContent = navigator.userAgent;
 
   var cases = perfectionistTests.all();
