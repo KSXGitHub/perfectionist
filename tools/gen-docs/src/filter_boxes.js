@@ -5,8 +5,9 @@
 // Both narrow a list of lint names to what the reader types, hiding the
 // entries that don't match and reordering the rest best-match-first. They
 // run the identical logic over different lists, so `installFilter` is
-// called twice and holds no knowledge of which list it drives; the scoring,
-// the score threshold and the highlight rendering all come from match.js.
+// called twice and holds no knowledge of which list it drives; which names
+// match, and how well, come from match.js, and the highlighting from
+// highlight.js.
 //
 // Neither box's markup is written here. Each lives in an inert
 // `<template>` inside its `<div class="filter-container">`, rendered by the
@@ -21,8 +22,8 @@
 // do: the template emits them `hidden` and `wireFilter` clears that as its
 // last act, so a CSP-blocked, stripped or mid-parse-error script leaves no
 // dead control behind (the `[hidden] { display: none !important }` reset
-// in style/base.css is what keeps `hidden` authoritative). Reading match.js's
-// threshold into `FILTER_MIN_SCORE` below is part of that contract: if
+// in style/base.css is what keeps `hidden` authoritative). Reading
+// match.js's matcher into `matchFuzzy` below is part of that contract: if
 // match.js never ran, the read throws here, long before any reveal.
 //
 // ---- Closing a box --------------------------------------------------------
@@ -73,7 +74,7 @@
 (function () {
   // Also the load-bearing check that the two libraries this file is
   // nothing without have run: see the file header.
-  var FILTER_MIN_SCORE = perfectionistMatch.FILTER_MIN_SCORE;
+  var matchFuzzy = perfectionistMatch.matchFuzzy;
   var renderName = perfectionistHighlight.renderName;
 
   /**
@@ -223,8 +224,11 @@
       /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
       var matched = [];
       for (var i = 0; i < items.length; i++) {
-        var hit = perfectionistMatch.matchFuzzy(query, items[i].name);
-        if (hit && hit.score >= FILTER_MIN_SCORE) {
+        // A match or nothing: whether a name is worth showing is match.js's
+        // to decide, and it decides it without reading the score. All the
+        // score does here is order what is shown.
+        var hit = matchFuzzy(query, items[i].name);
+        if (hit) {
           matched.push({ item: items[i], score: hit.score, ranges: hit.ranges });
           continue;
         }
