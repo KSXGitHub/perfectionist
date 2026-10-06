@@ -46,7 +46,18 @@
 
 /* A state's colour is carried by the row's border and its indicator, and
    not by the name, which keeps its own: a row reading as a block of red
-   would drown out the message saying what failed. */
+   would drown out the message saying what failed.
+
+   Passed and failed are separated by lightness, not only by hue. Picking
+   both for the same contrast against the background — the obvious thing,
+   and what this sheet did first — leaves them 1.01:1 apart from each
+   other, which is to say indistinguishable to anyone who cannot sort red
+   from green. Failed is therefore the loud one in both schemes, passed
+   the quiet one, and the gap survives a dichromat simulation.
+
+   Passed and untested colour a glyph and a border, where 3:1 is the bar
+   (WCAG 1.4.11); failed also colours the message under a failing case,
+   which is text, so it clears 4.5:1. */
 #cases li {
   border-left: 0.25rem solid currentcolor;
   margin: 0.5rem 0;
@@ -54,15 +65,15 @@
 }
 
 [data-result="untested"] {
-  color: #57606a;
+  color: #6e7781;
 }
 
 [data-result="passed"] {
-  color: #0a7d32;
+  color: #2da44e;
 }
 
 [data-result="failed"] {
-  color: #b3261e;
+  color: #82071e;
 }
 
 /* A column of its own, so the names line up whatever glyph precedes
@@ -93,15 +104,15 @@
   }
 
   [data-result="untested"] {
-    color: #9198a1;
+    color: #8b949e;
   }
 
   [data-result="passed"] {
-    color: #3fb950;
+    color: #238636;
   }
 
   [data-result="failed"] {
-    color: #ff7b72;
+    color: #ffb3ab;
   }
 
   .name {
