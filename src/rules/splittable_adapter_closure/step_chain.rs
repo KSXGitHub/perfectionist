@@ -29,6 +29,7 @@ use clippy_utils::ty::implements_trait;
 use rustc_errors::Applicability;
 use rustc_hir::{CaptureBy, Closure, Expr, ExprKind, Pat};
 use rustc_lint::LateContext;
+use rustc_middle::ty::adjustment::{Adjust, Adjustment, DerefAdjustKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Symbol;
 
@@ -337,21 +338,38 @@ const PLACEHOLDER: &str = "/* name */";
 /// directly, or `None` where naming it would ask for a different type from
 /// the one the step was handed.
 ///
-/// A call around the chain hands its callee exactly what the chain evaluated
-/// to, so the callee is that function whatever its signature.
+/// Both shapes of step need care, because both can reach their parameter
+/// through a coercion that handing the function to an adapter would not
+/// perform.
 ///
-/// A method call is the case needing care. `String::len` takes `&String`
-/// where `str::len` takes `&str`, and a `String` reaches the latter only
-/// through a deref the path form does not perform, so the method's self type
-/// is compared against what the receiver actually is. That is what declines
-/// the path form for an item of `String` while allowing it for one of `&str`.
+/// A call coerces its argument: `canonicalize(file)` takes a `&Path` and a
+/// `&PathBuf` reaches it through a deref, so `map(canonicalize)` over an
+/// iterator of `&PathBuf` asks the function for a type it does not take. The
+/// coercion is recorded as an adjustment on the argument, and an argument
+/// carrying one keeps its closure.
+///
+/// A method call is the same problem read from the receiver. `String::len`
+/// takes `&String` where `str::len` takes `&str`, and a `String` reaches the
+/// latter only through a deref, so the method's self type is compared against
+/// what the receiver actually is. That is what declines the path form for an
+/// item of `String` while allowing it for one of `&str`.
 fn point_free<'tcx>(
     cx: &LateContext<'tcx>,
     step: &'tcx Expr<'tcx>,
     applicability: &mut Applicability,
 ) -> Option<String> {
     match step.kind {
-        ExprKind::Call(callee, [_]) if matches!(callee.kind, ExprKind::Path(_)) => {
+        ExprKind::Call(callee, [argument]) if matches!(callee.kind, ExprKind::Path(_)) => {
+            if converts(cx.typeck_results().expr_adjustments(argument)) {
+                return None;
+            }
+            // The argument's own type, before the call coerced it, against the
+            // parameter's. They differ exactly where the call performed a
+            // conversion that handing the function over will not. Regions are
+            // erased because a signature's are bound where an argument's are
+            // whatever it was written with, and the question is only whether
+            // the types agree.
+
             Some(snippet_with_applicability(cx, callee.span, "..", applicability).into_owned())
         }
         ExprKind::MethodCall(segment, receiver, [], _) => {
@@ -390,6 +408,27 @@ fn point_free<'tcx>(
         }
         _ => None,
     }
+}
+
+/// Whether `adjustments` convert the value rather than merely reborrow it.
+///
+/// Handing a function to an adapter performs no conversion, so a step whose
+/// argument needed one cannot be written as that function's name. The one to
+/// watch is an overloaded deref, which is a `Deref` impl being called:
+/// `canonicalize(file)` takes a `&Path` and a `&PathBuf` reaches it that way,
+/// so `map(canonicalize)` over an iterator of `&PathBuf` would not type-check.
+///
+/// A builtin deref followed by a borrow is a reborrow and changes nothing, so
+/// it is not read as a conversion. That is what keeps the path form for a
+/// `&str` handed to a parameter of `&str`, which is the common case.
+fn converts(adjustments: &[Adjustment<'_>]) -> bool {
+    adjustments.iter().any(|adjustment| {
+        matches!(
+            adjustment.kind,
+            Adjust::Deref(DerefAdjustKind::Overloaded(_) | DerefAdjustKind::Pin)
+                | Adjust::Pointer(_),
+        )
+    })
 }
 
 /// How deeply `ty` is borrowed, and the path a method on it is written

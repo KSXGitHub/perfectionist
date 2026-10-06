@@ -14,6 +14,16 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
+use std::path::{Path, PathBuf};
+
+/// Takes a `&Path`, which a `&PathBuf` reaches only through a deref.
+fn canonical(path: &Path) -> Result<PathBuf, ()> {
+    match path.is_absolute() {
+        true => Ok(path.to_path_buf()),
+        false => Err(()),
+    }
+}
+
 // Bad: the step is applied to a `usize`, so the path is written under
 // `usize`.
 fn unsigned(counts: Vec<usize>) -> Vec<usize> {
@@ -81,6 +91,24 @@ fn split_letters(letters: Vec<char>) -> Vec<usize> {
         .into_iter()
         .map(|letter| letter.to_string())
         .map(|text| text.len())
+        .collect()
+}
+
+// Bad: the first step is a call whose argument reaches the parameter through
+// a `Deref` impl, `&PathBuf` to `&Path`. Naming the function would hand it a
+// `&PathBuf`, which it does not take, so the step keeps a closure where a
+// step handed exactly what it takes would not.
+fn coerced(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    paths.iter().filter_map(|file| canonical(file).ok()).collect()
+}
+
+// Good: one adapter per step, the coercing call keeping its closure and
+// `ok` written as the path it can be.
+fn split_coerced(paths: Vec<PathBuf>) -> Vec<PathBuf> {
+    paths
+        .iter()
+        .map(|file| canonical(file))
+        .filter_map(Result::ok)
         .collect()
 }
 

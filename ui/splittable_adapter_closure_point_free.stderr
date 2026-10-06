@@ -56,4 +56,16 @@ help: lift all but the last step into a leading `map` of its own, leaving the cl
 LL |     letters.into_iter().map(|letter| letter.to_string()).map(|/* name */| /* name */.len()).collect()
    |                                                        +++++++++++++++++++++++++++++
 
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     paths.iter().filter_map(|file| canonical(file).ok()).collect()
+   |                  ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     paths.iter().filter_map(|file| canonical(file).ok()).collect()
+LL +     paths.iter().map(|file| canonical(file)).filter_map(Result::ok).collect()
+   |
+
 warning: N warnings emitted
