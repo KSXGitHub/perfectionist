@@ -27,6 +27,17 @@
     var hit = only([entry({ name: "bare_url" })], "bare url");
     t.equal(hit.entry.name, "bare_url", "the entry comes back whole");
     t.deepEqual(hit.nameRanges, [[0, 8]], "the whole name matched");
+    // A name is matched the loose way, which is the freedom prose is
+    // denied below: `bur` is the two words' openings and nothing else.
+    var initials = only([entry({ name: "bare_url" })], "bur");
+    t.deepEqual(
+      initials.nameRanges,
+      [
+        [0, 1],
+        [5, 7],
+      ],
+      "and a name reached by its initials is marked where they landed",
+    );
   });
 
   t.add("a rule is found by its statement, and the statement is marked", function () {
@@ -46,13 +57,22 @@
   });
 
   t.add("a letter buried mid-word is not a prose match", function () {
-    // `matchPhrase` finds a single character almost anywhere, so without
-    // the score bound on prose a letter typed into the search would match
-    // the statement of nearly every rule on the page.
+    // A single character occurs almost anywhere in a paragraph, so a
+    // letter typed into the search would otherwise match the statement of
+    // nearly every rule on the page. `admits` is what turns it away: the
+    // one run it places opens no word.
     t.deepEqual(
       r.rank([entry({ statement: "an example of prose" })], "x"),
       [],
       "`x` sits inside `example` and nowhere else, so it finds nothing",
+    );
+    // And prose is matched the strict way, which is the other half of it:
+    // a paragraph long enough carries almost any two words somewhere
+    // apart from each other, so it is not read in any order.
+    t.deepEqual(
+      r.rank([entry({ statement: "core instead of std" })], "std core"),
+      [],
+      "a statement is not taken with its words reordered",
     );
   });
 

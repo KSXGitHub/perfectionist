@@ -25,7 +25,11 @@
     // letters inside a word drift apart, which is the one thing
     // `matchFuzzy` allows and it does not.
     t.ok(m.matchPhrase("url", "bare_url"), "`url` appears in `bare_url`");
-    t.equal(m.matchPhrase("brl", "bare_url"), null, "`brl` is `bare_url` scattered");
+    // `bur` and not `brl`: the next case has `matchFuzzy` taking `bur`,
+    // so the two together say that the scattered tier is the difference.
+    // `brl` would be turned away by `admits` under either matcher, and
+    // the claim would hold without this one running fewer tiers at all.
+    t.equal(m.matchPhrase("bur", "bare_url"), null, "`bur` is `bare_url` scattered");
     t.equal(m.matchPhrase("zzz", "bare_url"), null, "`zzz` does not appear at all");
   });
 
@@ -75,6 +79,9 @@
     // the second is not.
     t.equal(m.matchPhrase("rror", "thiserror"), null, "four of nine is not most of it");
     t.ok(m.matchPhrase("error", "thiserror"), "five of nine is");
+    // And the tie the line is drawn on: `ter` is the back three of
+    // `letter`'s six, holding exactly as much of the word as it skipped.
+    t.ok(m.matchPhrase("ter", "single_letter_generic"), "three of six is as much as was skipped");
   });
 
   t.add("one run may begin inside a word and no more", function () {

@@ -33,6 +33,23 @@
       "jumps",
       "the shifted range still covers the word that matched",
     );
+    // A quarter of the window is kept ahead of the match, so the reader
+    // sees what it sits in rather than meeting it against the ellipsis.
+    t.greater(windowed.ranges[0][0], 1, "the window opens before the match, not on it");
+  });
+
+  t.add("a match near either end still fills the window", function () {
+    var text = "the quick brown fox jumps over the lazy dog";
+    // The lead-in would run the window past the text, so it is clamped to
+    // the end — which is what keeps a window this side of the text as
+    // long as one in the middle of it.
+    var tail = m.excerpt(text, [[40, 43]], 20);
+    t.greater(tail.text.length, 20, "the window is as long as it would be anywhere else");
+    t.equal(
+      tail.text.slice(tail.ranges[0][0], tail.ranges[0][1]),
+      "dog",
+      "and the range still covers the word that matched",
+    );
   });
 
   t.add("a window that cuts either end says so", function () {

@@ -22,6 +22,13 @@
     t.ok(m.matchFuzzy("clone_getter", "cloning_getter"), "`clone` reaches `cloning`");
     t.ok(m.matchFuzzy("cloned_getter", "cloning_getter"), "and so does `cloned`");
     t.ok(m.matchPhrase("cloning a field", "clones a field"), "prose gets the same");
+    // The consonant English doubled to put the ending on comes back off
+    // with it, so `getting` is `get` rather than `gett`.
+    t.ok(m.matchPhrase("getting", "the gets"), "`getting` reaches `gets`");
+    // Except where the doubling is the word's own: `pass` keeps both
+    // s-es, so it never reaches a word that merely opens with `pas`.
+    t.equal(m.matchPhrase("passed", "a pasta"), null, "`passed` does not reach `pasta`");
+    t.ok(m.matchPhrase("passed", "a pass"), "but it does reach `pass`");
   });
 
   t.add("a plural finds its singular", function () {
