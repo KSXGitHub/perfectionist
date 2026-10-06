@@ -95,6 +95,48 @@
     t.greater(opening, midWord, "opening a word is worth more than landing inside one");
   });
 
+  t.add("opening the name beats opening a word inside it", function () {
+    // Both of these open a word, so both were once perfect on quality,
+    // and the shorter one won on coverage alone — which put the name that
+    // merely contains the letter above the one that starts with it.
+    t.greater(
+      t.found(m.matchFuzzy("n", "named_prelude_imports"), "starts with `n`").score,
+      t.found(m.matchFuzzy("n", "excessive_nesting"), "contains `n`").score,
+      "a name that starts with the query comes first",
+    );
+    // The longer of the two starting with it still comes first.
+    t.greater(
+      t.found(m.matchFuzzy("n", "needless_borrowed_parameters"), "starts with `n`").score,
+      t.found(m.matchFuzzy("n", "excessive_nesting"), "contains `n`").score,
+      "length does not buy back the head start",
+    );
+  });
+
+  t.add("a name the query merely opens a word in is still a match", function () {
+    // The point of the bonus is the order, not an exclusion: a reader who
+    // types `n` should still be offered `excessive_nesting`, under the
+    // two that begin with one.
+    t.greater(
+      t.found(m.matchFuzzy("n", "excessive_nesting"), "contains `n`").score,
+      m.FILTER_MIN_SCORE,
+      "it clears the filter bound",
+    );
+  });
+
+  t.add("the head start fades as the query grows", function () {
+    // The bonus is a fixed amount spread over the whole query, so the
+    // lead it buys shrinks as the query grows specific enough to decide
+    // itself. One letter is decided by it; six are very nearly not.
+    function lead(query) {
+      return (
+        t.found(m.matchFuzzy(query, "import_grouping_mismatch"), "starts with it").score -
+        t.found(m.matchFuzzy(query, "named_prelude_imports"), "contains it").score
+      );
+    }
+    t.greater(lead("i"), 0, "the name that starts with the query leads either way");
+    t.greater(lead("i"), lead("import"), "but by less and less as the query gets longer");
+  });
+
   t.add("the shorter target wins a tie", function () {
     var brief = t.found(m.matchFuzzy("bare", "bare_url"), "short target").score;
     var lengthy = t.found(m.matchFuzzy("bare", "bare_identifier_reference"), "long target").score;
