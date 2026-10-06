@@ -53,6 +53,16 @@ fn page_emits_search_toggle_hidden_and_pointing_at_the_overlay() {
 }
 
 #[test]
+fn search_toggle_names_its_shortcut_in_the_title_only() {
+    let html = render_page(&[fake_rule("alpha")], &fake_context());
+    // `/` toggles the overlay, and the tooltip is where that is said. The
+    // `aria-label` is the button's accessible name, which a screen reader
+    // reads on every visit, so the hint stays out of it — pin the two
+    // together so neither drifts into the other.
+    assert!(html.contains(r#"aria-label="Search lints" title="Search lints (press /)""#));
+}
+
+#[test]
 fn search_overlay_markup_lives_only_inside_its_template() {
     let html = render_page(&[fake_rule("alpha")], &fake_context());
     // A <template>'s contents are parsed but kept out of the document:
