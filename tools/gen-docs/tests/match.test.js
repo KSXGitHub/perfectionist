@@ -127,6 +127,12 @@
     // The bonus is a fixed amount spread over the whole query, so the
     // lead it buys shrinks as the query grows specific enough to decide
     // itself. One letter is decided by it; six are very nearly not.
+    /**
+     * How far ahead of the name that merely contains `query` the name
+     * that starts with it scores.
+     * @param {string} query
+     * @returns {number}
+     */
     function lead(query) {
       return (
         t.found(m.matchFuzzy(query, "import_grouping_mismatch"), "starts with it").score -
