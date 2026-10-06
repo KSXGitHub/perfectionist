@@ -127,10 +127,11 @@ check-js-types:
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
 
-# Run the docs-site JavaScript unit tests (tools/gen-docs/tests/) under
-# `node:test`, in a context with no DOM in it. Installs nothing: the runner
-# is built into Node. `just gen-docs` renders a browser runner for the same
-# cases to `gh-pages/tests.html`, which ships with the catalogue.
+# Run the docs-site JavaScript unit tests (tools/gen-docs/tests/) in a
+# context with no DOM in it, reported as `cargo test` reports its own.
+# Installs nothing: bare `node` is the whole requirement. `just gen-docs`
+# renders a browser runner for the same cases to `gh-pages/tests.html`,
+# which ships with the catalogue.
 test-js:
   node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 

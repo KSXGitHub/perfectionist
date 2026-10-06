@@ -6,8 +6,8 @@ name: Check JS
 #   * `types` type-checks tools/gen-docs/src/*.js and the test files beside
 #     them from their JSDoc annotations with the TypeScript compiler
 #     (`tsc --noEmit`, driven by tsconfig.json).
-#   * `test` runs the unit tests in tools/gen-docs/tests/ under `node:test`.
-#     It installs nothing: the runner is built into Node.
+#   * `test` runs the unit tests in tools/gen-docs/tests/. It installs
+#     nothing: bare `node` is the whole requirement.
 #
 # This workflow is intentionally independent of every other CI:
 #
