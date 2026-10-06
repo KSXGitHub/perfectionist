@@ -270,17 +270,20 @@ fn the_search_scatters_a_name_but_keeps_a_word_in_prose() {
     // page matches every query.
     assert!(MATCH_SCRIPT.contains("function matchFuzzy("));
     assert!(MATCH_SCRIPT.contains("function matchPhrase("));
-    // Everything short of scattering is shared, so a near miss reaches a
-    // paragraph as readily as a name: a separator spelled differently and
-    // a word ending differently are met by both. Only the subsequence
-    // scan, which drops characters outright, is the fuzzy one's alone.
+    // A separator spelled differently and a word ending differently are
+    // met by both, so a near miss reaches a paragraph as readily as a
+    // name. The two that let the query come apart — characters dropped
+    // out of a word, words arriving out of order — are the fuzzy one's
+    // alone, and a paragraph long enough carries either by accident.
     assert!(MATCH_SCRIPT.contains("function matchRespaced("));
     assert!(MATCH_SCRIPT.contains("function matchVariants("));
-    assert_eq!(
-        MATCH_SCRIPT.matches("matchScattered(").count(),
-        2,
-        "the subsequence scan should have one definition and one caller, in matchFuzzy",
-    );
+    for scan in ["matchScattered(", "matchReordered("] {
+        assert_eq!(
+            MATCH_SCRIPT.matches(scan).count(),
+            2,
+            "{scan} should have one definition and one caller, in matchFuzzy",
+        );
+    }
     // Both consumers reach the matchers through the one global, whether
     // they call them where they stand or bind them to a local first.
     assert!(RANK_SCRIPT.contains("perfectionistMatch.matchFuzzy"));
@@ -295,10 +298,10 @@ fn the_search_scatters_a_name_but_keeps_a_word_in_prose() {
 fn the_libraries_touch_no_dom() {
     // match.js and rank.js are the page's two pure libraries, and that is
     // not an accident of how they happen to be written: it is what lets
-    // them be loaded and exercised outside a browser, which is the only
-    // way the scoring and the weights can be checked at all. A DOM
-    // reference in either would end that silently, since the page would go
-    // on working either way.
+    // tools/gen-docs/tests/ load them at all, which is the only way the
+    // scoring and the weights get checked. A DOM reference in either would
+    // end that silently — the page would go on working, and the unit tests
+    // would start wanting a fake document.
     //
     // Comments are stripped first: both files discuss the DOM at length
     // while touching none of it.
