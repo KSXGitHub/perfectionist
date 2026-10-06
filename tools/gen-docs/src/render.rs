@@ -77,7 +77,7 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
 /// The query-matching library the filter boxes and the search overlay
 /// share, written beside `index.html` and loaded via `<script src>`
-/// rather than inlined. It defines the scoring, the score thresholds and
+/// rather than inlined. It defines the scoring and the score thresholds
 /// and nothing else; it draws no element and binds no handler of its own.
 /// The page loads classic scripts, so its consumers reach it through one
 /// global — see the file's own header for why that is the shape, rather
