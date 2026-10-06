@@ -254,7 +254,7 @@ fn the_score_bounds_live_only_in_the_match_library() {
 }
 
 #[test]
-fn the_search_matches_names_loosely_and_prose_verbatim() {
+fn the_search_scatters_a_name_but_keeps_a_word_in_prose() {
     // A lint name is typed from memory, so its characters may be
     // scattered; prose is typed as words, and a long enough paragraph
     // contains almost any scattered sequence. match.js offers both, and
@@ -262,6 +262,17 @@ fn the_search_matches_names_loosely_and_prose_verbatim() {
     // page matches every query.
     assert!(MATCH_SCRIPT.contains("function matchFuzzy("));
     assert!(MATCH_SCRIPT.contains("function matchPhrase("));
+    // Everything short of scattering is shared, so a near miss reaches a
+    // paragraph as readily as a name: a separator spelled differently and
+    // a word ending differently are met by both. Only the subsequence
+    // scan, which drops characters outright, is the fuzzy one's alone.
+    assert!(MATCH_SCRIPT.contains("function matchRespaced("));
+    assert!(MATCH_SCRIPT.contains("function matchVariants("));
+    assert_eq!(
+        MATCH_SCRIPT.matches("matchScattered(").count(),
+        2,
+        "the subsequence scan should have one definition and one caller, in matchFuzzy",
+    );
     assert!(RANK_SCRIPT.contains("perfectionistMatch.matchFuzzy("));
     assert!(RANK_SCRIPT.contains("perfectionistMatch.matchPhrase("));
     // The filter boxes match names only, so they never want the prose
