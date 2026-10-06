@@ -1,29 +1,15 @@
 name: Check JS
 
-# Checks the docs-site browser scripts, in the two ways they can be checked
-# without a browser:
+# Gates nothing, by construction: nothing `needs:` this workflow and nothing
+# calls it, so a red run here cannot hold back the Rust suite or a Pages
+# deploy. That is what makes an allow-list the right shape for the trigger
+# paths — a path missing from one costs a JS change its CI run and nothing
+# else, where the same omission in a gating workflow would skip CI on code
+# that needed it. (test.yaml gates, and takes a deny-list for that reason.)
+# The push and pull_request lists are kept identical by hand.
 #
-#   * `types` type-checks tools/gen-docs/src/*.js and the test files beside
-#     them from their JSDoc annotations with the TypeScript compiler
-#     (`tsc --noEmit`, driven by tsconfig.json).
-#   * `test` runs the unit tests in tools/gen-docs/tests/. It installs
-#     nothing: bare `node` is the whole requirement.
-#
-# This workflow is intentionally independent of every other CI:
-#
-#   * It is a standalone workflow with its own jobs, not a `needs:`
-#     dependency of the Test or Pages workflows and not invoked via
-#     `workflow_call`, so it can never gate them — a red run here leaves Test
-#     and the Pages deploy free to pass and publish.
-#   * It only installs Node tooling, never the Rust toolchain, so it shares
-#     no cache or step with the Rust suite.
-#
-# The two jobs are independent of each other for the same reason: a type
-# error should not hide a failing test, nor the reverse.
-#
-# An allow-list of trigger paths keeps it from running on unrelated changes.
-# Because it gates nothing, a path missed here only means a JS/JSDoc change
-# went unchecked by CI — never a blocked merge or a broken deploy.
+# The jobs do not `needs:` each other either, so a type error and a failing
+# test are reported in the same run instead of one hiding the other.
 on:
   push:
     branches: ['**']
@@ -46,7 +32,6 @@ on:
       - '.github/workflows/check-js.yaml'
   workflow_dispatch:
 
-# Neither job writes to the repository.
 permissions:
   contents: read
 
