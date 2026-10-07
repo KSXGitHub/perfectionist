@@ -160,6 +160,10 @@ fn fix<'tcx>(
         span: call.fix_span,
         suggestion,
         applicability,
+        // This rewrite writes each test as the closure the reader had, so it
+        // names no path that could be missing.
+        imports: Vec::new(),
+        inject_use: cx.tcx.hir_root_module().spans.inject_use_span,
     })
 }
 

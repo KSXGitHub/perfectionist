@@ -68,4 +68,36 @@ LL -     paths.iter().filter_map(|file| canonical(file).ok()).collect()
 LL +     paths.iter().map(|file| canonical(file)).filter_map(Result::ok).collect()
    |
 
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |         .map(|wrapper| wrapper.value().to_string())
+   |          ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|wrapper| wrapper.value().to_string())
+LL +         .map(Wrapper::value).map(|/* name */| /* name */.to_string())
+   |
+help: the path it names has to be in scope
+   |
+LL + use held::Wrapper;
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |         .map(|wrapper| wrapper.doubled().value())
+   |          ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|wrapper| wrapper.doubled().value())
+LL +         .map(Wrapper::doubled).map(Wrapper::value)
+   |
+help: the path it names has to be in scope
+   |
+LL + use held::Wrapper;
+   |
+
 warning: N warnings emitted

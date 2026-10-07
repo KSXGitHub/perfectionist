@@ -68,3 +68,24 @@ pub fn chained_from_an_owned_item(headers: std::vec::IntoIter<String>) -> Vec<&'
 pub fn chained_into_a_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + line.trim().len())
 }
+
+pub mod held {
+    pub struct Wrapper(pub usize);
+
+    impl Wrapper {
+        pub fn value(self) -> usize {
+            self.0
+        }
+
+        pub fn doubled(self) -> Wrapper {
+            Wrapper(self.0 * 2)
+        }
+    }
+}
+
+pub fn two_unimported_steps(items: Vec<held::Wrapper>) -> Vec<usize> {
+    items
+        .into_iter()
+        .map(|wrapper| wrapper.doubled().value())
+        .collect()
+}

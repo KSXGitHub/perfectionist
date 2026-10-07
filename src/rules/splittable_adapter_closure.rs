@@ -222,6 +222,12 @@ struct Fix {
     /// `MachineApplicable` only where the text is known to compile and to
     /// behave as the folded form did.
     applicability: Applicability,
+    /// The paths the rewrite names that the file does not import, offered as
+    /// `use` statements of their own so the reader can take one.
+    imports: Vec<String>,
+    /// Where a `use` goes in this file, which rustc computes for its own
+    /// import suggestions.
+    inject_use: Span,
 }
 
 /// The adapter call a trigger reads, so each one is handed the parts
@@ -300,6 +306,23 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
                         fix.suggestion,
                         fix.applicability,
                     );
+                    // A path the file does not import needs the `use` as well,
+                    // offered separately so taking the rewrite does not
+                    // commit the reader to an import they may want elsewhere.
+                    if !fix.imports.is_empty() {
+                        diagnostic.span_suggestions(
+                            fix.inject_use,
+                            match fix.imports.len() {
+                                1 => "the path it names has to be in scope",
+                                _ => "the paths it names have to be in scope",
+                            },
+                            fix.imports
+                                .iter()
+                                .map(|path| format!("use {path};\n"))
+                                .collect::<Vec<_>>(),
+                            Applicability::MaybeIncorrect,
+                        );
+                    }
                 }
                 None => {
                     diagnostic.help(found.help);

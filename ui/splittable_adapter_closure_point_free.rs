@@ -112,4 +112,62 @@ fn split_coerced(paths: Vec<PathBuf>) -> Vec<PathBuf> {
         .collect()
 }
 
+/// A type this file names only through its module, so its own name does not
+/// resolve at the top level.
+mod held {
+    pub struct Wrapper(pub usize);
+
+    impl Wrapper {
+        pub fn value(self) -> usize {
+            self.0
+        }
+
+        pub fn doubled(self) -> Wrapper {
+            Wrapper(self.0 * 2)
+        }
+    }
+}
+
+// Bad: the first step is a method on a type the file does not import, so the
+// path form names something that does not resolve here. The rewrite is still
+// the advice, offered with the `use` it wants.
+fn unimported(items: Vec<held::Wrapper>) -> Vec<String> {
+    items
+        .into_iter()
+        .map(|wrapper| wrapper.value().to_string())
+        .collect()
+}
+
+// Good: one adapter per step, with the import the paths need.
+fn split_unimported(items: Vec<held::Wrapper>) -> Vec<String> {
+    use held::Wrapper;
+
+    items
+        .into_iter()
+        .map(Wrapper::value)
+        .map(|value| value.to_string())
+        .collect()
+}
+
+// Bad: both steps are methods this file could name as paths, so the import is
+// the only thing between the rewrite and compiling. That is what makes it
+// advice rather than a fix the tooling applies on its own.
+fn two_unimported_steps(items: Vec<held::Wrapper>) -> Vec<usize> {
+    items
+        .into_iter()
+        .map(|wrapper| wrapper.doubled().value())
+        .collect()
+}
+
+// Good: one adapter per step, both written as paths, with the import.
+fn split_two_unimported_steps(items: Vec<held::Wrapper>) -> Vec<usize> {
+    use held::Wrapper;
+
+    items
+        .into_iter()
+        .map(Wrapper::doubled)
+        .map(Wrapper::value)
+        .collect()
+}
+
 fn main() {}

@@ -116,7 +116,7 @@ LL |     header.map_or(0, |text| text.trim().len())
 help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    |
 LL -     header.map_or(0, |text| text.trim().len())
-LL +     header.map(str::trim).map_or(str::len)
+LL +     header.map(str::trim).map_or(0, str::len)
    |
 
 warning: this closure chains 2 steps onto the item, so `map_or_else` does all of them
@@ -128,7 +128,7 @@ LL |     header.map_or_else(|| 0, |text| text.trim().len())
 help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    |
 LL -     header.map_or_else(|| 0, |text| text.trim().len())
-LL +     header.map(str::trim).map_or_else(str::len)
+LL +     header.map(str::trim).map_or_else(|| 0, str::len)
    |
 
 warning: this closure chains 2 steps onto the item, so `is_some_and` does all of them
@@ -188,7 +188,7 @@ LL |     outcome.map_or(0, |text| text.trim().len())
 help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    |
 LL -     outcome.map_or(0, |text| text.trim().len())
-LL +     outcome.map(str::trim).map_or(str::len)
+LL +     outcome.map(str::trim).map_or(0, str::len)
    |
 
 warning: this closure chains 2 steps onto the item, so `map_or_else` does all of them
@@ -200,7 +200,7 @@ LL |     outcome.map_or_else(|text| text.trim().len(), |text| text.trim().len())
 help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
    |
 LL -     outcome.map_or_else(|text| text.trim().len(), |text| text.trim().len())
-LL +     outcome.map(str::trim).map_or_else(str::len)
+LL +     outcome.map(str::trim).map_or_else(|text| text.trim().len(), str::len)
    |
 
 warning: this closure chains 2 steps onto the item, so `or_else` does all of them

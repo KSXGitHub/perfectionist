@@ -27,7 +27,8 @@ use clippy_utils::source::{snippet_opt, snippet_with_applicability};
 use clippy_utils::sym;
 use clippy_utils::ty::implements_trait;
 use rustc_errors::Applicability;
-use rustc_hir::{CaptureBy, Closure, Expr, ExprKind, Pat};
+use rustc_hir::def_id::DefId;
+use rustc_hir::{CaptureBy, Closure, Expr, ExprKind, HirId, Item, ItemId, ItemKind, Node, Pat};
 use rustc_lint::LateContext;
 use rustc_middle::ty::adjustment::{Adjust, Adjustment, DerefAdjustKind};
 use rustc_middle::ty::{self, Ty};
@@ -302,14 +303,31 @@ fn fix<'tcx>(
         false => (None, steps),
     };
     let mut written = Vec::with_capacity(steps.len() + 1);
+    let mut imports = Vec::new();
     for (index, step) in lifted.iter().enumerate() {
-        let step = written_step(cx, step, index, &item, moves, &mut applicability)?;
+        let step = written_step(
+            cx,
+            step,
+            index,
+            &item,
+            moves,
+            &mut applicability,
+            &mut imports,
+        )?;
         written.push(format!("{}({step})", adapter.lift_target));
     }
     match kept {
         Some(last) => {
-            let step = written_step(cx, last, lifted.len(), &item, moves, &mut applicability)?;
-            written.push(format!("{}({step})", call.method));
+            let step = written_step(
+                cx,
+                last,
+                lifted.len(),
+                &item,
+                moves,
+                &mut applicability,
+                &mut imports,
+            )?;
+            written.push(call_handed(cx, call, adapter, &step)?);
         }
         None => written.push(rebound_call(
             cx,
@@ -324,11 +342,84 @@ fn fix<'tcx>(
     if drops_a_comment(cx, call.fix_span, steps.iter().map(|step| step.expr.span)) {
         applicability = Applicability::Unspecified;
     }
+    imports.sort_unstable();
+    imports.dedup();
     Some(Fix {
         span: call.fix_span,
         suggestion: written.join("."),
         applicability,
+        imports,
+        inject_use: cx.tcx.hir_root_module().spans.inject_use_span,
     })
+}
+
+/// The `struct`, `enum` or `union` a method's path would be written under,
+/// which is the one a `use` could bring into scope. A primitive answers
+/// `None`: its name is always spellable.
+fn owning_adt(ty: Ty<'_>) -> Option<DefId> {
+    let mut peeled = ty;
+    while let ty::Ref(_, referent, _) = peeled.kind() {
+        peeled = *referent;
+    }
+    match peeled.kind() {
+        ty::Adt(definition, _) if !definition.is_box() => Some(definition.did()),
+        _ => None,
+    }
+}
+
+/// Whether `definition`'s own name resolves to it where `at` sits.
+///
+/// The modules around `at` are asked for an import of it or a definition of
+/// it, innermost first. A glob import is not followed, so a name only a glob
+/// brings in reads as absent -- which costs a downgrade and an import offer
+/// the reader does not need, where the opposite mistake would cost a rewrite
+/// that does not compile.
+fn resolves_here(cx: &LateContext<'_>, definition: DefId, at: HirId) -> bool {
+    if in_the_prelude(cx, definition) {
+        return true;
+    }
+    cx.tcx
+        .hir_parent_iter(at)
+        .filter_map(|(_, node)| match node {
+            Node::Item(Item {
+                kind: ItemKind::Mod(_, module),
+                ..
+            }) => Some(module.item_ids),
+            Node::Crate(module) => Some(module.item_ids),
+            _ => None,
+        })
+        .flat_map(<[ItemId]>::iter)
+        .any(|id| names_it(cx, *id, definition))
+}
+
+/// Whether the item `id` makes `definition`'s bare name mean it, by importing
+/// it or by being it.
+fn names_it(cx: &LateContext<'_>, id: ItemId, definition: DefId) -> bool {
+    let item = cx.tcx.hir_item(id);
+    match item.kind {
+        ItemKind::Use(path, _) => {
+            let resolutions = [path.res.type_ns, path.res.value_ns];
+            resolutions
+                .iter()
+                .flatten()
+                .any(|res| res.opt_def_id() == Some(definition))
+        }
+        _ => item.owner_id.to_def_id() == definition,
+    }
+}
+
+/// Whether `definition` is one of the types the standard prelude brings in, so
+/// that no file has to import it.
+///
+/// The list is the prelude's own: a type outside it, `Cow` and `PathBuf`
+/// among them, needs the import this spares the others.
+fn in_the_prelude(cx: &LateContext<'_>, definition: DefId) -> bool {
+    const PRELUDE: [&str; 5] = ["Option", "Result", "String", "Vec", "Box"];
+    let standard = matches!(
+        cx.tcx.crate_name(definition.krate).as_str(),
+        "core" | "alloc" | "std",
+    );
+    standard && PRELUDE.contains(&cx.tcx.item_name(definition).as_str())
 }
 
 /// A step written for an adapter of its own: the function it already is, or a
@@ -340,8 +431,9 @@ fn written_step<'tcx>(
     item: &str,
     moves: &str,
     applicability: &mut Applicability,
+    imports: &mut Vec<String>,
 ) -> Option<String> {
-    if let Some(function) = point_free(cx, step.expr, applicability) {
+    if let Some(function) = point_free(cx, step.expr, applicability, imports) {
         return Some(function);
     }
     // The first step is handed the item, so the item's name is the one it
@@ -396,19 +488,39 @@ fn rebound_call<'tcx>(
         .collect::<Option<Vec<_>>>()?
         .join(", ");
     let rebound = spliced(cx, body.value.span, chain, PLACEHOLDER)?;
+    *applicability = Applicability::HasPlaceholders;
+    call_handed(
+        cx,
+        call,
+        adapter,
+        &format!("{moves}|{parameters}| {rebound}"),
+    )
+}
+
+/// The adapter's own call with `handed` in place of the closure it took, and
+/// every other argument kept as the reader wrote it.
+///
+/// Writing the adapter's name and the closure alone would drop those other
+/// arguments, which is what `map_or` and `map_or_else` are: the closure is
+/// their second argument and the first is a default they would silently lose.
+fn call_handed(
+    cx: &LateContext<'_>,
+    call: &Call<'_>,
+    adapter: Adapter,
+    handed: &str,
+) -> Option<String> {
     let arguments = call
         .arguments
         .iter()
         .enumerate()
         .map(
             |(index, argument)| match index == adapter.closure_argument {
-                true => Some(format!("{moves}|{parameters}| {rebound}")),
+                true => Some(handed.to_owned()),
                 false => snippet_opt(cx, argument.span),
             },
         )
         .collect::<Option<Vec<_>>>()?
         .join(", ");
-    *applicability = Applicability::HasPlaceholders;
     Some(format!("{}({arguments})", call.method))
 }
 
@@ -452,6 +564,7 @@ fn point_free<'tcx>(
     cx: &LateContext<'tcx>,
     step: &'tcx Expr<'tcx>,
     applicability: &mut Applicability,
+    imports: &mut Vec<String>,
 ) -> Option<String> {
     match step.kind {
         ExprKind::Call(callee, [argument]) if matches!(callee.kind, ExprKind::Path(_)) => {
@@ -484,12 +597,24 @@ fn point_free<'tcx>(
             // erasing regions does not reach a bound one. The borrow depth
             // and the type the path names are what decide whether the path
             // form takes what the step was handed.
+            let held_ty = cx.typeck_results().expr_ty(receiver);
             let taken = shape(cx, self_ty)?;
-            let held = shape(cx, cx.typeck_results().expr_ty(receiver))?;
+            let held = shape(cx, held_ty)?;
             if taken != held {
                 return None;
             }
             let owner = taken.1;
+            // The path names the owner by its bare name, which compiles only
+            // where that name resolves. Where it does not, the rewrite is
+            // still the right advice, so it is offered with the `use` it wants
+            // rather than withheld or written out in full -- a fully qualified
+            // path would be longer than the closure it replaces.
+            if let Some(definition) = owning_adt(held_ty)
+                && !resolves_here(cx, definition, step.hir_id)
+            {
+                imports.push(cx.tcx.def_path_str(definition));
+                *applicability = Applicability::MaybeIncorrect;
+            }
             // A path takes its generic arguments turbofished where a method
             // call writes them bare, and the span covers what was written.
             let turbofish = segment.args.map_or_else(String::new, |arguments| {
