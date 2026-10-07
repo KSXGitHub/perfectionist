@@ -125,6 +125,18 @@ mod held {
         pub fn doubled(self) -> Wrapper {
             Wrapper(self.0 * 2)
         }
+
+        pub fn counted(self) -> Counter {
+            Counter(self.0)
+        }
+    }
+
+    pub struct Counter(pub usize);
+
+    impl Counter {
+        pub fn count(self) -> usize {
+            self.0
+        }
     }
 }
 
@@ -168,6 +180,40 @@ fn split_two_unimported_steps(items: Vec<held::Wrapper>) -> Vec<usize> {
         .map(Wrapper::doubled)
         .map(Wrapper::value)
         .collect()
+}
+
+// Bad: the two steps are applied to two types, neither of them imported, so
+// the rewrite names two paths and wants a `use` for each.
+fn two_unimported_types(items: Vec<held::Wrapper>) -> Vec<usize> {
+    items.into_iter().map(|wrapper| wrapper.counted().count()).collect()
+}
+
+// Good: one adapter per step, with an import apiece.
+fn split_two_unimported_types(items: Vec<held::Wrapper>) -> Vec<usize> {
+    use held::{Counter, Wrapper};
+
+    items
+        .into_iter()
+        .map(Wrapper::counted)
+        .map(Counter::count)
+        .collect()
+}
+
+/// The import a path form needs may sit in the module holding the chain
+/// rather than at the crate root, which is the other place the rewrite looks.
+mod nearby {
+    use super::held::Wrapper;
+
+    // Bad: the paths resolve here, this module importing the type its own
+    // chain is over, so the rewrite needs no import of its own.
+    fn imported(items: Vec<Wrapper>) -> Vec<usize> {
+        items.into_iter().map(|wrapper| wrapper.doubled().value()).collect()
+    }
+
+    // Good: one adapter per step, both written as paths.
+    fn split_imported(items: Vec<Wrapper>) -> Vec<usize> {
+        items.into_iter().map(Wrapper::doubled).map(Wrapper::value).collect()
+    }
 }
 
 fn main() {}

@@ -100,4 +100,33 @@ help: the path it names has to be in scope
 LL + use held::Wrapper;
    |
 
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |     items.into_iter().map(|wrapper| wrapper.counted().count()).collect()
+   |                       ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.into_iter().map(|wrapper| wrapper.counted().count()).collect()
+LL +     items.into_iter().map(Wrapper::counted).map(Counter::count).collect()
+   |
+help: the paths it names have to be in scope
+   |
+LL + use held::Counter;
+LL + use held::Wrapper;
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_point_free.rs:LL:CC
+   |
+LL |         items.into_iter().map(|wrapper| wrapper.doubled().value()).collect()
+   |                           ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         items.into_iter().map(|wrapper| wrapper.doubled().value()).collect()
+LL +         items.into_iter().map(Wrapper::doubled).map(Wrapper::value).collect()
+   |
+
 warning: N warnings emitted

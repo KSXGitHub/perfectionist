@@ -306,11 +306,15 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
                         fix.suggestion,
                         fix.applicability,
                     );
-                    // A path the file does not import needs the `use` as well,
-                    // offered separately so taking the rewrite does not
+                    // A path the file does not import needs the `use` as
+                    // well, offered separately so taking the rewrite does not
                     // commit the reader to an import they may want elsewhere.
+                    // Every one of them is needed, not one of them, so they
+                    // go in a single suggestion: `span_suggestions` would
+                    // render them as alternatives to choose between, and
+                    // taking one of those leaves the rewrite uncompilable.
                     if !fix.imports.is_empty() {
-                        diagnostic.span_suggestions(
+                        diagnostic.span_suggestion(
                             fix.inject_use,
                             match fix.imports.len() {
                                 1 => "the path it names has to be in scope",
@@ -319,7 +323,7 @@ impl<'tcx> LateLintPass<'tcx> for SplittableAdapterClosure {
                             fix.imports
                                 .iter()
                                 .map(|path| format!("use {path};\n"))
-                                .collect::<Vec<_>>(),
+                                .collect::<String>(),
                             Applicability::MaybeIncorrect,
                         );
                     }
