@@ -369,11 +369,10 @@ fn owning_adt(ty: Ty<'_>) -> Option<DefId> {
 
 /// Whether `definition`'s own name resolves to it where `at` sits.
 ///
-/// The modules around `at` are asked for an import of it or a definition of
-/// it, innermost first. A glob import is not followed, so a name only a glob
-/// brings in reads as absent -- which costs a downgrade and an import offer
-/// the reader does not need, where the opposite mistake would cost a rewrite
-/// that does not compile.
+/// A glob import is not followed, so a name only a glob brings in reads as
+/// absent -- which costs a downgrade and an import offer the reader does not
+/// need, where the opposite mistake would cost a rewrite that does not
+/// compile.
 fn resolves_here(cx: &LateContext<'_>, definition: DefId, at: HirId) -> bool {
     if in_the_prelude(cx, definition) {
         return true;

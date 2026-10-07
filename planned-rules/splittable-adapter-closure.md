@@ -91,10 +91,8 @@ crate's own source:
 Not implemented, and the rest of this file is their active spec:
 
 - No autofix for the guard-and-value shape, which has more than one
-  reasonable text, nor for a chain under an adapter that takes the whole
-  chain or that keeps the method at the head: the first keeps a closure whose
-  body has to be rewritten rather than replaced, and the second puts the
-  leading step in its own method.
+  reasonable text, nor for a chain under an adapter that keeps the method at
+  the head, which puts the leading step in its own method.
 - A conjunction is applied as one adapter per test, each keeping the closure
   the test was written in, with
   `clippy::redundant_closure_for_method_calls` left to reduce the ones that
@@ -109,7 +107,17 @@ Not implemented, and the rest of this file is their active spec:
   reader above that, which is offered rather than applied. The path form is
   only taken where the method's self type has the borrow depth and the base
   type the receiver has, which is what keeps an item of `String` away from
-  the `str::len` it reaches through a deref.
+  the `str::len` it reaches through a deref, and where the name it would be
+  written as resolves where the chain sits -- a name needing an import is
+  offered alongside the `use` lines that would make it resolve, rather than
+  written as a path nobody writes by hand.
+- A chain under an adapter taking the whole chain, `fold` among them, is
+  applied by editing the closure rather than replacing it: the accumulator
+  parameter and the body around the chain are the reader's and stay, while the
+  item's parameter and the chain become the lifted value. The name for that
+  value is the reader's too, the item's own name having described what the
+  chain was handed rather than what it produces, so a placeholder stands in
+  and the rewrite is offered rather than applied.
 - Both `## Deferred` sections below.
 
 ## Statement
