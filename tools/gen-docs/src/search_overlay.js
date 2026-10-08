@@ -4,11 +4,9 @@
 // following one lands the reader on the rule article itself.
 //
 // No markup is written here: the overlay and one search result each live in
-// a `<template>` this file clones. A `<template>`'s contents are parsed but
-// kept out of the document — nothing renders, nothing is focusable,
-// assistive tech never reaches them, and `document.querySelector` does not
-// descend into them — so a page whose script never runs has no overlay in
-// any sense that counts.
+// a `<template>` this file clones. Nothing inside one renders, takes focus
+// or answers `querySelector`, so a page whose script never runs has no
+// overlay in any sense that counts.
 //
 // The catalogue is one document holding every rule's prose, so the search
 // reads the page it is on instead of shipping a copy of that prose as a
@@ -42,14 +40,9 @@
   if (!resultBlueprint.content.querySelector(".search-result")) return;
   if (!resultBlueprint.content.querySelector(".search-result-name")) return;
   if (!resultBlueprint.content.querySelector(".search-result-text")) return;
-  // Bound to a local because TypeScript does not carry a guard's narrowing
-  // of a `var` into a closure.
   var resultTemplate = resultBlueprint;
 
   document.body.appendChild(overlayBlueprint.content.cloneNode(true));
-  // Cast rather than narrowed, again because a guard's narrowing of a
-  // `var` does not reach a closure. The guard still rejects a missing
-  // element at runtime.
   var overlay = /** @type {HTMLElement} */ (document.querySelector(".search-overlay"));
   if (!overlay) return;
   var dialog = /** @type {HTMLElement} */ (overlay.querySelector(".search-dialog"));
@@ -145,8 +138,7 @@
   // ---- Rendering --------------------------------------------------------
 
   /**
-   * Clone the result blueprint and fill it in. The casts are safe because
-   * the blueprint's shape was checked once at setup.
+   * Clone the result blueprint and fill it in.
    * @param {Result} result
    */
   function renderResult(result) {
@@ -198,9 +190,9 @@
   // ---- Background inertness --------------------------------------------
   //
   // The overlay is modal, so Tab must not wander into the page behind it
-  // and assistive tech must not read it out. `inert` (HTML standard,
-  // Baseline 2023) removes a subtree from both in one step; it is applied
-  // to every direct child of <body> except the overlay while it is open. A
+  // and assistive tech must not read it out. `inert` removes a subtree from
+  // both in one step; it is applied to every direct child of <body> except
+  // the overlay while it is open. A
   // child already inert is not recorded, so clearing undoes only what this
   // set. Browsers too old for `inert` ignore it and fall back to what the
   // page gives for free: the overlay is still dismissible by its ✕ and by
