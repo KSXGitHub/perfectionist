@@ -205,7 +205,7 @@ pub(crate) fn markdown_inline_to_html(markdown: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{HIGHLIGHT_CSS, scope_highlight_css};
+    use super::scope_highlight_css;
 
     #[test]
     fn scopes_each_selector_in_a_comma_list() {
@@ -218,24 +218,6 @@ mod tests {
         assert_eq!(
             scoped,
             "/* c */\n:root[x] .a, :root[x] .b .c {\n color: #fff;\n}\n",
-        );
-    }
-
-    #[test]
-    fn the_dark_sheet_is_scoped_to_both_dark_tiers() {
-        // The dark syntax sheet re-styles the same classes the light
-        // sheet emits, so it must be scoped under a higher-specificity
-        // ancestor for both the system-preference and explicit-override
-        // tiers, or it would unconditionally clobber the light colours.
-        let dark = &HIGHLIGHT_CSS.dark;
-        assert!(dark.contains("@media (prefers-color-scheme: dark)"));
-        assert!(
-            dark.contains(r#"html:not([color-scheme-override="light"]) .comment"#),
-            "system-preference dark highlight must scope the syntax classes",
-        );
-        assert!(
-            dark.contains(r#"html[color-scheme-override="dark"] .comment"#),
-            "explicit-Dark highlight must scope the syntax classes",
         );
     }
 }

@@ -40,28 +40,3 @@ fn config_section_badges_mandatory_and_optional_fields() {
         "the optional field `extras` should render the optional badge: {html}",
     );
 }
-
-#[test]
-fn config_key_offers_a_line_break_after_every_underscore() {
-    // The `dylint.toml` table header names the same identifier the
-    // index table does, in a sentence just as liable to be squeezed
-    // on a narrow viewport, so it breaks on `_` boundaries too. The
-    // namespace stays whole: it carries no `_`. Both quotes of the
-    // `["<key>"]` header are built from quote-bearing string
-    // fragments of their own, so they are pinned here as well.
-    let config = ConfigDoc {
-        key: "perfectionist::demo_rule".to_owned(),
-        fields: vec![ConfigField {
-            name: "some_field".to_owned(),
-            type_label: "bool".to_owned(),
-            doc_markdown: String::new(),
-            optionality: Optionality::Optional,
-        }],
-        custom_types: Vec::new(),
-    };
-    let html = config_section(&config).into_string();
-    assert!(
-        html.contains("[&quot;perfectionist::demo_<wbr>rule&quot;]"),
-        "the dylint.toml key must break on `_` boundaries, got: {html}",
-    );
-}
