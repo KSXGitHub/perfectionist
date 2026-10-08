@@ -455,13 +455,14 @@ silently leaves the default in place; confirm a setting by its effect
 on a formatted file.
 
 The style is single-quoted strings and no statement semicolons, with a
-leading `(` guarded by `;`. Tests under `tools/gen-docs/src/render/`
-and `tools/gen-docs/src/test_page/` match these scripts as source
-text, so a reformat can fail an assertion whose claim still holds —
-fix the needle, not the script, and prefer a needle that survives
-rewrapping over one that assumes a particular line layout.
+leading `(` guarded by `;`.
 
-`trailingComma` is `es5` because the twelve scripts
+A test that matches one of these scripts as source text is matching
+something the formatter owns, so spell the needle so it survives
+rewrapping: read a value out of its quotes rather than one line at a
+time, and do not assume where a line breaks.
+
+`trailingComma` is `es5` because the scripts
 [`PAGE_SCRIPTS`](tools/gen-docs/src/render.rs) ships are written in ES5
 for the same old browsers `just minify-docs` compiles the CSS for: a
 trailing comma in a call or parameter list is ES2017 and a parse error
