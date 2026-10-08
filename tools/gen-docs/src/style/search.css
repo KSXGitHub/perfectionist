@@ -5,23 +5,20 @@
    the HTML `hidden` attribute and revealed by that script only once it is
    wired up:
 
-   * `.search-toggle` — a magnifier beside the settings gear, opening the
-     search overlay. It is the gear's twin: same size, same inset, same
-     half-transparent-at-rest opacity, one slot further left.
+   * `.search-toggle` — a magnifier in the top-right corner, opening the
+     search overlay.
    * `.filter-toggle` — a funnel on the "Index" heading's line and on the
      sidebar header's, each opening the filter box below it.
-   * `.filter-box` — what holds the input, cloned at runtime into the
-     empty `.filter-container` the Rust template emits. */
+   * `.filter-box` — what holds the input, cloned at runtime into
+     `.filter-container`. */
 
 .search-toggle {
   position: fixed;
   top: 0.6rem;
-  /* One slot left of the gear: its 0.6rem inset, plus its 2.5rem width,
-     plus a 0.4rem gap. */
+  /* One slot left of the gear. */
   right: 3.5rem;
-  /* The gear's tier: below the nav drawer so a full-screen mobile nav
-     covers it, well above the page's static content. The search overlay
-     sits above both. */
+  /* Below the nav drawer so a full-screen mobile nav covers it, well above
+     the page's static content. The overlay sits above both. */
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;
@@ -121,8 +118,7 @@ h2.index-heading {
   padding: 0 0 0.75rem;
 }
 
-/* Indented to the sidebar list's own 1rem gutter, so the input lines up
-   with the rule links it filters. */
+/* Indented so the input lines up with the rule links it filters. */
 .nav-filter-container .filter-box {
   padding: 0.75rem 1rem 0;
 }
@@ -145,8 +141,8 @@ h2.index-heading {
 /* ---- The search overlay --------------------------------------------------
 
    An overlay over the page rather than an element between its parts: fixed
-   to every edge of the viewport, above every other layer the page has
-   (the nav toggle's 100 is the highest of them). Its background is partly
+   to every edge of the viewport, above every other layer the page has.
+   Its background is partly
    transparent — the colour layer sets that — so the page stays legible
    behind the dialog, and a click on it outside the dialog dismisses the
    whole thing.
@@ -258,10 +254,9 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-/* The ✕ is decoration beside the word "Close"; like the hamburger, the
-   gear and the sidebar's own ✕, it keeps the system font stack rather than
-   inheriting the body's Cantarell, so it renders as it always did instead
-   of falling back out of a text face. */
+/* The ✕ is decoration beside the word "Close", so it keeps the system
+   font stack rather than inheriting the body's text face, out of which it
+   would fall back. */
 .search-close-glyph {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 0.85rem;
@@ -327,9 +322,8 @@ h2.index-heading {
   border-radius: 2px;
 }
 
-/* Phone portrait: the same band `table.index` and the nav overlay switch
-   layout at. Give the dialog more of the screen and less margin, since
-   there is little of either to spare. */
+/* Phone portrait: give the dialog more of the screen and less margin,
+   since there is little of either to spare. */
 @media (max-width: 600px) {
   .search-overlay {
     /* Top-aligned rather than centred here: the on-screen keyboard takes
