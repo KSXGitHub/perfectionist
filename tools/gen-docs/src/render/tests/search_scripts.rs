@@ -11,15 +11,38 @@
 use super::{fake_context, fake_rule};
 use crate::render::{
     FILTER_BOXES_SCRIPT, FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME,
-    MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, PAGE_SCRIPTS, RANK_SCRIPT, RANK_SCRIPT_FILENAME,
-    SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME, render_page,
+    MATCH_ADMIT_SCRIPT, MATCH_ADMIT_SCRIPT_FILENAME, MATCH_SCORE_SCRIPT,
+    MATCH_SCORE_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, MATCH_TEXT_SCRIPT,
+    MATCH_TEXT_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT, MATCH_TIERS_SCRIPT_FILENAME, PAGE_SCRIPTS,
+    RANK_SCRIPT, RANK_SCRIPT_FILENAME, SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME,
+    render_page,
 };
 
 /// Every file the search is built from: the name it ships under, its
 /// source, and the one global it declares, where it declares one. The ones
 /// that declare a global are the libraries; the ones that don't are the
 /// controls, and each of those reads at least one library.
-const SEARCH_SCRIPTS: [(&str, &str, Option<&str>); 5] = [
+const SEARCH_SCRIPTS: [(&str, &str, Option<&str>); 9] = [
+    (
+        MATCH_TEXT_SCRIPT_FILENAME,
+        MATCH_TEXT_SCRIPT,
+        Some("perfectionistMatchText"),
+    ),
+    (
+        MATCH_SCORE_SCRIPT_FILENAME,
+        MATCH_SCORE_SCRIPT,
+        Some("perfectionistMatchScore"),
+    ),
+    (
+        MATCH_ADMIT_SCRIPT_FILENAME,
+        MATCH_ADMIT_SCRIPT,
+        Some("perfectionistMatchAdmit"),
+    ),
+    (
+        MATCH_TIERS_SCRIPT_FILENAME,
+        MATCH_TIERS_SCRIPT,
+        Some("perfectionistMatchTiers"),
+    ),
     (
         MATCH_SCRIPT_FILENAME,
         MATCH_SCRIPT,
@@ -265,10 +288,14 @@ fn what_a_query_reaches_is_decided_only_in_the_match_library() {
     // the weights happen to be tuned, and would let one more character
     // push a result back over a bar it had fallen under, so a rule would
     // leave the list and come back.
-    let code = strip_js_comments(MATCH_SCRIPT);
-    assert!(code.contains("function admits("));
+    assert!(strip_js_comments(MATCH_ADMIT_SCRIPT).contains("function admits("));
+    let consulted = [MATCH_TIERS_SCRIPT, MATCH_SCRIPT]
+        .map(strip_js_comments)
+        .iter()
+        .map(|code| code.matches("admits(").count())
+        .sum::<usize>();
     assert!(
-        code.matches("admits(").count() > 1,
+        consulted > 1,
         "`admits` has to be consulted, not merely defined",
     );
     // The bounds that used to answer it are gone from every script, not
@@ -298,13 +325,22 @@ fn the_search_scatters_a_name_but_keeps_a_word_in_prose() {
     // name. The two that let the query come apart — characters dropped
     // out of a word, words arriving out of order — are the fuzzy one's
     // alone, and a paragraph long enough carries either by accident.
-    assert!(MATCH_SCRIPT.contains("function matchRespaced("));
-    assert!(MATCH_SCRIPT.contains("function matchVariants("));
+    assert!(MATCH_TIERS_SCRIPT.contains("function matchRespaced("));
+    assert!(MATCH_TIERS_SCRIPT.contains("function matchVariants("));
     for scan in ["matchScattered(", "matchReordered("] {
         assert_eq!(
+            MATCH_TIERS_SCRIPT.matches(scan).count(),
+            1,
+            "{scan} should be defined once, in the tiers",
+        );
+        assert!(
+            MATCH_SCRIPT.contains(&format!("perfectionistMatchTiers.{scan}").replace('(', "")),
+            "{scan} should reach matchFuzzy through the tiers' global",
+        );
+        assert_eq!(
             MATCH_SCRIPT.matches(scan).count(),
-            2,
-            "{scan} should have one definition and one caller, in matchFuzzy",
+            1,
+            "{scan} should be called once, in matchFuzzy, and nowhere else",
         );
     }
     // Both consumers reach the matchers through the one global, whether
@@ -328,7 +364,14 @@ fn the_libraries_touch_no_dom() {
     //
     // Comments are stripped first: both files discuss the DOM at length
     // while touching none of it.
-    for (name, script) in [("match.js", MATCH_SCRIPT), ("rank.js", RANK_SCRIPT)] {
+    for (name, script) in [
+        (MATCH_TEXT_SCRIPT_FILENAME, MATCH_TEXT_SCRIPT),
+        (MATCH_SCORE_SCRIPT_FILENAME, MATCH_SCORE_SCRIPT),
+        (MATCH_ADMIT_SCRIPT_FILENAME, MATCH_ADMIT_SCRIPT),
+        (MATCH_TIERS_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT),
+        (MATCH_SCRIPT_FILENAME, MATCH_SCRIPT),
+        (RANK_SCRIPT_FILENAME, RANK_SCRIPT),
+    ] {
         let code = strip_js_comments(script);
         for api in [
             "document",
