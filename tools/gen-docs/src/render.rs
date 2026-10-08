@@ -74,9 +74,38 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 /// `<script src>` references the same name, so they must agree.
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
+/// Text handling for query matching: folding, splitting into words, and
+/// stemming. The base of the matching stack — it reads none of the rest.
+pub(crate) const MATCH_TEXT_SCRIPT: &str = include_str!("match_text.js");
+
+/// File name [`MATCH_TEXT_SCRIPT`] is written under.
+pub(crate) const MATCH_TEXT_SCRIPT_FILENAME: &str = "match_text.js";
+
+/// What a match earns: every number the scoring uses, and the arithmetic
+/// over them.
+pub(crate) const MATCH_SCORE_SCRIPT: &str = include_str!("match_score.js");
+
+/// File name [`MATCH_SCORE_SCRIPT`] is written under.
+pub(crate) const MATCH_SCORE_SCRIPT_FILENAME: &str = "match_score.js";
+
+/// Whether a match is worth showing, decided by where it landed and
+/// reading no score.
+pub(crate) const MATCH_ADMIT_SCRIPT: &str = include_str!("match_admit.js");
+
+/// File name [`MATCH_ADMIT_SCRIPT`] is written under.
+pub(crate) const MATCH_ADMIT_SCRIPT_FILENAME: &str = "match_admit.js";
+
+/// The tiers a query is looked for in, from the query exactly through to
+/// its characters scattered.
+pub(crate) const MATCH_TIERS_SCRIPT: &str = include_str!("match_tiers.js");
+
+/// File name [`MATCH_TIERS_SCRIPT`] is written under.
+pub(crate) const MATCH_TIERS_SCRIPT_FILENAME: &str = "match_tiers.js";
+
 /// The query-matching library the filter boxes and the search overlay
-/// share. It decides which targets a query matches and how well, and
-/// nothing else: it draws no element and binds no handler.
+/// share, composed from the four above. It decides which targets a query
+/// matches and how well, and nothing else: it draws no element and binds
+/// no handler.
 pub(crate) const MATCH_SCRIPT: &str = include_str!("match.js");
 
 /// File name [`MATCH_SCRIPT`] is written under.
@@ -120,12 +149,17 @@ pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 /// `<link rel="preload" as="script">` hints are generated from this slice,
 /// so they can't drift.
 ///
-/// The three libraries precede the scripts that read their globals, and
-/// `match.js` precedes `rank.js`, which reads its matchers.
+/// Every library precedes whatever reads its global: the four files
+/// `match.js` is composed from precede it, and it precedes `rank.js`,
+/// which reads its matchers.
 pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     NAV_TOGGLE_SCRIPT_FILENAME,
     THEME_TOGGLE_SCRIPT_FILENAME,
     CONFIG_TOGGLE_SCRIPT_FILENAME,
+    MATCH_TEXT_SCRIPT_FILENAME,
+    MATCH_SCORE_SCRIPT_FILENAME,
+    MATCH_ADMIT_SCRIPT_FILENAME,
+    MATCH_TIERS_SCRIPT_FILENAME,
     MATCH_SCRIPT_FILENAME,
     RANK_SCRIPT_FILENAME,
     HIGHLIGHT_SCRIPT_FILENAME,
