@@ -1,62 +1,28 @@
 // ============================================================================
-// The two filter boxes: one over the Index table, one over the navigation
-// sidebar's rule list.
+// The filter boxes: one over the Index table, one over the navigation
+// sidebar's rule list, narrowing a list of lint names to what the reader
+// types. One `installFilter` drives both; match.js decides which names
+// match and how well, highlight.js draws them.
 //
-// Both narrow a list of lint names to what the reader types, hiding the
-// entries that don't match and reordering the rest best-match-first. They
-// run the identical logic over different lists, so `installFilter` is
-// called twice and holds no knowledge of which list it drives; which names
-// match, and how well, come from match.js, and the highlighting from
-// highlight.js.
+// Neither box's markup is here. Each waits in an inert `<template>` the
+// Rust template emits, so a page whose script never runs lays out exactly
+// as it would without the feature, and the markup is reviewed and tested
+// where the rest of the page's markup is. The toggles are emitted `hidden`
+// and revealed once wired, on the same contract as the page's other
+// script-driven controls.
 //
-// Neither box's markup is written here. Each lives in an inert
-// `<template>` inside its `<div class="filter-container">`, rendered by the
-// Rust template; this file clones that into the container and wires up the
-// behaviour. A `<template>`'s contents are parsed but kept out of the
-// document, so a page whose script never runs is pixel-identical to one
-// without the feature, and the markup still gets reviewed and tested where
-// the rest of the page's markup is.
+// Escape, the funnel and following one of the entries all dismiss a box,
+// and `closeBox` serves all three: a hidden input still narrowing a list
+// would strand the reader with entries missing and nothing on screen to
+// say why. Enter is not an exit — it re-runs the filter, for a browser
+// whose `input` event never arrived. There is no debounce; the scan is
+// over lint names, and the list keeps up with the keyboard.
 //
-// The toggle buttons follow the same "reveal only once functional" contract
-// the nav hamburger, the settings gear and the Configuration bulk buttons
-// do: the template emits them `hidden` and `wireFilter` clears that as its
-// last act, so a CSP-blocked, stripped or mid-parse-error script leaves no
-// dead control behind (the `[hidden] { display: none !important }` reset
-// in style/base.css is what keeps `hidden` authoritative). Reading
-// match.js's matcher into `matchFuzzy` below is part of that contract: if
-// match.js never ran, the read throws here, long before any reveal.
-//
-// ---- Closing a box --------------------------------------------------------
-//
-// Escape, the funnel and following one of the entries all dismiss one, and
-// all mean the same thing — one `closeBox` does it for them all. Closing
-// never leaves a hidden input still narrowing a list, which would strand
-// the reader with entries missing and nothing on screen to say why.
-//
-// Following an entry is the one the reader does not aim at the box: they
-// have found what they were looking for and are on their way to it, and
-// what they leave behind should be the list they started from, not the
-// tail of a query they have finished with.
-//
-// Enter is not a way out. It re-runs the filter, which is all it was ever
-// for: insurance for a browser whose `input` event never arrived.
-//
-// Filtering runs synchronously on every keystroke, with no debounce: it is
-// a string scan over a few dozen lint names, so the list keeps up with the
-// keyboard as it is.
-//
-// ---- Keyboard entry -------------------------------------------------------
-//
-// While the Index table is on screen, typing a letter opens the Index box
-// and seeds it with that letter, so finding a rule costs no clicks at all.
-// The handler is deliberately narrow, because the page is a document first
-// and a letter has to keep meaning what it means everywhere else. Every
-// guard it opens with turns away a keystroke that was never aimed at the
-// box, and each says at its own line what it stands down for.
-//
-// `preventDefault` is called only on the keystroke it goes on to handle,
-// never on one it declined — the box sets the character itself, and without
-// that the browser would insert it a second time once the input has focus.
+// Typing a letter while the Index table is on screen opens its box seeded
+// with that letter. The page is a document first, so the handler turns
+// away anything that was not aimed at the box, and `preventDefault` goes
+// only on a keystroke it took — the box sets the character itself, and
+// the browser would otherwise insert it again once the input has focus.
 // ============================================================================
 
 (function () {
@@ -66,10 +32,8 @@
   var renderName = perfectionistHighlight.renderName;
 
   /**
-   * One filterable entry: the row or list item to show, hide and reorder,
-   * the element whose contents spell the lint name (rebuilt to carry the
-   * highlight), the name itself, and the entry's position in the rendered
-   * order so a cleared query can put it back.
+   * One filterable entry. `order` is its place in the rendered list, which
+   * is what a cleared query puts it back into.
    * @typedef {object} FilterItem
    * @property {HTMLElement} element
    * @property {HTMLElement} nameHost
@@ -84,10 +48,11 @@
    */
 
   /**
-   * Collect the filterable entries of a list.
-   * @param {HTMLElement} list       the parent whose children are the entries
-   * @param {string} itemSelector    which children count as entries
-   * @param {string} nameSelector    the element inside an entry spelling the name
+   * Collect the filterable entries of a list. The selectors are
+   * `installFilter`'s, described there.
+   * @param {HTMLElement} list
+   * @param {string} itemSelector
+   * @param {string} nameSelector
    * @returns {FilterItem[]}
    */
   function collectItems(list, itemSelector, nameSelector) {
@@ -132,10 +97,7 @@
    * from — `index` or `nav` — so naming it here is naming both.
    *
    * Resolution is split from `wireFilter` so that function can take
-   * non-null elements: TypeScript does not carry a guard's narrowing of a
-   * `var` into a closure, so handlers reading a nullable `toggle` or
-   * `list` would see it as nullable however it was guarded (the same
-   * reason the other scripts cast their queries).
+   * non-null elements, for the reason nav_toggle.js casts its queries.
    * @param {string} kind
    * @param {string} listSelector  the parent whose children are the entries
    * @param {string} itemSelector  which children count as entries
@@ -153,10 +115,9 @@
   }
 
   /**
-   * Clone one filter box into `container`, let `toggle` show and hide it,
-   * narrow the list's entries to whatever is typed, and finally reveal
-   * `toggle`. Returns `null` when the list is empty or the container holds
-   * no blueprint, leaving that toggle hidden.
+   * Clone one filter box into `container` and wire it up. Returns `null`
+   * without revealing `toggle` when there is nothing to narrow or no
+   * blueprint to clone.
    * @param {HTMLElement} toggle
    * @param {HTMLElement} container
    * @param {HTMLElement} list
@@ -166,15 +127,10 @@
    */
   function wireFilter(toggle, container, list, itemSelector, nameSelector) {
     var items = collectItems(list, itemSelector, nameSelector);
-    // Nothing to narrow means nothing to reveal: a toggle over an empty
-    // list would open a box that can only ever hide nothing.
     if (items.length === 0) return null;
 
-    // The box's markup is the container's `<template>`. `querySelector`
-    // does not descend into a template's contents, so the clone is the only
-    // thing the two lookups below can find. A browser without `<template>`
-    // parses it as an unknown element, fails this check and leaves the
-    // funnel hidden, which is the right outcome.
+    // A browser without `<template>` parses it as an unknown element and
+    // fails this check, leaving the funnel hidden.
     var blueprint = container.querySelector("template");
     if (!(blueprint instanceof HTMLTemplateElement)) return null;
     container.appendChild(blueprint.content.cloneNode(true));
@@ -186,17 +142,14 @@
     );
     if (!box || !input) return null;
 
-    /**
-     * Put every entry back the way the page rendered it: visible, in
-     * document order, with no highlight and no score.
-     */
+    /** Put every entry back the way the page rendered it. */
     function reset() {
       for (var i = 0; i < items.length; i++) {
         items[i].element.hidden = false;
         items[i].element.removeAttribute("data-score");
         renderName(items[i].nameHost, items[i].name, []);
-        // Re-appending in `items` order restores the rendered order, since
-        // `items` was collected in it.
+        // `items` was collected in rendered order, so re-appending in that
+        // order restores it.
         list.appendChild(items[i].element);
       }
     }
@@ -210,9 +163,9 @@
       /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
       var matched = [];
       for (var i = 0; i < items.length; i++) {
-        // A match or nothing: whether a name is worth showing is match.js's
-        // to decide, and it decides it without reading the score. All the
-        // score does here is order what is shown.
+        // A match or nothing: whether a name is worth showing is
+        // match.js's, and it decides that without reading the score. The
+        // score only orders what is shown.
         var hit = matchFuzzy(query, items[i].name);
         if (hit) {
           matched.push({ item: items[i], score: hit.score, ranges: hit.ranges });
@@ -232,8 +185,7 @@
       for (var j = 0; j < matched.length; j++) {
         var entry = matched[j];
         entry.item.element.hidden = false;
-        // The score the entry was ranked by, for whoever is debugging a
-        // ranking that reads wrong.
+        // Exposed for whoever is debugging a ranking that reads wrong.
         entry.item.element.setAttribute("data-score", entry.score.toFixed(4));
         renderName(entry.item.nameHost, entry.item.name, entry.ranges);
         list.appendChild(entry.item.element);
@@ -370,23 +322,19 @@
 
   document.addEventListener("keydown", function (event) {
     if (!indexInView) return;
-    // A modifier makes the keystroke the browser's or the OS's.
     if (event.altKey || event.ctrlKey || event.metaKey) return;
-    // Mid-composition it belongs to the IME rather than to the page.
     if (event.isComposing) return;
-    // Every named key — Tab, Enter, an arrow — spells itself out in `key`,
-    // so one character is how a letter is told from one of those.
+    // A named key spells itself out in `key`, so one character is how a
+    // letter is told from `Tab` or an arrow.
     if (event.key.length !== 1) return;
-    // `key` already carries Shift and CapsLock, so it is the letter the
-    // reader meant to type and the one the box is seeded with. Only the
-    // range test folds, so that both cases reach it.
+    // Seeded with the letter as typed, Shift and CapsLock included; only
+    // the range test folds.
     var letter = event.key;
     var folded = letter.toLowerCase();
     if (folded < "a" || folded > "z") return;
-    // Also what keeps this off the search overlay's own input.
     if (isEditable(event.target)) return;
     // `inert` is how the nav drawer and the search overlay mark the page
-    // behind them; a letter typed over either belongs to them, not here.
+    // behind them.
     if (table.closest("[inert]")) return;
     event.preventDefault();
     filter.openWith(letter);

@@ -1,175 +1,69 @@
 // ============================================================================
 // Query matching: scoring a query against a string, and narrowing a long
-// string to the part that matched.
+// string to the part that matched. Nothing here touches the DOM and
+// nothing here knows what a lint is, which is what lets it run with no
+// browser around it — see tools/gen-docs/tests/. Painting a match onto
+// the page is highlight.js.
 //
-// Nothing here touches the DOM, and nothing here knows what a lint is. It
-// is the arithmetic the catalogue's search and its filter boxes are both
-// built on, and it is the one file of the page's JavaScript that can be
-// loaded and exercised outside a browser — see tools/gen-docs/tests/.
-// Painting a match onto the page is highlight.js; ranking rules by their
-// matches is rank.js.
-//
-// `perfectionistMatch` is a global because the page loads classic scripts,
-// not modules — the rest of the catalogue's JS targets engines that predate
-// `import`, and a `<script type="module">` would also be skipped entirely
-// by those engines rather than degrading. The object is built inside an
-// IIFE so the helpers behind it stay private, and it is the one name this
-// file adds to the global scope.
+// `perfectionistMatch` is a global because the page loads classic scripts
+// rather than modules: its engines predate `import`, and a
+// `<script type="module">` would be skipped outright rather than degrade.
 //
 // ---- Two kinds of match ---------------------------------------------------
 //
-// `matchFuzzy` lets the query come apart: its characters may be scattered
-// through the target so long as they occur in order, and its words may
-// arrive in any order at all. `matchPhrase` lets neither. Which one a
-// caller wants follows from what it is matching against:
+// `matchFuzzy` lets the query come apart — its characters scattered
+// through the target in order, its words in any order at all — where
+// `matchPhrase` lets neither. A lint name gets the first: it is an
+// identifier typed from memory, a handful of words with no sentence to put
+// them in order. Prose gets the second, because a paragraph a few hundred
+// characters long carries almost any scattered sequence and almost any two
+// words apart from each other, so either freedom would answer nearly every
+// rule on the page. Everything short of those two is shared, and so is the
+// scoring model, so a caller matching both can rank the results together.
 //
-//   * A lint name is an identifier, and a reader types it from memory —
-//     skipping the underscores (`bareurl`), typing a word's initials
-//     (`bur`), or naming its words in whatever order they come to mind
-//     (`std core instead`). It is a handful of words with no sentence to
-//     put them in order, so names get `matchFuzzy`.
-//   * Prose is words in an order that means something. A reader searching
-//     it types some of them as they are written, never their initials —
-//     and a paragraph a few hundred characters long contains almost any
-//     short sequence of letters in order, and almost any two words
-//     somewhere apart from each other, so both of those freedoms find a
-//     high-scoring match in nearly every rule on the page. Prose gets
-//     `matchPhrase`.
+// ---- How well it matched --------------------------------------------------
 //
-// Everything short of those two is shared, so a different spelling of a
-// separator and a different ending of a word are met by both. The two also
-// share one scoring model, so their scores stay comparable and a caller
-// matching both can rank the results against each other.
+// A character earns more for continuing a run than for standing alone,
+// more for opening a word than for landing inside one, and most for
+// opening the target itself; the total is divided by what the query could
+// have earned at best, so the score is a fraction whatever its length. The
+// constants below carry the detail.
 //
-// Both compare case-insensitively, and both treat `_`, `-` and a space as
-// the same character, because one thing goes by all three spellings here:
-// the lint `bare_url` is `bare-url` in its own page fragment and "bare
-// URL" in its statement. A reader who types any of them means the lint.
-// Folding maps each such character to one space rather than collapsing
-// runs of them, so the folded string indexes exactly like the original and
-// the ranges a match reports can be used to highlight the text the caller
-// passed in.
-//
-// ---- The scoring model ----------------------------------------------------
-//
-// Each matched character earns:
-//
-//   * BASE, always;
-//   * RUN_BONUS when it directly follows the previous matched character, so
-//     a contiguous run outranks the same characters scattered about;
-//   * WORD_BONUS, instead of RUN_BONUS, when it opens a word — index 0, or
-//     anything after a separator. `_` is a separator, which is what makes
-//     `bur` score well against `bare_url` and lets a reader type the
-//     initials of a snake_case name.
-//   * START_BONUS on top of that when it is the target's own first
-//     character, because opening the name is not the same as opening a
-//     word inside it. Without it, the query `n` scores `excessive_nesting`
-//     and `named_prelude_imports` identically on quality — both open a
-//     word — and the only thing left to separate them is the coverage term
-//     below, which prefers the shorter name. The rule that merely contains
-//     an `n` then outranks the one that starts with it. The bonus is a
-//     fixed amount spread over the whole query, so it decides a
-//     one-character query and fades as the query grows specific enough to
-//     decide itself.
-//
-// The total is divided by the best score the query could possibly earn
-// (every character contiguous, from the target's first), so the resulting
-// `quality` lands in 0..1 whatever the query's length, and two matches of
-// different queries stay comparable. A small `coverage` term (the
-// fraction of the target the query accounts for) breaks ties towards the
-// shorter target, so `bare_url` outranks `bare_identifier_reference` for
-// the query `bare`. Its weight is kept low on purpose: it is there to
-// order two matches of equal quality, not to decide either on its own.
-//
-// Every number here orders matches against each other and nothing else.
-// What is worth showing at all is decided without reading any of them —
-// see the next section but one — so these can be re-tuned freely, which
-// is the point of keeping the two apart.
+// Every one of those numbers orders matches against each other and does
+// nothing else — see the next section — so they can be re-tuned freely.
 //
 // ---- When the query is not there whole ------------------------------------
 //
-// A reader's query is as often a near miss as a substring of what they are
-// after, so a match is looked for in tiers. Every tier is tried, and the
-// best-scoring one that is worth showing wins — a tier that scores higher
-// and is not worth showing loses to one that is, which is what keeps a
-// coincidence from hiding the real match behind it:
+// A query is as often a near miss as a substring, so a match is looked for
+// in tiers: verbatim, respaced, variants, reordered, scattered, each
+// documented at its own function. Every tier is tried and the best-scoring
+// one worth showing wins, between tiers and between the placements of one
+// tier alike, so a coincidence that scores higher cannot hide the real
+// match behind it.
 //
-//   1. Verbatim — the query occurs in the target exactly.
-//   2. Respaced — the query occurs except that its separators do not line
-//      up: one the query wrote is missing from the target, one the target
-//      carries is absent from the query, or a run of either stands where a
-//      single one does. This is what finds `thiserror_usage` for
-//      `this error`, and a statement reading "Flags closure parameters"
-//      for `flagsclosureparameters` or for `Flags  closure   parameters`.
-//   3. Variants — the query's words align one for one with a run of the
-//      target's consecutive words, each target word opening with the
-//      query's once the ending the query's would drop is allowed for. So
-//      `clone_getter` and `cloned_getter` both reach `cloning_getter`,
-//      and so does `clone_g`, where the reader is one letter into a word
-//      they have not finished typing. Only the letters two words share
-//      are scored, and a mark spans a run of separators but never a run
-//      of letters, so a phrase reads as the phrase while `clone` stops
-//      short of `cloning`'s `ing`.
-//   4. Reordered — every word of the query is a word of the target, each
-//      a different one, and the target may carry words the query left
-//      out. So `core_instead_of_std` answers `core std instead` and
-//      `std core` as well as the order it is written in. A word still has
-//      to open a target word by the reading above, so this adds only the
-//      leave to arrive out of order and to pass a word by. Names only,
-//      per the section above.
-//   5. Scattered — the query's characters occur in order with anything at
-//      all between them. Names only, per the section above.
-//
-// Every tier below the first is weaker than it by construction rather than
-// by a penalty: each scores only the characters it actually placed,
-// against what those characters would have earned had the query been
-// there whole. The tail of a word the target ends differently, and a
-// separator the target does not spell the same way, are characters the
-// reader typed that earn nothing.
-//
-// What a tier counts as the query differs, because what it is able to
-// place does. Verbatim and respaced place every character the query
-// holds, separators and all, and are charged for all of them. The two
-// word-wise tiers never match a target character against a separator — a
-// separator is how the reader marks where one word ends — so they are
-// charged for the query's words alone. Charging them for the delimiters
-// too would mean a reader who has typed `cloned ` and is about to type
-// `getter` scoring below one who stopped at `cloned`, which is a result
-// vanishing halfway through being typed.
-//
-// ---- Worth showing, and how well it matched -------------------------------
-//
-// Those are two questions, and this file keeps them apart. How well a
-// match scores orders the results against each other: only the
-// differences matter, and the numbers above are expected to be re-tuned.
-// Whether the target is worth showing at all is a different question, and
-// answering it with a bar on the same number ties the two together — a
-// re-tuning then moves what a reader can find, and a query one character
-// longer can push a result back over a bar it had fallen under, so it
-// leaves the list and returns. `admits` therefore reads no score:
-//
-//   * The reader's first characters have to land where they aimed: at the
-//     opening of a word, or at the end of one they typed most of, which
-//     is how `error` finds `thiserror_usage` without an `e` that merely
-//     falls last in `single` finding anything.
-//   * After that, one run may begin inside a word and no more. One is a
-//     slip of the fingers, and keeping it is what still finds
-//     `excessive_nesting` for `excessive_nestng`. Two is the characters
-//     falling where they may, which is how `bare` would otherwise answer
-//     `needless_borrowed_parameters`.
-//
-// Both are properties of where the match landed, so neither moves when a
-// weight does, and typing one more character cannot turn a rejection back
-// into a result by arithmetic. What a longer query can still change is
-// which tier answers it, so a target is not proof against leaving the
-// list and returning — only against doing so because a weight moved.
+// A tier is weaker than the one above by construction rather than by a
+// penalty: each scores only the characters it placed. What it counts as
+// the query differs with what it can place — the first two place every
+// character the query holds, separators and all, while the word-wise tiers
+// never match a target character against a separator and are charged for
+// the query's words alone. Charging them for the delimiters too would mean
+// a reader who has typed `cloned ` and is about to type `getter` scoring
+// below one who stopped at `cloned`: a result vanishing halfway through
+// being typed.
 //
 // Greedy left-to-right subsequence scanning does not always find the
 // best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
-// missing the contiguous `ab` at 3). That is why the verbatim tier is
-// tried first and exactly — scanning every occurrence of the whole query
-// and keeping the one worth showing, else the best-scoring — and why the
-// subsequence scan is the last resort rather than the only method.
+// missing the contiguous `ab` at 3), which is why the tiers exist at all
+// and why that scan is the last of them rather than the only method.
+//
+// ---- Worth showing --------------------------------------------------------
+//
+// A different question from how well, and this file keeps the two apart.
+// Answering it with a bar on the score would tie what a reader can find to
+// how the weights happen to be tuned, and would let one more character
+// push a result back over a bar it had fallen under, so it leaves the list
+// and returns. `admits` therefore reads no score, only where the match
+// landed, and the rules it applies are documented there.
 // ============================================================================
 
 var perfectionistMatch = (function () {
@@ -278,10 +172,8 @@ var perfectionistMatch = (function () {
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function matchVerbatim(needle, haystack) {
-    // `indexOf("")` answers at every index and clamps past the end, so an
-    // empty needle would never take the loop below to -1. Both matchers
-    // turn an empty query away before any tier runs; this keeps the tier
-    // safe to call on its own.
+    // `indexOf("")` clamps past the end rather than returning -1, so an
+    // empty needle would never leave the loop below.
     if (needle.length === 0) return null;
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null;
@@ -439,13 +331,12 @@ var perfectionistMatch = (function () {
    * `clones` and `clone` all come back `clon`, which is what lets a
    * reader who types one of them find a lint named with another.
    *
-   * A stripper over the regular English endings and nothing more — no
-   * dictionary, no irregular forms, and no ending that rewrites the word
-   * rather than extending it, so `getter` stems to itself and never
-   * reaches `getting`.
-   * Every rule takes characters off the end only, which leaves a stem
-   * that is always a prefix of the word it came from; `matchVariants`
-   * is built on that.
+   * The regular English endings and nothing more — no dictionary, no
+   * irregular forms, and no ending that rewrote the word rather than
+   * extending it, so `getter` stems to itself and never reaches
+   * `getting`. Every rule takes characters off the end only, so a stem is
+   * always a prefix of the word it came from, which `matchVariants` is
+   * built on.
    * @param {string} word
    * @returns {string}
    */
@@ -583,12 +474,11 @@ var perfectionistMatch = (function () {
       }
       var end = wordEnd(haystack, at);
       var word = haystack.slice(at, end);
-      // The target's word has to open with the query's, once the ending
-      // the query's word would drop is allowed for. Equal stems are the
-      // case this started from — `cloned` against `cloning` — and the
-      // looser test is what also takes a word still being typed, where
-      // the reader is three letters into `getter` and the stem of what
-      // they have so far is `get`.
+      // The target's word opens with the query's, once the ending the
+      // query's would drop is allowed for. Equal stems are the case this
+      // started from (`cloned` against `cloning`); the looser test also
+      // takes a word still being typed, where the reader is three letters
+      // into `getter` and has the stem `get`.
       if (word.indexOf(stems[i]) !== 0) return null;
       var shared = commonPrefix(parts[i], word);
       raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1);
@@ -622,14 +512,8 @@ var perfectionistMatch = (function () {
     if (parts.length === 0) return null;
     /** @type {string[]} */
     var stems = [];
-    // The characters this tier is able to place: the query's words, not
-    // the delimiters between them. A delimiter is how the reader marks
-    // where one word ends, and no target character is ever matched
-    // against it here, so charging the query for it would mean a reader
-    // who has typed `cloned ` and is about to type `getter` scoring
-    // worse than one who stopped at `cloned`. The verbatim and respaced
-    // tiers do charge for it, and must: there a separator is content,
-    // matched against the target's own or missing from it.
+    // The query's words and not the delimiters between them, per the
+    // file header: no target character is ever matched against one here.
     var span = 0;
     for (var i = 0; i < parts.length; i++) {
       stems.push(stem(parts[i]));
@@ -670,13 +554,11 @@ var perfectionistMatch = (function () {
 
   /**
    * Give each of the query's words a different word of the target to
-   * stand on, best-scoring choice first, or `null` when they cannot all
-   * be housed. A word of the target may hold one word of the query and no
-   * more, so a query that says `core` twice needs a target that does.
+   * stand on, or `null` when they cannot all be housed — a query that
+   * says `core` twice needs a target that does.
    *
    * The search is exhaustive, which it can afford to be: this tier runs
-   * against lint names, and a lint name is a handful of words. A query
-   * word with nowhere to go ends it before the search begins.
+   * against lint names, and a lint name is a handful of words.
    * @param {string[]} parts    the query's words
    * @param {string[]} stems    their stems, in the same order
    * @param {string} haystack   folded target
@@ -726,18 +608,12 @@ var perfectionistMatch = (function () {
 
   /**
    * Score the query against the haystack with its words in any order:
-   * every word of the query has to be a word of the target, each a
-   * different one, and the target may carry words the query left out. So
-   * `core_instead_of_std` answers `core std instead` and `std core` as
-   * well as the order it is written in.
-   *
-   * A word still opens a target word, by the same reading as the variants
-   * tier — a stem it shares with its variants — so what this adds over
-   * that tier is only the leave to arrive in another order, and to pass
-   * over a word of the target on the way.
-   *
-   * One word has no order to be out of, and the variants tier already
-   * takes it wherever it sits, so this starts at two.
+   * each query word takes a different word of the target, and the target
+   * may carry words the query left out, so `core_instead_of_std` answers
+   * `core std instead`. A word still has to open a target word by the
+   * variants tier's reading, so all this adds is the leave to arrive out
+   * of order and to pass a word by. One word has no order to be out of,
+   * so it starts at two.
    * @param {string} needle    folded query
    * @param {string} haystack  folded target
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -746,7 +622,6 @@ var perfectionistMatch = (function () {
     var parts = words(needle);
     if (parts.length < 2) return null;
     var spans = wordSpans(haystack);
-    // Each word of the query needs one of its own.
     if (parts.length > spans.length) return null;
     /** @type {string[]} */
     var stems = [];
@@ -830,9 +705,6 @@ var perfectionistMatch = (function () {
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    // Where the reader's first characters landed is what the match is
-    // about. Landing in the middle of a word is a coincidence however the
-    // rest of it falls.
     if (!aimed(haystack, ranges[0])) return false;
     var slips = 0;
     for (var i = 1; i < ranges.length; i++) {
@@ -845,19 +717,15 @@ var perfectionistMatch = (function () {
 
   /**
    * The better of two matches, counting one worth showing above one that
-   * is not — whether the two come from different tiers or from two
-   * placements of the same tier. Applying the rule within a tier as well
-   * as between them is what keeps an earlier coincidence from costing a
-   * target its real match: `nic` occurs twice in
-   * `unicode_ellipsis_in_panic_messages`, inside `unicode` where the
-   * reader aimed nothing and finishing `panic` where they did, and the
-   * two score alike, so a tier choosing by score alone kept the earlier
-   * and the rule was not shown at all.
+   * is not — between tiers and between two placements of one tier alike.
+   * Within a tier that matters because an earlier coincidence would
+   * otherwise cost a target its real match: `nic` scores the same inside
+   * `unicode` as it does finishing `panic`, so choosing by score alone
+   * kept the first and showed `unicode_ellipsis_in_panic_messages` for
+   * neither.
    *
-   * Whether the winner is worth showing is for the caller to ask again:
-   * this orders two matches and nothing more, so a tier every placement
-   * of which is a coincidence still comes back, for the next tier to
-   * beat and for `matchFuzzy` to turn away if none does.
+   * This only orders, so a tier whose every placement is a coincidence
+   * still comes back for `matchFuzzy` to turn away.
    * @param {{ score: number, ranges: number[][] } | null} left
    * @param {{ score: number, ranges: number[][] } | null} right
    * @param {string} haystack
@@ -871,13 +739,11 @@ var perfectionistMatch = (function () {
     return better(left, right);
   }
 
-  // How much higher a score has to be to count as higher at all. Two
-  // tiers that place the same characters in the same places earn the same
-  // total, and they reach it by different arithmetic — one character at a
-  // time against one multiplication per word — which doubles do not
-  // always agree on to the last bit. The tolerance is many orders of
-  // magnitude below the smallest difference the scoring can mean, so it
-  // can only ever absorb that noise.
+  // Two tiers placing the same characters in the same places earn the same
+  // total by different arithmetic — one character at a time against one
+  // multiplication per word — which doubles do not always agree on to the
+  // last bit. Far below the smallest difference the scoring can mean, so
+  // it absorbs that noise and nothing else.
   var SCORE_EPSILON = 1e-9;
 
   /**
@@ -947,10 +813,6 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
-    // Every tier is tried rather than the first that matches winning: a
-    // verbatim match that is not worth showing must not stand in the way
-    // of one that is, which it would if finding the query whole ended the
-    // search.
     var found = matchVerbatim(needle, haystack);
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
@@ -1005,7 +867,6 @@ var perfectionistMatch = (function () {
     for (var i = 0; i < ranges.length; i++) {
       var from = Math.max(ranges[i][0], start);
       var to = Math.min(ranges[i][1], end);
-      // Nothing of this one is inside the window.
       if (from >= to) continue;
       shifted.push([from - start, to - start]);
     }
