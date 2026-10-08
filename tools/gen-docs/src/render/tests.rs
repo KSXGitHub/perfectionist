@@ -1,3 +1,14 @@
+// The search and filter affordances' tests, grouped by what each group
+// reads rather than by which affordance it covers — which is where the
+// seams fall anyway: the markup group shares a `<template>` reader, the
+// style group shares a rule reader, and the script group needs neither.
+// Grouping by affordance would leave both halves wanting both readers.
+// They are children of this module so they can use its fixtures, which
+// are private to it and its descendants.
+mod search_markup;
+mod search_scripts;
+mod search_style;
+
 use super::{
     CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
     HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, PAGE_SCRIPTS,
@@ -425,6 +436,11 @@ fn pseudo_icons_opt_out_of_the_body_font() {
         stylesheet("settings.css").contains(icon_stack),
         "settings.css must keep the gear on the system font stack, off Cantarell",
     );
+    assert!(
+        stylesheet("search.css").contains(icon_stack),
+        "search.css must keep the search overlay's close ✕ on the system font stack, \
+         off Cantarell",
+    );
 }
 
 #[test]
@@ -714,7 +730,13 @@ fn structural_sheets_carry_no_literal_colours() {
     // edit in the colour layer. `currentColor` (a structural reference,
     // not a theme value) and `#id` selectors like `#catalogue` are
     // fine — only literal `#rrggbb` hexes and `rgb(`/`rgba(` are colours.
-    for name in ["base.css", "nav.css", "rules.css", "settings.css"] {
+    for name in [
+        "base.css",
+        "nav.css",
+        "rules.css",
+        "search.css",
+        "settings.css",
+    ] {
         // Strip comments first: prose may mention colours or `var()`.
         let code = strip_css_comments(stylesheet(name));
         assert!(
