@@ -13,9 +13,9 @@ use super::{
     FILTER_BOXES_SCRIPT, FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME,
     MATCH_ADMIT_SCRIPT, MATCH_ADMIT_SCRIPT_FILENAME, MATCH_SCORE_SCRIPT,
     MATCH_SCORE_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME, MATCH_TEXT_SCRIPT,
-    MATCH_TEXT_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT, MATCH_TIERS_SCRIPT_FILENAME, PAGE_SCRIPTS,
-    RANK_SCRIPT, RANK_SCRIPT_FILENAME, SEARCH_OVERLAY_SCRIPT, SEARCH_OVERLAY_SCRIPT_FILENAME,
-    render_page,
+    MATCH_TEXT_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT, MATCH_TIERS_SCRIPT_FILENAME, PAGE_SCRIPT_FILES,
+    PAGE_SCRIPTS, RANK_SCRIPT, RANK_SCRIPT_FILENAME, SEARCH_OVERLAY_SCRIPT,
+    SEARCH_OVERLAY_SCRIPT_FILENAME, render_page,
 };
 
 /// Every file the search is built from: the name it ships under, its
@@ -418,4 +418,17 @@ fn strip_js_comments(js: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+#[test]
+fn page_scripts_are_the_files_that_ship() {
+    // One list drives the `<script src>` tags and the preload hints, the
+    // other drives what is written beside `index.html`. A script in the
+    // first and not the second is a 404 on every page load; one in the
+    // second and not the first ships unread.
+    let shipped: Vec<&str> = PAGE_SCRIPT_FILES.iter().map(|&(name, _)| name).collect();
+    assert_eq!(
+        shipped, PAGE_SCRIPTS,
+        "every page script must be written beside the page, in load order",
+    );
 }
