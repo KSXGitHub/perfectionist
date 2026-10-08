@@ -42,37 +42,31 @@
 // and a short key would risk collisions.
 // ============================================================================
 
-(function () {
-  var html = document.documentElement;
-  var STORAGE_KEY = "perfectionist-color-scheme-override";
-  var ATTRIBUTE = "color-scheme-override";
+;(function () {
+  var html = document.documentElement
+  var STORAGE_KEY = 'perfectionist-color-scheme-override'
+  var ATTRIBUTE = 'color-scheme-override'
 
   // Non-null casts (not `HTMLElement | null`): the guard below still rejects a
   // missing element at runtime, but TypeScript won't carry that narrowing into
   // the event-handler closures below for a `var`, so they would otherwise read
   // `toggle`/`panel` as nullable. See the matching note in nav_toggle.js.
-  var toggle = /** @type {HTMLElement} */ (
-    document.querySelector(".settings-toggle")
-  );
-  var panel = /** @type {HTMLElement} */ (
-    document.querySelector(".settings-panel")
-  );
-  if (!toggle || !panel) return;
+  var toggle = /** @type {HTMLElement} */ (document.querySelector('.settings-toggle'))
+  var panel = /** @type {HTMLElement} */ (document.querySelector('.settings-panel'))
+  if (!toggle || !panel) return
 
-  var radios = /** @type {NodeListOf<HTMLInputElement>} */ (
-    panel.querySelectorAll('input[name="color-scheme"]')
-  );
-  if (radios.length === 0) return;
+  var radios = /** @type {NodeListOf<HTMLInputElement>} */ (panel.querySelectorAll('input[name="color-scheme"]'))
+  if (radios.length === 0) return
 
   // Apply a choice to the live page. "dark"/"light" set the override
   // attribute (tier 3); anything else ("system") removes it so the
   // page falls back to tiers 1–2.
   /** @param {string | null} value */
   function applyScheme(value) {
-    if (value === "dark" || value === "light") {
-      html.setAttribute(ATTRIBUTE, value);
+    if (value === 'dark' || value === 'light') {
+      html.setAttribute(ATTRIBUTE, value)
     } else {
-      html.removeAttribute(ATTRIBUTE);
+      html.removeAttribute(ATTRIBUTE)
     }
   }
 
@@ -80,66 +74,66 @@
   // default), keeping the stored set to exactly {dark, light, unset}.
   /** @param {string} value */
   function persistScheme(value) {
-    if (value === "dark" || value === "light") {
-      window.localStorage.setItem(STORAGE_KEY, value);
+    if (value === 'dark' || value === 'light') {
+      window.localStorage.setItem(STORAGE_KEY, value)
     } else {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(STORAGE_KEY)
     }
   }
 
   /** @param {string} value */
   function selectRadio(value) {
     for (var i = 0; i < radios.length; i++) {
-      radios[i].checked = radios[i].value === value;
+      radios[i].checked = radios[i].value === value
     }
   }
 
   function openPanel() {
-    panel.hidden = false;
-    toggle.setAttribute("aria-expanded", "true");
+    panel.hidden = false
+    toggle.setAttribute('aria-expanded', 'true')
   }
 
   function closePanel() {
-    panel.hidden = true;
-    toggle.setAttribute("aria-expanded", "false");
+    panel.hidden = true
+    toggle.setAttribute('aria-expanded', 'false')
   }
 
   // ---- (1) event listeners ----------------------------------------------
 
-  toggle.addEventListener("click", function () {
-    if (toggle.getAttribute("aria-expanded") === "true") {
-      closePanel();
+  toggle.addEventListener('click', function () {
+    if (toggle.getAttribute('aria-expanded') === 'true') {
+      closePanel()
     } else {
-      openPanel();
+      openPanel()
     }
-  });
+  })
 
   for (var i = 0; i < radios.length; i++) {
-    radios[i].addEventListener("change", function (event) {
-      var radio = /** @type {HTMLInputElement} */ (event.target);
-      applyScheme(radio.value);
-      persistScheme(radio.value);
-    });
+    radios[i].addEventListener('change', function (event) {
+      var radio = /** @type {HTMLInputElement} */ (event.target)
+      applyScheme(radio.value)
+      persistScheme(radio.value)
+    })
   }
 
   // Dismiss the panel on a click anywhere outside it (and outside the
   // gear, whose own handler already toggles). Registered on the
   // document so any stray click closes the dropdown, the conventional
   // behaviour for this kind of menu.
-  document.addEventListener("click", function (event) {
-    if (toggle.getAttribute("aria-expanded") !== "true") return;
-    var clickTarget = /** @type {Node | null} */ (event.target);
-    if (toggle.contains(clickTarget) || panel.contains(clickTarget)) return;
-    closePanel();
-  });
+  document.addEventListener('click', function (event) {
+    if (toggle.getAttribute('aria-expanded') !== 'true') return
+    var clickTarget = /** @type {Node | null} */ (event.target)
+    if (toggle.contains(clickTarget) || panel.contains(clickTarget)) return
+    closePanel()
+  })
 
   // Escape closes the panel and returns focus to the gear.
-  document.addEventListener("keydown", function (event) {
-    if (event.key !== "Escape") return;
-    if (toggle.getAttribute("aria-expanded") !== "true") return;
-    closePanel();
-    toggle.focus();
-  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return
+    if (toggle.getAttribute('aria-expanded') !== 'true') return
+    closePanel()
+    toggle.focus()
+  })
 
   // Mirror the hamburger's Visual Viewport API compensation (see
   // nav_toggle.js): on mobile browsers that anchor `position: fixed` to
@@ -147,15 +141,15 @@
   // gear and its panel by the visual viewport's offset so they stay
   // glued to the top-right of the visible area as the URL bar collapses.
   if (window.visualViewport) {
-    var vv = window.visualViewport;
+    var vv = window.visualViewport
     var syncToViewport = function () {
-      var transform = "translate(" + vv.offsetLeft + "px, " + vv.offsetTop + "px)";
-      toggle.style.transform = transform;
-      panel.style.transform = transform;
-    };
-    vv.addEventListener("scroll", syncToViewport);
-    vv.addEventListener("resize", syncToViewport);
-    syncToViewport();
+      var transform = 'translate(' + vv.offsetLeft + 'px, ' + vv.offsetTop + 'px)'
+      toggle.style.transform = transform
+      panel.style.transform = transform
+    }
+    vv.addEventListener('scroll', syncToViewport)
+    vv.addEventListener('resize', syncToViewport)
+    syncToViewport()
   }
 
   // ---- (2) reveal the gear ----------------------------------------------
@@ -163,16 +157,16 @@
   // Everything the button needs is wired up; drop the `hidden` attribute
   // so it appears exactly when it's functional. If anything above threw,
   // this line is never reached and the gear stays hidden.
-  toggle.hidden = false;
+  toggle.hidden = false
 
   // ---- (3) load + apply the persisted choice ----------------------------
-  var stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === "dark" || stored === "light") {
-    applyScheme(stored);
-    selectRadio(stored);
+  var stored = window.localStorage.getItem(STORAGE_KEY)
+  if (stored === 'dark' || stored === 'light') {
+    applyScheme(stored)
+    selectRadio(stored)
   } else {
-    applyScheme(null);
-    selectRadio("system");
+    applyScheme(null)
+    selectRadio('system')
   }
 
   // ---- (4) warm the theme-icon cache ------------------------------------
@@ -191,17 +185,15 @@
   // them; Chrome and Firefox then serve the later CSS mask load from that
   // same HTTP cache. Done at idle time (requestIdleCallback, setTimeout
   // fallback) so it never blocks setup. The id must match the template's.
-  var prefetchTemplate = /** @type {HTMLTemplateElement | null} */ (
-    document.getElementById("theme-icon-prefetch")
-  );
+  var prefetchTemplate = /** @type {HTMLTemplateElement | null} */ (document.getElementById('theme-icon-prefetch'))
   function warmThemeIcons() {
-    if (prefetchTemplate && "content" in prefetchTemplate) {
-      document.head.appendChild(prefetchTemplate.content.cloneNode(true));
+    if (prefetchTemplate && 'content' in prefetchTemplate) {
+      document.head.appendChild(prefetchTemplate.content.cloneNode(true))
     }
   }
   if (window.requestIdleCallback) {
-    window.requestIdleCallback(warmThemeIcons);
+    window.requestIdleCallback(warmThemeIcons)
   } else {
-    window.setTimeout(warmThemeIcons, 0);
+    window.setTimeout(warmThemeIcons, 0)
   }
-})();
+})()

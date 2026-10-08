@@ -5,24 +5,24 @@
 // ==========================================================================
 
 var perfectionistMatchScore = (function () {
-  var isWordStart = perfectionistMatchText.isWordStart;
+  var isWordStart = perfectionistMatchText.isWordStart
 
   // BASE is the smallest on purpose: a match owes its score to landing
   // contiguously or on a word boundary, not to occurring at all.
-  var BASE = 0.4;
+  var BASE = 0.4
 
-  var RUN_BONUS = 1;
+  var RUN_BONUS = 1
 
-  var WORD_BONUS = 0.6;
+  var WORD_BONUS = 0.6
 
-  var START_BONUS = 0.3;
+  var START_BONUS = 0.3
 
   // How the two score components are blended. `quality` carries the match,
   // `coverage` only breaks its ties, so the weights are lopsided; they sum
   // to 1 so the result stays in 0..1.
-  var QUALITY_WEIGHT = 0.95;
+  var QUALITY_WEIGHT = 0.95
 
-  var COVERAGE_WEIGHT = 0.05;
+  var COVERAGE_WEIGHT = 0.05
 
   /**
    * What a character earns for where it sits, when it opens a run rather
@@ -35,9 +35,9 @@ var perfectionistMatchScore = (function () {
    * @returns {number}
    */
   function opening(haystack, index) {
-    if (index === 0) return BASE + WORD_BONUS + START_BONUS;
-    if (isWordStart(haystack, index)) return BASE + WORD_BONUS;
-    return BASE;
+    if (index === 0) return BASE + WORD_BONUS + START_BONUS
+    if (isWordStart(haystack, index)) return BASE + WORD_BONUS
+    return BASE
   }
 
   /**
@@ -48,7 +48,7 @@ var perfectionistMatchScore = (function () {
    * @returns {number}
    */
   function idealScore(length) {
-    return BASE + WORD_BONUS + START_BONUS + (BASE + RUN_BONUS) * (length - 1);
+    return BASE + WORD_BONUS + START_BONUS + (BASE + RUN_BONUS) * (length - 1)
   }
 
   /**
@@ -58,13 +58,13 @@ var perfectionistMatchScore = (function () {
    * @returns {number}
    */
   function blend(raw, length, extent) {
-    var quality = raw / idealScore(length);
+    var quality = raw / idealScore(length)
     // `coverage` is the fraction of the target the query accounts for, and
     // a query can now be longer than what it matched — a separator the
     // target spells differently is a character the query carries and the
     // target does not — so the ratio is held to a fraction.
-    var coverage = Math.min(1, length / Math.max(extent, 1));
-    return QUALITY_WEIGHT * quality + COVERAGE_WEIGHT * coverage;
+    var coverage = Math.min(1, length / Math.max(extent, 1))
+    return QUALITY_WEIGHT * quality + COVERAGE_WEIGHT * coverage
   }
 
   // Two tiers placing the same characters in the same places earn the same
@@ -72,7 +72,7 @@ var perfectionistMatchScore = (function () {
   // multiplication per word — which doubles do not always agree on to the
   // last bit. Far below the smallest difference the scoring can mean, so
   // it absorbs that noise and nothing else.
-  var SCORE_EPSILON = 1e-9;
+  var SCORE_EPSILON = 1e-9
 
   /**
    * Whichever of two matches scores higher, where either may be absent. A
@@ -86,9 +86,9 @@ var perfectionistMatchScore = (function () {
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function better(left, right) {
-    if (!left) return right;
-    if (!right) return left;
-    return right.score > left.score + SCORE_EPSILON ? right : left;
+    if (!left) return right
+    if (!right) return left
+    return right.score > left.score + SCORE_EPSILON ? right : left
   }
 
   return {
@@ -103,5 +103,5 @@ var perfectionistMatchScore = (function () {
     blend: blend,
     SCORE_EPSILON: SCORE_EPSILON,
     better: better,
-  };
-})();
+  }
+})()
