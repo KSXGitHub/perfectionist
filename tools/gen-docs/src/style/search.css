@@ -1,5 +1,4 @@
-/* Search and filter affordances. Structural rules only; the colours for
-   these selectors live in light.css (defaults) and dark.css (dark tiers). */
+/* Search and filter affordances. */
 
 .search-toggle {
   position: fixed;
