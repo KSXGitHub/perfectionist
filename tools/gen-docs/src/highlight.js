@@ -3,9 +3,7 @@
 //
 // Given an element, the text it should hold and the ranges of that text a
 // query matched, this rebuilds the element's contents with each matched
-// range wrapped in a `<mark>`. It is the only part of the search and
-// filter machinery that touches the DOM without also owning a control:
-// match.js scores, rank.js orders, and this draws the result.
+// range wrapped in a `<mark>`.
 // ============================================================================
 
 var perfectionistHighlight = (function () {
