@@ -28,15 +28,15 @@
 //
 // ---- Closing a box --------------------------------------------------------
 //
-// Escape, the funnel and following one of the entries all dismiss one,
-// and all mean the same thing: the query is cleared, the list is put back
-// as the page rendered it, and the box goes away. Closing never leaves a
-// hidden input still narrowing a list, which would strand the reader with
-// entries missing and nothing on screen to say why.
+// Escape, the funnel and following one of the entries all dismiss one, and
+// all mean the same thing — one `closeBox` does it for them all. Closing
+// never leaves a hidden input still narrowing a list, which would strand
+// the reader with entries missing and nothing on screen to say why.
 //
-// Following an entry is the one the reader does not aim at the box. They have found what they were looking for and are on their
-// way to it; what they leave behind should be the list they started from,
-// not the tail of a query they have finished with.
+// Following an entry is the one the reader does not aim at the box: they
+// have found what they were looking for and are on their way to it, and
+// what they leave behind should be the list they started from, not the
+// tail of a query they have finished with.
 //
 // Enter is not a way out. It re-runs the filter, which is all it was ever
 // for: insurance for a browser whose `input` event never arrived.
@@ -50,20 +50,9 @@
 // While the Index table is on screen, typing a letter opens the Index box
 // and seeds it with that letter, so finding a rule costs no clicks at all.
 // The handler is deliberately narrow, because the page is a document first
-// and a letter has to keep meaning what it means everywhere else:
-//
-//   * it does nothing unless the Index table is actually in view;
-//   * it ignores anything with a modifier held, so browser and OS
-//     shortcuts are untouched;
-//   * it ignores keys that aren't a single letter, leaving Tab, Enter,
-//     the arrows and every named key alone;
-//   * it ignores a keystroke aimed at a form control or editable element,
-//     which is also what keeps it off the search overlay's own input;
-//   * it ignores a keystroke while the table sits inside an `inert`
-//     subtree, which is how the nav drawer and the search overlay mark the
-//     page behind them;
-//   * it ignores an in-progress IME composition, where the keystroke
-//     belongs to the composition rather than to the page.
+// and a letter has to keep meaning what it means everywhere else. Every
+// guard it opens with turns away a keystroke that was never aimed at the
+// box, and each says at its own line what it stands down for.
 //
 // `preventDefault` is called only on the keystroke it goes on to handle,
 // never on one it declined — the box sets the character itself, and without
@@ -71,8 +60,8 @@
 // ============================================================================
 
 (function () {
-  // Also the load-bearing check that the two libraries this file is
-  // nothing without have run: see the file header.
+  // Also the load-bearing check that the libraries this file is nothing
+  // without have run: see the file header.
   var matchFuzzy = perfectionistMatch.matchFuzzy;
   var renderName = perfectionistHighlight.renderName;
 
@@ -189,10 +178,8 @@
     var blueprint = container.querySelector("template");
     if (!(blueprint instanceof HTMLTemplateElement)) return null;
     container.appendChild(blueprint.content.cloneNode(true));
-    // Cast rather than narrowed: the guard below still rejects a missing
-    // element at runtime, but TypeScript does not carry a guard's narrowing
-    // of a `var` into a closure, and every handler below is one. See the
-    // matching note in nav_toggle.js.
+    // Cast rather than narrowed, for the reason `installFilter` splits;
+    // the guard below still rejects a missing element at runtime.
     var box = /** @type {HTMLElement} */ (container.querySelector(".filter-box"));
     var input = /** @type {HTMLInputElement} */ (
       container.querySelector(".filter-input")
@@ -260,7 +247,7 @@
       input.focus();
     }
 
-/** Clear the query, put the list back, and hide the box. */
+    /** Clear the query, put the list back, and hide the box. */
     function closeBox() {
       input.value = "";
       reset();
@@ -362,8 +349,6 @@
   installFilter("nav", "ul.nav-sidebar-list", "li", "a code");
 
   // ---- Keyboard entry into the Index box --------------------------------
-  //
-  // See the file header for why each guard below is there.
   var indexTable = document.querySelector("table.index");
   if (!indexFilter || !(indexTable instanceof HTMLElement)) return;
   // Bound to locals the guard above has already narrowed, for the reason
@@ -385,8 +370,12 @@
 
   document.addEventListener("keydown", function (event) {
     if (!indexInView) return;
+    // A modifier makes the keystroke the browser's or the OS's.
     if (event.altKey || event.ctrlKey || event.metaKey) return;
+    // Mid-composition it belongs to the IME rather than to the page.
     if (event.isComposing) return;
+    // Every named key — Tab, Enter, an arrow — spells itself out in `key`,
+    // so one character is how a letter is told from one of those.
     if (event.key.length !== 1) return;
     // `key` already carries Shift and CapsLock, so it is the letter the
     // reader meant to type and the one the box is seeded with. Only the
@@ -394,6 +383,7 @@
     var letter = event.key;
     var folded = letter.toLowerCase();
     if (folded < "a" || folded > "z") return;
+    // Also what keeps this off the search overlay's own input.
     if (isEditable(event.target)) return;
     // `inert` is how the nav drawer and the search overlay mark the page
     // behind them; a letter typed over either belongs to them, not here.
