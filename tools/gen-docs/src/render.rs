@@ -2,12 +2,11 @@
 //! assets it links — the stylesheets ([`STYLESHEETS`]) and the page
 //! scripts ([`PAGE_SCRIPTS`]), each written as a standalone file. The
 //! page itself stays a single document so every reader of the catalogue
-//! can ctrl-F across every rule's prose without page loads — and so the
-//! search overlay can rank that same prose without fetching a copy of
-//! it; the CSS and JS live in their own files (rather than inlined) so
-//! each can be edited and cached independently and so future changes
-//! can add or split sheets without reflowing one monolith. GitHub Pages
-//! serves the whole output directory verbatim.
+//! can ctrl-F across every rule's prose without page loads; the CSS and
+//! JS live in their own files (rather than inlined) so each can be
+//! edited and cached independently and so future changes can add or
+//! split sheets without reflowing one monolith. GitHub Pages serves the
+//! whole output directory verbatim.
 
 pub(crate) mod config;
 pub(crate) mod markdown;
@@ -76,58 +75,44 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
 /// The query-matching library the filter boxes and the search overlay
-/// share, written beside `index.html` and loaded via `<script src>`
-/// rather than inlined. It decides which targets a query matches and how
-/// well, and nothing else; it draws no element and binds no handler of its
-/// own.
-/// The page loads classic scripts, so its consumers reach it through one
-/// global — see the file's own header for why that is the shape, rather
-/// than a module.
+/// share. It decides which targets a query matches and how well, and
+/// nothing else: it draws no element and binds no handler.
 pub(crate) const MATCH_SCRIPT: &str = include_str!("match.js");
 
-/// File name [`MATCH_SCRIPT`] is written under; the page's
-/// `<script src>` references the same name, so they must agree.
+/// File name [`MATCH_SCRIPT`] is written under.
 pub(crate) const MATCH_SCRIPT_FILENAME: &str = "match.js";
 
 /// The ranking library: given the catalogue's rules as plain objects and
-/// a query, it returns the handful that match, best first. Like
-/// [`MATCH_SCRIPT`] it touches no DOM, which is what lets the weights it
-/// holds be exercised outside a browser.
+/// a query, it returns the handful that match, best first.
 pub(crate) const RANK_SCRIPT: &str = include_str!("rank.js");
 
-/// File name [`RANK_SCRIPT`] is written under; the page's
-/// `<script src>` references the same name, so they must agree.
+/// File name [`RANK_SCRIPT`] is written under.
 pub(crate) const RANK_SCRIPT_FILENAME: &str = "rank.js";
 
 /// The highlight library: it rebuilds an element's contents with each
-/// matched range wrapped in a `<mark>`. The DOM half of what
-/// [`MATCH_SCRIPT`] used to hold, split off so that file stays loadable
-/// outside a browser.
+/// matched range wrapped in a `<mark>`.
 pub(crate) const HIGHLIGHT_SCRIPT: &str = include_str!("highlight.js");
 
-/// File name [`HIGHLIGHT_SCRIPT`] is written under; the page's
-/// `<script src>` references the same name, so they must agree.
+/// File name [`HIGHLIGHT_SCRIPT`] is written under.
 pub(crate) const HIGHLIGHT_SCRIPT_FILENAME: &str = "highlight.js";
 
-/// The filter-box script: it builds both filter inputs (see
-/// [`filter_container`]) and narrows the list each one sits over.
-/// Written beside `index.html` and loaded via `<script src>` rather than
-/// inlined.
+/// The filter-box script: it clones each filter box from the
+/// `<template>` [`filter_container`] emits, and narrows the list the box
+/// sits over.
 pub(crate) const FILTER_BOXES_SCRIPT: &str = include_str!("filter_boxes.js");
 
-/// File name [`FILTER_BOXES_SCRIPT`] is written under; the page's
-/// `<script src>` references the same name, so they must agree.
+/// File name [`FILTER_BOXES_SCRIPT`] is written under.
 pub(crate) const FILTER_BOXES_SCRIPT_FILENAME: &str = "filter_boxes.js";
 
-/// The search-overlay script: it builds the whole overlay (see
-/// [`search_toggle`]) and ranks the rules it reads off the page. Kept
+/// The search-overlay script: it clones the overlay from the
+/// `<template>`s [`search_templates`] emits and ranks the rules it reads
+/// off the page. Kept
 /// separate from [`FILTER_BOXES_SCRIPT`] so the two affordances degrade
 /// independently: if one script fails to run, its controls stay hidden
 /// while the other's keep working.
 pub(crate) const SEARCH_OVERLAY_SCRIPT: &str = include_str!("search_overlay.js");
 
-/// File name [`SEARCH_OVERLAY_SCRIPT`] is written under; the page's
-/// `<script src>` references the same name, so they must agree.
+/// File name [`SEARCH_OVERLAY_SCRIPT`] is written under.
 pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 
 /// The page scripts, in the order `<body>` loads them. Both the
@@ -136,8 +121,7 @@ pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 /// so they can't drift.
 ///
 /// The three libraries precede the scripts that read their globals, and
-/// `match.js` precedes `rank.js`, which reads its matchers — so every one
-/// is in place before anything can reach it.
+/// `match.js` precedes `rank.js`, which reads its matchers.
 pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     NAV_TOGGLE_SCRIPT_FILENAME,
     THEME_TOGGLE_SCRIPT_FILENAME,
@@ -159,10 +143,8 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
 
 /// The search and filter control icons (Octicons, MIT), shipped beside
 /// `index.html` and referenced from search.css. Each tuple is
-/// `(filename, contents)`. Kept apart from [`THEME_ICONS`], whose files
-/// are warmed through the prefetch `<template>` because nothing fetches
-/// them until the Settings panel first renders; these are masked onto
-/// buttons that appear as soon as their script runs.
+/// `(filename, contents)`. Not prefetched, unlike [`THEME_ICONS`]: these
+/// are masked onto buttons that appear as soon as their script runs.
 pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
     ("search.svg", include_str!("assets/search.svg")),
     ("filter.svg", include_str!("assets/filter.svg")),
@@ -170,18 +152,17 @@ pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
 
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
-/// `aria-controls`; the two must agree, or the button names a target
-/// that isn't there.
+/// `aria-controls`.
 pub(crate) const SEARCH_OVERLAY_ID: &str = "search-overlay";
 
 /// `id` shared by the inert `<template>` holding the search overlay's
 /// markup ([`search_templates`]) and the `search_overlay.js` lookup that
-/// clones it into the page; the two must agree.
+/// clones it into the page.
 pub(crate) const SEARCH_OVERLAY_TEMPLATE_ID: &str = "search-overlay-template";
 
 /// `id` shared by the inert `<template>` holding one search result's
 /// markup ([`search_templates`]) and the `search_overlay.js` lookup that
-/// clones it per result; the two must agree.
+/// clones it per result.
 pub(crate) const SEARCH_RESULT_TEMPLATE_ID: &str = "search-result-template";
 
 /// Accessible name of the Index filter, carried by both its funnel
@@ -326,23 +307,21 @@ fn settings_panel() -> Markup {
     }
 }
 
-/// The Search affordance's button: a magnifier fixed at the top-right,
-/// one slot left of the settings gear, which opens the search overlay
-/// (see [`search_templates`]).
+/// The Search affordance's button, which opens the search overlay (see
+/// [`search_templates`]).
 ///
-/// Like the gear and the hamburger it carries the HTML `hidden`
-/// attribute, cleared by `search_overlay.js` once the overlay is in the
-/// page and its handlers are wired up, so a page whose script never runs
-/// shows no dead magnifier (the `[hidden]` reset in base.css makes that
-/// unconditional). That is also the window in which its `aria-controls`
-/// names an element not yet in the document: the button is `hidden`
-/// throughout it, so nothing — assistive tech included — can follow the
-/// reference before the overlay exists.
+/// It carries the HTML `hidden` attribute, cleared by
+/// `search_overlay.js` once the overlay is in the page and its handlers
+/// are wired up, so a page whose script never runs shows no dead button.
+/// That is also the window in which its `aria-controls` names an element
+/// not yet in the document: the button is `hidden` throughout it, so
+/// nothing — assistive tech included — can follow the reference before
+/// the overlay exists.
 ///
 /// `search_overlay.js` also binds `/` to the same toggle, so the `title`
 /// names the key while the `aria-label` stays the bare name: the label is
-/// the button's accessible name, which a screen reader reads on every
-/// visit, and a keyboard hint in it would be read along with it.
+/// the button's accessible name, read on every visit, and a keyboard hint
+/// in it would be read along with it.
 fn search_toggle() -> Markup {
     html! {
         button.search-toggle
@@ -356,33 +335,17 @@ fn search_toggle() -> Markup {
 }
 
 /// The search overlay's markup, and one search result's, each inside an
-/// inert `<template>`.
-///
-/// A `<template>`'s contents are parsed but kept out of the document:
-/// nothing renders, nothing is focusable, assistive tech never reaches
-/// them, and `document.querySelector` does not descend into them. So a
-/// page whose script never runs has no overlay in any sense that counts
-/// — exactly what building the overlay in JS achieved — while the markup
-/// itself stays here, where it is reviewed alongside the rest of the page
-/// and tested without a browser. `search_overlay.js` clones these and
-/// wires up the behaviour; it builds no elements of its own. The
-/// colour-scheme icons' prefetch hints
-/// ([`theme_icon_prefetch_template`]) use the same device.
+/// inert `<template>`. Nothing inside one renders, takes focus or
+/// answers `querySelector`, so a page whose script never runs has no
+/// overlay in any sense that counts, while the markup stays here, where
+/// it is reviewed alongside the rest of the page and tested without a
+/// browser. `search_overlay.js` clones these and wires up the behaviour;
+/// it builds no elements of its own.
 ///
 /// The result template is a separate `<template>` rather than one nested
 /// in the overlay's results list, because that list is emptied on every
-/// keystroke and would take its own blueprint with it.
-///
-/// The close button is the dialog's last child, not the search box's, so
-/// search.css can park it in the results' bottom corner: out of the
-/// search box's row, out of the results list's scrolling, and after the
-/// results in the tab order.
-///
-/// Exactly one of the results list and the two `.search-empty` messages
-/// is ever shown, which is what keeps the search box and whichever is
-/// showing accounting for the dialog's whole height between them. The
-/// template's own state is the one the overlay opens in: nothing typed,
-/// so the prompt.
+/// keystroke and would take its own blueprint with it. Its state here is
+/// the one the overlay opens in: nothing typed, so the prompt.
 fn search_templates() -> Markup {
     html! {
         template id=(SEARCH_OVERLAY_TEMPLATE_ID) {
@@ -441,12 +404,10 @@ fn search_templates() -> Markup {
 /// One query input, as both the search overlay and the filter boxes want
 /// it.
 ///
-/// `type="search"` earns the platform's search affordances: a clear
-/// button on desktop, a dedicated key on phone and tablet keyboards. The
-/// four attributes after it are what keep a phone or tablet keyboard from
-/// capitalising the first letter and autocorrecting a half-typed lint
-/// name into a dictionary word, neither of which can match a snake_case
-/// identifier.
+/// The attributes after `type="search"` keep a phone or tablet keyboard
+/// from capitalising the first letter and autocorrecting a half-typed
+/// lint name into a dictionary word, neither of which can match a
+/// snake_case identifier.
 fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
     html! {
         input class=(class)
@@ -473,8 +434,7 @@ fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
 /// button and by the input it opens alike.
 ///
 /// Emitted `hidden` and revealed by that script only once the box it
-/// opens has been built, on the same contract as the gear and the
-/// hamburger.
+/// opens has been built.
 fn filter_toggle(kind: &str, label: &str) -> Markup {
     let class = format!("filter-toggle {kind}-filter-toggle");
     let controls = format!("{kind}-filter");
@@ -497,9 +457,7 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
 /// gives it no box of its own, so a page whose script never runs lays out
 /// exactly as it would without the feature. The box inside the template
 /// is itself `hidden`, so the clone starts closed and the funnel opens
-/// it. See [`search_templates`] for why a `<template>` is the right
-/// container for markup that must not count as present, and
-/// [`filter_toggle`] for what `kind` and `label` tie together.
+/// it. See [`filter_toggle`] for what `kind` and `label` tie together.
 fn filter_container(kind: &str, label: &str) -> Markup {
     let class = format!("filter-container {kind}-filter-container");
     let id = format!("{kind}-filter");
@@ -612,10 +570,6 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
 /// a fixed-position sibling, so it's never affected by
 /// visual-viewport quirks even on browsers where `position: fixed`
 /// drifts with the URL bar.
-///
-/// The header also carries the filter funnel (see [`filter_toggle`]),
-/// right-aligned against the drawer's title; the container below the
-/// header is where its input is built.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button.nav-toggle
