@@ -21,9 +21,9 @@ use forward_template::Fix;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a `derive_more` formatting attribute whose template is
-    /// nothing but the forward the derive already performs, and
-    /// suggests deleting it.
+    /// Flags a [`derive_more`](https://docs.rs/derive_more) formatting
+    /// attribute whose template is nothing but the forward the derive
+    /// already performs, and suggests deleting it.
     ///
     /// A formatting derive on a container with exactly one field
     /// forwards to that field, so a template that does nothing but
