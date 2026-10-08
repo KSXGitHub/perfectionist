@@ -1,8 +1,7 @@
 // ============================================================================
 // The filter boxes: one over the Index table, one over the navigation
 // sidebar's rule list, narrowing a list of lint names to what the reader
-// types. match.js decides which names match and how well, highlight.js
-// draws them.
+// types.
 // ============================================================================
 
 (function () {
