@@ -1,58 +1,25 @@
 // ============================================================================
 // The Search overlay: a modal box over the page that ranks whole rules
-// against a query, rather than narrowing one list of names the way the
-// filter boxes do.
+// against a query. Each result links to the rule's own fragment, so
+// following one lands the reader on the rule article itself.
 //
-// The magnifier button beside the settings gear opens it, as does the `/`
-// key from anywhere on the page; Escape and the ✕ Close button dismiss
-// it, and each result is a link to `#/rule/<name>` — the same fragment the
-// index table and the sidebar point at, so a result lands the reader on
-// the rule article itself.
-//
-// No markup is written here. The overlay and one search result each live
-// in an inert `<template>` rendered by the Rust template; this file clones
-// them and wires up the behaviour. A `<template>`'s contents are parsed but
+// No markup is written here: the overlay and one search result each live in
+// a `<template>` this file clones. A `<template>`'s contents are parsed but
 // kept out of the document — nothing renders, nothing is focusable,
 // assistive tech never reaches them, and `document.querySelector` does not
 // descend into them — so a page whose script never runs has no overlay in
-// any sense that counts, while the markup stays where the rest of the
-// page's markup is reviewed and tested.
-//
-// The Rust template emits the button `hidden` and this file clears that as
-// its last act, the same "reveal only once functional" contract the rest of
-// the page's controls follow. Reading the libraries' entry points into
-// locals below is part of it: if either never ran, that read throws here,
-// long before the reveal.
-//
-// ---- Where the searchable text comes from ---------------------------------
+// any sense that counts.
 //
 // The catalogue is one document holding every rule's prose, so the search
 // reads the page it is on instead of shipping a copy of that prose as a
-// second payload. Nothing can drift, nothing is downloaded twice, and the
+// second payload: nothing can drift, nothing is downloaded twice, and the
 // scrape costs nothing until the reader first opens the overlay, at which
 // point it runs once and is kept.
-//
-// Three kinds of text come out of each `article.rule`: the lint name from
-// the heading, the rule's statement — the paragraph carrying the
-// default-state badge — and its prose, one entry per paragraph and list
-// item. Weighing them against each other is not this file's; it only hands
-// them over.
-//
-// Text that every rule repeats is left out of the scrape, because matching
-// it tells the reader nothing about which rule they want. The section
-// headings ("What it does", "Why restrict this?", "Example",
-// "Configuration", ...) are excluded by construction — only paragraphs and
-// list items are collected — and the repeats that remain are excluded by
-// name: the "Source:" line, the "Configuration: none." line, and the
-// "Configure via dylint.toml under [...]" line inside a Configuration
-// panel. The `Avoid:` / `Prefer:` pseudo-headings that open an example's
-// paragraphs are stripped off the front of the paragraph that carries
-// them, since the rest of that paragraph is real prose.
 // ============================================================================
 
 (function () {
-  // Also the load-bearing check that the two libraries this file is
-  // nothing without have run: see the file header.
+  // Load-bearing: if either library never ran, this throws before anything
+  // is revealed.
   var rank = perfectionistRank.rank;
   var renderName = perfectionistHighlight.renderName;
   var renderText = perfectionistHighlight.renderText;
@@ -75,14 +42,14 @@
   if (!resultBlueprint.content.querySelector(".search-result")) return;
   if (!resultBlueprint.content.querySelector(".search-result-name")) return;
   if (!resultBlueprint.content.querySelector(".search-result-text")) return;
-  // Bound to a local the guard above has already narrowed, because
-  // `renderResult` is a closure and TypeScript does not carry a guard's
-  // narrowing of a `var` into one.
+  // Bound to a local because TypeScript does not carry a guard's narrowing
+  // of a `var` into a closure.
   var resultTemplate = resultBlueprint;
 
   document.body.appendChild(overlayBlueprint.content.cloneNode(true));
-  // Cast rather than narrowed, for the same reason: every handler below is
-  // a closure. The guard still rejects a missing element at runtime.
+  // Cast rather than narrowed, again because a guard's narrowing of a
+  // `var` does not reach a closure. The guard still rejects a missing
+  // element at runtime.
   var overlay = /** @type {HTMLElement} */ (document.querySelector(".search-overlay"));
   if (!overlay) return;
   var dialog = /** @type {HTMLElement} */ (overlay.querySelector(".search-dialog"));
@@ -120,8 +87,9 @@
   }
 
   /**
-   * Does every rule repeat this block verbatim? See the file header for
-   * which blocks qualify and why they are left out.
+   * Does every rule repeat this block verbatim? Matching text that every
+   * rule carries tells the reader nothing about which rule they want, so
+   * it is left out of the scrape.
    * @param {HTMLElement} block
    * @returns {boolean}
    */
@@ -174,8 +142,6 @@
     return out;
   }
 
-  // ---- Ranking ----------------------------------------------------------
-
   // ---- Rendering --------------------------------------------------------
 
   /**
@@ -199,8 +165,7 @@
 
   /**
    * Reveal one of the results list and the two messages, and hide the
-   * other two. Each claims the dialog's whole remaining height, so
-   * leaving two showing would halve both.
+   * other two.
    * @param {HTMLElement} shown
    */
   function showOnly(shown) {
@@ -235,10 +200,11 @@
   // The overlay is modal, so Tab must not wander into the page behind it
   // and assistive tech must not read it out. `inert` (HTML standard,
   // Baseline 2023) removes a subtree from both in one step; it is applied
-  // to every direct child of <body> except the overlay while it is open.
-  // Each side only clears what it set, so the two never undo each other. Browsers too old
-  // for `inert` ignore it and fall back to what the page gives for free:
-  // the overlay is still dismissible by its ✕ and by Escape.
+  // to every direct child of <body> except the overlay while it is open. A
+  // child already inert is not recorded, so clearing undoes only what this
+  // set. Browsers too old for `inert` ignore it and fall back to what the
+  // page gives for free: the overlay is still dismissible by its ✕ and by
+  // Escape.
   /** @type {HTMLElement[]} */
   var inerted = [];
 
@@ -299,8 +265,7 @@
 
   // Escape closes the overlay. The default is suppressed only while the
   // overlay is open, so Escape keeps its ordinary meaning everywhere else
-  // on the page — including for the settings panel, which runs its own
-  // Escape handler.
+  // on the page.
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Escape") return;
     // Mid-composition the key belongs to the IME, which abandons the
@@ -317,15 +282,10 @@
   // The magnifier's keyboard equivalent: one key that opens the overlay
   // from anywhere on the page and closes it again. `/` is what a reader
   // arriving from the rest of the Rust documentation already has in their
-  // fingers — rustdoc puts the caret in its own search box on it — and it
-  // is one of the few keys this page has left, since every letter seeds
-  // the Index filter box and Escape, Enter, Tab and the arrows are all
-  // spoken for.
+  // fingers — rustdoc puts the caret in its own search box on it.
   //
   // Where a `/` means a slash it stays one, so the key toggles everywhere
-  // except inside text entry: in a filter box, and in the overlay's own
-  // input, a query may want the character. Escape, the ✕ and a click on
-  // the backdrop are the ways out from there.
+  // except inside text entry, where a query may want the character.
 
   /**
    * Does a keystroke aimed at this element belong to the element rather
@@ -358,10 +318,9 @@
       closeOverlay();
       return;
     }
-    // `inert` is how the nav drawer marks the page behind it, and the
-    // magnifier is one of the children it covers, so a `/` typed over the
-    // drawer belongs to the drawer. Opening the overlay inerts the button
-    // too, which is why this is asked only on the way in.
+    // A `/` typed over something covering the page belongs to that, not
+    // here. Asked only on the way in, because opening the overlay inerts
+    // this button too.
     if (toggle.closest("[inert]")) return;
     event.preventDefault();
     openOverlay();
@@ -396,9 +355,8 @@
 
   /**
    * Everything in the overlay that can take focus, in the order Tab
-   * reaches it. The results list is `hidden` until there is something in
-   * it and the two empty states are hidden in turn, so filtering on
-   * whether an element is rendered is what keeps the order honest.
+   * reaches it. A rendered element has client rects and a hidden one has
+   * none, so the test skips whatever the reader cannot see.
    * @returns {HTMLElement[]}
    */
   function focusables() {
@@ -460,11 +418,10 @@
     target.focus({ preventScroll: true });
   });
 
-  // The same Visual Viewport API compensation the page's other fixed
-  // controls carry: on mobile browsers that anchor
-  // `position: fixed` to the layout viewport rather than the visual one,
-  // translate the button by the visual viewport's offset so it stays glued
-  // to the top of the visible area as the URL bar collapses. The overlay
+  // On mobile browsers that anchor `position: fixed` to the layout viewport
+  // rather than the visual one, translate the button by the visual
+  // viewport's offset so it stays glued to the top of the visible area as
+  // the URL bar collapses. The overlay
   // itself is left alone — it is opened from a tap, and the on-screen
   // keyboard that follows shrinks the visual viewport, so pinning it to
   // that would shrink the dialog out from under the reader's fingers.

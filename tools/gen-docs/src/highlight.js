@@ -10,9 +10,7 @@ var perfectionistHighlight = (function () {
   /**
    * Append `text.slice(from, to)` to `parent` as text nodes. With
    * `breakAfterUnderscore`, a `<wbr>` follows each `_` that isn't the last
-   * character of `text` — reproducing the break opportunities the Rust
-   * renderer emits for a lint name, which would otherwise be lost when the
-   * highlight rebuilds the element's contents.
+   * character of `text`.
    * @param {Node} parent
    * @param {string} text
    * @param {number} from

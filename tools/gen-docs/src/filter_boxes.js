@@ -68,10 +68,8 @@
   }
 
   /**
-   * Find one filter box's markup and wire it up. `kind` is the prefix the
-   * Rust template builds the toggle's and the container's class names
-   * from — `index` or `nav` — so naming it here is naming both.
-   * @param {string} kind
+   * Find one filter box's markup and wire it up.
+   * @param {string} kind  `index` or `nav`
    * @param {string} listSelector  the parent whose children are the entries
    * @param {string} itemSelector  which children count as entries
    * @param {string} nameSelector  the element inside an entry spelling the name
@@ -104,8 +102,9 @@
     var blueprint = container.querySelector("template");
     if (!(blueprint instanceof HTMLTemplateElement)) return null;
     container.appendChild(blueprint.content.cloneNode(true));
-    // Cast rather than narrowed, for the reason `installFilter` splits;
-    // the guard below still rejects a missing element at runtime.
+    // Cast rather than narrowed: TypeScript does not carry a guard's
+    // narrowing of a `var` into a closure. The guard still rejects a
+    // missing element at runtime.
     var box = /** @type {HTMLElement} */ (container.querySelector(".filter-box"));
     var input = /** @type {HTMLInputElement} */ (
       container.querySelector(".filter-input")
@@ -166,9 +165,8 @@
     }
 
     /**
-     * Escape, the funnel and following an entry all come here: a hidden
-     * input still narrowing a list would strand the reader with entries
-     * missing and nothing on screen to say why.
+     * A hidden input still narrowing a list would strand the reader with
+     * entries missing and nothing on screen to say why.
      */
     function closeBox() {
       input.value = "";
@@ -178,10 +176,8 @@
     }
 
     /**
-     * Close the box and put focus on the funnel. Escape dismisses from
-     * inside the input, which is about to be hidden, and focus would
-     * otherwise drop to <body>. Dismissing by the funnel click already has
-     * focus there, so the move is a no-op on that path.
+     * Close the box and put focus on the funnel: the input holding it is
+     * about to be hidden, and focus would otherwise drop to <body>.
      */
     function dismiss() {
       closeBox();
@@ -220,16 +216,16 @@
       // default and doing the whole of it keeps every engine alike.
       event.preventDefault();
       // The innermost thing Escape can dismiss should be the only thing it
-      // dismisses, and another handler on the document closes the Settings
-      // panel on Escape: without this, one keystroke would shut both.
+      // dismisses, so a handler further out does not shut something else on
+      // the same keystroke.
       event.stopPropagation();
       dismiss();
     });
 
-    // Following an entry leaves the reader the whole list to come back
-    // to. Focus stays where the click sends it, unlike the paths above.
-    // A modifier-key or non-primary click opens a new tab and leaves this
-    // page where it was, so its query has to stay too.
+    // Following an entry leaves the reader the whole list to come back to.
+    // Focus stays where the click sends it. A modifier-key or non-primary
+    // click opens a new tab and leaves this page where it was, so its query
+    // has to stay too.
     list.addEventListener("click", function (event) {
       var link = /** @type {Element} */ (event.target).closest("a");
       if (!link) return;
@@ -267,14 +263,14 @@
   // ---- Keyboard entry into the Index box --------------------------------
   var indexTable = document.querySelector("table.index");
   if (!indexFilter || !(indexTable instanceof HTMLElement)) return;
-  // Locals, for the reason `installFilter` splits.
+  // Locals: TypeScript does not carry a guard's narrowing of a `var` into
+  // a closure.
   var table = indexTable;
   var filter = indexFilter;
 
-  // The index sits at the top of the page, so it starts in view. Without
-  // IntersectionObserver the flag simply stays true and typing works
-  // wherever the reader is — a wider trigger than intended, not a broken
-  // one.
+  // Without IntersectionObserver the flag simply stays true and typing
+  // works wherever the reader is — a wider trigger than intended, not a
+  // broken one.
   var indexInView = true;
   if ("IntersectionObserver" in window) {
     var observer = new IntersectionObserver(function (entries) {
@@ -298,8 +294,8 @@
     var folded = letter.toLowerCase();
     if (folded < "a" || folded > "z") return;
     if (isEditable(event.target)) return;
-    // `inert` is how the nav drawer and the search overlay mark the page
-    // behind them.
+    // Typing belongs to whatever covers the page, where something does,
+    // rather than to the table underneath it.
     if (table.closest("[inert]")) return;
     event.preventDefault();
     filter.openWith(letter);
