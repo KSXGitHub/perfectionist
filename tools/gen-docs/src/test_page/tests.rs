@@ -118,7 +118,7 @@ fn every_case_file_opens_a_group_named_after_itself() {
     // under, so a file copied from its neighbour and edited would file
     // its cases under the neighbour's heading, in both runners at once.
     for (name, source) in TEST_CASE_SCRIPTS {
-        let declaration = format!(r#"group("{name}")"#);
+        let declaration = format!("group('{name}')");
         assert!(
             source.contains(&declaration),
             "{name} should open its group with {declaration}",
@@ -133,13 +133,13 @@ fn the_page_carries_every_id_the_reporter_looks_up() {
     // ids come out of its source rather than a list here, so one added
     // later is covered with no edit.
     let html = render_test_page();
-    let opener = r##"querySelector("#"##;
+    let opener = r#"querySelector('#"#;
     let mut looked_up = 0;
     let mut rest = TEST_REPORT_SCRIPT.1;
     while let Some(at) = rest.find(opener) {
         rest = &rest[at + opener.len()..];
         let id = rest
-            .split('"')
+            .split('\'')
             .next()
             .expect("unterminated querySelector argument");
         assert!(
@@ -178,7 +178,7 @@ fn every_state_the_reporter_sets_is_styled() {
         .split_once("var MARKS = {")
         .expect("report.js should declare a MARKS table")
         .1
-        .split_once("};")
+        .split_once('}')
         .expect("report.js's MARKS table should be terminated")
         .0;
     // Split on the separator between entries rather than on newlines: a
@@ -215,7 +215,7 @@ fn the_page_says_how_many_case_files_it_loaded() {
     assert!(
         TEST_REPORT_SCRIPT
             .1
-            .contains(r#"getAttribute("data-expected-groups")"#),
+            .contains("getAttribute('data-expected-groups')"),
         "report.js must read the count the page carries",
     );
 }
@@ -242,8 +242,8 @@ fn the_two_runners_load_the_same_libraries() {
         .0;
     let named: Vec<&str> = list
         .lines()
-        .filter_map(|line| line.trim().strip_prefix('"'))
-        .filter_map(|line| line.split_once('"'))
+        .filter_map(|line| line.trim().strip_prefix('\''))
+        .filter_map(|line| line.split_once('\''))
         .map(|(name, _)| name)
         .collect();
     assert_eq!(

@@ -126,5 +126,5 @@ fn nav_toggle_script_is_a_single_iife() {
     // Counting the IIFE opener and closer pins this shape so
     // a future edit can't reintroduce the same bug silently.
     assert_eq!(NAV_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
-    assert_eq!(NAV_TOGGLE_SCRIPT.matches("})();").count(), 1);
+    assert_eq!(NAV_TOGGLE_SCRIPT.matches("})()").count(), 1);
 }

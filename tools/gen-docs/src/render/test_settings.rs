@@ -220,7 +220,7 @@ fn config_toggle_script_reflects_state_onto_buttons() {
         "the script must reflect state onto aria-pressed",
     );
     assert!(
-        CONFIG_TOGGLE_SCRIPT.contains(r#""toggle""#),
+        CONFIG_TOGGLE_SCRIPT.contains("'toggle'"),
         "the script must listen for the <details> toggle event",
     );
     assert!(
@@ -242,5 +242,5 @@ fn config_toggle_script_is_a_single_iife() {
     // the whole file is one IIFE so a stray block after the closer can't
     // reference a `var` that's already out of scope.
     assert_eq!(CONFIG_TOGGLE_SCRIPT.matches("(function () {").count(), 1);
-    assert_eq!(CONFIG_TOGGLE_SCRIPT.matches("})();").count(), 1);
+    assert_eq!(CONFIG_TOGGLE_SCRIPT.matches("})()").count(), 1);
 }

@@ -20,7 +20,7 @@ fn every_key_handler_declines_a_composition() {
         ("filter_boxes.js", FILTER_BOXES_SCRIPT),
         ("search_overlay.js", SEARCH_OVERLAY_SCRIPT),
     ] {
-        let listeners = script.matches(r#"addEventListener("keydown""#).count();
+        let listeners = script.matches("addEventListener('keydown'").count();
         assert!(listeners > 0, "{name} should listen for keydown at all");
         assert_eq!(
             script.matches("event.isComposing").count(),
@@ -45,7 +45,7 @@ fn every_way_out_of_a_filter_box_clears_it() {
         "expected one `closeBox` definition and exactly two calls",
     );
     assert_eq!(
-        FILTER_BOXES_SCRIPT.matches(r#"input.value = """#).count(),
+        FILTER_BOXES_SCRIPT.matches("input.value = ''").count(),
         1,
         "only `closeBox` should clear the query",
     );

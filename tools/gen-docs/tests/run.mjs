@@ -13,38 +13,38 @@
 // The fixtures load ahead of the cases, since a case reads the fixtures it
 // is built from as it is evaluated.
 // ============================================================================
-import { readdir, readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { createContext, runInContext } from "node:vm";
+import { readdir, readFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createContext, runInContext } from 'node:vm'
 
-const here = dirname(fileURLToPath(import.meta.url));
-const src = join(here, "..", "src");
+const here = dirname(fileURLToPath(import.meta.url))
+const src = join(here, '..', 'src')
 
-const beside = await readdir(here);
-const cases = beside.filter((name) => name.endsWith(".test.js")).sort();
-const fixtures = beside.filter((name) => name.endsWith(".fixtures.js")).sort();
-if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
+const beside = await readdir(here)
+const cases = beside.filter(name => name.endsWith('.test.js')).sort()
+const fixtures = beside.filter(name => name.endsWith('.fixtures.js')).sort()
+if (cases.length === 0) throw new Error(`no *.test.js in ${here}`)
 
 // The catalogue's libraries, in load order: each publishes a global the
 // next ones read.
 const libraries = [
-  "match_text.js",
-  "match_score.js",
-  "match_admit.js",
-  "match_tiers.js",
-  "match.js",
-  "rank.js",
-];
+  'match_text.js',
+  'match_score.js',
+  'match_admit.js',
+  'match_tiers.js',
+  'match.js',
+  'rank.js',
+]
 
-const context = createContext({});
+const context = createContext({})
 const load = libraries
-  .map((name) => join(src, name))
-  .concat([join(here, "harness.js")])
-  .concat(fixtures.map((name) => join(here, name)))
-  .concat(cases.map((name) => join(here, name)));
+  .map(name => join(src, name))
+  .concat([join(here, 'harness.js')])
+  .concat(fixtures.map(name => join(here, name)))
+  .concat(cases.map(name => join(here, name)))
 for (const file of load) {
-  runInContext(await readFile(file, "utf8"), context, { filename: file });
+  runInContext(await readFile(file, 'utf8'), context, { filename: file })
 }
 
 /**
@@ -55,46 +55,46 @@ for (const file of load) {
  * message already written to read on its own.
  */
 function reason(thrown) {
-  if (thrown !== null && typeof thrown === "object" && "message" in thrown) {
-    return String(thrown.message);
+  if (thrown !== null && typeof thrown === 'object' && 'message' in thrown) {
+    return String(thrown.message)
   }
-  return String(thrown);
+  return String(thrown)
 }
 
 for (const group of context.perfectionistTests.all()) {
-  const started = process.hrtime.bigint();
-  const failures = [];
+  const started = process.hrtime.bigint()
+  const failures = []
 
-  console.log(`\n     Running ${group.name}\n`);
-  console.log(`running ${group.cases.length} ${group.cases.length === 1 ? "test" : "tests"}`);
+  console.log(`\n     Running ${group.name}\n`)
+  console.log(`running ${group.cases.length} ${group.cases.length === 1 ? 'test' : 'tests'}`)
   for (const item of group.cases) {
     try {
-      item.run();
-      console.log(`test ${item.name} ... ok`);
+      item.run()
+      console.log(`test ${item.name} ... ok`)
     } catch (thrown) {
-      failures.push({ name: item.name, why: reason(thrown) });
-      console.log(`test ${item.name} ... FAILED`);
+      failures.push({ name: item.name, why: reason(thrown) })
+      console.log(`test ${item.name} ... FAILED`)
     }
   }
 
   if (failures.length > 0) {
-    console.log("\nfailures:\n");
+    console.log('\nfailures:\n')
     for (const failure of failures) {
-      console.log(`---- ${failure.name} ----`);
-      console.log(`${failure.why}\n`);
+      console.log(`---- ${failure.name} ----`)
+      console.log(`${failure.why}\n`)
     }
-    console.log("failures:");
+    console.log('failures:')
     for (const failure of failures) {
-      console.log(`    ${failure.name}`);
+      console.log(`    ${failure.name}`)
     }
-    process.exitCode = 1;
+    process.exitCode = 1
   }
 
-  const seconds = Number(process.hrtime.bigint() - started) / 1e9;
+  const seconds = Number(process.hrtime.bigint() - started) / 1e9
   console.log(
-    `\ntest result: ${failures.length === 0 ? "ok" : "FAILED"}. ` +
+    `\ntest result: ${failures.length === 0 ? 'ok' : 'FAILED'}. ` +
       `${group.cases.length - failures.length} passed; ${failures.length} failed; ` +
       `finished in ${seconds.toFixed(2)}s`,
-  );
+  )
 }
-console.log();
+console.log()

@@ -37,12 +37,11 @@
 // rather than recompute N times, each event just requests a single recompute
 // on the next animation frame, coalescing the burst into one pass.
 // ============================================================================
-
-(function () {
+;(function () {
   var section = /** @type {HTMLElement | null} */ (
-    document.querySelector(".config-controls")
-  );
-  if (!section) return;
+    document.querySelector('.config-controls')
+  )
+  if (!section) return
 
   // Non-null casts (not `HTMLButtonElement | null`): the guard below still
   // rejects a missing button at runtime, but TypeScript won't carry that
@@ -50,29 +49,29 @@
   // otherwise read the buttons as nullable.
   var expandButton = /** @type {HTMLButtonElement} */ (
     section.querySelector('button[data-config-open="true"]')
-  );
+  )
   var collapseButton = /** @type {HTMLButtonElement} */ (
     section.querySelector('button[data-config-open="false"]')
-  );
-  if (!expandButton || !collapseButton) return;
+  )
+  if (!expandButton || !collapseButton) return
 
   // The Configuration panels. A generated catalogue is static after render
   // (nothing adds or removes panels at runtime), so query once and reuse the
   // NodeList everywhere rather than re-scanning the DOM per call — the same
   // cache-the-query approach theme_toggle.js takes with its radios.
   var panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
-    document.querySelectorAll("details.config-details")
-  );
+    document.querySelectorAll('details.config-details')
+  )
 
   // Nothing to toggle means nothing to reveal: a catalogue with no
   // configurable rule renders no `details.config-details`, so leaving the
   // section hidden avoids two buttons that would silently do nothing.
-  if (panels.length === 0) return;
+  if (panels.length === 0) return
 
   /** @param {boolean} open */
   function setAllOpen(open) {
     for (var i = 0; i < panels.length; i++) {
-      panels[i].open = open;
+      panels[i].open = open
     }
   }
 
@@ -81,42 +80,42 @@
   // they can't both be true once there's at least one panel, and both are
   // false in a mixed state, so neither button highlights then.
   function reflectState() {
-    var allOpen = true;
-    var allClosed = true;
+    var allOpen = true
+    var allClosed = true
     for (var i = 0; i < panels.length; i++) {
       if (panels[i].open) {
-        allClosed = false;
+        allClosed = false
       } else {
-        allOpen = false;
+        allOpen = false
       }
       // Mixed state is terminal: neither flag can flip back to true, so the
       // remaining panels can't change the outcome. Stop scanning them.
-      if (!allOpen && !allClosed) break;
+      if (!allOpen && !allClosed) break
     }
-    expandButton.setAttribute("aria-pressed", String(allOpen));
-    collapseButton.setAttribute("aria-pressed", String(allClosed));
+    expandButton.setAttribute('aria-pressed', String(allOpen))
+    collapseButton.setAttribute('aria-pressed', String(allClosed))
   }
 
   // Coalesce a burst of `toggle` events into one recompute per frame: the
   // first event in a frame queues the pass, the rest are no-ops until it
   // runs. This keeps "Expand all" / "Collapse all" — which fire one event
   // per panel — at a single pass instead of one per panel.
-  var frame = 0;
+  var frame = 0
   function runReflect() {
-    frame = 0;
-    reflectState();
+    frame = 0
+    reflectState()
   }
   function scheduleReflect() {
-    if (frame) return;
-    frame = window.requestAnimationFrame(runReflect);
+    if (frame) return
+    frame = window.requestAnimationFrame(runReflect)
   }
 
-  expandButton.addEventListener("click", function () {
-    setAllOpen(true);
-  });
-  collapseButton.addEventListener("click", function () {
-    setAllOpen(false);
-  });
+  expandButton.addEventListener('click', function () {
+    setAllOpen(true)
+  })
+  collapseButton.addEventListener('click', function () {
+    setAllOpen(false)
+  })
 
   // One capturing listener for the non-bubbling `toggle` event, filtered to
   // the Configuration panels so unrelated <details> (if any are ever added)
@@ -125,15 +124,15 @@
   // function CALL is ES2017 and a parse error in older engines this page
   // still aims to support, which would take the whole script down.
   document.addEventListener(
-    "toggle",
+    'toggle',
     function (event) {
-      var target = event.target;
-      if (target instanceof Element && target.matches("details.config-details")) {
-        scheduleReflect();
+      var target = event.target
+      if (target instanceof Element && target.matches('details.config-details')) {
+        scheduleReflect()
       }
     },
-    true
-  );
+    true,
+  )
 
   // Phase 1: a non-blocking initial pass so the buttons reflect whatever
   // state the page loads in (all collapsed by default, but the browser may
@@ -146,9 +145,9 @@
   // the "reveal only once functional" contract the nav and theme toggles
   // follow (reveal is the last thing that happens, never before a still-
   // unproven dependency).
-  scheduleReflect();
+  scheduleReflect()
 
   // Everything is wired up and the initial pass is queued; reveal the section
   // so the buttons appear exactly when they work.
-  section.hidden = false;
-})();
+  section.hidden = false
+})()

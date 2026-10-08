@@ -90,7 +90,7 @@ fn search_scripts_are_each_a_single_iife() {
             "{name} should open exactly one IIFE",
         );
         assert_eq!(
-            script.matches("})();").count(),
+            script.matches("})()").count(),
             1,
             "{name} should close exactly one IIFE",
         );
