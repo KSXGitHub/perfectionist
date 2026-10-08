@@ -4,72 +4,11 @@
 // nothing here knows what a lint is, which is what lets it run with no
 // browser around it — see tools/gen-docs/tests/. Painting a match onto
 // the page is highlight.js.
-//
-// `perfectionistMatch` is a global because the page loads classic scripts
-// rather than modules: its engines predate `import`, and a
-// `<script type="module">` would be skipped outright rather than degrade.
-//
-// ---- Two kinds of match ---------------------------------------------------
-//
-// `matchFuzzy` lets the query come apart — its characters scattered
-// through the target in order, its words in any order at all — where
-// `matchPhrase` lets neither. A lint name gets the first: it is an
-// identifier typed from memory, a handful of words with no sentence to put
-// them in order. Prose gets the second, because a paragraph a few hundred
-// characters long carries almost any scattered sequence and almost any two
-// words apart from each other, so either freedom would answer nearly every
-// rule on the page. Everything short of those two is shared, and so is the
-// scoring model, so a caller matching both can rank the results together.
-//
-// ---- How well it matched --------------------------------------------------
-//
-// A character earns more for continuing a run than for standing alone,
-// more for opening a word than for landing inside one, and most for
-// opening the target itself; the total is divided by what the query could
-// have earned at best, so the score is a fraction whatever its length. The
-// constants below carry the detail.
-//
-// Every one of those numbers orders matches against each other and does
-// nothing else — see the next section — so they can be re-tuned freely.
-//
-// ---- When the query is not there whole ------------------------------------
-//
-// A query is as often a near miss as a substring, so a match is looked for
-// in tiers: verbatim, respaced, variants, reordered, scattered, each
-// documented at its own function. Every tier is tried and the best-scoring
-// one worth showing wins, between tiers and between the placements of one
-// tier alike, so a coincidence that scores higher cannot hide the real
-// match behind it.
-//
-// A tier is weaker than the one above by construction rather than by a
-// penalty: each scores only the characters it placed. What it counts as
-// the query differs with what it can place — the first two place every
-// character the query holds, separators and all, while the word-wise tiers
-// never match a target character against a separator and are charged for
-// the query's words alone. Charging them for the delimiters too would mean
-// a reader who has typed `cloned ` and is about to type `getter` scoring
-// below one who stopped at `cloned`: a result vanishing halfway through
-// being typed.
-//
-// Greedy left-to-right subsequence scanning does not always find the
-// best-scoring match (`ab` against `a_xab` takes `a` at 0 and `b` at 4,
-// missing the contiguous `ab` at 3), which is why the tiers exist at all
-// and why that scan is the last of them rather than the only method.
-//
-// ---- Worth showing --------------------------------------------------------
-//
-// A different question from how well, and this file keeps the two apart.
-// Answering it with a bar on the score would tie what a reader can find to
-// how the weights happen to be tuned, and would let one more character
-// push a result back over a bar it had fallen under, so it leaves the list
-// and returns. `admits` therefore reads no score, only where the match
-// landed, and the rules it applies are documented there.
 // ============================================================================
 
 var perfectionistMatch = (function () {
-  // Per-character score components. BASE is deliberately the smallest of
-  // them: a match owes its score to landing contiguously or on a word
-  // boundary, not to the bare fact that the character occurs somewhere.
+  // BASE is the smallest on purpose: a match owes its score to landing
+  // contiguously or on a word boundary, not to occurring at all.
   var BASE = 0.4;
   var RUN_BONUS = 1;
   var WORD_BONUS = 0.6;
@@ -82,17 +21,16 @@ var perfectionistMatch = (function () {
   var COVERAGE_WEIGHT = 0.05;
 
   /**
-   * Case-fold a string and flatten its separators, as the file header
-   * describes. One character in, one character out, so the result indexes
-   * exactly like the input — which every range handed back depends on,
-   * since they index the folded string and are read against the original.
+   * Case-fold a string and flatten `_`, `-` and a space to one another,
+   * because one lint goes by all three spellings: `bare_url` is
+   * `bare-url` in its page fragment and "bare URL" in its statement.
    *
-   * Lower-casing is not length-preserving for every character: `İ` comes
-   * back as two code units, and one of those ahead of a match would shift
-   * every range after it. So where it grows the string, the case is left
-   * as it stands and only the separators are flattened. A query typed in
-   * another case then misses such a target, which is the smaller of the
-   * two wrongs — the other is a highlight on text the reader never typed.
+   * One character in, one character out, because every range handed back
+   * indexes the folded string and is read against the original. Lower-
+   * casing is not length-preserving — `İ` comes back as two code units —
+   * so where it would grow the string the case is left alone. Such a
+   * target then misses a query in another case, which beats a highlight
+   * on text the reader never typed.
    * @param {string} text
    * @returns {string}
    */
@@ -102,11 +40,9 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Is the character at `index` the start of a word? Index 0 is, and so is
-   * anything whose predecessor is not alphanumeric — a space, a `:`, a
-   * bracket. The haystack is already folded by the time this runs, so the
-   * test need not consider upper case, and the separators the fold
-   * flattened all read as the space they became.
+   * Is the character at `index` the start of a word? The haystack is
+   * folded by the time this runs, so upper case needs no test and every
+   * separator reads as the space it became.
    * @param {string} haystack
    * @param {number} index
    * @returns {boolean}
@@ -120,8 +56,9 @@ var perfectionistMatch = (function () {
   /**
    * What a character earns for where it sits, when it opens a run rather
    * than continuing one: most at the target's first character, less at a
-   * word's, and only BASE anywhere else. See the file header for why the
-   * two kinds of opening are not worth the same.
+   * word's, and only BASE anywhere else. Opening the name is not the same
+   * as opening a word inside it — without the difference, `n` would score
+   * `excessive_nesting` and `named_prelude_imports` alike.
    * @param {string} haystack  folded target
    * @param {number} index
    * @returns {number}
@@ -133,10 +70,9 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * The score a query of `length` characters earns when every one of them
-   * matches contiguously from the target's first character. Dividing by
-   * this is what makes scores comparable across queries of different
-   * lengths.
+   * What a query of `length` characters earns at best: every one of them
+   * contiguous from the target's first. Dividing by it is what makes two
+   * queries' scores comparable.
    * @param {number} length
    * @returns {number}
    */
@@ -145,8 +81,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Blend the two score components into the 0..1 value results are
-   * ordered by.
    * @param {number} raw      score earned by the match
    * @param {number} length   the query's length
    * @param {number} extent   the target's length
@@ -195,11 +129,8 @@ var perfectionistMatch = (function () {
 
   // ---- Words ------------------------------------------------------------
   //
-  // A word, to the variants tier, is a run of letters and digits. Both
-  // strings are folded by the time it runs, so every separator reads as
-  // the space it became, and the punctuation a paragraph carries — a
-  // comma, a full stop, a bracket — bounds a word without belonging to
-  // one.
+  // A word is a run of letters and digits, so a separator or the
+  // punctuation a paragraph carries bounds one without belonging to it.
 
   /**
    * @param {string} ch
@@ -210,7 +141,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Where the word starting at `from` ends.
    * @param {string} text
    * @param {number} from
    * @returns {number}
@@ -222,7 +152,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Where the first word at or after `from` starts, or -1 when none does.
    * @param {string} text
    * @param {number} from
    * @returns {number}
@@ -234,7 +163,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Where each of `text`'s words begins and ends, in order.
    * @param {string} text
    * @returns {number[][]}
    */
@@ -251,7 +179,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * `text`'s words, in order.
    * @param {string} text
    * @returns {string[]}
    */
@@ -264,7 +191,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Does nothing but separators stand between `from` and `to`?
    * @param {string} text
    * @param {number} from
    * @param {number} to
@@ -278,7 +204,6 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * How many characters two strings share from the front.
    * @param {string} left
    * @param {string} right
    * @returns {number}
@@ -328,15 +253,12 @@ var perfectionistMatch = (function () {
 
   /**
    * The stem a word shares with its variants: `cloning`, `cloned`,
-   * `clones` and `clone` all come back `clon`, which is what lets a
-   * reader who types one of them find a lint named with another.
-   *
-   * The regular English endings and nothing more — no dictionary, no
-   * irregular forms, and no ending that rewrote the word rather than
-   * extending it, so `getter` stems to itself and never reaches
-   * `getting`. Every rule takes characters off the end only, so a stem is
-   * always a prefix of the word it came from, which `matchVariants` is
-   * built on.
+   * `clones` and `clone` all come back `clon`, so a reader who types one
+   * finds a lint named with another. The regular endings and nothing more
+   * — no dictionary, and no ending that rewrote the word rather than
+   * extending it, so `getter` stems to itself. Characters come off the end
+   * only, so a stem is always a prefix of its word, which `matchVariants`
+   * is built on.
    * @param {string} word
    * @returns {string}
    */
@@ -394,14 +316,11 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * The score and the highlight for a run of matched haystack positions.
-   * A position directly after the last one continues a run; one the
-   * haystack's separators pushed along opens a word instead, which is how
-   * a query whose separators don't line up scores below one whose do.
-   *
-   * The highlight is the whole span, the separators it stepped over
-   * included: a reader who typed a phrase expects to see the phrase
-   * marked, not its words marked one at a time.
+   * A position straight after the last continues a run; one the haystack's
+   * separators pushed along opens a word instead, which is how a query
+   * whose separators do not line up scores below one whose do. The
+   * highlight is the whole span, separators included: a reader who typed a
+   * phrase expects to see the phrase marked.
    * @param {number[]} places
    * @param {number} length    the query's length
    * @param {string} haystack  folded target
@@ -453,8 +372,7 @@ var perfectionistMatch = (function () {
   // ---- Variants -----------------------------------------------------------
 
   /**
-   * Align the query's words to the haystack's, one for one, from the word
-   * starting at `start`.
+   * One for one, from the word starting at `start`.
    * @param {string[]} parts     the query's words
    * @param {string[]} stems     their stems, in the same order
    * @param {number} length      how many characters the query's words hold
@@ -475,19 +393,14 @@ var perfectionistMatch = (function () {
       var end = wordEnd(haystack, at);
       var word = haystack.slice(at, end);
       // The target's word opens with the query's, once the ending the
-      // query's would drop is allowed for. Equal stems are the case this
-      // started from (`cloned` against `cloning`); the looser test also
-      // takes a word still being typed, where the reader is three letters
-      // into `getter` and has the stem `get`.
+      // query's would drop is allowed for — `cloned` against `cloning`,
+      // and a word still being typed, three letters into `getter`.
       if (word.indexOf(stems[i]) !== 0) return null;
       var shared = commonPrefix(parts[i], word);
       raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1);
-      // A phrase is marked as the phrase, the same as the respaced tier
-      // marks it: where only separators stand between this word and the
-      // last, the two marks are one. A gap holding letters — the `ing` of
-      // `cloning` that `clone` stopped short of — keeps them apart, so
-      // what is marked stays what was matched. Scoring is untouched: the
-      // word still opens a word rather than continuing a run.
+      // A phrase is marked as the phrase, as the respaced tier marks it:
+      // marks merge across a run of separators but not across letters, so
+      // `clone` stops short of `cloning`'s `ing`. Scoring is untouched.
       var last = ranges[ranges.length - 1];
       if (last && onlySeparators(haystack, last[1], at)) last[1] = at + shared;
       else ranges.push([at, at + shared]);
@@ -497,12 +410,10 @@ var perfectionistMatch = (function () {
   }
 
   /**
-   * Score the query against the haystack word for word, each haystack
-   * word opening with the query's once the ending the query's word would
-   * drop is allowed for. The query's words have to align with a run of
-   * consecutive haystack words, which is what keeps this from answering a
-   * paragraph that merely carries the same words somewhere apart from
-   * each other.
+   * Word for word, each haystack word opening with the query's once the
+   * ending the query's would drop is allowed for. They have to align with
+   * a run of *consecutive* haystack words, or this would answer any
+   * paragraph carrying the same words somewhere apart from each other.
    * @param {string} needle    folded query
    * @param {string} haystack  folded target
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -512,8 +423,9 @@ var perfectionistMatch = (function () {
     if (parts.length === 0) return null;
     /** @type {string[]} */
     var stems = [];
-    // The query's words and not the delimiters between them, per the
-    // file header: no target character is ever matched against one here.
+    // The words, not the delimiters: nothing is matched against one here,
+    // so charging for it would score a reader who has typed `cloned ` below
+    // one who stopped at `cloned`.
     var span = 0;
     for (var i = 0; i < parts.length; i++) {
       stems.push(stem(parts[i]));
@@ -537,8 +449,6 @@ var perfectionistMatch = (function () {
   // ---- Reordered ----------------------------------------------------------
 
   /**
-   * What one of the query's words earns against one of the target's, and
-   * how much of the target's it marks.
    * @param {string} part       a word of the query
    * @param {string} haystack   folded target
    * @param {number[]} span     where the target's word begins and ends
@@ -699,7 +609,9 @@ var perfectionistMatch = (function () {
    * matches against each other, where only the differences matter and the
    * numbers are free to be re-tuned, while this decides whether a reader
    * sees the target at all, where an answer that moves under re-tuning is
-   * an answer nobody can rely on. See the file header.
+   * an answer nobody can rely on: one more character could push a result
+   * back over a bar it had fallen under, so it leaves the list and
+   * returns.
    * @param {number[][]} ranges  the match's runs, in order, at least one
    * @param {string} haystack    folded target
    * @returns {boolean}
@@ -803,8 +715,9 @@ var perfectionistMatch = (function () {
    * scattered through it as long as they occur in order. Returns the score
    * together with the half-open `[start, end)` character ranges of
    * `target` that matched, or `null` when they don't all occur in order.
-   * For a lint name; see the file header for why prose wants the other
-   * one.
+   * Its words may also arrive in any order. For a lint name: an
+   * identifier typed from memory, a handful of words with no sentence to
+   * put them in order.
    * @param {string} query
    * @param {string} target
    * @returns {{ score: number, ranges: number[][] } | null}
@@ -813,6 +726,10 @@ var perfectionistMatch = (function () {
     var needle = fold(query);
     var haystack = fold(target);
     if (needle.length === 0 || haystack.length === 0) return null;
+    // Every tier is tried, because a greedy subsequence scan does not
+    // always find the best match (`ab` against `a_xab` takes `a` at 0 and
+    // `b` at 4, missing the contiguous `ab` at 3) — which is why that
+    // scan is the last of them rather than the only method.
     var found = matchVerbatim(needle, haystack);
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack);
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack);
@@ -824,8 +741,10 @@ var perfectionistMatch = (function () {
   /**
    * Score `query` against `target`, requiring the whole query verbatim.
    * Returns `null` when it doesn't appear. Scored by the same model as
-   * `matchFuzzy`, so the two are comparable. For prose; see the file
-   * header.
+   * `matchFuzzy`, so the two are comparable. For prose, which neither of
+   * that one's freedoms suits: a paragraph a few hundred characters long
+   * carries almost any scattered sequence, and almost any two words apart
+   * from each other.
    * @param {string} query
    * @param {string} target
    * @returns {{ score: number, ranges: number[][] } | null}
