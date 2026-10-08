@@ -106,7 +106,7 @@ var perfectionistMatch = (function () {
    */
   function matchVerbatim(needle, haystack) {
     // `indexOf("")` clamps past the end rather than returning -1, so an
-    // empty needle would never leave the loop below.
+    // empty needle would never leave the loop.
     if (needle.length === 0) return null;
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null;
@@ -494,9 +494,7 @@ var perfectionistMatch = (function () {
      * two of the target's words to open alike, which a lint name's words
      * rarely do, and choosing between them would move a score rather than
      * an answer. It hands its answer back rather than keeping it in the
-     * enclosing scope, which TypeScript cannot follow across a call — the
-     * same reason the page's other scripts bind their guarded elements to
-     * locals.
+     * enclosing scope, which TypeScript cannot follow across a call.
      * @param {number} i
      * @returns {number[] | null}
      */

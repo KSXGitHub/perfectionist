@@ -48,8 +48,7 @@ var perfectionistRank = (function () {
 
   // The longest run of a paragraph a result shows, in characters. A rule's
   // prose paragraph can run to several hundred, and a result list of those
-  // is unreadable; the window is taken around the match (see
-  // `perfectionistMatch.excerpt`).
+  // is unreadable; the window is taken around the match.
   var EXCERPT_LIMIT = 180;
 
   // Stripped off the front of a paragraph that opens with one. These are
@@ -84,9 +83,9 @@ var perfectionistRank = (function () {
     return text;
   }
 
-  // Whether a match is worth showing is decided before it gets here, and
-  // without reading the score; nothing is re-checked. The score only
-  // orders the results against each other.
+  // Nothing here decides whether a match is worth showing: a hit is one
+  // already worth showing, and its score only orders the results against
+  // each other.
   var nameHit = perfectionistMatch.matchFuzzy;
   var proseHit = perfectionistMatch.matchPhrase;
 
