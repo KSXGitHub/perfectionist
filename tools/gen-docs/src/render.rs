@@ -153,9 +153,8 @@ pub(crate) const SEARCH_OVERLAY_SCRIPT_FILENAME: &str = "search_overlay.js";
 /// `match.js` is composed from precede it, and it precedes `rank.js`,
 /// which reads its matchers.
 /// Every page script with the source it ships, as `(filename, contents)`.
-/// [`PAGE_SCRIPTS`] is this list's names, which
-/// `page_scripts_are_the_files_that_ship` holds it to, so what the page
-/// loads cannot drift from what is written beside it.
+/// [`PAGE_SCRIPTS`] is this list's names, so what the page loads is what
+/// is written beside it.
 pub(crate) const PAGE_SCRIPT_FILES: &[(&str, &str)] = &[
     (NAV_TOGGLE_SCRIPT_FILENAME, NAV_TOGGLE_SCRIPT),
     (THEME_TOGGLE_SCRIPT_FILENAME, THEME_TOGGLE_SCRIPT),
@@ -735,18 +734,4 @@ fn unnamespaced(namespaced: &str) -> &str {
 }
 
 #[cfg(test)]
-mod test_assets;
-#[cfg(test)]
-mod test_fixtures;
-#[cfg(test)]
-mod test_nav;
-#[cfg(test)]
-mod test_rules;
-#[cfg(test)]
-mod test_search_markup;
-#[cfg(test)]
-mod test_search_scripts;
-#[cfg(test)]
-mod test_search_style;
-#[cfg(test)]
-mod test_settings;
+mod tests;
