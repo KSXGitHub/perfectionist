@@ -9,12 +9,9 @@
      search overlay. It is the gear's twin: same size, same inset, same
      half-transparent-at-rest opacity, one slot further left.
    * `.filter-toggle` — a funnel on the "Index" heading's line and on the
-     sidebar header's, each opening the filter box below it. Smaller than
-     the fixed corner buttons, since it sits on a line of text.
+     sidebar header's, each opening the filter box below it.
    * `.filter-box` — what holds the input, built by filter_boxes.js into
-     the empty `.filter-container` the Rust template emits. The container
-     carries no box of its own, so a page whose script never runs lays out
-     exactly as it would without the feature. */
+     the empty `.filter-container` the Rust template emits. */
 
 .search-toggle {
   position: fixed;
@@ -35,9 +32,6 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  /* Half-transparent at rest, fully opaque on hover / focus / while the
-     overlay is open, with a short ease between the two states — the
-     gear's rules exactly. */
   opacity: 0.5;
   transition: opacity 0.18s ease;
 }
@@ -157,10 +151,9 @@ h2.index-heading {
    behind the dialog, and a click on it outside the dialog dismisses the
    whole thing.
 
-   The dialog is a fixed-height column of exactly two parts: the search box
-   at its natural height, and the results list taking the rest, so the two
-   add up to the dialog's height. Both are full-width children of that
-   column, so they share its width. */
+   The dialog is a fixed-height column: the search box at its natural
+   height, and the results list — or whichever message stands in for it —
+   taking the rest. */
 
 .search-overlay {
   position: fixed;
@@ -232,9 +225,8 @@ h2.index-heading {
    neither, so it reads as the corner itself folding up.
 
    Positioned against the dialog, not the list, so it never scrolls out of
-   reach. It is half-transparent at rest and full on hover or focus, and
-   that half-transparency is what licenses it to cover the last row or two
-   of results. Being the dialog's last child, it paints over the
+   reach. Its half-transparency is what licenses it to cover the last row
+   or two of results. Being the dialog's last child, it paints over the
    (unpositioned) list without needing a z-index. */
 .search-close {
   position: absolute;
