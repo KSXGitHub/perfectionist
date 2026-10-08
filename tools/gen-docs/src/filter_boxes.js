@@ -1,8 +1,7 @@
 // ============================================================================
 // The filter boxes: one over the Index table, one over the navigation
 // sidebar's rule list, narrowing a list of lint names to what the reader
-// types. match.js decides which names match and how well, highlight.js
-// draws them.
+// types.
 // ============================================================================
 
 (function () {
@@ -72,9 +71,6 @@
    * Find one filter box's markup and wire it up. `kind` is the prefix the
    * Rust template builds the toggle's and the container's class names
    * from — `index` or `nav` — so naming it here is naming both.
-   *
-   * Resolution is split from `wireFilter` so that function can take
-   * non-null elements, for the reason nav_toggle.js casts its queries.
    * @param {string} kind
    * @param {string} listSelector  the parent whose children are the entries
    * @param {string} itemSelector  which children count as entries
@@ -136,9 +132,8 @@
       /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
       var matched = [];
       for (var i = 0; i < items.length; i++) {
-        // A match or nothing: whether a name is worth showing is
-        // match.js's, and it decides that without reading the score. The
-        // score only orders what is shown.
+        // A match or nothing: whether a name is worth showing was decided
+        // without reading the score, which only orders what is shown.
         var hit = matchFuzzy(query, items[i].name);
         if (hit) {
           matched.push({ item: items[i], score: hit.score, ranges: hit.ranges });
@@ -225,9 +220,8 @@
       // default and doing the whole of it keeps every engine alike.
       event.preventDefault();
       // The innermost thing Escape can dismiss should be the only thing it
-      // dismisses. theme_toggle.js listens for Escape on the document to
-      // close the Settings panel, so without this one keystroke would shut
-      // both the filter box and a panel the reader had left open.
+      // dismisses, and another handler on the document closes the Settings
+      // panel on Escape: without this, one keystroke would shut both.
       event.stopPropagation();
       dismiss();
     });

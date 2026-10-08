@@ -20,10 +20,9 @@
 //
 // The Rust template emits the button `hidden` and this file clears that as
 // its last act, the same "reveal only once functional" contract the rest of
-// the page's controls follow (the `[hidden] { display: none !important }`
-// reset in style/base.css keeps `hidden` authoritative). Reading rank.js's
-// and highlight.js's entry points into locals below is part of it: if
-// either never ran, that read throws here, long before the reveal.
+// the page's controls follow. Reading the libraries' entry points into
+// locals below is part of it: if either never ran, that read throws here,
+// long before the reveal.
 //
 // ---- Where the searchable text comes from ---------------------------------
 //
@@ -33,18 +32,11 @@
 // scrape costs nothing until the reader first opens the overlay, at which
 // point it runs once and is kept.
 //
-// The text that comes out of each `article.rule` is of these kinds, which
-// rank.js weights in this order:
-//
-//   1. the lint name, from the heading;
-//   2. the rule's statement — its one-line description, the paragraph
-//      carrying the default-state badge;
-//   3. its prose, one entry per paragraph and list item.
-//
-// A weaker match on a name therefore still outranks a perfect match in
-// prose, which is what a reader scanning for a half-remembered lint wants.
-// How much weaker, and everything else about the ordering, is rank.js's;
-// this file only hands it the text.
+// Three kinds of text come out of each `article.rule`: the lint name from
+// the heading, the rule's statement — the paragraph carrying the
+// default-state badge — and its prose, one entry per paragraph and list
+// item. Weighing them against each other is not this file's; it only hands
+// them over.
 //
 // Text that every rule repeats is left out of the scrape, because matching
 // it tells the reader nothing about which rule they want. The section
@@ -243,9 +235,8 @@
   // The overlay is modal, so Tab must not wander into the page behind it
   // and assistive tech must not read it out. `inert` (HTML standard,
   // Baseline 2023) removes a subtree from both in one step; it is applied
-  // to every direct child of <body> except the overlay while it is open,
-  // mirroring what nav_toggle.js does for the nav drawer. Each side only
-  // clears what it set, so the two never undo each other. Browsers too old
+  // to every direct child of <body> except the overlay while it is open.
+  // Each side only clears what it set, so the two never undo each other. Browsers too old
   // for `inert` ignore it and fall back to what the page gives for free:
   // the overlay is still dismissible by its ✕ and by Escape.
   /** @type {HTMLElement[]} */
@@ -328,8 +319,8 @@
   // arriving from the rest of the Rust documentation already has in their
   // fingers — rustdoc puts the caret in its own search box on it — and it
   // is one of the few keys this page has left, since every letter seeds
-  // the Index filter box (filter_boxes.js) and Escape, Enter, Tab and the
-  // arrows are all spoken for.
+  // the Index filter box and Escape, Enter, Tab and the arrows are all
+  // spoken for.
   //
   // Where a `/` means a slash it stays one, so the key toggles everywhere
   // except inside text entry: in a filter box, and in the overlay's own
@@ -338,10 +329,7 @@
 
   /**
    * Does a keystroke aimed at this element belong to the element rather
-   * than to the page? filter_boxes.js asks the same question of its own
-   * keyboard entry and answers it for itself: the two scripts are kept
-   * apart so the two affordances degrade independently, which a shared
-   * global would undo.
+   * than to the page?
    * @param {EventTarget | null} target
    * @returns {boolean}
    */
@@ -472,8 +460,8 @@
     target.focus({ preventScroll: true });
   });
 
-  // Mirror the hamburger's and the gear's Visual Viewport API
-  // compensation (see nav_toggle.js): on mobile browsers that anchor
+  // The same Visual Viewport API compensation the page's other fixed
+  // controls carry: on mobile browsers that anchor
   // `position: fixed` to the layout viewport rather than the visual one,
   // translate the button by the visual viewport's offset so it stays glued
   // to the top of the visible area as the URL bar collapses. The overlay
