@@ -128,7 +128,7 @@
 // ============================================================================
 ;(function () {
   // Cast to the non-null element type rather than `HTMLElement | null`: the
-  // `if (!toggle || !sidebar) return;` guard below still catches a missing
+  // `if (!toggle || !sidebar) return` guard below still catches a missing
   // element at runtime, but TypeScript does not carry guard-based narrowing of
   // a `var` into the closures further down (this file deliberately avoids
   // `const`, see the trailing-comma note in config_toggle.js), so every event
