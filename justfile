@@ -98,6 +98,11 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
+# Check the docs-site JavaScript: types, then unit tests
+check-js:
+  just check-js-types
+  just test-js
+
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
   #!/usr/bin/env bash
@@ -105,6 +110,10 @@ check-js-types:
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
+
+# Run the docs-site JavaScript unit tests
+test-js:
+  node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
 # Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
 minify-docs site_dir="gh-pages":

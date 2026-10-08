@@ -1,0 +1,91 @@
+name: Check JS
+
+# Gates nothing, by construction: nothing `needs:` this workflow and nothing
+# calls it, so a red run here cannot hold back the Rust suite or a Pages
+# deploy. That is what makes an allow-list the right shape for the trigger
+# paths — a path missing from one costs a JS change its CI run and nothing
+# else, where the same omission in a gating workflow would skip CI on code
+# that needed it. (test.yaml gates, and takes a deny-list for that reason.)
+# The push and pull_request lists are kept identical by hand.
+#
+# The jobs do not `needs:` each other either, so a type error and a failing
+# test are reported in the same run instead of one hiding the other.
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'tools/gen-docs/src/*.js'
+      - 'tools/gen-docs/tests/**'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/check-js.yaml'
+  pull_request:
+    paths:
+      - 'tools/gen-docs/src/*.js'
+      - 'tools/gen-docs/tests/**'
+      - 'tsconfig.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/check-js.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  types:
+    name: Check JS types
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-tscheck-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-tscheck-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check JavaScript
+        shell: bash
+        run: pnpm exec tsc --noEmit --project tsconfig.json
+
+  test:
+    name: Test JS
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # Pinned rather than left to the runner image's default, so the
+      # version the tests run under changes when this file says so and not
+      # when the image is rebuilt.
+      - name: Install Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Run JS unit tests
+        shell: bash
+        run: node tools/gen-docs/tests/run.mjs
