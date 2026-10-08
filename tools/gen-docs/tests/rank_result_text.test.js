@@ -7,6 +7,7 @@
 // renderer depends on: every range indexes into the text handed back with
 // it rather than the text it was cut from.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var r = perfectionistRank
@@ -36,7 +37,7 @@
           ],
         }),
       ],
-      'bare url',
+      'bare url'
     )
     t.equal(hit.text, 'a bare URL', 'the tighter of the two paragraphs')
   })
@@ -54,7 +55,7 @@
           paragraphs: ['something about a bare URL, mentioned among other things'],
         }),
       ],
-      'bare_url',
+      'bare_url'
     )
     t.equal(hit.text, 'a statement', 'the statement, not the weaker paragraph')
   })
@@ -70,7 +71,7 @@
     t.equal(
       hit.text.slice(hit.textRanges[0][0], hit.textRanges[0][1]),
       'bare URL',
-      'and the mark still sits on the words that matched',
+      'and the mark still sits on the words that matched'
     )
   })
 
@@ -83,7 +84,7 @@
         entry({ statement: 'a bare URL in a comment', order: 1 }),
         entry({ paragraphs: ['a bare URL in a comment'], order: 2 }),
       ],
-      'bare url',
+      'bare url'
     )
     t.equal(ranked.length, 3, 'all three are results')
     for (var i = 0; i < ranked.length; i++) {

@@ -6,6 +6,7 @@
 // coincidence that one tier turns away can still arrive from another, so
 // the rule itself would go unchecked.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var a = perfectionistMatchAdmit
@@ -41,10 +42,10 @@
           [0, 1],
           [6, 7],
         ],
-        'bare url getter',
+        'bare url getter'
       ),
       true,
-      'one run inside a word is a slip',
+      'one run inside a word is a slip'
     )
     t.equal(
       a.admits(
@@ -53,10 +54,10 @@
           [6, 7],
           [11, 12],
         ],
-        'bare url getter',
+        'bare url getter'
       ),
       false,
-      'two is the characters falling where they may',
+      'two is the characters falling where they may'
     )
   })
 
@@ -69,13 +70,9 @@
     t.equal(
       a.betterAdmitted(coincidence, aimedAt, 'bare url'),
       aimedAt,
-      'the shown placement wins though it scores lower',
+      'the shown placement wins though it scores lower'
     )
-    t.equal(
-      a.betterAdmitted(aimedAt, coincidence, 'bare url'),
-      aimedAt,
-      'whichever side it arrives on',
-    )
+    t.equal(a.betterAdmitted(aimedAt, coincidence, 'bare url'), aimedAt, 'whichever side it arrives on')
   })
 
   t.add('between two worth showing, the score decides', function () {

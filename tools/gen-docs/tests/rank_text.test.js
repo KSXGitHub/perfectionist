@@ -5,6 +5,7 @@
 // matched against anything. Neither ranks, which is why they are here
 // rather than among the cases that do.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var r = perfectionistRank
@@ -26,7 +27,7 @@
     t.equal(
       r.prose('something to Avoid: this'),
       'something to Avoid: this',
-      'only an opening one goes — mid-paragraph it is prose',
+      'only an opening one goes — mid-paragraph it is prose'
     )
   })
 })()

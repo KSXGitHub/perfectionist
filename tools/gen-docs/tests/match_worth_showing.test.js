@@ -11,6 +11,7 @@
 // match landed, never by what it scored, so re-tuning a weight cannot move
 // what a reader is able to find.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -47,11 +48,7 @@
     // `bare` sits whole in one name and is strewn through another that
     // has nothing to do with it, landing twice inside words.
     t.ok(m.matchFuzzy('bare', 'bare_url'), 'a real match is a match')
-    t.equal(
-      m.matchFuzzy('bare', 'needless_borrowed_parameters'),
-      null,
-      'and a coincidence is nothing at all',
-    )
+    t.equal(m.matchFuzzy('bare', 'needless_borrowed_parameters'), null, 'and a coincidence is nothing at all')
   })
 
   t.add('the first characters have to land where the reader aimed', function () {
@@ -83,10 +80,7 @@
     // A dropped letter leaves the rest of its word trailing off a word
     // opening. One of those is a slip of the fingers and the reader still
     // meant the name; two is the characters falling where they may.
-    t.ok(
-      m.matchFuzzy('excessive_nestng', 'excessive_nesting'),
-      'a dropped letter is still the name',
-    )
+    t.ok(m.matchFuzzy('excessive_nestng', 'excessive_nesting'), 'a dropped letter is still the name')
     t.equal(m.matchFuzzy('brl', 'bare_url'), null, 'two slips are a coincidence')
   })
 
@@ -95,10 +89,7 @@
     // finishes `panic`, where they did. The two score alike, so a tier
     // choosing between its own placements by score alone kept the first
     // and the rule was not offered at all.
-    var hit = t.found(
-      m.matchFuzzy('nic', 'unicode_ellipsis_in_panic_messages'),
-      '`nic` finds the rule',
-    )
+    var hit = t.found(m.matchFuzzy('nic', 'unicode_ellipsis_in_panic_messages'), '`nic` finds the rule')
     t.deepEqual(hit.ranges, [[22, 25]], 'marked where `panic` ends, not inside `unicode`')
   })
 

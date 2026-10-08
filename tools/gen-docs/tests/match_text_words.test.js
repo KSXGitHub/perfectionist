@@ -6,6 +6,7 @@
 // scanner directly, because a tier that disagreed with it would still
 // find something — just not the thing the reader aimed at.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var x = perfectionistMatchText
@@ -20,18 +21,14 @@
         [5, 8],
         [9, 10],
       ],
-      'one span per word, the single-letter word included',
+      'one span per word, the single-letter word included'
     )
     t.deepEqual(x.wordSpans(''), [], 'no words in an empty string')
     t.deepEqual(x.wordSpans('   '), [], 'no words in separators alone')
   })
 
   t.add('a run of separators parts two words, not three', function () {
-    t.deepEqual(
-      x.words('bare   url'),
-      ['bare', 'url'],
-      'a run of separators yields no empty word between them',
-    )
+    t.deepEqual(x.words('bare   url'), ['bare', 'url'], 'a run of separators yields no empty word between them')
     t.deepEqual(x.words(' bare '), ['bare'], 'nor do leading and trailing ones')
   })
 

@@ -7,6 +7,7 @@
 // the ranges shifted onto it, and the ones that fall outside dropped rather
 // than left pointing past its end.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -30,7 +31,7 @@
     t.equal(
       windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
       'jumps',
-      'the shifted range still covers the word that matched',
+      'the shifted range still covers the word that matched'
     )
     // A quarter of the window is kept ahead of the match, so the reader
     // sees what it sits in rather than meeting it against the ellipsis.
@@ -47,7 +48,7 @@
     t.equal(
       tail.text.slice(tail.ranges[0][0], tail.ranges[0][1]),
       'dog',
-      'and the range still covers the word that matched',
+      'and the range still covers the word that matched'
     )
   })
 
@@ -62,7 +63,7 @@
     t.equal(
       windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
       'the quick brown fox ',
-      'cut to what the window shows of it',
+      'cut to what the window shows of it'
     )
   })
 
@@ -76,12 +77,19 @@
     // Shifted onto the window, an index from outside it lands outside the
     // string, where whatever slices by it reads past the end.
     var text = 'the quick brown fox jumps over the lazy dog'
-    var windowed = m.excerpt(text, [[40, 43], [4, 9]], 12)
+    var windowed = m.excerpt(
+      text,
+      [
+        [40, 43],
+        [4, 9],
+      ],
+      12
+    )
     t.equal(windowed.ranges.length, 1, 'the range that fell outside the window is gone')
     t.equal(
       windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
       'dog',
-      'and the one that survived covers what it covered before',
+      'and the one that survived covers what it covered before'
     )
   })
 })()

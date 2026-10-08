@@ -179,12 +179,7 @@ var perfectionistMatchText = (function () {
     var out = word
     // A plural or a third person. An `ss` or a `us` is neither: `pass`
     // and `status` end that way on their own account.
-    if (
-      endsWith(out, 's') &&
-      !endsWith(out, 'ss') &&
-      !endsWith(out, 'us') &&
-      out.length - 1 >= MIN_STEM
-    ) {
+    if (endsWith(out, 's') && !endsWith(out, 'ss') && !endsWith(out, 'us') && out.length - 1 >= MIN_STEM) {
       out = out.slice(0, out.length - 1)
     }
     if (endsWith(out, 'ing') && out.length - 3 >= MIN_STEM) {

@@ -28,14 +28,7 @@ if (cases.length === 0) throw new Error(`no *.test.js in ${here}`)
 
 // The catalogue's libraries, in load order: each publishes a global the
 // next ones read.
-const libraries = [
-  'match_text.js',
-  'match_score.js',
-  'match_admit.js',
-  'match_tiers.js',
-  'match.js',
-  'rank.js',
-]
+const libraries = ['match_text.js', 'match_score.js', 'match_admit.js', 'match_tiers.js', 'match.js', 'rank.js']
 
 const context = createContext({})
 const load = libraries
@@ -94,7 +87,7 @@ for (const group of context.perfectionistTests.all()) {
   console.log(
     `\ntest result: ${failures.length === 0 ? 'ok' : 'FAILED'}. ` +
       `${group.cases.length - failures.length} passed; ${failures.length} failed; ` +
-      `finished in ${seconds.toFixed(2)}s`,
+      `finished in ${seconds.toFixed(2)}s`
   )
 }
 console.log()

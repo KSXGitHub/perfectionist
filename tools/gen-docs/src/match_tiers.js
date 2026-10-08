@@ -46,7 +46,7 @@ var perfectionistMatchTiers = (function () {
           score: blend(raw, needle.length, haystack.length),
           ranges: [[at, at + needle.length]],
         },
-        haystack,
+        haystack
       )
       at = haystack.indexOf(needle, at + 1)
     }

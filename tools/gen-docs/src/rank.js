@@ -135,17 +135,9 @@ var perfectionistRank = (function () {
       /** @type {{ text: string, ranges: number[][] }} */
       var shown
       if (paragraphHit && paragraphScore > nameScore && paragraphScore > statementScore) {
-        shown = perfectionistMatch.excerpt(
-          paragraphHit.text,
-          paragraphHit.ranges,
-          EXCERPT_LIMIT,
-        )
+        shown = perfectionistMatch.excerpt(paragraphHit.text, paragraphHit.ranges, EXCERPT_LIMIT)
       } else {
-        shown = perfectionistMatch.excerpt(
-          entry.statement,
-          statementHit ? statementHit.ranges : [],
-          EXCERPT_LIMIT,
-        )
+        shown = perfectionistMatch.excerpt(entry.statement, statementHit ? statementHit.ranges : [], EXCERPT_LIMIT)
       }
       out.push({
         entry: entry,

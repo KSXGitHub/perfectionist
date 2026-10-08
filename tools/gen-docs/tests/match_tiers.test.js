@@ -6,6 +6,7 @@
 // unnoticed because a sibling places the same characters. Each is asked
 // directly here, on strings already folded, which is what the tiers take.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var r = perfectionistMatchTiers
@@ -26,7 +27,7 @@
     t.deepEqual(
       t.found(r.matchVerbatim('bare', 'bare url'), '`bare` is in `bare url`').ranges,
       [[0, 4]],
-      'the range covers the needle where it stands',
+      'the range covers the needle where it stands'
     )
     t.equal(r.matchVerbatim('bareurl', 'bare url'), null, 'a separator missing is not verbatim')
     t.equal(r.matchVerbatim('url bare', 'bare url'), null, 'nor is another order')
@@ -35,10 +36,7 @@
   t.add('verbatim prefers the occurrence worth showing', function () {
     // `nic` is inside `unicode` and finishes `panic`. The two score alike,
     // so a scan that kept the first would keep the coincidence.
-    var hit = t.found(
-      r.matchVerbatim('nic', 'unicode ellipsis in panic messages'),
-      '`nic` occurs twice in that name',
-    )
+    var hit = t.found(r.matchVerbatim('nic', 'unicode ellipsis in panic messages'), '`nic` occurs twice in that name')
     t.deepEqual(hit.ranges, [[22, 25]], 'the run finishing `panic` is the one kept')
   })
 
@@ -53,11 +51,7 @@
     t.ok(r.matchVariants('clone getter', 'cloning getter'), 'a different ending')
     t.ok(r.matchVariants('urls', 'bare url'), 'a plural reaching its singular')
     t.ok(r.matchVariants('clone g', 'cloning getter'), 'a word still being typed')
-    t.equal(
-      r.matchVariants('url bare', 'bare url'),
-      null,
-      'but each word still needs the next target word',
-    )
+    t.equal(r.matchVariants('url bare', 'bare url'), null, 'but each word still needs the next target word')
   })
 
   t.add('reordered lets the words arrive in any order', function () {
@@ -66,7 +60,7 @@
     t.equal(
       r.matchReordered('bare url missing', 'bare url'),
       null,
-      'but every query word needs a target word of its own',
+      'but every query word needs a target word of its own'
     )
   })
 

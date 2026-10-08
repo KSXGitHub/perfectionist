@@ -5,6 +5,7 @@
 // them. These cases are about whether it is reached at all — by its name,
 // by its statement, by one of its paragraphs, or not at all.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var r = perfectionistRank
@@ -34,7 +35,7 @@
         [0, 1],
         [5, 7],
       ],
-      'and a name reached by its initials is marked where they landed',
+      'and a name reached by its initials is marked where they landed'
     )
   })
 
@@ -44,7 +45,7 @@
     t.equal(
       hit.text.slice(hit.textRanges[0][0], hit.textRanges[0][1]),
       'bare URL',
-      'and the mark sits on the words that matched, in the casing the page uses',
+      'and the mark sits on the words that matched, in the casing the page uses'
     )
   })
 
@@ -62,7 +63,7 @@
     t.deepEqual(
       r.rank([entry({ statement: 'an example of prose' })], 'x'),
       [],
-      '`x` sits inside `example` and nowhere else, so it finds nothing',
+      '`x` sits inside `example` and nowhere else, so it finds nothing'
     )
     // And prose is matched the strict way, which is the other half of it:
     // a paragraph long enough carries almost any two words somewhere
@@ -70,7 +71,7 @@
     t.deepEqual(
       r.rank([entry({ statement: 'core instead of std' })], 'std core'),
       [],
-      'a statement is not taken with its words reordered',
+      'a statement is not taken with its words reordered'
     )
   })
 
@@ -80,7 +81,7 @@
     // every rule on the page from matching every query.
     var ranked = r.rank(
       [entry({ name: 'needless_borrowed_parameters' }), entry({ name: 'bare_url', order: 1 })],
-      'bare',
+      'bare'
     )
     t.equal(ranked.length, 1, 'only the rule the reader meant')
     t.equal(ranked[0].entry.name, 'bare_url', 'and that is the one')

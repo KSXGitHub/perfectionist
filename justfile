@@ -104,52 +104,41 @@ check-js:
   just check-js-types
   just test-js
 
-# Print the sane-fmt version pinned in the Check JS workflow
-sane-fmt-version:
-  @sed -n "s/.*SANE_FMT_VERSION: '\([^']*\)'.*/\1/p" "{{justfile_directory()}}/.github/workflows/check-js.yaml"
+# Print the Biome version pinned in the Check JS workflow
+biome-version:
+  @sed -n "s/.*BIOME_VERSION: '\([^']*\)'.*/\1/p" "{{justfile_directory()}}/.github/workflows/check-js.yaml"
 
-# Install the pinned sane-fmt into `.dev-tools/bin`
-install-sane-fmt:
+# Install the pinned Biome into `.dev-tools/bin`
+install-biome:
   #!/usr/bin/env bash
   set -euo pipefail
   root_dir="{{justfile_directory()}}"
-  version="$(just sane-fmt-version)"
+  version="$(just biome-version)"
   if [ -z "$version" ]; then
-    echo "could not read SANE_FMT_VERSION from .github/workflows/check-js.yaml" >&2
+    echo "could not read BIOME_VERSION from .github/workflows/check-js.yaml" >&2
     exit 1
   fi
   mkdir -p "$root_dir/.dev-tools/bin"
   curl --proto '=https' --tlsv1.2 -sSfL \
-    "https://github.com/sane-fmt/sane-fmt/releases/download/$version/sane-fmt-x86_64-unknown-linux-gnu" \
-    -o "$root_dir/.dev-tools/bin/sane-fmt"
-  chmod +x "$root_dir/.dev-tools/bin/sane-fmt"
+    "https://github.com/biomejs/biome/releases/download/@biomejs/biome@$version/biome-linux-x64" \
+    -o "$root_dir/.dev-tools/bin/biome"
+  chmod +x "$root_dir/.dev-tools/bin/biome"
 
 # Check the docs-site JavaScript's formatting
 fmt-js:
   #!/usr/bin/env bash
   set -euo pipefail
   cd "{{justfile_directory()}}"
-  # The file list comes from git rather than from sane-fmt's own directory
-  # walk, which matches `*.js` but not `*.mjs` and would leave the test
-  # runner unchecked.
-  git ls-files '*.js' '*.mjs' | sane-fmt --hide-passed --details diff -I -
+  # The file list comes from git rather than from a directory walk, so the
+  # set this checks is exactly the set CI checks.
+  git ls-files '*.js' '*.mjs' | tr '\n' '\0' | xargs -0 biome format
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
   #!/usr/bin/env bash
   set -euo pipefail
   cd "{{justfile_directory()}}"
-  # Run to a fixed point: converting a file to the semicolon-free style
-  # takes two passes, the first inserting the `;` that guards a leading
-  # `(` and the second closing the blank line left above it.
-  for _ in 1 2 3; do
-    if git ls-files '*.js' '*.mjs' | sane-fmt --hide-passed --details count -I -; then
-      exit 0
-    fi
-    git ls-files '*.js' '*.mjs' | sane-fmt --write --hide-passed --details count -I -
-  done
-  echo "sane-fmt did not reach a fixed point" >&2
-  exit 1
+  git ls-files '*.js' '*.mjs' | tr '\n' '\0' | xargs -0 biome format --write
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:

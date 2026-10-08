@@ -14,6 +14,7 @@
 // scrape costs nothing until the reader first opens the overlay, at which
 // point it runs once and is kept.
 // ============================================================================
+
 ;(function () {
   // Load-bearing: if either library never ran, this throws before anything
   // is revealed.
@@ -394,9 +395,7 @@
    * @returns {HTMLElement[]}
    */
   function focusables() {
-    var found = overlay.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled])',
-    )
+    var found = overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
     /** @type {HTMLElement[]} */
     var out = []
     for (var i = 0; i < found.length; i++) {
@@ -426,7 +425,7 @@
     }
     // Wrapping is what Tab does here. Every other child of <body> is
     // inert while the overlay is open, so there is nowhere else to go.
-    var next = at < 0 ? step > 0 ? 0 : items.length - 1 : (at + step + items.length) % items.length
+    var next = at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length
     event.preventDefault()
     items[next].focus()
   })

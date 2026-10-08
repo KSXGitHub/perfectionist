@@ -3,6 +3,7 @@
 // sidebar's rule list, narrowing a list of lint names to what the reader
 // types.
 // ============================================================================
+
 ;(function () {
   // Load-bearing: if either library never ran, this throws before any
   // control is revealed.
@@ -250,12 +251,7 @@
     }
   }
 
-  var indexFilter = installFilter(
-    'index',
-    'table.index tbody',
-    'tr',
-    'td:first-child code',
-  )
+  var indexFilter = installFilter('index', 'table.index tbody', 'tr', 'td:first-child code')
 
   installFilter('nav', 'ul.nav-sidebar-list', 'li', 'a code')
 

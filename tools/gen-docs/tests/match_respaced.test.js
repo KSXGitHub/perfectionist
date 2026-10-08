@@ -5,6 +5,7 @@
 // target, one the target carries may be absent from the query, and a run of
 // either may stand where a single one does.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -14,7 +15,7 @@
   t.add('a separator the target does not have is not needed', function () {
     var hit = t.found(
       m.matchPhrase('this error', 'thiserror_usage'),
-      '`this error` is `thiserror` with a separator the lint does not have',
+      '`this error` is `thiserror` with a separator the lint does not have'
     )
     t.deepEqual(hit.ranges, [[0, 9]], 'the range covers the word it found')
   })
@@ -23,24 +24,21 @@
     var target = 'Flags closure parameters whose identifier is one letter'
     var hit = t.found(
       m.matchPhrase('flagsclosureparameters', target),
-      'a query run together still finds the words it ran together',
+      'a query run together still finds the words it ran together'
     )
     t.equal(
       target.slice(hit.ranges[0][0], hit.ranges[0][1]),
       'Flags closure parameters',
-      'the whole phrase is marked, the separators it stepped over included',
+      'the whole phrase is marked, the separators it stepped over included'
     )
   })
 
   t.add('a run of separators in the query stands for one, or for none', function () {
     t.ok(
       m.matchPhrase('flags  closure   parameters', 'Flags closure parameters whose'),
-      'too many spaces is still the phrase the target spells with one each',
+      'too many spaces is still the phrase the target spells with one each'
     )
-    t.ok(
-      m.matchPhrase('this  error', 'thiserror_usage'),
-      'and still the word the target spells with none',
-    )
+    t.ok(m.matchPhrase('this  error', 'thiserror_usage'), 'and still the word the target spells with none')
   })
 
   t.add('a separator the target interposes breaks the run', function () {

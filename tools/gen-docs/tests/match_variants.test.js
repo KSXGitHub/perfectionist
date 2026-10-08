@@ -11,6 +11,7 @@
 // tier and neither of the two looser ones, so asking it there is what makes
 // this tier answer alone rather than lean on one of those to cover for it.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -42,24 +43,16 @@
     // never reached and the claim would hold for the wrong reason.
     t.ok(
       m.matchPhrase('clone getting', 'cloning getting'),
-      '`clone` reaches `cloning`, which puts the word after it in reach',
+      '`clone` reaches `cloning`, which puts the word after it in reach'
     )
-    t.equal(
-      m.matchPhrase('clone getter', 'cloning getting'),
-      null,
-      'and there `getter` does not reach `getting`',
-    )
+    t.equal(m.matchPhrase('clone getter', 'cloning getting'), null, 'and there `getter` does not reach `getting`')
   })
 
   t.add("the query's words have to be consecutive in the target", function () {
     // Without this the tier would answer any paragraph carrying the same
     // words somewhere apart from each other.
     t.ok(m.matchPhrase('clone getter', 'cloning getter'), 'one after the other is a match')
-    t.equal(
-      m.matchPhrase('clone getter', 'cloning ref getter'),
-      null,
-      'a word in between is not',
-    )
+    t.equal(m.matchPhrase('clone getter', 'cloning ref getter'), null, 'a word in between is not')
   })
 
   t.add('a word still being typed is still a match', function () {
@@ -107,7 +100,7 @@
         [0, 4],
         [8, 14],
       ],
-      '`clon` of `cloning` and the whole of `getter`, and not the `ing`',
+      '`clon` of `cloning` and the whole of `getter`, and not the `ing`'
     )
   })
 })()

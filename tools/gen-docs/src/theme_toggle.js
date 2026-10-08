@@ -41,6 +41,7 @@
 // `file:///`, where the origin is shared across every local HTML file
 // and a short key would risk collisions.
 // ============================================================================
+
 ;(function () {
   var html = document.documentElement
   var STORAGE_KEY = 'perfectionist-color-scheme-override'
@@ -50,17 +51,11 @@
   // missing element at runtime, but TypeScript won't carry that narrowing into
   // the event-handler closures below for a `var`, so they would otherwise read
   // `toggle`/`panel` as nullable. See the matching note in nav_toggle.js.
-  var toggle = /** @type {HTMLElement} */ (
-    document.querySelector('.settings-toggle')
-  )
-  var panel = /** @type {HTMLElement} */ (
-    document.querySelector('.settings-panel')
-  )
+  var toggle = /** @type {HTMLElement} */ (document.querySelector('.settings-toggle'))
+  var panel = /** @type {HTMLElement} */ (document.querySelector('.settings-panel'))
   if (!toggle || !panel) return
 
-  var radios = /** @type {NodeListOf<HTMLInputElement>} */ (
-    panel.querySelectorAll('input[name="color-scheme"]')
-  )
+  var radios = /** @type {NodeListOf<HTMLInputElement>} */ (panel.querySelectorAll('input[name="color-scheme"]'))
   if (radios.length === 0) return
 
   // Apply a choice to the live page. "dark"/"light" set the override
@@ -190,9 +185,7 @@
   // them; Chrome and Firefox then serve the later CSS mask load from that
   // same HTTP cache. Done at idle time (requestIdleCallback, setTimeout
   // fallback) so it never blocks setup. The id must match the template's.
-  var prefetchTemplate = /** @type {HTMLTemplateElement | null} */ (
-    document.getElementById('theme-icon-prefetch')
-  )
+  var prefetchTemplate = /** @type {HTMLTemplateElement | null} */ (document.getElementById('theme-icon-prefetch'))
   function warmThemeIcons() {
     if (prefetchTemplate && 'content' in prefetchTemplate) {
       document.head.appendChild(prefetchTemplate.content.cloneNode(true))

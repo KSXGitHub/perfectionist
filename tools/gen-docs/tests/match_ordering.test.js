@@ -7,6 +7,7 @@
 // beats a scattered one, that opening a word beats landing inside one, and
 // that opening the target beats opening a word within it.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -52,13 +53,13 @@
     t.greater(
       t.found(m.matchFuzzy('n', 'named_prelude_imports'), 'starts with `n`').score,
       t.found(m.matchFuzzy('n', 'excessive_nesting'), 'contains `n`').score,
-      'a name that starts with the query comes first',
+      'a name that starts with the query comes first'
     )
     // The longer of the two starting with it still comes first.
     t.greater(
       t.found(m.matchFuzzy('n', 'needless_borrowed_parameters'), 'starts with `n`').score,
       t.found(m.matchFuzzy('n', 'excessive_nesting'), 'contains `n`').score,
-      'length does not buy back the head start',
+      'length does not buy back the head start'
     )
   })
 

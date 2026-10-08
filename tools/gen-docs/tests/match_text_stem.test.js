@@ -6,6 +6,7 @@
 // Over-stemming would let unrelated words match; under-stemming loses the
 // plural a reader typed.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var x = perfectionistMatchText

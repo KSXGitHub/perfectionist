@@ -6,6 +6,7 @@
 // relationships between them and the one arithmetic identity that has to
 // hold whatever they become — not the figures themselves.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var s = perfectionistMatchScore
@@ -30,10 +31,7 @@
     // `blend` would divide it by itself and hold for any divisor at all.
     var targets = ['a', 'url', 'bare url', 'core instead of std', 'x y z']
     for (var i = 0; i < targets.length; i++) {
-      var hit = t.found(
-        perfectionistMatchTiers.matchVerbatim(targets[i], targets[i]),
-        'a target matches itself',
-      )
+      var hit = t.found(perfectionistMatchTiers.matchVerbatim(targets[i], targets[i]), 'a target matches itself')
       t.equal(hit.score, 1, '`' + targets[i] + '` scores 1 against itself')
     }
   })

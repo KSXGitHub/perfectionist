@@ -6,6 +6,7 @@
 // read alike, because one lint goes by all three spellings. An empty query
 // or target belongs here too, as the edge of the same reading.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -23,7 +24,7 @@
     t.deepEqual(
       m.matchFuzzy('BARE', 'bare_url'),
       m.matchFuzzy('bare', 'bare_url'),
-      'an upper-case query scores as its lower-case self',
+      'an upper-case query scores as its lower-case self'
     )
     t.ok(m.matchPhrase('url', 'BARE_URL'), 'an upper-case target matches too')
   })
@@ -43,11 +44,7 @@
     // ahead of a match would shift the range one along from what matched.
     var target = '\u0130stanbul_rule'
     var hit = t.found(m.matchFuzzy('stanbul', target), '`stanbul` is in there')
-    t.equal(
-      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
-      'stanbul',
-      'the range covers what matched',
-    )
+    t.equal(target.slice(hit.ranges[0][0], hit.ranges[0][1]), 'stanbul', 'the range covers what matched')
   })
 
   t.add('a run of separators folds to a run of spaces, not to one', function () {
@@ -60,7 +57,7 @@
     t.equal(
       target.slice(hit.ranges[0][0], hit.ranges[0][1]),
       'bare',
-      'the range still cuts the word out of the string as it was given',
+      'the range still cuts the word out of the string as it was given'
     )
   })
 })()

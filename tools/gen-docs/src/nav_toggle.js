@@ -126,17 +126,16 @@
 //    style/nav.css) silently overrides the UA `[hidden]` rule and
 //    the toggle stays visible despite `hidden`.)
 // ============================================================================
+
 ;(function () {
   // Cast to the non-null element type rather than `HTMLElement | null`: the
-  // `if (!toggle || !sidebar) return` guard below still catches a missing
+  // `if (!toggle || !sidebar) return;` guard below still catches a missing
   // element at runtime, but TypeScript does not carry guard-based narrowing of
   // a `var` into the closures further down (this file deliberately avoids
   // `const`, see the trailing-comma note in config_toggle.js), so every event
   // handler that reads `toggle`/`sidebar` would otherwise see them as nullable.
   var toggle = /** @type {HTMLElement} */ (document.querySelector('.nav-toggle'))
-  var sidebar = /** @type {HTMLElement} */ (
-    document.querySelector('.nav-sidebar')
-  )
+  var sidebar = /** @type {HTMLElement} */ (document.querySelector('.nav-sidebar'))
   if (!toggle || !sidebar) return
 
   // ---- Hamburger fade ---------------------------------------------------
@@ -277,9 +276,7 @@
     }
   })
 
-  var closeBtn = /** @type {HTMLElement | null} */ (
-    sidebar.querySelector('.nav-sidebar-close')
-  )
+  var closeBtn = /** @type {HTMLElement | null} */ (sidebar.querySelector('.nav-sidebar-close'))
   if (closeBtn) closeBtn.addEventListener('click', closeSidebar)
 
   // ---- Focus trap fallback ----------------------------------------------
@@ -305,9 +302,7 @@
     if (event.key !== 'Tab') return
     if (toggle.getAttribute('aria-expanded') !== 'true') return
     var focusable = /** @type {NodeListOf<HTMLElement>} */ (
-      sidebar.querySelectorAll(
-        'a[href], button:not([disabled]), input:not([disabled])',
-      )
+      sidebar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
     )
     if (focusable.length === 0) return
     var first = focusable[0]

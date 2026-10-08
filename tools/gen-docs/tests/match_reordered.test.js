@@ -7,6 +7,7 @@
 // word of the target, each a different one, and the target may carry words
 // the query left out.
 // ============================================================================
+
 ;(function () {
   var t = perfectionistTests
   var m = perfectionistMatch
@@ -29,7 +30,7 @@
         [0, 4],
         [16, 19],
       ],
-      'marked where the target reads them, not where the query typed them',
+      'marked where the target reads them, not where the query typed them'
     )
   })
 

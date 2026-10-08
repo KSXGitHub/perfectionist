@@ -240,12 +240,10 @@ fn the_two_runners_load_the_same_libraries() {
         .split_once(']')
         .expect("`const libraries = [` must be closed")
         .0;
-    let named: Vec<&str> = list
-        .lines()
-        .filter_map(|line| line.trim().strip_prefix('\''))
-        .filter_map(|line| line.split_once('\''))
-        .map(|(name, _)| name)
-        .collect();
+    // Read the names out of the quotes rather than one per line: whether the
+    // array is wrapped or fits on a single line is the formatter's call, and a
+    // line-based scan silently finds only the first name once it is joined.
+    let named: Vec<&str> = list.split('\'').skip(1).step_by(2).collect();
     assert_eq!(
         named, TEST_LIBRARIES,
         "run.mjs and the test page must load the same libraries in the same order",

@@ -14,6 +14,7 @@
 // rendered by tools/gen-docs/src/test_page.rs, where the rest of the site's
 // markup lives.
 // ============================================================================
+
 ;(function () {
   var list = /** @type {HTMLElement} */ (document.querySelector('#cases'))
   var summary = /** @type {HTMLElement} */ (document.querySelector('#summary'))
