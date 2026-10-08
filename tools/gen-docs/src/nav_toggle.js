@@ -127,16 +127,18 @@
 //    the toggle stays visible despite `hidden`.)
 // ============================================================================
 
-;(function () {
+(function () {
   // Cast to the non-null element type rather than `HTMLElement | null`: the
   // `if (!toggle || !sidebar) return;` guard below still catches a missing
   // element at runtime, but TypeScript does not carry guard-based narrowing of
   // a `var` into the closures further down (this file deliberately avoids
   // `const`, see the trailing-comma note in config_toggle.js), so every event
   // handler that reads `toggle`/`sidebar` would otherwise see them as nullable.
-  var toggle = /** @type {HTMLElement} */ (document.querySelector('.nav-toggle'))
-  var sidebar = /** @type {HTMLElement} */ (document.querySelector('.nav-sidebar'))
-  if (!toggle || !sidebar) return
+  var toggle = /** @type {HTMLElement} */ (document.querySelector(".nav-toggle"));
+  var sidebar = /** @type {HTMLElement} */ (
+    document.querySelector(".nav-sidebar")
+  );
+  if (!toggle || !sidebar) return;
 
   // ---- Hamburger fade ---------------------------------------------------
   //
@@ -151,13 +153,13 @@
   // the table is taller than the viewport and stayed partially
   // intersecting through the entire articles section, leaving the
   // hamburger hidden long after the reader had left the index.
-  var heading = document.querySelector('h1#catalogue')
-  if (heading && 'IntersectionObserver' in window) {
+  var heading = document.querySelector("h1#catalogue");
+  if (heading && "IntersectionObserver" in window) {
     var observer = new IntersectionObserver(function (entries) {
-      var entry = entries[entries.length - 1]
-      toggle.classList.toggle('nav-toggle-hidden', entry.isIntersecting)
-    })
-    observer.observe(heading)
+      var entry = entries[entries.length - 1];
+      toggle.classList.toggle("nav-toggle-hidden", entry.isIntersecting);
+    });
+    observer.observe(heading);
   }
 
   // ---- Visual Viewport API offset compensation --------------------------
@@ -175,16 +177,16 @@
   // the height explicitly too, since `100dvh` is unreliable on the
   // same browsers that mis-anchor `position: fixed`.
   if (window.visualViewport) {
-    var vv = window.visualViewport
+    var vv = window.visualViewport;
     var syncToViewport = function () {
-      var t = 'translate(' + vv.offsetLeft + 'px, ' + vv.offsetTop + 'px)'
-      toggle.style.transform = t
-      sidebar.style.transform = t
-      sidebar.style.height = vv.height + 'px'
-    }
-    vv.addEventListener('scroll', syncToViewport)
-    vv.addEventListener('resize', syncToViewport)
-    syncToViewport()
+      var t = "translate(" + vv.offsetLeft + "px, " + vv.offsetTop + "px)";
+      toggle.style.transform = t;
+      sidebar.style.transform = t;
+      sidebar.style.height = vv.height + "px";
+    };
+    vv.addEventListener("scroll", syncToViewport);
+    vv.addEventListener("resize", syncToViewport);
+    syncToViewport();
   }
 
   // ---- Open / close + body scroll lock ----------------------------------
@@ -196,27 +198,27 @@
   // from scrolling when the user swipes within the overlay. We preserve
   // the scroll position by snapping body to `top: -<y>px` while locked
   // and restoring `scrollTo(0, y)` on unlock.
-  var savedScrollY = 0
-  var bodyLocked = false
+  var savedScrollY = 0;
+  var bodyLocked = false;
 
   function lockBodyScroll() {
-    if (bodyLocked) return
-    savedScrollY = window.scrollY
-    document.body.style.position = 'fixed'
-    document.body.style.top = '-' + savedScrollY + 'px'
-    document.body.style.left = '0'
-    document.body.style.right = '0'
-    bodyLocked = true
+    if (bodyLocked) return;
+    savedScrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + savedScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    bodyLocked = true;
   }
 
   function unlockBodyScroll() {
-    if (!bodyLocked) return
-    document.body.style.position = ''
-    document.body.style.top = ''
-    document.body.style.left = ''
-    document.body.style.right = ''
-    window.scrollTo(0, savedScrollY)
-    bodyLocked = false
+    if (!bodyLocked) return;
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    window.scrollTo(0, savedScrollY);
+    bodyLocked = false;
   }
 
   // ---- Background inertness ---------------------------------------------
@@ -231,20 +233,20 @@
   // close. `inert` removes focusability and AT exposure of the
   // subtree without needing a manual focus trap or aria-hidden dance.
   /** @type {HTMLElement[]} */
-  var inertedChildren = []
+  var inertedChildren = [];
   function setBackgroundInert() {
-    inertedChildren = []
+    inertedChildren = [];
     for (var i = 0; i < document.body.children.length; i++) {
-      var el = /** @type {HTMLElement} */ (document.body.children[i])
-      if (el === toggle || el === sidebar) continue
-      if (el.inert) continue
-      el.inert = true
-      inertedChildren.push(el)
+      var el = /** @type {HTMLElement} */ (document.body.children[i]);
+      if (el === toggle || el === sidebar) continue;
+      if (el.inert) continue;
+      el.inert = true;
+      inertedChildren.push(el);
     }
   }
   function clearBackgroundInert() {
-    for (var i = 0; i < inertedChildren.length; i++) inertedChildren[i].inert = false
-    inertedChildren = []
+    for (var i = 0; i < inertedChildren.length; i++) inertedChildren[i].inert = false;
+    inertedChildren = [];
   }
 
   // ---- Focus management on open / close ---------------------------------
@@ -255,29 +257,31 @@
   // the close button the same way. In both cases we explicitly move
   // focus to a sensible visible target so AT users keep their place.
   function openSidebar() {
-    toggle.setAttribute('aria-expanded', 'true')
-    lockBodyScroll()
-    setBackgroundInert()
-    if (closeBtn) closeBtn.focus({ preventScroll: true })
+    toggle.setAttribute("aria-expanded", "true");
+    lockBodyScroll();
+    setBackgroundInert();
+    if (closeBtn) closeBtn.focus({ preventScroll: true });
   }
 
   function closeSidebar() {
-    toggle.setAttribute('aria-expanded', 'false')
-    unlockBodyScroll()
-    clearBackgroundInert()
-    toggle.focus({ preventScroll: true })
+    toggle.setAttribute("aria-expanded", "false");
+    unlockBodyScroll();
+    clearBackgroundInert();
+    toggle.focus({ preventScroll: true });
   }
 
-  toggle.addEventListener('click', function () {
-    if (toggle.getAttribute('aria-expanded') === 'true') {
-      closeSidebar()
+  toggle.addEventListener("click", function () {
+    if (toggle.getAttribute("aria-expanded") === "true") {
+      closeSidebar();
     } else {
-      openSidebar()
+      openSidebar();
     }
-  })
+  });
 
-  var closeBtn = /** @type {HTMLElement | null} */ (sidebar.querySelector('.nav-sidebar-close'))
-  if (closeBtn) closeBtn.addEventListener('click', closeSidebar)
+  var closeBtn = /** @type {HTMLElement | null} */ (
+    sidebar.querySelector(".nav-sidebar-close")
+  );
+  if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
 
   // ---- Focus trap fallback ----------------------------------------------
   //
@@ -298,28 +302,30 @@
   // hold, or the wrap computes its first and last from the wrong set:
   // the header's filter funnel is a `<button>`, but the filter input
   // below it is an `<input>`.
-  document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Tab') return
-    if (toggle.getAttribute('aria-expanded') !== 'true') return
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Tab") return;
+    if (toggle.getAttribute("aria-expanded") !== "true") return;
     var focusable = /** @type {NodeListOf<HTMLElement>} */ (
-      sidebar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
-    )
-    if (focusable.length === 0) return
-    var first = focusable[0]
-    var last = focusable[focusable.length - 1]
+      sidebar.querySelectorAll(
+        "a[href], button:not([disabled]), input:not([disabled])"
+      )
+    );
+    if (focusable.length === 0) return;
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
     if (!sidebar.contains(document.activeElement)) {
-      event.preventDefault()
-      first.focus()
-      return
+      event.preventDefault();
+      first.focus();
+      return;
     }
     if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault()
-      last.focus()
+      event.preventDefault();
+      last.focus();
     } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first.focus()
+      event.preventDefault();
+      first.focus();
     }
-  })
+  });
 
   // ---- Close on sidebar-link follow -------------------------------------
   //
@@ -332,14 +338,14 @@
   // sidebar and focus would otherwise drop to <body>. Rule articles and
   // the catalogue heading aren't focusable by default, so set
   // tabindex="-1" before .focus().
-  sidebar.addEventListener('click', function (event) {
-    var link = /** @type {Element} */ (event.target).closest('a')
-    if (!link) return
-    if (event.button !== 0) return
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-    closeSidebar()
-    var hash = link.hash
-    if (!hash) return
+  sidebar.addEventListener("click", function (event) {
+    var link = /** @type {Element} */ (event.target).closest("a");
+    if (!link) return;
+    if (event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    closeSidebar();
+    var hash = link.hash;
+    if (!hash) return;
     // Rule fragments are `#/rule/<name>`, whose `/` characters make
     // them invalid CSS id selectors — `querySelector("#/rule/...")`
     // would throw. Resolve the raw id with getElementById instead,
@@ -348,12 +354,12 @@
     // that propagate rather than swallow it — an uncaught throw inside
     // this click handler only aborts the handler, and surfacing the
     // error aids debugging.
-    var id = decodeURIComponent(hash.slice('#'.length))
-    var target = document.getElementById(id)
-    if (!target) return
-    target.setAttribute('tabindex', '-1')
-    target.focus({ preventScroll: true })
-  })
+    var id = decodeURIComponent(hash.slice("#".length));
+    var target = document.getElementById(id);
+    if (!target) return;
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  });
 
   // ---- Force-close on cross-breakpoint resize ---------------------------
   //
@@ -366,17 +372,17 @@
   // stranded if they didn't want to navigate. Watch the breakpoint
   // with `matchMedia` and tear the open state down on crossing.
   if (window.matchMedia) {
-    var desktopMQ = window.matchMedia('(min-width: 1100px)')
+    var desktopMQ = window.matchMedia("(min-width: 1100px)");
     var handleBreakpoint = function () {
-      if (desktopMQ.matches && toggle.getAttribute('aria-expanded') === 'true') {
-        closeSidebar()
+      if (desktopMQ.matches && toggle.getAttribute("aria-expanded") === "true") {
+        closeSidebar();
       }
-    }
+    };
     if (desktopMQ.addEventListener) {
-      desktopMQ.addEventListener('change', handleBreakpoint)
+      desktopMQ.addEventListener("change", handleBreakpoint);
     } else if (desktopMQ.addListener) {
       // Safari < 14 / older WebKit: legacy MediaQueryList API.
-      desktopMQ.addListener(handleBreakpoint)
+      desktopMQ.addListener(handleBreakpoint);
     }
   }
 
@@ -390,5 +396,5 @@
   // when it's functional. If any of the above threw before reaching
   // this line, the toggle stays hidden and the reader falls back to
   // the index table near the top of the page.
-  toggle.hidden = false
-})()
+  toggle.hidden = false;
+})();

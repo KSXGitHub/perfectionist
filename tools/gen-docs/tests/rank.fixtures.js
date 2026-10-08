@@ -6,8 +6,8 @@
 // ============================================================================
 
 var perfectionistRankFixtures = (function () {
-  var t = perfectionistTests
-  var r = perfectionistRank
+  var t = perfectionistTests;
+  var r = perfectionistRank;
 
   /**
    * One entry. The defaults match no query any case types, so a fixture
@@ -17,12 +17,12 @@ var perfectionistRankFixtures = (function () {
    */
   function entry(fields) {
     return {
-      name: fields.name === undefined ? 'unrelated_name' : fields.name,
-      href: fields.href === undefined ? '#unrelated-name' : fields.href,
-      statement: fields.statement === undefined ? 'nothing of interest' : fields.statement,
+      name: fields.name === undefined ? "unrelated_name" : fields.name,
+      href: fields.href === undefined ? "#unrelated-name" : fields.href,
+      statement: fields.statement === undefined ? "nothing of interest" : fields.statement,
       paragraphs: fields.paragraphs === undefined ? [] : fields.paragraphs,
       order: fields.order === undefined ? 0 : fields.order,
-    }
+    };
   }
 
   /**
@@ -34,13 +34,13 @@ var perfectionistRankFixtures = (function () {
    * @returns {Result}
    */
   function only(entries, query) {
-    var ranked = r.rank(entries, query)
-    t.equal(ranked.length, 1, '`' + query + '` should find exactly one of these')
-    return ranked[0]
+    var ranked = r.rank(entries, query);
+    t.equal(ranked.length, 1, "`" + query + "` should find exactly one of these");
+    return ranked[0];
   }
 
   return {
     entry: entry,
     only: only,
-  }
-})()
+  };
+})();

@@ -18,19 +18,19 @@ var perfectionistHighlight = (function () {
    * @param {boolean} breakAfterUnderscore
    */
   function appendRun(parent, text, from, to, breakAfterUnderscore) {
-    if (from >= to) return
+    if (from >= to) return;
     if (!breakAfterUnderscore) {
-      parent.appendChild(document.createTextNode(text.slice(from, to)))
-      return
+      parent.appendChild(document.createTextNode(text.slice(from, to)));
+      return;
     }
-    var start = from
+    var start = from;
     for (var i = from; i < to; i++) {
-      if (text.charAt(i) !== '_' || i === text.length - 1) continue
-      parent.appendChild(document.createTextNode(text.slice(start, i + 1)))
-      parent.appendChild(document.createElement('wbr'))
-      start = i + 1
+      if (text.charAt(i) !== "_" || i === text.length - 1) continue;
+      parent.appendChild(document.createTextNode(text.slice(start, i + 1)));
+      parent.appendChild(document.createElement("wbr"));
+      start = i + 1;
     }
-    if (start < to) parent.appendChild(document.createTextNode(text.slice(start, to)))
+    if (start < to) parent.appendChild(document.createTextNode(text.slice(start, to)));
   }
 
   /**
@@ -43,17 +43,17 @@ var perfectionistHighlight = (function () {
    * @param {boolean} breakAfterUnderscore
    */
   function fill(element, text, ranges, breakAfterUnderscore) {
-    while (element.firstChild) element.removeChild(element.firstChild)
-    var cursor = 0
+    while (element.firstChild) element.removeChild(element.firstChild);
+    var cursor = 0;
     for (var i = 0; i < ranges.length; i++) {
-      appendRun(element, text, cursor, ranges[i][0], breakAfterUnderscore)
-      var mark = document.createElement('mark')
-      mark.className = 'match-highlight'
-      appendRun(mark, text, ranges[i][0], ranges[i][1], breakAfterUnderscore)
-      element.appendChild(mark)
-      cursor = ranges[i][1]
+      appendRun(element, text, cursor, ranges[i][0], breakAfterUnderscore);
+      var mark = document.createElement("mark");
+      mark.className = "match-highlight";
+      appendRun(mark, text, ranges[i][0], ranges[i][1], breakAfterUnderscore);
+      element.appendChild(mark);
+      cursor = ranges[i][1];
     }
-    appendRun(element, text, cursor, text.length, breakAfterUnderscore)
+    appendRun(element, text, cursor, text.length, breakAfterUnderscore);
   }
 
   /**
@@ -64,7 +64,7 @@ var perfectionistHighlight = (function () {
    * @param {number[][]} ranges
    */
   function renderName(element, name, ranges) {
-    fill(element, name, ranges, true)
+    fill(element, name, ranges, true);
   }
 
   /**
@@ -74,11 +74,11 @@ var perfectionistHighlight = (function () {
    * @param {number[][]} ranges
    */
   function renderText(element, text, ranges) {
-    fill(element, text, ranges, false)
+    fill(element, text, ranges, false);
   }
 
   return {
     renderName: renderName,
     renderText: renderText,
-  }
-})()
+  };
+})();
