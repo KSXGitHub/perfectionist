@@ -1,16 +1,8 @@
 // ============================================================================
-// The fixtures the rank cases are built from, loaded before them the way
-// the harness is.
+// The fixtures the rank cases are built from.
 //
-// Every fixture is a rule in the shape `rank` wants, never a rule off the
-// page: the scraping that produces them is search_overlay.js's and is not
-// under test here.
-//
-// They are their own script because the cases that use them are spread
-// over several files, and a helper copied into each would be a copy per
-// file to keep saying the same thing. Both runners load this the way they load
-// the harness — before any case file, since a case reads it as it is
-// evaluated.
+// Every one is a rule in the shape `rank` wants, never a rule scraped off
+// the page: that scraping is not under test here.
 // ============================================================================
 
 var perfectionistRankFixtures = (function () {

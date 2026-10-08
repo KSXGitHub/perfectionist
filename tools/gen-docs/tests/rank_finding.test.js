@@ -19,7 +19,6 @@
   });
 
   t.add("an empty query finds nothing", function () {
-    // The overlay shows its prompt instead; see search_overlay.js.
     t.deepEqual(r.rank([entry({ name: "bare_url" })], ""), [], "no result at all");
   });
 
@@ -79,8 +78,7 @@
   t.add("a coincidence is kept out of the list", function () {
     // `bare` occurs, strewn, in a name that has nothing to do with it.
     // Where its characters landed is what keeps that name out, and keeps
-    // every rule on the page from matching every query. See match.js for
-    // what it leans on.
+    // every rule on the page from matching every query.
     var ranked = r.rank(
       [entry({ name: "needless_borrowed_parameters" }), entry({ name: "bare_url", order: 1 })],
       "bare",

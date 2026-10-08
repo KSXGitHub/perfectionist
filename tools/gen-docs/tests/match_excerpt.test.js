@@ -75,7 +75,7 @@
 
   t.add("a range outside the window is dropped, not left dangling", function () {
     // Shifted onto the window, an index from outside it lands outside the
-    // string — and highlight.js slices by it.
+    // string, where whatever slices by it reads past the end.
     var text = "the quick brown fox jumps over the lazy dog";
     var windowed = m.excerpt(text, [[40, 43], [4, 9]], 12);
     t.equal(windowed.ranges.length, 1, "the range that fell outside the window is gone");

@@ -1,8 +1,9 @@
 // ============================================================================
 // match.js: which occurrence a match takes, and what it reports.
 //
-// Where more than one occurrence would do, the verbatim tier prefers the
-// one that opens a word and falls back to the earliest. What comes back is
+// Where more than one occurrence would do, the verbatim tier prefers one
+// worth showing, then the higher-scoring, then the earliest. What comes
+// back is
 // one range per contiguous run, and the highlight is drawn from those, so
 // an off-by-one here shows up on the page as marked text the reader never
 // typed.

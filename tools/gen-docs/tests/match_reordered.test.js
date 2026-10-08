@@ -1,7 +1,7 @@
 // ============================================================================
 // match.js: the query found with its words in any order.
 //
-// The fourth tier. A lint name is a handful of words with no sentence to
+// A lint name is a handful of words with no sentence to
 // put them in order, so a reader half-remembering one types the words that
 // come to mind in the order they come. Every word of the query has to be a
 // word of the target, each a different one, and the target may carry words

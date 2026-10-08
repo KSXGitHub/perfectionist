@@ -76,8 +76,8 @@
   });
 
   t.add("every range indexes into the text handed back with it", function () {
-    // highlight.js slices the name and the text by these, so a range past
-    // either end silently drops the tail of what the reader can see.
+    // A range past either end silently drops the tail of what the reader
+    // can see.
     var ranked = r.rank(
       [
         entry({ name: "bare_url", order: 0 }),

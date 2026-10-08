@@ -1,7 +1,7 @@
 // ============================================================================
 // match.js: how the two strings are read before anything is matched.
 //
-// Folding decides what "the same" means for every tier below it: a query
+// Folding decides what "the same" means for every tier: a query
 // and a target are compared with case ignored, and `_`, `-` and a space
 // read alike, because one lint goes by all three spellings. An empty query
 // or target belongs here too, as the edge of the same reading.

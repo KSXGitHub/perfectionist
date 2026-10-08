@@ -1,8 +1,8 @@
 // ============================================================================
 // match_admit.js: whether a match is worth showing.
 //
-// This is the question a bar on the score used to answer, and it reads no
-// score now. Asked of `admits` and `aimed` directly: through a tier, a
+// It reads no score at all. Asked of `admits` and `aimed` directly:
+// through a tier, a
 // coincidence that one tier turns away can still arrive from another, so
 // the rule itself would go unchecked.
 // ============================================================================

@@ -1,10 +1,9 @@
 // ============================================================================
 // match.js: the query found with its separators somewhere else.
 //
-// The second tier. One separator the query wrote may be missing from the
+// One separator the query wrote may be missing from the
 // target, one the target carries may be absent from the query, and a run of
-// either may stand where a single one does. Each case below is one of those
-// ways, and the last holds the orderings between them.
+// either may stand where a single one does.
 // ============================================================================
 
 (function () {
@@ -63,10 +62,9 @@
   t.add("one phrase is marked one way however its separators were typed", function () {
     // The respaced and variants tiers place the same characters here and
     // so score the same, and they mark differently — the one span against
-    // one per word. Which was taken used to come down to the last bit of
-    // a double, since the two reach the same total by different
-    // arithmetic, and the reader saw the phrase marked whole for one
-    // query and word by word for the next.
+    // one per word. Which wins must not come down to the last bit of a
+    // double, or the reader sees the phrase marked whole for one query
+    // and word by word for the next.
     var target = "Flags closure parameters whose identifier is one letter";
     var joined = t.found(m.matchPhrase("flagsclosureparameters", target), "run together");
     var padded = t.found(m.matchPhrase("flags  closure   parameters", target), "padded");

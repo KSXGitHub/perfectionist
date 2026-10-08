@@ -1,16 +1,15 @@
 // ============================================================================
 // match.js: what a query reaches at all.
 //
-// Two questions sit behind that, and neither is answered by a score.
+// Two questions sit behind that, and a score answers neither.
 //
 // Which tiers a matcher runs: `matchFuzzy` lets the query come apart, its
 // characters scattered and its words reordered, where `matchPhrase` lets
-// neither — a paragraph a few hundred characters long carries either by
-// accident, and a lint name is short enough to afford both.
+// neither.
 //
-// And which of the matches found are worth showing: that is decided by
-// where the match landed, never by what it scored, so that re-tuning a
-// weight cannot move what a reader is able to find.
+// And which of the matches found are worth showing: decided by where the
+// match landed, never by what it scored, so re-tuning a weight cannot move
+// what a reader is able to find.
 // ============================================================================
 
 (function () {
@@ -21,14 +20,12 @@
 
   t.add("matchPhrase keeps the query's words whole", function () {
     // It will meet a separator spelled differently and a word ended
-    // differently — the two sections further down — but never let the
-    // letters inside a word drift apart, which is the one thing
-    // `matchFuzzy` allows and it does not.
+    // differently, but never let the letters inside a word drift apart,
+    // which is the one thing `matchFuzzy` allows and it does not.
     t.ok(m.matchPhrase("url", "bare_url"), "`url` appears in `bare_url`");
-    // `bur` and not `brl`: the next case has `matchFuzzy` taking `bur`,
-    // so the two together say that the scattered tier is the difference.
-    // `brl` would be turned away by `admits` under either matcher, and
-    // the claim would hold without this one running fewer tiers at all.
+    // `bur` and not `brl`: `admits` turns `brl` away under either
+    // matcher, so it would hold without `matchPhrase` running fewer tiers
+    // at all. `matchFuzzy` takes `bur`, which isolates the one tier.
     t.equal(m.matchPhrase("bur", "bare_url"), null, "`bur` is `bare_url` scattered");
     t.equal(m.matchPhrase("zzz", "bare_url"), null, "`zzz` does not appear at all");
   });
@@ -48,7 +45,6 @@
   });
 
   t.add("a real match is one and a coincidence is not", function () {
-    // What a pair of score bounds used to answer, and a rule answers now:
     // `bare` sits whole in one name and is strewn through another that
     // has nothing to do with it, landing twice inside words.
     t.ok(m.matchFuzzy("bare", "bare_url"), "a real match is a match");
@@ -126,10 +122,8 @@
 
   t.add("what is worth showing does not move when a weight does", function () {
     // The scoring exists to order results and is expected to be re-tuned;
-    // what a reader can find must not follow it about. Nothing above is
-    // asserted against a bound, because there is none to assert against:
-    // the library offers the two matchers and `excerpt`, and no number a
-    // caller could weigh a match against.
+    // what a reader can find must not follow it about. So the library
+    // exports no number a caller could weigh a match against.
     var offered = [];
     for (var key in m) offered.push(key);
     offered.sort();

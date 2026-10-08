@@ -1,7 +1,7 @@
 // ============================================================================
 // match.js: the query found with its words ending differently.
 //
-// The third tier: the query's words align one for one with a run of the
+// The query's words align one for one with a run of the
 // target's consecutive words, each target word opening with the query's
 // once the ending the query's word would drop is allowed for. That is what
 // carries a plural to its singular, and a word still being typed to the

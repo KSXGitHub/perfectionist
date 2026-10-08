@@ -1,10 +1,10 @@
 // ============================================================================
 // match_text.js: reading a string as words.
 //
-// Every tier above the verbatim one works in words, so where a word begins
-// and ends decides what those tiers can place. Asked of the scanner
-// directly, because a tier that disagreed with it would still find
-// something — just not the thing the reader aimed at.
+// Where a word begins and ends decides what the word-wise tiers can
+// place, and what any tier earns for where its runs opened. Asked of the
+// scanner directly, because a tier that disagreed with it would still
+// find something — just not the thing the reader aimed at.
 // ============================================================================
 
 (function () {
@@ -50,7 +50,11 @@
     t.equal(x.isAlnum("a"), true, "a letter is part of a word");
     t.equal(x.isAlnum("1"), true, "so is a digit, so `utf8` is one word");
     t.equal(x.isAlnum("_"), false, "a separator is not");
-    t.equal(x.isWordStart("utf8_x", 3), false, "a digit does not open a word");
+    // The character *after* the digit, so the digit is what has to deny
+    // it: with a letter in front the assertion passes on the letter alone
+    // and the digit goes unchecked.
+    t.equal(x.isWordStart("utf8x", 4), false, "a character after a digit does not");
+    t.equal(x.isWordStart("utf8_x", 5), true, "one after a separator does");
   });
 
   t.add("a word ends where the separators begin", function () {
