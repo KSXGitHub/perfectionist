@@ -4,7 +4,7 @@
 //! global and nothing else.
 
 use super::{SEARCH_SCRIPTS, strip_js_comments};
-use crate::render::tests::{fake_context, fake_rule};
+use crate::render::test_fixtures::{fake_context, fake_rule};
 use crate::render::{PAGE_SCRIPT_FILES, PAGE_SCRIPTS, render_page};
 
 #[test]

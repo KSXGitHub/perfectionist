@@ -6,8 +6,8 @@
 //! No rendered string carries any of this, so without these tests
 //! `just all` would never look at it at all.
 
-use super::stylesheet;
-use crate::render::SEARCH_ICONS;
+use super::SEARCH_ICONS;
+use super::test_fixtures::stylesheet;
 
 /// The declarations of the rule `css` opens with `selector`, which must
 /// be written with its brace (`.foo {`) so a longer selector sharing the
