@@ -155,9 +155,8 @@ var perfectionistRank = (function () {
         textRanges: shown.ranges,
       });
     }
-    // Best match first, ties broken by the page's own rule order. The
-    // tie-break is explicit rather than left to the sort's stability,
-    // which engines older than ES2019 don't guarantee.
+    // The tie-break is explicit: sort stability cannot be assumed on the
+    // engines this page targets.
     out.sort(function (left, right) {
       if (right.score !== left.score) return right.score - left.score;
       return left.entry.order - right.entry.order;

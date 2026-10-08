@@ -102,9 +102,6 @@
     var blueprint = container.querySelector("template");
     if (!(blueprint instanceof HTMLTemplateElement)) return null;
     container.appendChild(blueprint.content.cloneNode(true));
-    // Cast rather than narrowed: TypeScript does not carry a guard's
-    // narrowing of a `var` into a closure. The guard still rejects a
-    // missing element at runtime.
     var box = /** @type {HTMLElement} */ (container.querySelector(".filter-box"));
     var input = /** @type {HTMLInputElement} */ (
       container.querySelector(".filter-input")
@@ -131,8 +128,6 @@
       /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
       var matched = [];
       for (var i = 0; i < items.length; i++) {
-        // A match or nothing: whether a name is worth showing was decided
-        // without reading the score, which only orders what is shown.
         var hit = matchFuzzy(query, items[i].name);
         if (hit) {
           matched.push({ item: items[i], score: hit.score, ranges: hit.ranges });
@@ -142,9 +137,8 @@
         items[i].element.removeAttribute("data-score");
         renderName(items[i].nameHost, items[i].name, []);
       }
-      // Best match first, ties broken by rendered order. The tie-break is
-      // explicit rather than left to the sort's stability, which engines
-      // older than ES2019 don't guarantee.
+      // The tie-break is explicit: sort stability cannot be assumed on the
+      // engines this page targets.
       matched.sort(function (left, right) {
         if (right.score !== left.score) return right.score - left.score;
         return left.item.order - right.item.order;
@@ -164,10 +158,8 @@
       input.focus();
     }
 
-    /**
-     * A hidden input still narrowing a list would strand the reader with
-     * entries missing and nothing on screen to say why.
-     */
+    // A hidden input still narrowing a list would strand the reader with
+    // entries missing and nothing on screen to say why.
     function closeBox() {
       input.value = "";
       reset();
@@ -192,12 +184,10 @@
       }
     });
 
-    // `input` is the event that covers every way text arrives — physical
-    // keyboard, on-screen keyboard, IME, paste, drag, the native clear
-    // button. `search` is belt and braces: it is what a `type="search"`
-    // input fires on its clear button in older WebKit.
     // No debounce; the scan is over lint names.
     input.addEventListener("input", apply);
+    // Belt and braces: what a `type="search"` input fires on its clear
+    // button in older WebKit.
     input.addEventListener("search", apply);
     input.addEventListener("keydown", function (event) {
       // Neither key means anything to an IME mid-composition, where Enter
@@ -263,8 +253,6 @@
   // ---- Keyboard entry into the Index box --------------------------------
   var indexTable = document.querySelector("table.index");
   if (!indexFilter || !(indexTable instanceof HTMLElement)) return;
-  // Locals: TypeScript does not carry a guard's narrowing of a `var` into
-  // a closure.
   var table = indexTable;
   var filter = indexFilter;
 
@@ -279,9 +267,8 @@
     observer.observe(table);
   }
 
-  // A letter opens the box seeded with it. `preventDefault` goes only on
-  // a keystroke this took, since the box sets the character itself and the
-  // browser would otherwise insert it again once the input has focus.
+  // Without `preventDefault` the browser inserts the letter again once the
+  // input has focus, doubling the one the box is seeded with.
   document.addEventListener("keydown", function (event) {
     if (!indexInView) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
