@@ -1,0 +1,26 @@
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_predicate_extra_reference.rs:LL:CC
+   |
+LL |         .any(|name| name.starts_with('a') && name.ends_with('z'))
+   |          ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .any(|name| name.starts_with('a') && name.ends_with('z'))
+LL +         .filter(|name| name.starts_with('a')).any(|name| name.ends_with('z'))
+   |
+
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_predicate_extra_reference.rs:LL:CC
+   |
+LL |     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+   |             ^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     letters.any(|letter| letter.is_alphabetic() && letter.is_uppercase())
+LL +     letters.filter(|letter| letter.is_alphabetic()).any(|letter| letter.is_uppercase())
+   |
+
+warning: N warnings emitted
