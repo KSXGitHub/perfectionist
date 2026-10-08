@@ -750,3 +750,5 @@ mod test_search_scripts;
 mod test_search_style;
 #[cfg(test)]
 mod test_settings;
+#[cfg(test)]
+mod tests;
