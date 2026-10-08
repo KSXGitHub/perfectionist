@@ -49,8 +49,7 @@ var perfectionistRank = (function () {
   var STATEMENT_WEIGHT = 0.65;
   var TEXT_WEIGHT = 0.4;
 
-  // How many results the list shows. A starting point open to tuning once
-  // there is a feel for it, not a considered limit.
+  // How many results the list shows.
   var RESULT_LIMIT = 10;
 
   // The longest run of a paragraph a result shows, in characters. A rule's
