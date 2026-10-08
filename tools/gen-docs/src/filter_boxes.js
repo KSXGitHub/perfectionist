@@ -34,18 +34,16 @@
   function collectItems(list, itemSelector, nameSelector) {
     /** @type {FilterItem[]} */
     var items = [];
-    var candidates = /** @type {NodeListOf<HTMLElement>} */ (
-      list.querySelectorAll(itemSelector)
-    );
+    var candidates = list.querySelectorAll(itemSelector);
     for (var i = 0; i < candidates.length; i++) {
-      var nameHost = /** @type {HTMLElement | null} */ (
-        candidates[i].querySelector(nameSelector)
-      );
-      if (!nameHost) continue;
+      var element = candidates[i];
+      if (!(element instanceof HTMLElement)) continue;
+      var nameHost = element.querySelector(nameSelector);
+      if (!(nameHost instanceof HTMLElement)) continue;
       var name = nameHost.textContent || "";
       if (!name) continue;
       items.push({
-        element: candidates[i],
+        element: element,
         nameHost: nameHost,
         name: name,
         order: items.length,
@@ -102,12 +100,22 @@
     var blueprint = container.querySelector("template");
     if (!(blueprint instanceof HTMLTemplateElement)) return null;
     container.appendChild(blueprint.content.cloneNode(true));
-    var box = /** @type {HTMLElement} */ (container.querySelector(".filter-box"));
-    var input = /** @type {HTMLInputElement} */ (
-      container.querySelector(".filter-input")
-    );
-    if (!box || !input) return null;
+    var box = container.querySelector(".filter-box");
+    var input = container.querySelector(".filter-input");
+    if (!(box instanceof HTMLElement)) return null;
+    if (!(input instanceof HTMLInputElement)) return null;
+    return wireBox(toggle, list, items, box, input);
+  }
 
+  /**
+   * @param {HTMLElement} toggle
+   * @param {HTMLElement} list
+   * @param {FilterItem[]} items
+   * @param {HTMLElement} box
+   * @param {HTMLInputElement} input
+   * @returns {FilterBox}
+   */
+  function wireBox(toggle, list, items, box, input) {
     function reset() {
       for (var i = 0; i < items.length; i++) {
         items[i].element.hidden = false;
@@ -217,7 +225,9 @@
     // click opens a new tab and leaves this page where it was, so its query
     // has to stay too.
     list.addEventListener("click", function (event) {
-      var link = /** @type {Element} */ (event.target).closest("a");
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var link = target.closest("a");
       if (!link) return;
       if (event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;

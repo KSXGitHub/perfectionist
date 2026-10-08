@@ -161,7 +161,7 @@ fn the_search_scripts_clone_only_where_repetition_is_the_point() {
     // blueprint once per result — the one place repetition is the point,
     // since the list is rebuilt on every keystroke.
     assert!(SEARCH_OVERLAY_SCRIPT.contains("overlayBlueprint.content.cloneNode(true)"));
-    assert!(SEARCH_OVERLAY_SCRIPT.contains("resultTemplate.content.cloneNode(true)"));
+    assert!(SEARCH_OVERLAY_SCRIPT.contains("resultBlueprint.content.cloneNode(true)"));
 }
 
 #[test]
