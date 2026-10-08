@@ -15,7 +15,7 @@
 //!
 //! - `html` writes the `index.html` GitHub Pages reads (the
 //!   project's public catalogue) plus the sibling assets it links —
-//!   one file per stylesheet and the navigation script.
+//!   one file per stylesheet, per page script, and per icon.
 //! - `write-md` writes a `rules/` directory with one markdown file
 //!   per rule plus a `README.md` index, intended for in-repo
 //!   browsing alongside `src/rules/` and `planned-rules/`.
@@ -37,10 +37,8 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME,
-    HIGHLIGHT_CSS_LIGHT_FILENAME, NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
-    THEME_TOGGLE_SCRIPT_FILENAME, render_page,
+    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, PAGE_SCRIPT_FILES, RULE_ANCHOR_ICON,
+    RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, STYLESHEETS, THEME_ICONS, render_page,
 };
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};
@@ -202,26 +200,19 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     )
     .expect("failed to write dark highlight CSS");
     // The page scripts, loaded via `<script src>`.
-    fs::write(out_dir.join(NAV_TOGGLE_SCRIPT_FILENAME), NAV_TOGGLE_SCRIPT)
-        .expect("failed to write nav script");
-    fs::write(
-        out_dir.join(THEME_TOGGLE_SCRIPT_FILENAME),
-        THEME_TOGGLE_SCRIPT,
-    )
-    .expect("failed to write theme script");
-    fs::write(
-        out_dir.join(CONFIG_TOGGLE_SCRIPT_FILENAME),
-        CONFIG_TOGGLE_SCRIPT,
-    )
-    .expect("failed to write config-toggle script");
+    for &(name, content) in PAGE_SCRIPT_FILES {
+        let path = out_dir.join(name);
+        fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
+    }
 
     // Lands beside index.html so the stylesheet's relative `url(...)`
     // resolves.
     let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
     fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
 
-    // The colour-scheme icons, referenced as CSS masks by settings.css.
-    for (name, content) in THEME_ICONS {
+    // The colour-scheme icons, referenced as CSS masks by settings.css,
+    // and the search / filter icons, referenced the same way by search.css.
+    for (name, content) in THEME_ICONS.iter().chain(SEARCH_ICONS) {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }
