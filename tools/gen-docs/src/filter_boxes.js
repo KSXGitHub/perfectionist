@@ -132,9 +132,8 @@
       /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
       var matched = [];
       for (var i = 0; i < items.length; i++) {
-        // A match or nothing: whether a name is worth showing is
-        // match.js's, and it decides that without reading the score. The
-        // score only orders what is shown.
+        // A match or nothing: whether a name is worth showing was decided
+        // without reading the score, which only orders what is shown.
         var hit = matchFuzzy(query, items[i].name);
         if (hit) {
           matched.push({ item: items[i], score: hit.score, ranges: hit.ranges });
@@ -221,9 +220,8 @@
       // default and doing the whole of it keeps every engine alike.
       event.preventDefault();
       // The innermost thing Escape can dismiss should be the only thing it
-      // dismisses. theme_toggle.js listens for Escape on the document to
-      // close the Settings panel, so without this one keystroke would shut
-      // both the filter box and a panel the reader had left open.
+      // dismisses, and another handler on the document closes the Settings
+      // panel on Escape: without this, one keystroke would shut both.
       event.stopPropagation();
       dismiss();
     });

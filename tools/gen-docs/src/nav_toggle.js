@@ -301,7 +301,7 @@
   // The selector has to name every kind of focusable the sidebar can
   // hold, or the wrap computes its first and last from the wrong set:
   // the header's filter funnel is a `<button>`, but the filter input
-  // `filter_boxes.js` builds below it is an `<input>`.
+  // below it is an `<input>`.
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Tab") return;
     if (toggle.getAttribute("aria-expanded") !== "true") return;

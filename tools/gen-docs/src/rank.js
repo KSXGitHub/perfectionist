@@ -7,14 +7,8 @@
 // three are weighted against each other, which paragraph a result shows,
 // and how many results there are.
 //
-// Nothing here touches the DOM. Reading the rules off the page is
-// search_overlay.js's job and painting the result is highlight.js's; this
-// only decides. That is what lets the weights and the ordering be
-// exercised outside a browser, which matters more here than anywhere else
-// on the page, because every constant below was chosen by eye.
-//
-// `perfectionistRank` is a global for the same reason `perfectionistMatch`
-// is: the page loads classic scripts, not modules. See match.js's header.
+// Nothing here touches the DOM, which is what lets the weights and the
+// ordering be exercised outside a browser.
 // ============================================================================
 
 /**
@@ -90,10 +84,9 @@ var perfectionistRank = (function () {
     return text;
   }
 
-  // Whether a match is worth showing is match.js's to decide, and it
-  // decides it without reading the score; nothing is re-checked here. The
-  // scores below are what orders the results against each other, which is
-  // the only question this file asks of them.
+  // Whether a match is worth showing is decided before it gets here, and
+  // without reading the score; nothing is re-checked. The score only
+  // orders the results against each other.
   var nameHit = perfectionistMatch.matchFuzzy;
   var proseHit = perfectionistMatch.matchPhrase;
 

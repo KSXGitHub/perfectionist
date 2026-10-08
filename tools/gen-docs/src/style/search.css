@@ -3,15 +3,15 @@
 
    The controls are useless without their script, so each is emitted with
    the HTML `hidden` attribute and revealed by that script only once it is
-   wired up (the `[hidden]` reset in base.css makes that unconditional):
+   wired up:
 
    * `.search-toggle` — a magnifier beside the settings gear, opening the
      search overlay. It is the gear's twin: same size, same inset, same
      half-transparent-at-rest opacity, one slot further left.
    * `.filter-toggle` — a funnel on the "Index" heading's line and on the
      sidebar header's, each opening the filter box below it.
-   * `.filter-box` — what holds the input, built by filter_boxes.js into
-     the empty `.filter-container` the Rust template emits. */
+   * `.filter-box` — what holds the input, cloned at runtime into the
+     empty `.filter-container` the Rust template emits. */
 
 .search-toggle {
   position: fixed;
@@ -19,9 +19,9 @@
   /* One slot left of the gear: its 0.6rem inset, plus its 2.5rem width,
      plus a 0.4rem gap. */
   right: 3.5rem;
-  /* The gear's tier, for the same reasons (see settings.css): below the
-     nav drawer so a full-screen mobile nav covers it, well above the
-     page's static content. The search overlay sits above both. */
+  /* The gear's tier: below the nav drawer so a full-screen mobile nav
+     covers it, well above the page's static content. The search overlay
+     sits above both. */
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;

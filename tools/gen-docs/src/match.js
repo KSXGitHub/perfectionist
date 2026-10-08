@@ -2,7 +2,7 @@
 // Query matching: scoring a query against a string, and narrowing a long
 // string to the part that matched. Nothing here touches the DOM and
 // nothing here knows what a lint is, which is what lets it run with no
-// browser around it; painting a match onto the page is highlight.js.
+// browser around it.
 // ============================================================================
 
 var perfectionistMatch = (function () {
