@@ -735,4 +735,18 @@ fn unnamespaced(namespaced: &str) -> &str {
 }
 
 #[cfg(test)]
-mod tests;
+mod test_assets;
+#[cfg(test)]
+mod test_fixtures;
+#[cfg(test)]
+mod test_nav;
+#[cfg(test)]
+mod test_rules;
+#[cfg(test)]
+mod test_search_markup;
+#[cfg(test)]
+mod test_search_scripts;
+#[cfg(test)]
+mod test_search_style;
+#[cfg(test)]
+mod test_settings;
