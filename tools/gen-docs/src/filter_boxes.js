@@ -72,9 +72,6 @@
    * Find one filter box's markup and wire it up. `kind` is the prefix the
    * Rust template builds the toggle's and the container's class names
    * from — `index` or `nav` — so naming it here is naming both.
-   *
-   * Resolution is split from `wireFilter` so that function can take
-   * non-null elements, for the reason nav_toggle.js casts its queries.
    * @param {string} kind
    * @param {string} listSelector  the parent whose children are the entries
    * @param {string} itemSelector  which children count as entries
