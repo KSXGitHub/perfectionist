@@ -1,16 +1,5 @@
 /* Search and filter affordances. Structural rules only; the colours for
-   these selectors live in light.css (defaults) and dark.css (dark tiers).
-
-   The controls are useless without their script, so each is emitted with
-   the HTML `hidden` attribute and revealed by that script only once it is
-   wired up:
-
-   * `.search-toggle` — a magnifier in the top-right corner, opening the
-     search overlay.
-   * `.filter-toggle` — a funnel on the "Index" heading's line and on the
-     sidebar header's, each opening the filter box below it.
-   * `.filter-box` — what holds the input, cloned at runtime into
-     `.filter-container`. */
+   these selectors live in light.css (defaults) and dark.css (dark tiers). */
 
 .search-toggle {
   position: fixed;
@@ -18,7 +7,7 @@
   /* One slot left of the gear. */
   right: 3.5rem;
   /* Below the nav drawer so a full-screen mobile nav covers it, well above
-     the page's static content. The overlay sits above both. */
+     the page's static content. */
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;
@@ -44,8 +33,7 @@
   outline-offset: 2px;
 }
 
-/* The filter toggle sits on a line of text, so it is sized to that line
-   rather than to the corner buttons. */
+/* Sized to the line of text it sits on. */
 .filter-toggle {
   flex: none;
   width: 1.9rem;
@@ -72,11 +60,8 @@
   outline-offset: 2px;
 }
 
-/* Both icons are recoloured by their button's own `color` through a CSS
-   mask, so they follow the theme without shipping a light and a dark copy
-   of each file. `background-color` paints through the mask; the SVG only
-   contributes its alpha. The pseudo-element is a flex item of its button,
-   which blockifies it, so the width and height apply. */
+/* A mask rather than an `<img>`, so no light and dark copy of each icon
+   file has to ship. */
 .search-toggle::before,
 .filter-toggle::before {
   content: "";
@@ -97,10 +82,8 @@
   mask: url("filter.svg") no-repeat center / contain;
 }
 
-/* The "Index" heading carries its filter toggle on the same line,
-   right-aligned against the heading text. Making the <h2> itself the flex
-   container — rather than wrapping it in one — leaves its margins, and so
-   the page's vertical rhythm, exactly as they were. */
+/* Not wrapped in a flex container of its own: that would change the
+   heading's margins, and so the page's vertical rhythm. */
 h2.index-heading {
   display: flex;
   align-items: center;
@@ -138,18 +121,7 @@ h2.index-heading {
   outline-offset: 1px;
 }
 
-/* ---- The search overlay --------------------------------------------------
-
-   An overlay over the page rather than an element between its parts: fixed
-   to every edge of the viewport, above every other layer the page has.
-   Its background is partly
-   transparent — the colour layer sets that — so the page stays legible
-   behind the dialog, and a click on it outside the dialog dismisses the
-   whole thing.
-
-   The dialog is a fixed-height column: the search box at its natural
-   height, and the results list — or whichever message stands in for it —
-   taking the rest. */
+/* ---- The search overlay ------------------------------------------------ */
 
 .search-overlay {
   position: fixed;
@@ -163,7 +135,7 @@ h2.index-heading {
   justify-content: center;
   /* Centring happens inside the padding box, so the top padding is the
      dialog's guaranteed clearance from the fixed corner buttons however
-     short the viewport is; 1rem elsewhere. */
+     short the viewport is. */
   padding: 4rem 1rem 1rem;
   box-sizing: border-box;
 }
@@ -173,12 +145,9 @@ h2.index-heading {
   flex-direction: column;
   width: 100%;
   max-width: 40rem;
-  /* `100dvh` (dynamic viewport) follows the visible area as the mobile URL
-     bar collapses or expands; `vh` is the fallback for browsers without
-     `dvh`. Capped so a tall desktop doesn't stretch ten results down the
-     whole screen. */
   height: 70vh;
   height: 70dvh;
+  /* So a tall desktop doesn't stretch the results down the whole screen. */
   max-height: 34rem;
   border: 1px solid;
   border-radius: 10px;
@@ -186,7 +155,7 @@ h2.index-heading {
   /* Keeps the results list's scrolling edge — and the close button parked
      in the bottom corner — inside the rounded corners. */
   overflow: hidden;
-  /* The positioning context for that button. */
+  /* The positioning context for `.search-close`. */
   position: relative;
 }
 
@@ -215,15 +184,9 @@ h2.index-heading {
   outline-offset: 1px;
 }
 
-/* Fused into the results' bottom-right corner rather than placed on top
-   of it: the two edges facing the dialog's interior carry the border and
-   the rounded corner, the two meeting the dialog's own edge carry
-   neither, so it reads as the corner itself folding up.
-
-   Positioned against the dialog, not the list, so it never scrolls out of
-   reach. Its half-transparency is what licenses it to cover the last row
-   or two of results. Being the dialog's last child, it paints over the
-   (unpositioned) list without needing a z-index. */
+/* The asymmetry is deliberate: it reads as the results' bottom-right
+   corner folding up. Positioned against the dialog, so it never scrolls
+   out of reach. */
 .search-close {
   position: absolute;
   right: 0;
@@ -254,9 +217,6 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-/* The ✕ is decoration beside the word "Close", so it keeps the system
-   font stack rather than inheriting the body's text face, out of which it
-   would fall back. */
 .search-close-glyph {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 0.85rem;
@@ -277,9 +237,8 @@ h2.index-heading {
   margin: 0;
 }
 
-/* Whichever message is showing stands in for the results list, so it
-   takes the same share of the dialog and centres its one line in it
-   rather than perching at the top of an otherwise empty panel. */
+/* A message stands in for the results list, rather than perching its one
+   line at the top of an otherwise empty panel. */
 .search-empty {
   flex: 1;
   display: flex;
@@ -314,9 +273,7 @@ h2.index-heading {
   font-size: 0.82rem;
 }
 
-/* The matched characters of a name or an excerpt. <mark> brings a UA
-   background of its own, which the colour layer replaces with one that
-   suits the theme. */
+/* The matched characters of a name or an excerpt. */
 .match-highlight {
   padding: 0;
   border-radius: 2px;

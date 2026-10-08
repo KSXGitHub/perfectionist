@@ -493,8 +493,7 @@ var perfectionistMatch = (function () {
      * is none. The first found is the one taken: a second housing needs
      * two of the target's words to open alike, which a lint name's words
      * rarely do, and choosing between them would move a score rather than
-     * an answer. It hands its answer back rather than keeping it in the
-     * enclosing scope, which TypeScript cannot follow across a call.
+     * an answer.
      * @param {number} i
      * @returns {number[] | null}
      */
