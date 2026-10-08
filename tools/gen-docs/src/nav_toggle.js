@@ -297,11 +297,18 @@
   // support `inert` this is mostly a no-op (Tab from the last
   // focusable just lands on the same element again because nothing
   // else is reachable), so the cost of always-on is negligible.
+  //
+  // The selector has to name every kind of focusable the sidebar can
+  // hold, or the wrap computes its first and last from the wrong set:
+  // the header's filter funnel is a `<button>`, but the filter input
+  // below it is an `<input>`.
   document.addEventListener("keydown", function (event) {
     if (event.key !== "Tab") return;
     if (toggle.getAttribute("aria-expanded") !== "true") return;
     var focusable = /** @type {NodeListOf<HTMLElement>} */ (
-      sidebar.querySelectorAll("a[href], button:not([disabled])")
+      sidebar.querySelectorAll(
+        "a[href], button:not([disabled]), input:not([disabled])"
+      )
     );
     if (focusable.length === 0) return;
     var first = focusable[0];

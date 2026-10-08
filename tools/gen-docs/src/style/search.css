@@ -1,0 +1,297 @@
+/* Search and filter affordances. */
+
+.search-toggle {
+  position: fixed;
+  top: 0.6rem;
+  /* One slot left of the gear. */
+  right: 3.5rem;
+  /* Below the nav drawer so a full-screen mobile nav covers it, well above
+     the page's static content. */
+  z-index: 98;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+}
+
+.search-toggle:hover,
+.search-toggle:focus-visible,
+.search-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.search-toggle:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* Sized to the line of text it sits on. */
+.filter-toggle {
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 1px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0.5;
+  transition: opacity 0.18s ease;
+}
+
+.filter-toggle:hover,
+.filter-toggle:focus-visible,
+.filter-toggle[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.filter-toggle:focus-visible {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
+/* A mask rather than an `<img>`, so no light and dark copy of each icon
+   file has to ship. */
+.search-toggle::before,
+.filter-toggle::before {
+  content: "";
+  background-color: currentColor;
+}
+
+.search-toggle::before {
+  width: 1.2rem;
+  height: 1.2rem;
+  -webkit-mask: url("search.svg") no-repeat center / contain;
+  mask: url("search.svg") no-repeat center / contain;
+}
+
+.filter-toggle::before {
+  width: 1rem;
+  height: 1rem;
+  -webkit-mask: url("filter.svg") no-repeat center / contain;
+  mask: url("filter.svg") no-repeat center / contain;
+}
+
+/* Not wrapped in a flex container of its own: that would change the
+   heading's margins, and so the page's vertical rhythm. */
+h2.index-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Deliberately no box of its own: empty, this must occupy no space. */
+.filter-container {
+  margin: 0;
+  padding: 0;
+}
+
+.index-filter-container .filter-box {
+  padding: 0 0 0.75rem;
+}
+
+/* Indented so the input lines up with the rule links it filters. */
+.nav-filter-container .filter-box {
+  padding: 0.75rem 1rem 0;
+}
+
+.filter-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.filter-input:focus-visible {
+  outline: 2px solid;
+  outline-offset: 1px;
+}
+
+/* ---- The search overlay ------------------------------------------------ */
+
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Centring happens inside the padding box, so the top padding is the
+     dialog's guaranteed clearance from the fixed corner buttons however
+     short the viewport is. */
+  padding: 4rem 1rem 1rem;
+  box-sizing: border-box;
+}
+
+.search-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 40rem;
+  height: 70vh;
+  height: 70dvh;
+  /* So a tall desktop doesn't stretch the results down the whole screen. */
+  max-height: 34rem;
+  border: 1px solid;
+  border-radius: 10px;
+  box-sizing: border-box;
+  /* Keeps the results list's scrolling edge — and the close button parked
+     in the bottom corner — inside the rounded corners. */
+  overflow: hidden;
+  /* The positioning context for `.search-close`. */
+  position: relative;
+}
+
+.search-box {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid;
+}
+
+.search-input {
+  flex: 1;
+  /* Without this a long query stretches the flex item past its share and
+     pushes the close button out of the dialog. */
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.search-input:focus-visible {
+  outline: 2px solid;
+  outline-offset: 1px;
+}
+
+/* The asymmetry is deliberate: it reads as the results' bottom-right
+   corner folding up. Positioned against the dialog, so it never scrolls
+   out of reach. */
+.search-close {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  border: 0;
+  border-top: 1px solid;
+  border-left: 1px solid;
+  border-radius: 6px 0 0 0;
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1;
+  opacity: 0.55;
+  transition: opacity 0.15s ease;
+}
+
+.search-close:hover,
+.search-close:focus-visible {
+  opacity: 1;
+}
+
+.search-close:focus-visible {
+  outline: 2px solid;
+  /* Inset, so the outline is not clipped by the dialog's `overflow`. */
+  outline-offset: -2px;
+}
+
+.search-close-glyph {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 0.85rem;
+}
+
+.search-results {
+  flex: 1;
+  margin: 0;
+  padding: 0.4rem;
+  list-style: none;
+  overflow-y: auto;
+  /* Keeps a scroll gesture that reaches the end of the list from carrying
+     on into the page behind the overlay. */
+  overscroll-behavior: contain;
+}
+
+.search-results li {
+  margin: 0;
+}
+
+/* A message stands in for the results list, rather than perching its one
+   line at the top of an otherwise empty panel. */
+.search-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 1rem 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.search-result {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.search-result:hover {
+  text-decoration: none;
+}
+
+.search-result-name {
+  display: block;
+  padding: 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.search-result-text {
+  display: block;
+  font-size: 0.82rem;
+}
+
+/* The matched characters of a name or an excerpt. */
+.match-highlight {
+  padding: 0;
+  border-radius: 2px;
+}
+
+/* Phone portrait: give the dialog more of the screen and less margin,
+   since there is little of either to spare. */
+@media (max-width: 600px) {
+  .search-overlay {
+    /* Top-aligned rather than centred here: the on-screen keyboard takes
+       the lower half of the screen as soon as the reader types, and a
+       centred dialog puts its results under it. */
+    align-items: flex-start;
+    padding: 3.5rem 0.75rem 0.75rem;
+  }
+
+  .search-dialog {
+    height: 80vh;
+    height: 80dvh;
+    max-height: none;
+  }
+}
