@@ -15,8 +15,8 @@ use std::fs;
 
 #[test]
 fn base_stylesheet_is_the_first_catalogue_sheet() {
-    // The page borrows one sheet from the catalogue by name, so the
-    // name has to be one the catalogue actually writes out.
+    // The page borrows the base of the catalogue's cascade by name, so
+    // that name has to be the sheet the catalogue links first.
     assert_eq!(STYLESHEETS[0].0, BASE_STYLESHEET_FILENAME);
 }
 
@@ -49,8 +49,6 @@ fn every_case_and_fixture_file_is_on_the_page() {
             .map(|&(name, _)| name.to_owned())
             .collect::<Vec<String>>()
     };
-    // `.test.js` ends with `.js`, so the fixtures are looked for by the
-    // longer suffix and the cases excluded from what that finds.
     assert_eq!(
         names(".test.js"),
         listed(TEST_CASE_SCRIPTS),
@@ -112,10 +110,6 @@ fn the_page_loads_the_libraries_it_tests_and_every_asset_it_ships() {
             "expected {name} to be referenced by the page",
         );
     }
-    // The two libraries are the catalogue's own files, loaded from
-    // where the catalogue puts them rather than copied in.
-    assert!(html.contains(r#"<script src="match.js"></script>"#));
-    assert!(html.contains(r#"<script src="rank.js"></script>"#));
 }
 
 #[test]
@@ -177,8 +171,8 @@ fn every_state_the_reporter_sets_is_styled() {
     // name, and tests.css colours it by that attribute. A state added to
     // the reporter's table without a rule beside it would render in
     // whatever colour it inherited, saying nothing. The states are read
-    // out of the table rather than listed here, so a fourth is covered
-    // the moment it is written.
+    // out of the table rather than listed here, so one added later is
+    // covered with no edit.
     let table = TEST_REPORT_SCRIPT
         .1
         .split_once("var MARKS = {")

@@ -1,40 +1,18 @@
 // ============================================================================
-// Runs the cases in this directory, in a context with no DOM in it at all,
-// and reports them the way `cargo test` reports its own.
+// Runs the cases in this directory, in a context with no DOM in it, and
+// reports them the way `cargo test` reports its own.
 //
 // The libraries under test are classic scripts that publish a global, so
 // there is nothing to import: `node:vm` evaluates each file's source in one
 // shared context, exactly as a browser evaluates a run of `<script>` tags,
 // and the globals they declare land on that context rather than on this
-// module's. Nothing is stubbed and nothing is shimmed. The context is bare
-// — no `document`, no `window`, no `localStorage` — which is the point: a
-// library that reached for one would fail here, loudly, instead of quietly
-// becoming untestable. (A Rust test holds the same line by reading the
-// sources; see `the_libraries_touch_no_dom`.)
+// module's. The context is bare, which is the point — a library that
+// reached for the DOM would fail here loudly rather than quietly become
+// untestable.
 //
-// Node needs no packages for this: `node:vm` and the rest are built in,
-// which is why `just test-js` installs nothing. Nor is this file
-// type-checked — tsconfig.json declares no ambient Node types, and pulling
-// them in for one runner would mean a dev dependency to serve one file
-// that CI runs on every change regardless.
-//
-// `node:test` ran these until the output became the problem: six lines a
-// case in TAP, behind a banner naming a protocol nothing here speaks. Its other reporters trade that for a
-// tick and a duration per case, or for rows of dots. What it was doing
-// for us was a registry, an exit code and a try/catch, and the harness is
-// already the registry — so the rest is written out below, in the shape
-// `cargo test` reports its own, which is the shape a reader of this
-// repository already knows how to read.
-//
-// Every `*.test.js` beside this file is loaded, so a case file added here
-// is picked up with no edit, and every `*.fixtures.js` is loaded ahead of
-// them, since a case reads the fixtures it is built from as it is
-// evaluated. The other runner — `tests.html`, rendered by
-// tools/gen-docs/src/test_page.rs and shipped with the catalogue — loads a
-// list it cannot glob, so a Rust test reads this directory and holds that
-// list to it. That is what keeps the two runners running the same suite.
+// The fixtures load ahead of the cases, since a case reads the fixtures it
+// is built from as it is evaluated.
 // ============================================================================
-
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,10 +26,8 @@ const cases = beside.filter((name) => name.endsWith(".test.js")).sort();
 const fixtures = beside.filter((name) => name.endsWith(".fixtures.js")).sort();
 if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
 
-// The catalogue's libraries, in the order the page loads them: each
-// publishes a global the next ones read. A Rust test holds this list to
-// the browser runner's, so the two runners cannot end up exercising
-// different code.
+// The catalogue's libraries, in load order: each publishes a global the
+// next ones read.
 const libraries = [
   "match_text.js",
   "match_score.js",
@@ -72,11 +48,11 @@ for (const file of load) {
 }
 
 /**
- * What a case threw, as one line. The harness throws an `Error` built
- * inside the vm context, so it is an `Error` of *that* realm and
- * `instanceof Error` here is false however ordinary it looks — hence the
- * duck-type. `String(thrown)` would answer too, but with an `Error: `
- * prefix in front of a message already written to read on its own.
+ * What a case threw, as one line. The harness builds its `Error` inside
+ * the vm context, so it belongs to that realm and `instanceof Error` is
+ * false here however ordinary it looks — hence the duck-type.
+ * `String(thrown)` would answer too, but prefixes `Error: ` onto a
+ * message already written to read on its own.
  */
 function reason(thrown) {
   if (thrown !== null && typeof thrown === "object" && "message" in thrown) {

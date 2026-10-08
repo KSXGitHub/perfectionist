@@ -26,19 +26,15 @@ pub(crate) const TEST_PAGE_FILENAME: &str = "tests.html";
 /// [`BASE_STYLESHEET_FILENAME`].
 pub(crate) const TEST_PAGE_CSS: &str = include_str!("style/tests.css");
 
-/// File name [`TEST_PAGE_CSS`] is written under; the page's
-/// `<link rel="stylesheet">` references the same name, so they must
-/// agree.
+/// File name [`TEST_PAGE_CSS`] is written under.
 pub(crate) const TEST_PAGE_CSS_FILENAME: &str = "tests.css";
 
 /// The catalogue page this one links back to, so a reader who arrives
 /// at this URL has somewhere to go.
 const CATALOGUE_FILENAME: &str = "index.html";
 
-/// The catalogue sheet this page borrows its font, body width and
-/// `[hidden]` reset from. It is the first entry of
-/// `crate::render::STYLESHEETS`, and a test below holds it to that
-/// rather than letting the name drift.
+/// The catalogue sheet this page borrows, which is the first of
+/// [`crate::render::STYLESHEETS`].
 const BASE_STYLESHEET_FILENAME: &str = "base.css";
 
 /// The registry and assertions the cases register against. Loaded
@@ -47,18 +43,14 @@ pub(crate) const TEST_HARNESS_SCRIPT: (&str, &str) =
     ("harness.js", include_str!("../tests/harness.js"));
 
 /// The fixtures the cases are built from. Loaded after the harness and
-/// before any case, since a case reads them as it is evaluated. Held to
-/// the directory by the same test as the cases below.
+/// before any case, since a case reads them as it is evaluated.
 pub(crate) const TEST_FIXTURE_SCRIPTS: &[(&str, &str)] = &[(
     "rank.fixtures.js",
     include_str!("../tests/rank.fixtures.js"),
 )];
 
-/// The cases, in the order the page runs them. Every `*.test.js` in
-/// `tools/gen-docs/tests/` belongs here, and a test below reads that
-/// directory and fails if one is missing, so the page and the headless
-/// runner (which globs the same directory) can never disagree about what
-/// the suite is.
+/// The cases, in the order the page runs them: every `*.test.js` in
+/// `tools/gen-docs/tests/`, in the order that directory sorts them.
 pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
     (
         "match_admit.test.js",
@@ -135,10 +127,8 @@ pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
 pub(crate) const TEST_REPORT_SCRIPT: (&str, &str) =
     ("report.js", include_str!("../tests/report.js"));
 
-/// The libraries under test, in the order the page loads them. Named
-/// rather than carried: the catalogue already ships them beside this
-/// page. `tools/gen-docs/tests/run.mjs` names the same files in the same
-/// order, which `the_two_runners_load_the_same_libraries` holds it to.
+/// The libraries under test, in the order the page loads them, which
+/// `tools/gen-docs/tests/run.mjs` loads them in too.
 pub(crate) const TEST_LIBRARIES: &[&str] = &[
     MATCH_TEXT_SCRIPT_FILENAME,
     MATCH_SCORE_SCRIPT_FILENAME,
@@ -176,10 +166,9 @@ pub(crate) fn render_test_page() -> String {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 meta name="description" content="Unit tests for the perfectionist lint catalogue's own browser scripts.";
-                // Keeps the page out of search results: it is a
-                // contributor's tool that happens to sit on a public
-                // site, and a reader searching for a lint should not
-                // land on a list of assertions.
+                // A contributor's tool that happens to sit on a public
+                // site: a reader searching for a lint should not land on
+                // a list of assertions.
                 meta name="robots" content="noindex";
                 title { "perfectionist docs-site JS tests" }
                 link rel="stylesheet" href=(BASE_STYLESHEET_FILENAME);
@@ -198,8 +187,8 @@ pub(crate) fn render_test_page() -> String {
                 p id="summary" {}
                 p id="engine" {}
                 // How many case files the page loaded, which report.js
-                // has no other way of knowing: see its own note on what
-                // a file an engine rejects leaves behind.
+                // has no other way of knowing: one an engine rejects
+                // outright registers nothing.
                 div id="cases" data-expected-groups=(TEST_CASE_SCRIPTS.len()) {}
                 @for src in test_page_scripts() {
                     script src=(src) {}
