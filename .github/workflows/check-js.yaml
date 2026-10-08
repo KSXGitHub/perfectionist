@@ -16,7 +16,7 @@ on:
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
-      - 'biome.json'
+      - '.oxfmtrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -26,7 +26,7 @@ on:
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
-      - 'biome.json'
+      - '.oxfmtrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -71,11 +71,14 @@ jobs:
       # The file list comes from git rather than from a directory walk, so
       # the set CI checks is exactly the set `just fmt-js` checks and
       # neither can quietly drift from the other.
+      #
+      # `--check` is not the default: a bare `oxfmt` rewrites the files it
+      # is given, which in CI would pass while reporting nothing.
       - name: Check JS formatting
         shell: bash
         run: |
           git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-            | xargs -0 pnpm exec biome format --colors=force
+            | xargs -0 pnpm exec oxfmt --check
 
   types:
     name: Check JS types

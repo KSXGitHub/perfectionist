@@ -112,8 +112,10 @@ fmt-js:
   pnpm --dir "$root_dir" install --frozen-lockfile
   # The file list comes from git rather than from a directory walk, so the
   # set this checks is exactly the set CI checks.
+  #
+  # `--check` is not the default: a bare `oxfmt` rewrites what it is given.
   git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec biome format
+    | xargs -0 pnpm --dir "$root_dir" exec oxfmt --check
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
@@ -122,7 +124,7 @@ write-fmt-js:
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
   git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec biome format --write
+    | xargs -0 pnpm --dir "$root_dir" exec oxfmt --write
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:

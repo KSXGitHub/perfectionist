@@ -438,16 +438,21 @@ automated self-lint did not run.
 ## Formatting the docs-site JavaScript
 
 The JavaScript under `tools/gen-docs/` is formatted by
-[Biome](https://biomejs.dev/), configured in [`biome.json`](biome.json)
-and pinned as a `devDependencies` entry in
-[`package.json`](package.json) — the same way `tsc` is, so `pnpm` is
-the only thing either one needs installed. `just fmt-js` checks the
-tracked `*.js` and `*.mjs` files and `just write-fmt-js` formats them
-in place; both install from the lockfile first. `just check-js` runs
-the check alongside the type-check and the unit tests.
+[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured in
+[`.oxfmtrc.json`](.oxfmtrc.json) and pinned as a `devDependencies`
+entry in [`package.json`](package.json) — the same way `tsc` is, so
+`pnpm` is the only thing either one needs installed. `just fmt-js`
+checks the tracked `*.js` and `*.mjs` files and `just write-fmt-js`
+formats them in place; both install from the lockfile first.
+`just check-js` runs the check alongside the type-check and the unit
+tests.
 
-Bump the version in `package.json` and the `$schema` in `biome.json`
-together, and reformat in the same commit.
+Two things about the CLI are worth knowing before invoking it by hand.
+`--write` is the default, so a bare `oxfmt` rewrites whatever it is
+given — a check needs `--check`. And an unrecognised key in
+`.oxfmtrc.json` is ignored rather than rejected, so a misspelt option
+silently leaves the default in place; confirm a setting by its effect
+on a formatted file.
 
 The style is single-quoted strings and no statement semicolons, with a
 leading `(` guarded by `;`. Tests under `tools/gen-docs/src/render/`
@@ -456,7 +461,7 @@ text, so a reformat can fail an assertion whose claim still holds —
 fix the needle, not the script, and prefer a needle that survives
 rewrapping over one that assumes a particular line layout.
 
-`trailingCommas` is `es5` because the twelve scripts
+`trailingComma` is `es5` because the twelve scripts
 [`PAGE_SCRIPTS`](tools/gen-docs/src/render.rs) ships are written in ES5
 for the same old browsers `just minify-docs` compiles the CSS for: a
 trailing comma in a call or parameter list is ES2017 and a parse error
