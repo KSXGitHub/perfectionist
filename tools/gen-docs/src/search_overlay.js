@@ -22,41 +22,84 @@
   var renderName = perfectionistHighlight.renderName;
   var renderText = perfectionistHighlight.renderText;
 
-  var toggle = /** @type {HTMLElement} */ (document.querySelector(".search-toggle"));
-  if (!toggle) return;
-
   // ---- Cloning the overlay into the page --------------------------------
 
-  var overlayBlueprint = document.getElementById("search-overlay-template");
-  var resultBlueprint = document.getElementById("search-result-template");
-  // A browser without `<template>` parses both as unknown elements, fails
-  // these checks and leaves the magnifier hidden, which is the right
-  // outcome: there is nothing for it to open.
-  if (!(overlayBlueprint instanceof HTMLTemplateElement)) return;
-  if (!(resultBlueprint instanceof HTMLTemplateElement)) return;
-  // The result blueprint's shape is checked once, here, rather than per
-  // result: it is fixed markup, so if it is wrong it is wrong every time —
-  // and failing now, before the reveal, leaves no dead button behind.
-  if (!resultBlueprint.content.querySelector(".search-result")) return;
-  if (!resultBlueprint.content.querySelector(".search-result-name")) return;
-  if (!resultBlueprint.content.querySelector(".search-result-text")) return;
-  var resultTemplate = resultBlueprint;
+  /**
+   * @typedef {object} Parts
+   * @property {HTMLElement} toggle
+   * @property {HTMLTemplateElement} resultBlueprint
+   * @property {HTMLElement} overlay
+   * @property {HTMLElement} dialog
+   * @property {HTMLInputElement} input
+   * @property {Element} close
+   * @property {HTMLElement} results
+   * @property {HTMLElement} emptyPrompt
+   * @property {HTMLElement} emptyNoMatch
+   */
 
-  document.body.appendChild(overlayBlueprint.content.cloneNode(true));
-  var overlay = /** @type {HTMLElement} */ (document.querySelector(".search-overlay"));
-  if (!overlay) return;
-  var dialog = /** @type {HTMLElement} */ (overlay.querySelector(".search-dialog"));
-  var input = /** @type {HTMLInputElement} */ (overlay.querySelector(".search-input"));
-  var close = /** @type {HTMLElement} */ (overlay.querySelector(".search-close"));
-  var results = /** @type {HTMLElement} */ (overlay.querySelector(".search-results"));
-  var emptyPrompt = /** @type {HTMLElement} */ (
-    overlay.querySelector(".search-empty-prompt")
-  );
-  var emptyNoMatch = /** @type {HTMLElement} */ (
-    overlay.querySelector(".search-empty-no-match")
-  );
-  if (!dialog || !input || !close || !results) return;
-  if (!emptyPrompt || !emptyNoMatch) return;
+  /**
+   * Clone the overlay into the page and hand back its parts, or `null` if
+   * anything is missing or not the element it should be. Each part is
+   * proven here so the behaviour below needs no assertion about any of
+   * them.
+   * @returns {Parts | null}
+   */
+  function buildOverlay() {
+    var toggle = document.querySelector(".search-toggle");
+    if (!(toggle instanceof HTMLElement)) return null;
+    // A browser without `<template>` parses both as unknown elements, fails
+    // these checks and leaves the magnifier hidden, which is the right
+    // outcome: there is nothing for it to open.
+    var overlayBlueprint = document.getElementById("search-overlay-template");
+    var resultBlueprint = document.getElementById("search-result-template");
+    if (!(overlayBlueprint instanceof HTMLTemplateElement)) return null;
+    if (!(resultBlueprint instanceof HTMLTemplateElement)) return null;
+    // The result blueprint's shape is checked once, here, rather than per
+    // result: it is fixed markup, so if it is wrong it is wrong every time —
+    // and failing now, before the reveal, leaves no dead button behind.
+    if (!resultBlueprint.content.querySelector(".search-result")) return null;
+    if (!resultBlueprint.content.querySelector(".search-result-name")) return null;
+    if (!resultBlueprint.content.querySelector(".search-result-text")) return null;
+
+    document.body.appendChild(overlayBlueprint.content.cloneNode(true));
+    var overlay = document.querySelector(".search-overlay");
+    if (!(overlay instanceof HTMLElement)) return null;
+    var dialog = overlay.querySelector(".search-dialog");
+    var input = overlay.querySelector(".search-input");
+    var close = overlay.querySelector(".search-close");
+    var results = overlay.querySelector(".search-results");
+    var emptyPrompt = overlay.querySelector(".search-empty-prompt");
+    var emptyNoMatch = overlay.querySelector(".search-empty-no-match");
+    if (!(dialog instanceof HTMLElement)) return null;
+    if (!(input instanceof HTMLInputElement)) return null;
+    if (!close) return null;
+    if (!(results instanceof HTMLElement)) return null;
+    if (!(emptyPrompt instanceof HTMLElement)) return null;
+    if (!(emptyNoMatch instanceof HTMLElement)) return null;
+    return {
+      toggle: toggle,
+      resultBlueprint: resultBlueprint,
+      overlay: overlay,
+      dialog: dialog,
+      input: input,
+      close: close,
+      results: results,
+      emptyPrompt: emptyPrompt,
+      emptyNoMatch: emptyNoMatch,
+    };
+  }
+
+  var parts = buildOverlay();
+  if (!parts) return;
+  var toggle = parts.toggle;
+  var resultBlueprint = parts.resultBlueprint;
+  var overlay = parts.overlay;
+  var dialog = parts.dialog;
+  var input = parts.input;
+  var close = parts.close;
+  var results = parts.results;
+  var emptyPrompt = parts.emptyPrompt;
+  var emptyNoMatch = parts.emptyNoMatch;
 
   // ---- Scraping the page ------------------------------------------------
 
@@ -100,9 +143,7 @@
   function scrape() {
     /** @type {Entry[]} */
     var out = [];
-    var articles = /** @type {NodeListOf<HTMLElement>} */ (
-      document.querySelectorAll("article.rule")
-    );
+    var articles = document.querySelectorAll("article.rule");
     for (var i = 0; i < articles.length; i++) {
       var article = articles[i];
       var nameHost = article.querySelector("h2 .lint-name");
@@ -114,12 +155,12 @@
       var statementHost = badge ? badge.parentElement : null;
       /** @type {string[]} */
       var paragraphs = [];
-      var blocks = /** @type {NodeListOf<HTMLElement>} */ (
-        article.querySelectorAll("p, li")
-      );
+      var blocks = article.querySelectorAll("p, li");
       for (var j = 0; j < blocks.length; j++) {
-        if (blocks[j] === statementHost || isRepeated(blocks[j])) continue;
-        var text = perfectionistRank.prose(blocks[j].textContent || "");
+        var block = blocks[j];
+        if (!(block instanceof HTMLElement)) continue;
+        if (block === statementHost || isRepeated(block)) continue;
+        var text = perfectionistRank.prose(block.textContent || "");
         if (text) paragraphs.push(text);
       }
       out.push({
@@ -142,10 +183,12 @@
    * @param {Result} result
    */
   function renderResult(result) {
-    var item = /** @type {DocumentFragment} */ (resultTemplate.content.cloneNode(true));
-    var link = /** @type {HTMLAnchorElement} */ (item.querySelector(".search-result"));
-    var name = /** @type {HTMLElement} */ (item.querySelector(".search-result-name"));
-    var text = /** @type {HTMLElement} */ (item.querySelector(".search-result-text"));
+    var item = /** @type {DocumentFragment} */ (resultBlueprint.content.cloneNode(true));
+    var link = item.querySelector(".search-result");
+    var name = item.querySelector(".search-result-name");
+    var text = item.querySelector(".search-result-text");
+    if (!(link instanceof HTMLAnchorElement)) return;
+    if (!(name instanceof HTMLElement) || !(text instanceof HTMLElement)) return;
     link.href = result.entry.href;
     // The score the result was ranked by, for whoever is debugging a
     // ranking that reads wrong.
@@ -203,7 +246,8 @@
   function setBackgroundInert() {
     inerted = [];
     for (var i = 0; i < document.body.children.length; i++) {
-      var child = /** @type {HTMLElement} */ (document.body.children[i]);
+      var child = document.body.children[i];
+      if (!(child instanceof HTMLElement)) continue;
       if (child === overlay) continue;
       if (child.inert) continue;
       child.inert = true;
@@ -251,7 +295,8 @@
   // A click on the backdrop — anywhere in the overlay outside the dialog
   // — dismisses it, the conventional gesture for a modal.
   overlay.addEventListener("click", function (event) {
-    if (dialog.contains(/** @type {Node | null} */ (event.target))) return;
+    var target = event.target;
+    if (target instanceof Node && dialog.contains(target)) return;
     closeOverlay();
   });
 
@@ -358,7 +403,8 @@
     /** @type {HTMLElement[]} */
     var out = [];
     for (var i = 0; i < found.length; i++) {
-      var element = /** @type {HTMLElement} */ (found[i]);
+      var element = found[i];
+      if (!(element instanceof HTMLElement)) continue;
       if (element.getClientRects().length > 0) out.push(element);
     }
     return out;
@@ -373,7 +419,14 @@
     var items = focusables();
     if (items.length === 0) return;
     var step = event.key === "ArrowDown" ? 1 : -1;
-    var at = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+    var active = document.activeElement;
+    var at = -1;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i] === active) {
+        at = i;
+        break;
+      }
+    }
     // Wrapping is what Tab does here. Every other child of <body> is
     // inert while the overlay is open, so there is nowhere else to go.
     var next =
@@ -394,12 +447,14 @@
   // this page as it stands. Rule articles aren't focusable by default, so
   // `tabindex="-1"` goes on first.
   results.addEventListener("click", function (event) {
-    var link = /** @type {Element} */ (event.target).closest("a");
+    var clicked = event.target;
+    if (!(clicked instanceof Element)) return;
+    var link = clicked.closest("a");
     if (!link) return;
     if (event.button !== 0) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     closeOverlay();
-    var hash = /** @type {HTMLAnchorElement} */ (link).hash;
+    var hash = link.hash;
     if (!hash) return;
     // Rule fragments are `#/rule/<name>`, whose `/` characters make them
     // invalid CSS id selectors — `querySelector("#/rule/...")` would
