@@ -48,8 +48,23 @@ const cases = beside.filter((name) => name.endsWith(".test.js")).sort();
 const fixtures = beside.filter((name) => name.endsWith(".fixtures.js")).sort();
 if (cases.length === 0) throw new Error(`no *.test.js in ${here}`);
 
+// The catalogue's libraries, in the order the page loads them: each
+// publishes a global the next ones read. A Rust test holds this list to
+// the browser runner's, so the two runners cannot end up exercising
+// different code.
+const libraries = [
+  "match_text.js",
+  "match_score.js",
+  "match_admit.js",
+  "match_tiers.js",
+  "match.js",
+  "rank.js",
+];
+
 const context = createContext({});
-const load = [join(src, "match.js"), join(src, "rank.js"), join(here, "harness.js")]
+const load = libraries
+  .map((name) => join(src, name))
+  .concat([join(here, "harness.js")])
   .concat(fixtures.map((name) => join(here, name)))
   .concat(cases.map((name) => join(here, name)));
 for (const file of load) {

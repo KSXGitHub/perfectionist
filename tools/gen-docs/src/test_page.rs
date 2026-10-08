@@ -12,7 +12,10 @@
 //! where the catalogue writes them rather than copied in, so what the
 //! page reports is what the catalogue is running.
 
-use crate::render::{MATCH_SCRIPT_FILENAME, RANK_SCRIPT_FILENAME};
+use crate::render::{
+    MATCH_ADMIT_SCRIPT_FILENAME, MATCH_SCORE_SCRIPT_FILENAME, MATCH_SCRIPT_FILENAME,
+    MATCH_TEXT_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT_FILENAME, RANK_SCRIPT_FILENAME,
+};
 use maud::{DOCTYPE, Markup, html};
 
 /// File name the rendered page is written under, beside the catalogue's
@@ -112,15 +115,23 @@ pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
 pub(crate) const TEST_REPORT_SCRIPT: (&str, &str) =
     ("report.js", include_str!("../tests/report.js"));
 
-/// Every script the page loads, in load order. The two libraries under
-/// test are named rather than carried: the catalogue already ships
-/// them.
+/// The libraries under test, in the order the page loads them. Named
+/// rather than carried: the catalogue already ships them beside this
+/// page. `tools/gen-docs/tests/run.mjs` names the same files in the same
+/// order, which `the_two_runners_load_the_same_libraries` holds it to.
+pub(crate) const TEST_LIBRARIES: &[&str] = &[
+    MATCH_TEXT_SCRIPT_FILENAME,
+    MATCH_SCORE_SCRIPT_FILENAME,
+    MATCH_ADMIT_SCRIPT_FILENAME,
+    MATCH_TIERS_SCRIPT_FILENAME,
+    MATCH_SCRIPT_FILENAME,
+    RANK_SCRIPT_FILENAME,
+];
+
+/// Every script the page loads, in load order.
 pub(crate) fn test_page_scripts() -> Vec<&'static str> {
-    let mut scripts = vec![
-        MATCH_SCRIPT_FILENAME,
-        RANK_SCRIPT_FILENAME,
-        TEST_HARNESS_SCRIPT.0,
-    ];
+    let mut scripts = TEST_LIBRARIES.to_vec();
+    scripts.push(TEST_HARNESS_SCRIPT.0);
     scripts.extend(TEST_FIXTURE_SCRIPTS.iter().map(|&(name, _)| name));
     scripts.extend(TEST_CASE_SCRIPTS.iter().map(|&(name, _)| name));
     scripts.push(TEST_REPORT_SCRIPT.0);

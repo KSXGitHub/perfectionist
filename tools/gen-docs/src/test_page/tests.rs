@@ -7,7 +7,8 @@
 
 use super::{
     BASE_STYLESHEET_FILENAME, TEST_CASE_SCRIPTS, TEST_FIXTURE_SCRIPTS, TEST_HARNESS_SCRIPT,
-    TEST_PAGE_CSS, TEST_REPORT_SCRIPT, render_test_page, test_page_assets, test_page_scripts,
+    TEST_LIBRARIES, TEST_PAGE_CSS, TEST_REPORT_SCRIPT, render_test_page, test_page_assets,
+    test_page_scripts,
 };
 use crate::render::STYLESHEETS;
 use std::fs;
@@ -228,4 +229,31 @@ fn the_page_says_how_many_case_files_it_loaded() {
 #[test]
 fn the_page_asks_not_to_be_indexed() {
     assert!(render_test_page().contains(r#"<meta name="robots" content="noindex">"#));
+}
+
+#[test]
+fn the_two_runners_load_the_same_libraries() {
+    // The terminal runner globs the case files but cannot read Rust, so
+    // it names the libraries itself. If the two lists drift, one runner
+    // exercises code the other does not, and the browser — the only one
+    // that says anything about the engines the catalogue targets — is the
+    // one that would quietly fall behind.
+    let runner = include_str!("../../tests/run.mjs");
+    let list = runner
+        .split_once("const libraries = [")
+        .expect("run.mjs must declare its libraries in one array")
+        .1
+        .split_once(']')
+        .expect("`const libraries = [` must be closed")
+        .0;
+    let named: Vec<&str> = list
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix('"'))
+        .filter_map(|line| line.split_once('"'))
+        .map(|(name, _)| name)
+        .collect();
+    assert_eq!(
+        named, TEST_LIBRARIES,
+        "run.mjs and the test page must load the same libraries in the same order",
+    );
 }
