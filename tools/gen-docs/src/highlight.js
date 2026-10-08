@@ -3,18 +3,7 @@
 //
 // Given an element, the text it should hold and the ranges of that text a
 // query matched, this rebuilds the element's contents with each matched
-// range wrapped in a `<mark>`. It is the only part of the search and
-// filter machinery that touches the DOM without also owning a control:
-// match.js scores, rank.js orders, and this draws the result.
-//
-// Kept apart from match.js and rank.js so those two stay loadable outside
-// a browser, which is what lets tools/gen-docs/tests/ exercise the scoring
-// and the ranking without one. A test in tools/gen-docs/src/render/ holds
-// that line by failing if either of them grows a DOM reference.
-//
-// `perfectionistHighlight` is a global for the same reason
-// `perfectionistMatch` is: the page loads classic scripts, not modules.
-// See match.js's header.
+// range wrapped in a `<mark>`.
 // ============================================================================
 
 var perfectionistHighlight = (function () {
