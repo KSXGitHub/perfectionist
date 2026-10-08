@@ -9,7 +9,8 @@
 
 ## What it does
 
-Flags a `fold` over a singular `command_extra::CommandExtra`
+Flags a `fold` over a singular
+[`command_extra::CommandExtra`](https://docs.rs/command-extra)
 setter where the trait declares the plural that does the same
 thing, and names the plural. The pairs are `with_arg` against
 `with_args`, `with_env` against `with_envs`, and `without_env`
