@@ -1,33 +1,13 @@
 // ============================================================================
 // The filter boxes: one over the Index table, one over the navigation
 // sidebar's rule list, narrowing a list of lint names to what the reader
-// types. One `installFilter` drives both; match.js decides which names
-// match and how well, highlight.js draws them.
-//
-// Neither box's markup is here. Each waits in an inert `<template>` the
-// Rust template emits, so a page whose script never runs lays out exactly
-// as it would without the feature, and the markup is reviewed and tested
-// where the rest of the page's markup is. The toggles are emitted `hidden`
-// and revealed once wired, on the same contract as the page's other
-// script-driven controls.
-//
-// Escape, the funnel and following one of the entries all dismiss a box,
-// and `closeBox` serves all three: a hidden input still narrowing a list
-// would strand the reader with entries missing and nothing on screen to
-// say why. Enter is not an exit — it re-runs the filter, for a browser
-// whose `input` event never arrived. There is no debounce; the scan is
-// over lint names, and the list keeps up with the keyboard.
-//
-// Typing a letter while the Index table is on screen opens its box seeded
-// with that letter. The page is a document first, so the handler turns
-// away anything that was not aimed at the box, and `preventDefault` goes
-// only on a keystroke it took — the box sets the character itself, and
-// the browser would otherwise insert it again once the input has focus.
+// types. match.js decides which names match and how well, highlight.js
+// draws them.
 // ============================================================================
 
 (function () {
-  // Also the load-bearing check that the libraries this file is nothing
-  // without have run: see the file header.
+  // Load-bearing: if either library never ran, this throws before any
+  // control is revealed.
   var matchFuzzy = perfectionistMatch.matchFuzzy;
   var renderName = perfectionistHighlight.renderName;
 
@@ -42,14 +22,11 @@
    */
 
   /**
-   * One wired-up filter box, as `installFilter` hands it back.
    * @typedef {object} FilterBox
    * @property {(seed: string) => void} openWith
    */
 
   /**
-   * Collect the filterable entries of a list. The selectors are
-   * `installFilter`'s, described there.
    * @param {HTMLElement} list
    * @param {string} itemSelector
    * @param {string} nameSelector
@@ -115,9 +92,6 @@
   }
 
   /**
-   * Clone one filter box into `container` and wire it up. Returns `null`
-   * without revealing `toggle` when there is nothing to narrow or no
-   * blueprint to clone.
    * @param {HTMLElement} toggle
    * @param {HTMLElement} container
    * @param {HTMLElement} list
@@ -142,7 +116,6 @@
     );
     if (!box || !input) return null;
 
-    /** Put every entry back the way the page rendered it. */
     function reset() {
       for (var i = 0; i < items.length; i++) {
         items[i].element.hidden = false;
@@ -185,21 +158,23 @@
       for (var j = 0; j < matched.length; j++) {
         var entry = matched[j];
         entry.item.element.hidden = false;
-        // Exposed for whoever is debugging a ranking that reads wrong.
         entry.item.element.setAttribute("data-score", entry.score.toFixed(4));
         renderName(entry.item.nameHost, entry.item.name, entry.ranges);
         list.appendChild(entry.item.element);
       }
     }
 
-    /** Show the box and put the caret in it. */
     function openBox() {
       toggle.setAttribute("aria-expanded", "true");
       box.hidden = false;
       input.focus();
     }
 
-    /** Clear the query, put the list back, and hide the box. */
+    /**
+     * Escape, the funnel and following an entry all come here: a hidden
+     * input still narrowing a list would strand the reader with entries
+     * missing and nothing on screen to say why.
+     */
     function closeBox() {
       input.value = "";
       reset();
@@ -230,6 +205,7 @@
     // keyboard, on-screen keyboard, IME, paste, drag, the native clear
     // button. `search` is belt and braces: it is what a `type="search"`
     // input fires on its clear button in older WebKit.
+    // No debounce; the scan is over lint names.
     input.addEventListener("input", apply);
     input.addEventListener("search", apply);
     input.addEventListener("keydown", function (event) {
@@ -256,15 +232,10 @@
       dismiss();
     });
 
-    // A click that follows an entry closes the box behind it, so the list
-    // the reader scrolls back to is the whole list. Focus is left where
-    // the click sends it, unlike the two paths above: this one is on its
-    // way somewhere, and for the sidebar's copy of the list nav_toggle.js
-    // moves focus to the rule itself.
-    //
-    // A modifier-key click and a non-primary button are the standard "open
-    // in a new tab" gestures: this page stays where it was, so its query
-    // has to as well. Same guards as the sidebar and the search results.
+    // Following an entry leaves the reader the whole list to come back
+    // to. Focus stays where the click sends it, unlike the paths above.
+    // A modifier-key or non-primary click opens a new tab and leaves this
+    // page where it was, so its query has to stay too.
     list.addEventListener("click", function (event) {
       var link = /** @type {Element} */ (event.target).closest("a");
       if (!link) return;
@@ -273,14 +244,13 @@
       closeBox();
     });
 
-    // Wired up, so the button that opens it can appear.
+    // Nothing appears that cannot yet be used.
     toggle.hidden = false;
 
     return {
       /**
-       * Open the box with `seed` as its contents, as the keyboard entry
-       * path does. It overwrites whatever was typed before, matching the
-       * reader's intent: the keystroke starts a fresh query.
+       * Open the box with `seed` as its contents, replacing whatever was
+       * typed before: the keystroke starts a fresh query.
        * @param {string} seed
        */
       openWith: function (seed) {
@@ -303,8 +273,7 @@
   // ---- Keyboard entry into the Index box --------------------------------
   var indexTable = document.querySelector("table.index");
   if (!indexFilter || !(indexTable instanceof HTMLElement)) return;
-  // Bound to locals the guard above has already narrowed, for the reason
-  // `installFilter` splits: the keydown handler below is a closure.
+  // Locals, for the reason `installFilter` splits.
   var table = indexTable;
   var filter = indexFilter;
 
@@ -320,6 +289,9 @@
     observer.observe(table);
   }
 
+  // A letter opens the box seeded with it. `preventDefault` goes only on
+  // a keystroke this took, since the box sets the character itself and the
+  // browser would otherwise insert it again once the input has focus.
   document.addEventListener("keydown", function (event) {
     if (!indexInView) return;
     if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -327,8 +299,7 @@
     // A named key spells itself out in `key`, so one character is how a
     // letter is told from `Tab` or an arrow.
     if (event.key.length !== 1) return;
-    // Seeded with the letter as typed, Shift and CapsLock included; only
-    // the range test folds.
+    // Seeded as typed; only the range test folds.
     var letter = event.key;
     var folded = letter.toLowerCase();
     if (folded < "a" || folded > "z") return;
