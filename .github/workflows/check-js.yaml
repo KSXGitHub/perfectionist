@@ -43,36 +43,39 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      # Pinned rather than resolved to the latest release, so the style
-      # this job enforces changes when this file says so and not when
-      # Biome publishes. `just biome-version` reads the value back out of
-      # here, so this is the one place it is written; bump it, bump the
-      # `$schema` in `biome.json`, and reformat in the same commit.
-      BIOME_VERSION: '2.5.15'
-
     steps:
       - uses: actions/checkout@v6
 
-      # Biome ships a standalone executable, so there is nothing to build
-      # and no Node to provision — unlike the npm package, whose entry
-      # point is a Node script that re-execs this same binary.
-      - name: Install Biome
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Locate pnpm store
+        id: pnpm-store
         shell: bash
-        run: |
-          bin_dir="$(mktemp -d)"
-          curl --proto '=https' --tlsv1.2 -sSfL \
-            "https://github.com/biomejs/biome/releases/download/@biomejs/biome@${BIOME_VERSION}/biome-linux-x64" \
-            -o "$bin_dir/biome"
-          chmod +x "$bin_dir/biome"
-          echo "$bin_dir" >> "$GITHUB_PATH"
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-jsfmt-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-jsfmt-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
 
       # The file list comes from git rather than from a directory walk, so
       # the set CI checks is exactly the set `just fmt-js` checks and
       # neither can quietly drift from the other.
       - name: Check JS formatting
         shell: bash
-        run: git ls-files '*.js' '*.mjs' | tr '\n' '\0' | xargs -0 biome format --colors=force
+        run: |
+          git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+            | xargs -0 pnpm exec biome format --colors=force
 
   types:
     name: Check JS types

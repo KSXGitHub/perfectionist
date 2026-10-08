@@ -104,41 +104,25 @@ check-js:
   just check-js-types
   just test-js
 
-# Print the Biome version pinned in the Check JS workflow
-biome-version:
-  @sed -n "s/.*BIOME_VERSION: '\([^']*\)'.*/\1/p" "{{justfile_directory()}}/.github/workflows/check-js.yaml"
-
-# Install the pinned Biome into `.dev-tools/bin`
-install-biome:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  version="$(just biome-version)"
-  if [ -z "$version" ]; then
-    echo "could not read BIOME_VERSION from .github/workflows/check-js.yaml" >&2
-    exit 1
-  fi
-  mkdir -p "$root_dir/.dev-tools/bin"
-  curl --proto '=https' --tlsv1.2 -sSfL \
-    "https://github.com/biomejs/biome/releases/download/@biomejs/biome@$version/biome-linux-x64" \
-    -o "$root_dir/.dev-tools/bin/biome"
-  chmod +x "$root_dir/.dev-tools/bin/biome"
-
 # Check the docs-site JavaScript's formatting
 fmt-js:
   #!/usr/bin/env bash
   set -euo pipefail
-  cd "{{justfile_directory()}}"
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
   # The file list comes from git rather than from a directory walk, so the
   # set this checks is exactly the set CI checks.
-  git ls-files '*.js' '*.mjs' | tr '\n' '\0' | xargs -0 biome format
+  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+    | xargs -0 pnpm --dir "$root_dir" exec biome format
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
   #!/usr/bin/env bash
   set -euo pipefail
-  cd "{{justfile_directory()}}"
-  git ls-files '*.js' '*.mjs' | tr '\n' '\0' | xargs -0 biome format --write
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+    | xargs -0 pnpm --dir "$root_dir" exec biome format --write
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:

@@ -438,14 +438,16 @@ automated self-lint did not run.
 ## Formatting the docs-site JavaScript
 
 The JavaScript under `tools/gen-docs/` is formatted by
-[Biome](https://biomejs.dev/), configured in
-[`biome.json`](biome.json) and pinned by `BIOME_VERSION` in
-[`.github/workflows/check-js.yaml`](.github/workflows/check-js.yaml) —
-read the version from there rather than taking the latest release.
-`just install-biome` puts that version in `.dev-tools/bin`; then
-`just fmt-js` checks the tracked `*.js` and `*.mjs` files and
-`just write-fmt-js` formats them in place. `just check-js` runs the
-check alongside the type-check and the unit tests.
+[Biome](https://biomejs.dev/), configured in [`biome.json`](biome.json)
+and pinned as a `devDependencies` entry in
+[`package.json`](package.json) — the same way `tsc` is, so `pnpm` is
+the only thing either one needs installed. `just fmt-js` checks the
+tracked `*.js` and `*.mjs` files and `just write-fmt-js` formats them
+in place; both install from the lockfile first. `just check-js` runs
+the check alongside the type-check and the unit tests.
+
+Bump the version in `package.json` and the `$schema` in `biome.json`
+together, and reformat in the same commit.
 
 The style is single-quoted strings and no statement semicolons, with a
 leading `(` guarded by `;`. Tests under `tools/gen-docs/src/render/`
