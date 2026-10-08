@@ -98,10 +98,58 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Check the docs-site JavaScript: types, then unit tests
+# Check the docs-site JavaScript: formatting, types, then unit tests
 check-js:
+  just fmt-js
   just check-js-types
   just test-js
+
+# Print the sane-fmt version pinned in the Check JS workflow
+sane-fmt-version:
+  @sed -n "s/.*SANE_FMT_VERSION: '\([^']*\)'.*/\1/p" "{{justfile_directory()}}/.github/workflows/check-js.yaml"
+
+# Install the pinned sane-fmt into `.dev-tools/bin`
+install-sane-fmt:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  version="$(just sane-fmt-version)"
+  if [ -z "$version" ]; then
+    echo "could not read SANE_FMT_VERSION from .github/workflows/check-js.yaml" >&2
+    exit 1
+  fi
+  mkdir -p "$root_dir/.dev-tools/bin"
+  curl --proto '=https' --tlsv1.2 -sSfL \
+    "https://github.com/sane-fmt/sane-fmt/releases/download/$version/sane-fmt-x86_64-unknown-linux-gnu" \
+    -o "$root_dir/.dev-tools/bin/sane-fmt"
+  chmod +x "$root_dir/.dev-tools/bin/sane-fmt"
+
+# Check the docs-site JavaScript's formatting
+fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd "{{justfile_directory()}}"
+  # The file list comes from git rather than from sane-fmt's own directory
+  # walk, which matches `*.js` but not `*.mjs` and would leave the test
+  # runner unchecked.
+  git ls-files '*.js' '*.mjs' | sane-fmt --hide-passed --details diff -I -
+
+# Format the docs-site JavaScript in place
+write-fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  cd "{{justfile_directory()}}"
+  # Run to a fixed point: converting a file to the semicolon-free style
+  # takes two passes, the first inserting the `;` that guards a leading
+  # `(` and the second closing the blank line left above it.
+  for _ in 1 2 3; do
+    if git ls-files '*.js' '*.mjs' | sane-fmt --hide-passed --details count -I -; then
+      exit 0
+    fi
+    git ls-files '*.js' '*.mjs' | sane-fmt --write --hide-passed --details count -I -
+  done
+  echo "sane-fmt did not reach a fixed point" >&2
+  exit 1
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:

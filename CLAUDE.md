@@ -435,6 +435,24 @@ the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
+## Formatting the docs-site JavaScript
+
+The JavaScript under `tools/gen-docs/` is formatted by
+[sane-fmt](https://github.com/sane-fmt/sane-fmt), pinned by
+`SANE_FMT_VERSION` in
+[`.github/workflows/check-js.yaml`](.github/workflows/check-js.yaml) —
+read the version from there rather than taking the latest release.
+`just install-sane-fmt` puts that version in `.dev-tools/bin`; then
+`just fmt-js` checks the tracked `*.js` and `*.mjs` files and
+`just write-fmt-js` formats them in place. `just check-js` runs the
+check alongside the type-check and the unit tests.
+
+Its style is single-quoted strings and no statement semicolons, with a
+leading `(` guarded by `;`. Tests under `tools/gen-docs/src/render/`
+and `tools/gen-docs/src/test_page/` match these scripts as source
+text, so a reformat can fail an assertion whose claim still holds —
+fix the needle, not the script.
+
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the

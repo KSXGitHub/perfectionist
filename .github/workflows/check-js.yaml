@@ -36,6 +36,42 @@ permissions:
   contents: read
 
 jobs:
+  fmt:
+    name: Check JS formatting
+
+    runs-on: ubuntu-latest
+
+    env:
+      # Pinned rather than resolved to the latest release, so the style
+      # this job enforces changes when this file says so and not when
+      # sane-fmt publishes. `just sane-fmt-version` reads the value back
+      # out of here, so this is the one place it is written; bump it and
+      # reformat in the same commit.
+      SANE_FMT_VERSION: '0.18.1'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # A single static binary, so there is nothing to build and no
+      # toolchain to provision — cheaper than installing the npm package,
+      # whose JS entry point only shells out to this same executable.
+      - name: Install sane-fmt
+        shell: bash
+        run: |
+          bin_dir="$(mktemp -d)"
+          curl --proto '=https' --tlsv1.2 -sSfL \
+            "https://github.com/sane-fmt/sane-fmt/releases/download/${SANE_FMT_VERSION}/sane-fmt-x86_64-unknown-linux-gnu" \
+            -o "$bin_dir/sane-fmt"
+          chmod +x "$bin_dir/sane-fmt"
+          echo "$bin_dir" >> "$GITHUB_PATH"
+
+      # The file list comes from git rather than from sane-fmt's own
+      # directory walk, which matches `*.js` but not `*.mjs` and would
+      # leave the test runner unchecked.
+      - name: Check JS formatting
+        shell: bash
+        run: git ls-files '*.js' '*.mjs' | sane-fmt --hide-passed --details diff --color always -I -
+
   types:
     name: Check JS types
 
