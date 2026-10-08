@@ -39,7 +39,9 @@ use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
     CONFIG_TOGGLE_SCRIPT, CONFIG_TOGGLE_SCRIPT_FILENAME, FILTER_BOXES_SCRIPT,
     FILTER_BOXES_SCRIPT_FILENAME, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME,
-    HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME,
+    HIGHLIGHT_SCRIPT, HIGHLIGHT_SCRIPT_FILENAME, MATCH_ADMIT_SCRIPT, MATCH_ADMIT_SCRIPT_FILENAME,
+    MATCH_SCORE_SCRIPT, MATCH_SCORE_SCRIPT_FILENAME, MATCH_SCRIPT, MATCH_SCRIPT_FILENAME,
+    MATCH_TEXT_SCRIPT, MATCH_TEXT_SCRIPT_FILENAME, MATCH_TIERS_SCRIPT, MATCH_TIERS_SCRIPT_FILENAME,
     NAV_TOGGLE_SCRIPT, NAV_TOGGLE_SCRIPT_FILENAME, RANK_SCRIPT, RANK_SCRIPT_FILENAME,
     RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, SEARCH_OVERLAY_SCRIPT,
     SEARCH_OVERLAY_SCRIPT_FILENAME, STYLESHEETS, THEME_ICONS, THEME_TOGGLE_SCRIPT,
@@ -211,6 +213,23 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
         CONFIG_TOGGLE_SCRIPT,
     )
     .expect("failed to write config-toggle script");
+    fs::write(out_dir.join(MATCH_TEXT_SCRIPT_FILENAME), MATCH_TEXT_SCRIPT)
+        .expect("failed to write match-text script");
+    fs::write(
+        out_dir.join(MATCH_SCORE_SCRIPT_FILENAME),
+        MATCH_SCORE_SCRIPT,
+    )
+    .expect("failed to write match-score script");
+    fs::write(
+        out_dir.join(MATCH_ADMIT_SCRIPT_FILENAME),
+        MATCH_ADMIT_SCRIPT,
+    )
+    .expect("failed to write match-admit script");
+    fs::write(
+        out_dir.join(MATCH_TIERS_SCRIPT_FILENAME),
+        MATCH_TIERS_SCRIPT,
+    )
+    .expect("failed to write match-tiers script");
     fs::write(out_dir.join(MATCH_SCRIPT_FILENAME), MATCH_SCRIPT)
         .expect("failed to write match script");
     fs::write(out_dir.join(RANK_SCRIPT_FILENAME), RANK_SCRIPT)
