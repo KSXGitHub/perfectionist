@@ -61,6 +61,10 @@ pub(crate) const TEST_FIXTURE_SCRIPTS: &[(&str, &str)] = &[(
 /// the suite is.
 pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
     (
+        "match_admit.test.js",
+        include_str!("../tests/match_admit.test.js"),
+    ),
+    (
         "match_excerpt.test.js",
         include_str!("../tests/match_excerpt.test.js"),
     ),
@@ -83,6 +87,22 @@ pub(crate) const TEST_CASE_SCRIPTS: &[(&str, &str)] = &[
     (
         "match_respaced.test.js",
         include_str!("../tests/match_respaced.test.js"),
+    ),
+    (
+        "match_score.test.js",
+        include_str!("../tests/match_score.test.js"),
+    ),
+    (
+        "match_text_stem.test.js",
+        include_str!("../tests/match_text_stem.test.js"),
+    ),
+    (
+        "match_text_words.test.js",
+        include_str!("../tests/match_text_words.test.js"),
+    ),
+    (
+        "match_tiers.test.js",
+        include_str!("../tests/match_tiers.test.js"),
     ),
     (
         "match_variants.test.js",
