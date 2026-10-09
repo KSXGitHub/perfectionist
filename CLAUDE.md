@@ -435,90 +435,31 @@ the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
-## Formatting the docs-site JavaScript
+## The docs-site JavaScript
 
 The JavaScript under `tools/gen-docs/` is formatted by
-[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html), configured in
-[`.oxfmtrc.json`](.oxfmtrc.json) and pinned as a `devDependencies`
-entry in [`package.json`](package.json) — the same way `tsc` is, so
-`pnpm` is the only thing either one needs installed. `just fmt-js`
-checks the tracked `*.js` and `*.mjs` files and `just write-fmt-js`
-formats them in place; both install from the lockfile first.
-`just check-js` runs the check alongside the type-check and the unit
-tests.
+[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) and linted by
+[oxlint](https://oxc.rs/docs/guide/usage/linter.html), both pinned in
+[`package.json`](package.json) and configured in
+[`.oxfmtrc.json`](.oxfmtrc.json) and
+[`.oxlintrc.json`](.oxlintrc.json). After touching any of it, run
+`just check-js`. `just fix-js` applies what oxlint can fix and then
+reformats, in that order because a fix lands as valid code rather than
+as formatted code.
 
-Two things about the CLI are worth knowing before invoking it by hand.
-`--write` is the default, so a bare `oxfmt` rewrites whatever it is
-given — a check needs `--check`. And an unrecognised key in
-`.oxfmtrc.json` is ignored rather than rejected, so a misspelt option
-silently leaves the default in place; confirm a setting by its effect
-on a formatted file.
-
-The style is single-quoted strings and no statement semicolons, with a
-leading `(` guarded by `;`.
+Two things those files cannot say for themselves. The scripts
+[`PAGE_SCRIPTS`](tools/gen-docs/src/render.rs) ships are ES5, for the
+same old browsers `just minify-docs` compiles the CSS for, so a
+suggestion that reaches past that floor is declined however sound it
+looks — `trailingComma` is `es5` for the same reason. And unused or
+unresolved names belong to `tsc`, which reads the same JSDoc across
+files where oxlint sees one file's scope: leave `no-unused-vars` off
+rather than reaching for a `globals` block or a `varsIgnorePattern`.
 
 A test that matches one of these scripts as source text is matching
-something the formatter owns, so spell the needle so it survives
+something the formatter owns, so spell the needle to survive
 rewrapping: read a value out of its quotes rather than one line at a
-time, and do not assume where a line breaks.
-
-`trailingComma` is `es5` because the scripts
-[`PAGE_SCRIPTS`](tools/gen-docs/src/render.rs) ships are written in ES5
-for the same old browsers `just minify-docs` compiles the CSS for: a
-trailing comma in a call or parameter list is ES2017 and a parse error
-there, which would take a whole script down. Keep it `es5` unless that
-browser floor moves.
-
-## Linting the docs-site JavaScript
-
-The same JavaScript is linted by
-[oxlint](https://oxc.rs/docs/guide/usage/linter.html), configured in
-[`.oxlintrc.json`](.oxlintrc.json) and pinned beside `oxfmt` in
-[`package.json`](package.json). `just lint-js` runs it over the tracked
-`*.js` and `*.mjs` files; `just check-js` runs it after the type-check.
-
-It is always run `--type-aware`, which is the half worth having here:
-the scripts carry their types in JSDoc, so a scope-only pass barely
-sees them. That mode needs a second pinned package,
-`oxlint-tsgolint`; without it `--type-aware` stops with an error
-naming the package rather than quietly linting less. The types come
-from `tsconfig.json`, so a file outside its `include` is linted
-without any — which is why `check-js-types` goes first, and why the
-one such file has its own `overrides` entry.
-
-**`tsc` owns names, oxlint owns patterns.** Whether a binding is used,
-and whether a name resolves, are questions `tsc` answers from the same
-JSDoc and across files — `noUnusedLocals` and `noUnusedParameters` are
-the flags that put the first of them. oxlint answers both from scope
-alone, where each library's published global —
-`var perfectionistMatchText = ...`, read by the next script rather than
-by this one — reads as unused and its uses read as undefined. Leave
-both to `tsc`. Reaching instead for a `globals` block or a
-`varsIgnorePattern` buys a second, worse answer to a question already
-settled.
-
-Only the categories that look for defects are enabled. `pedantic`,
-`restriction` and `style` lint for a language level the page scripts do
-not target — `restriction` alone reports every `var` in them. A rule
-out of one of them can still be named in `rules`, and several are,
-because oxlint files a number of plain defect checks outside those
-three categories: `eqeqeq` is one, so `x == 1` would otherwise pass.
-`curly` is named for a different reason, being a style choice rather
-than a defect check — a controlled statement is always a block here,
-so no body trails its own `if` or `while`.
-
-`just fix-js` applies what oxlint can fix and then reformats, because a
-fix lands as valid code rather than as formatted code — the braces
-`curly` adds arrive on the line they came from, and oxfmt is what opens
-them out.
-
-A rule the config names, either way, has been run against a case that
-proves it live: one it switched off names the finding it was switched
-off for, and confirming that means removing the entry and watching the
-rule fire. A rule switched *on* while the tree reports nothing needs
-the same treatment from the other side — feed it a deliberate
-violation and watch it report — because a rule that cannot fire is a
-line nothing keeps honest.
+time.
 
 ## Normalised `.stderr` fixtures
 

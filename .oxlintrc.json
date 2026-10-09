@@ -1,80 +1,48 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  // `pedantic`, `restriction` and `style` are left out on purpose: they
-  // lint for a language level this tree does not target. `restriction`
-  // alone reports every `var` in the page scripts, which are ES5 because
-  // the browsers `just minify-docs` compiles the CSS for cannot run
-  // anything newer. A rule out of one of them can still be named in
-  // `rules` below, and several are: oxlint files a number of plain
-  // defect checks outside the three categories above, `eqeqeq` among
-  // them.
+  // The page scripts are ES5. The categories left out are the ones that
+  // lint for a newer language; a rule out of one of them may still be
+  // named below.
   "categories": {
     "correctness": "deny",
     "suspicious": "deny",
     "perf": "deny"
   },
   "rules": {
-    // A controlled statement is always a block, so a body is never a
-    // bare statement trailing its own `if` or `while`. `all` is the only
-    // setting that says so: `multi-line` and `multi-or-nest` both allow
-    // a one-line body, which is the shape this forbids. Passing a
-    // `keywords` list instead -- to brace the loops and leave the `if`s
-    // -- switches the rule off without a word, so there is no narrower
-    // form of this than all of it.
+    // `all` rather than something narrower: `multi-line` and
+    // `multi-or-nest` both permit the one-line body this forbids, and a
+    // `keywords` list switches the rule off instead of narrowing it.
     "eslint/curly": ["error", "all"],
 
-    // Defect checks that none of the enabled categories carries. Each
-    // reports nothing on this tree, so each is insurance rather than a
-    // backlog -- and each was confirmed to fire against a deliberate
-    // violation, because a rule that cannot fire is a line nothing
-    // keeps honest.
     "eslint/eqeqeq": "error",
     "eslint/no-fallthrough": "error",
     "eslint/no-self-compare": "error",
     "eslint/no-unreachable-loop": "error",
     "eslint/array-callback-return": "error",
-    // `parseInt` without a radix reads a leading `0` as octal on an
-    // engine old enough to matter here.
     "eslint/radix": "error",
-    // A function declared in a loop that reads the loop's `var` is the
-    // ES5 closure bug, and these scripts are `var` throughout with
-    // listeners registered inside `for` loops.
     "eslint/no-loop-func": "error",
-    // `'${x}'` is a literal dollar-brace, not an interpolation. Worth
-    // having where every string is single-quoted.
     "eslint/no-template-curly-in-string": "error",
 
-    // Whether a binding is used is `tsc`'s question, under
-    // `noUnusedLocals` / `noUnusedParameters`. See "`tsc` owns names,
-    // oxlint owns patterns" in CLAUDE.md.
+    // `tsc` owns this, under `noUnusedLocals` / `noUnusedParameters`.
     "eslint/no-unused-vars": "off",
-    // A DOM narrowing is the only way to type `querySelector` from JSDoc,
-    // where a type argument cannot be passed. Every
-    // `/** @type {HTMLElement} */ (document.querySelector(...))` in the
-    // page scripts is one, and each is followed by the null check the
-    // assertion skips.
+
+    // The remedy each asks for is newer than ES5, or JSDoc has no other
+    // way to say it.
     "typescript/no-unsafe-type-assertion": "off",
-    // The replacement this asks for, `Array#toSorted`, is ES2023. Both
-    // call sites already sort a copy.
     "unicorn/no-array-sort": "off",
-    // `new Array(n).join(s)` is how a string is repeated without
-    // `String#repeat`, which is ES2015.
     "unicorn/no-new-array": "off",
-    // A nested function reusing an outer name for the same quantity is
-    // this tree's convention, not an accident: `houseWords` indexes the
-    // query's words with `i`, and so does the `walk` it then calls.
+
+    // The shape each flags is deliberate: a nested function reuses an
+    // outer name for the same quantity, and the test runner loads its
+    // libraries in order because each publishes a global the next reads.
     "eslint/no-shadow": "off",
-    // The test runner evaluates the catalogue's libraries in order
-    // because each publishes a global the next one reads. Awaiting them
-    // together would run them in whatever order they happen to resolve.
     "eslint/no-await-in-loop": "off"
   },
   "overrides": [
     {
-      // `tsconfig.json` includes `*.js` and nothing else, so `run.mjs`
-      // is the one tracked file the type-aware pass reads without
-      // types. It mistakes `Number(bigint)` there for a conversion that
-      // changes nothing; obeying it would leave a `bigint / 1e9` that
+      // `tsconfig.json` includes only `*.js`, so an `.mjs` is linted
+      // without types. That misreads `Number(bigint)` as a conversion
+      // changing nothing, where obeying it leaves a `bigint / 1e9` that
       // throws.
       "files": ["**/*.mjs"],
       "rules": {
