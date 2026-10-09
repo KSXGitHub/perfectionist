@@ -447,10 +447,6 @@ The JavaScript under `tools/gen-docs/` is formatted by
 reformats, in that order because a fix lands as valid code rather than
 as formatted code.
 
-An object type is written as `@typedef {object}` with one `@property` per
-field, never as an inline `{{ … }}` literal. A shape that the form cannot
-express — one that extends another type — is an intersection.
-
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
