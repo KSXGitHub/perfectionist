@@ -185,22 +185,26 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-/// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
-/// and referenced from settings.css. Each tuple is `(filename, contents)`.
-pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
-    ("theme-light.svg", include_str!("assets/theme-light.svg")),
-    ("theme-dark.svg", include_str!("assets/theme-dark.svg")),
-    ("theme-system.svg", include_str!("assets/theme-system.svg")),
-];
+/// Every icon the page draws, as one hidden `<svg>` of `<symbol>`s
+/// inlined at the top of `<body>` (see [`icon_sprite`]). Each use site
+/// is a `<use>` of one symbol, built by [`icon`].
+///
+/// Inlined rather than shipped as sibling files because a `mask-image`
+/// or `background-image` pointing at one is a fetch, and a fetch is what
+/// breaks: a page opened over `file://` has the opaque origin `null`, so
+/// the mask fetch is refused as cross-origin and the icon silently does
+/// not paint. A same-document `<use>` fetches nothing.
+const ICON_SPRITE: &str = include_str!("assets/icon-sprite.svg");
 
-/// The search and filter control icons (Octicons, MIT), shipped beside
-/// `index.html` and referenced from search.css. Each tuple is
-/// `(filename, contents)`. Not prefetched, unlike [`THEME_ICONS`]: these
-/// are masked onto buttons that appear as soon as their script runs.
-pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
-    ("search.svg", include_str!("assets/search.svg")),
-    ("filter.svg", include_str!("assets/filter.svg")),
-];
+/// `id` of the magnifier symbol, on the button that opens the search
+/// overlay.
+const SEARCH_ICON_ID: &str = "icon-search";
+
+/// `id` of the funnel symbol, on both filter toggles.
+const FILTER_ICON_ID: &str = "icon-filter";
+
+/// `id` of the chain-link symbol, on each rule heading's permalink.
+const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
 
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
@@ -225,18 +229,38 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// `id` shared by the inert prefetch `<template>`
-/// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
-/// activates it; the two must agree.
-pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
+/// The icon definitions, emitted once as the first thing in `<body>` so
+/// every [`icon`] below it resolves against symbols already parsed.
+///
+/// The sprite carries the HTML `hidden` attribute, which base.css makes
+/// unconditional with `[hidden] { display: none !important }`. A
+/// `<symbol>` is not rendered where it is defined in any case; `hidden`
+/// also keeps the element from occupying a line box of its own.
+fn icon_sprite() -> Markup {
+    PreEscaped(ICON_SPRITE.to_owned())
+}
 
-/// The chain-link glyph for the rule-name heading anchors, shipped as
-/// a standalone file beside `index.html` rather than inlined.
-pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
-
-/// File name [`RULE_ANCHOR_ICON`] is written under. `rules.css`
-/// references the same name in a relative `url(...)`, so they must agree.
-pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
+/// One icon, drawn by referring to the [`ICON_SPRITE`] symbol named by
+/// `id`. `class` is what the stylesheets size and colour it through.
+///
+/// The reference is spelled twice. SVG 2's plain `href` is what every
+/// current engine reads, but Safari did not accept it until 12.1 (iOS
+/// 12.2); SVG 1.1's `xlink:href` is deprecated and read by everything
+/// ever shipped. An engine that understands both prefers `href`. The
+/// XLink namespace needs no `xmlns:xlink` declaration here, because the
+/// HTML parser assigns it to that attribute itself.
+///
+/// Always `aria-hidden`: every icon in this page sits inside a control
+/// that carries its own `aria-label`, so exposing the graphic as well
+/// would name it twice.
+fn icon(id: &str, class: &str) -> Markup {
+    let href = format!("#{id}");
+    html! {
+        svg class=(class) aria-hidden="true" {
+            use href=(href) xlink:href=(href) {}
+        }
+    }
+}
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -264,12 +288,12 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
             }
             body {
+                (icon_sprite())
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
                 (search_toggle())
                 (search_templates())
                 (settings_panel())
-                (theme_icon_prefetch_template())
                 div.banner {
                     "Showing docs for " code { (git_ref) } "."
                 }
@@ -382,7 +406,9 @@ fn search_toggle() -> Markup {
             aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
-            title="Search lints (press /)" {}
+            title="Search lints (press /)" {
+            (icon(SEARCH_ICON_ID, "search-toggle-icon"))
+        }
     }
 }
 
@@ -497,7 +523,9 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-controls=(controls)
             aria-expanded="false"
             aria-label=(label)
-            title=(label) {}
+            title=(label) {
+            (icon(FILTER_ICON_ID, "filter-toggle-icon"))
+        }
     }
 }
 
@@ -554,31 +582,16 @@ fn config_controls() -> Markup {
     }
 }
 
-/// The inert `<template>` of `<link rel="prefetch" as="image">` hints, one
-/// per [`THEME_ICONS`] entry, warming the cache for the colour-scheme icons
-/// (reachable only through settings.css masks). The `<template>` keeps the
-/// links dormant until `theme_toggle.js` clones them into `<head>`, so they
-/// load only once the Settings panel is used.
-fn theme_icon_prefetch_template() -> Markup {
-    html! {
-        template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
-            @for &(name, _) in THEME_ICONS {
-                link rel="prefetch" as="image" href=(name);
-            }
-        }
-    }
-}
-
 /// One theme radio plus its visible label. The radio keeps real
 /// `<input type="radio">` semantics (exclusive choice, keyboard arrows,
 /// form labelling) but is visually hidden by settings.css; the adjacent
 /// `<label>` is the styled tile, so the pure-CSS
 /// `.theme-radio:checked + .theme-option` selector can highlight the
 /// chosen one. The label must therefore stay the input's immediate next
-/// sibling. The icon is an empty span the stylesheet fills via a CSS
-/// mask referencing one of [`THEME_ICONS`].
+/// sibling. The tile's icon is the sprite symbol named after `value`.
 fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
     let option_class = format!("theme-option theme-option-{value}");
+    let icon_id = format!("icon-theme-{value}");
     html! {
         input.theme-radio
             type="radio"
@@ -587,7 +600,7 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
             value=(value)
             checked[checked];
         label class=(option_class) for=(id) {
-            span.theme-icon aria-hidden="true" {}
+            (icon(&icon_id, "theme-icon"))
             span.theme-label { (label) }
         }
     }
@@ -674,7 +687,9 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
                 code {
-                    a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {}
+                    a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {
+                        (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon"))
+                    }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }

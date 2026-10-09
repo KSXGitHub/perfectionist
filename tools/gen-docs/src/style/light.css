@@ -132,6 +132,9 @@ article.rule {
 article.rule h2 .lint-prefix {
   color: #57606a;
 }
+article.rule h2 .rule-anchor {
+  color: #57606a;
+}
 article.rule h2 .rule-jump-link {
   color: #57606a;
 }

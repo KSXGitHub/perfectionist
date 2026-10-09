@@ -139,32 +139,15 @@
     background-color 0.15s ease;
 }
 
-/* The icon is recoloured by the label's own `color` via a CSS mask, so
-   it follows the theme (and the highlighted state below) without
-   shipping a separate light/dark copy of each SVG. `background-color`
-   paints through the mask; the SVG only contributes its alpha. Browsers
-   without mask support (pre-2023 engines) simply show no glyph — the
-   text label beneath still names the choice, so the control degrades to
-   text-only rather than breaking. */
+/* `fill: currentColor` takes the label's own `color`, so the icon
+   follows the theme and the highlighted state below without shipping a
+   separate light/dark copy of each SVG. Which symbol a tile draws is
+   decided in the markup, so the three tiles need no rule of their own
+   here. */
 .theme-icon {
   width: 1.4rem;
   height: 1.4rem;
-  background-color: currentColor;
-}
-
-.theme-option-light .theme-icon {
-  -webkit-mask: url("theme-light.svg") no-repeat center / contain;
-  mask: url("theme-light.svg") no-repeat center / contain;
-}
-
-.theme-option-dark .theme-icon {
-  -webkit-mask: url("theme-dark.svg") no-repeat center / contain;
-  mask: url("theme-dark.svg") no-repeat center / contain;
-}
-
-.theme-option-system .theme-icon {
-  -webkit-mask: url("theme-system.svg") no-repeat center / contain;
-  mask: url("theme-system.svg") no-repeat center / contain;
+  fill: currentColor;
 }
 
 /* The checked radio highlights its label (accent border / text / wash)
