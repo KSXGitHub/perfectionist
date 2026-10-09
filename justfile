@@ -107,65 +107,33 @@ check-js:
 
 # Check the docs-site JavaScript's formatting
 fmt-js:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  pnpm --dir "$root_dir" install --frozen-lockfile
-  # The file list comes from git rather than from a directory walk, so the
-  # set this checks is exactly the set CI checks.
-  #
-  # `--check` is not the default: a bare `oxfmt` rewrites what it is given.
-  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec oxfmt --check
+  pnpm install --frozen-lockfile
+  pnpm exec oxfmt --check '**/*.js' '**/*.mjs'
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  pnpm --dir "$root_dir" install --frozen-lockfile
-  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec oxfmt --write
+  pnpm install --frozen-lockfile
+  pnpm exec oxfmt --write '**/*.js' '**/*.mjs'
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  pnpm --dir "$root_dir" install --frozen-lockfile
-  pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
-
-# Apply what oxlint can fix to the docs-site JavaScript, then reformat
-fix-js:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  pnpm --dir "$root_dir" install --frozen-lockfile
-  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec oxlint --type-aware --fix
-  # A fix lands as valid code, not as formatted code: the braces `curly`
-  # adds arrive on the line they came from, so the formatter runs after.
-  just write-fmt-js
+  pnpm install --frozen-lockfile
+  pnpm exec tsc --noEmit --project tsconfig.json
 
 # Lint the docs-site JavaScript, types included
 lint-js:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  root_dir="{{justfile_directory()}}"
-  pnpm --dir "$root_dir" install --frozen-lockfile
-  # Same file list as `fmt-js`, for the same reason.
-  #
-  # `--type-aware` is what runs the rules that need to know a type, and
-  # it is the half worth having: the page scripts carry their types in
-  # JSDoc, so the scope-only pass sees almost nothing. It reads
-  # `tsconfig.json` to find them, which is why `check-js-types` runs
-  # first -- a type error there makes everything reported here suspect.
-  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-    | xargs -0 pnpm --dir "$root_dir" exec oxlint --type-aware
+  pnpm install --frozen-lockfile
+  pnpm exec oxlint --type-aware
+
+# Apply what oxlint can fix to the docs-site JavaScript, then reformat
+fix-js:
+  pnpm install --frozen-lockfile
+  pnpm exec oxlint --type-aware --fix
+  just write-fmt-js
 
 # Run the docs-site JavaScript unit tests
 test-js:
-  node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
+  node tools/gen-docs/tests/run.mjs
 
 # Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
 minify-docs site_dir="gh-pages":
@@ -189,3 +157,8 @@ minify-docs site_dir="gh-pages":
   if [ "${#svg[@]}" -gt 0 ]; then
     pnpm exec svgo --quiet --folder .
   fi
+
+# first line of doc
+# second line of doc
+_probe-d:
+  echo ran

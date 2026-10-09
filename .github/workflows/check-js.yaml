@@ -60,17 +60,14 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile
 
-      # The file list comes from git rather than from a directory walk, so
-      # the set CI checks is exactly the set `just fmt-js` checks and
-      # neither can quietly drift from the other.
-      #
-      # `--check` is not the default: a bare `oxfmt` rewrites the files it
-      # is given, which in CI would pass while reporting nothing.
+      # `--check` is not the default: a bare `oxfmt` rewrites what it is
+      # given, which in CI would pass while reporting nothing. The globs
+      # are not decoration either -- oxfmt formats YAML, JSON and
+      # markdown too, and this tree holds files of each whose exact bytes
+      # are a fixture.
       - name: Check JS formatting
         shell: bash
-        run: |
-          git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-            | xargs -0 pnpm exec oxfmt --check
+        run: pnpm exec oxfmt --check '**/*.js' '**/*.mjs'
 
   lint:
     name: Lint JS
@@ -102,18 +99,11 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile
 
-      # Same file list as the formatting job, for the same reason.
-      #
-      # `--type-aware` runs the rules that need to know a type, which on
-      # this tree is most of what oxlint has to offer: the scripts carry
-      # their types in JSDoc, so a scope-only pass barely sees them. The
-      # types come from `tsconfig.json`, and the `types` job reports an
-      # error in those first.
+      # Without `--type-aware` the rules that read these scripts' JSDoc
+      # types do not run, which is most of what oxlint has to offer here.
       - name: Lint JavaScript
         shell: bash
-        run: |
-          git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
-            | xargs -0 pnpm exec oxlint --type-aware
+        run: pnpm exec oxlint --type-aware
 
   types:
     name: Check JS types
