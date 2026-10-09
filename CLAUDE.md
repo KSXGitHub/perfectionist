@@ -499,20 +499,26 @@ settled.
 
 Only the categories that look for defects are enabled. `pedantic`,
 `restriction` and `style` lint for a language level the page scripts do
-not target — `restriction` alone reports every `var` in them. A single
-rule out of one of those can still be named in `rules`, which is how
-`curly` is on without the rest of `style`: a controlled statement is
-always a block, so no body trails its own `if` or `while`.
+not target — `restriction` alone reports every `var` in them. A rule
+out of one of them can still be named in `rules`, and several are,
+because oxlint files a number of plain defect checks outside those
+three categories: `eqeqeq` is one, so `x == 1` would otherwise pass.
+`curly` is named for a different reason, being a style choice rather
+than a defect check — a controlled statement is always a block here,
+so no body trails its own `if` or `while`.
 
 `just fix-js` applies what oxlint can fix and then reformats, because a
 fix lands as valid code rather than as formatted code — the braces
 `curly` adds arrive on the line they came from, and oxfmt is what opens
 them out.
 
-Every rule the config switches off names the finding it was switched
-off for. Before adding another, confirm the rule fires with the entry
-removed: one that was never going to fire is a line nothing keeps
-honest.
+A rule the config names, either way, has been run against a case that
+proves it live: one it switched off names the finding it was switched
+off for, and confirming that means removing the entry and watching the
+rule fire. A rule switched *on* while the tree reports nothing needs
+the same treatment from the other side — feed it a deliberate
+violation and watch it report — because a rule that cannot fire is a
+line nothing keeps honest.
 
 ## Normalised `.stderr` fixtures
 
