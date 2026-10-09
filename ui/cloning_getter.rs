@@ -119,8 +119,13 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: `into_*` announces a costly conversion, so the copy is
-    // what the name already promises.
+    // Not flagged: `into_*` announces a costly conversion, so the copy
+    // is what the name already promises. An `into_*` taking `&self`
+    // has its own rule.
+    #[expect(
+        perfectionist::unconsumed_into_conversion,
+        reason = "an `into_*` that does not consume belongs to that rule; this one pins clause 1"
+    )]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }

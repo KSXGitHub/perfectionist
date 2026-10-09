@@ -77,14 +77,16 @@ only on a name it reads as a getter, and it never reads one as a
 getter where the name starts with `as_`, `to_` or `into_`. So no
 method is measured by both.
 
-Some are measured by neither. `to_*` and `into_*` announce a
-conversion that costs something, so an owned value is what those
-names already promise; a `to_*` that costs nothing is
-`perfectionist::costless_to_conversion`'s to measure. A name that
-is none of the three and that the getter rule does not read as a
-getter — one naming no field, with nothing in
-`getter_name_patterns` admitting it — is left alone by both as
-well.
+`to_*` announces a conversion that costs something, so an owned
+value is what that name already promises, and neither this rule
+nor the getter rule measures it; a `to_*` that costs nothing is
+`perfectionist::costless_to_conversion`'s to measure. `into_*`
+promises more than cost: it promises to consume, so
+`perfectionist::unconsumed_into_conversion` measures one that does
+not. A name that is none of the three and that the getter rule
+does not read as a getter — one naming no field, with nothing in
+`getter_name_patterns` admitting it — is left alone by all of
+them.
 
 ## Example
 
