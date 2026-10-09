@@ -278,7 +278,11 @@ written beside its sibling and then read alone. Sweep them by searching
 those directories for a label line that also carries "the same", "too",
 "either", "as well", "likewise", "ditto", "above" or "below". Anchor the
 search on the label itself, or the output fills with the exceptions
-above; then read each matching comment whole, because a label's
+above — but anchor it on the label's word alone, since what follows it
+varies: a colon in most files, a comma or an em dash elsewhere, and
+sometimes nothing at all. An anchor that assumes one separator silently
+skips every file written with another. Then read each matching comment
+whole, because a label's
 continuation lines carry the fault as often as its first line does and a
 line-oriented search returns only the line it matched.
 
