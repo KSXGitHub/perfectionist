@@ -50,6 +50,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`costless_to_conversion`](./costless_to_conversion.md) (default: `active`).
+
+  `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum

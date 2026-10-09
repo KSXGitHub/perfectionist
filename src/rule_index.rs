@@ -107,6 +107,7 @@ rule_index! {
     clap_help_markdown => ClapHelpMarkdown,
     cloning_getter => CloningGetter,
     core_instead_of_std => CoreInsteadOfStd,
+    costless_to_conversion => CostlessToConversion,
     excessive_cognitive_complexity => ExcessiveCognitiveComplexity,
     excessive_inline_tests => ExcessiveInlineTests,
     excessive_nesting => ExcessiveNesting,
