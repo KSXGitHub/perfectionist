@@ -5,7 +5,6 @@
 // ==========================================================================
 
 var perfectionistMatchTiers = (function () {
-  var fold = perfectionistMatchText.fold;
   var words = perfectionistMatchText.words;
   var wordSpans = perfectionistMatchText.wordSpans;
   var stem = perfectionistMatchText.stem;
@@ -18,8 +17,6 @@ var perfectionistMatchTiers = (function () {
   var RUN_BONUS = perfectionistMatchScore.RUN_BONUS;
   var opening = perfectionistMatchScore.opening;
   var blend = perfectionistMatchScore.blend;
-  var better = perfectionistMatchScore.better;
-  var admits = perfectionistMatchAdmit.admits;
   var betterAdmitted = perfectionistMatchAdmit.betterAdmitted;
 
   /**
