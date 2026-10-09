@@ -44,6 +44,25 @@ impl Person {
     fn intonation(&self) -> String {
         self.name.clone()
     }
+    // Not flagged: what an `async fn` signature names is the opaque
+    // future, which carries the receiver's lifetime however the body
+    // behaves -- here it neither borrows nor copies.
+    async fn into_awaited_age(&self) -> u32 {
+        self.age
+    }
+
+    // Not flagged: an `impl Trait` signature names an opaque type that
+    // carries the receiver's lifetime, so the rule reads neither that
+    // lifetime nor the body behind it.
+    fn into_opaque_label(&self) -> impl AsRef<str> {
+        self.name.clone()
+    }
+
+    // Bad: a trait object's own lifetime is the receiver's, which `+ '_`
+    // writes out, so this really does hand back a borrow of `self`.
+    fn into_boxed_borrowing(&self) -> Box<dyn Fn(&str) -> usize + '_> {
+        Box::new(str::len)
+    }
 }
 
 // The lifetime case the rule has to get right: `Borrowed<'a>` already

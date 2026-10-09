@@ -30,6 +30,11 @@ declare_tool_lint! {
     /// not come from it. So is a method of a trait impl, since the trait
     /// fixes its signature, and one produced by a macro.
     ///
+    /// An `async fn`, or a method returning `impl Trait`, is left alone
+    /// as well. The signature names the opaque type, not the value the
+    /// caller ends up with, and that opaque carries the receiver's own
+    /// lifetime whether or not anything is borrowed.
+    ///
     /// A `Copy` field is out of reach of the copying half, since copying
     /// one out is not a cost a move would have saved. It is not an
     /// exemption for the rule as a whole: a `Copy` return type that
@@ -180,6 +185,13 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
             .instantiate_identity()
             .skip_binder()
             .output();
+        // An `async fn`'s future and an `impl Trait` both capture the
+        // receiver's own lifetime, so the region test below reports one
+        // as a borrow of `self` whatever the body does -- including
+        // where nothing is borrowed and nothing copied.
+        if output.has_opaque_types() {
+            return;
+        }
         if borrows_from_receiver(output) {
             span_lint_and_then(
                 cx,

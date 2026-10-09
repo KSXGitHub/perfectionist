@@ -24,6 +24,11 @@ left alone too, since that borrow outlives the receiver and does
 not come from it. So is a method of a trait impl, since the trait
 fixes its signature, and one produced by a macro.
 
+An `async fn`, or a method returning `impl Trait`, is left alone
+as well. The signature names the opaque type, not the value the
+caller ends up with, and that opaque carries the receiver's own
+lifetime whether or not anything is borrowed.
+
 A `Copy` field is out of reach of the copying half, since copying
 one out is not a cost a move would have saved. It is not an
 exemption for the rule as a whole: a `Copy` return type that
