@@ -4,9 +4,9 @@
 // ==========================================================================
 
 var perfectionistMatchAdmit = (function () {
-  var isWordStart = perfectionistMatchText.isWordStart;
-  var isAlnum = perfectionistMatchText.isAlnum;
-  var better = perfectionistMatchScore.better;
+  var isWordStart = perfectionistMatchText.isWordStart
+  var isAlnum = perfectionistMatchText.isAlnum
+  var better = perfectionistMatchScore.better
 
   // ---- Admission ----------------------------------------------------------
 
@@ -18,7 +18,7 @@ var perfectionistMatchAdmit = (function () {
   // what still finds `excessive_nesting` for `excessive_nestng`. Two is
   // the characters falling where they may, which is how `bare` would
   // otherwise answer `needless_borrowed_parameters`.
-  var SLIPS_ALLOWED = 1;
+  var SLIPS_ALLOWED = 1
 
   /**
    * Where the word holding `index` begins.
@@ -27,9 +27,11 @@ var perfectionistMatchAdmit = (function () {
    * @returns {number}
    */
   function wordStartBefore(haystack, index) {
-    var at = index;
-    while (at > 0 && isAlnum(haystack.charAt(at - 1))) at--;
-    return at;
+    var at = index
+    while (at > 0 && isAlnum(haystack.charAt(at - 1))) {
+      at--
+    }
+    return at
   }
 
   /**
@@ -40,14 +42,18 @@ var perfectionistMatchAdmit = (function () {
    * words that identifier ran together — where one who types the `e` that
    * `single` ends in has typed a letter that happens to fall last.
    * @param {string} haystack
-   * @param {number[]} range
+   * @param {Span} range
    * @returns {boolean}
    */
   function aimed(haystack, range) {
-    var start = range[0];
-    if (isWordStart(haystack, start)) return true;
-    if (isAlnum(haystack.charAt(range[1]))) return false;
-    return range[1] - start >= start - wordStartBefore(haystack, start);
+    var start = range[0]
+    if (isWordStart(haystack, start)) {
+      return true
+    }
+    if (isAlnum(haystack.charAt(range[1]))) {
+      return false
+    }
+    return range[1] - start >= start - wordStartBefore(haystack, start)
   }
 
   /**
@@ -60,19 +66,25 @@ var perfectionistMatchAdmit = (function () {
    * an answer nobody can rely on: one more character could push a result
    * back over a bar it had fallen under, so it leaves the list and
    * returns.
-   * @param {number[][]} ranges  the match's runs, in order, at least one
+   * @param {Span[]} ranges  the match's runs, in order, at least one
    * @param {string} haystack    folded target
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    if (!aimed(haystack, ranges[0])) return false;
-    var slips = 0;
-    for (var i = 1; i < ranges.length; i++) {
-      if (isWordStart(haystack, ranges[i][0])) continue;
-      slips++;
-      if (slips > SLIPS_ALLOWED) return false;
+    if (!aimed(haystack, ranges[0])) {
+      return false
     }
-    return true;
+    var slips = 0
+    for (var i = 1; i < ranges.length; i++) {
+      if (isWordStart(haystack, ranges[i][0])) {
+        continue
+      }
+      slips++
+      if (slips > SLIPS_ALLOWED) {
+        return false
+      }
+    }
+    return true
   }
 
   /**
@@ -86,17 +98,23 @@ var perfectionistMatchAdmit = (function () {
    *
    * This only orders, so a tier whose every placement is a coincidence
    * still comes back for `matchFuzzy` to turn away.
-   * @param {{ score: number, ranges: number[][] } | null} left
-   * @param {{ score: number, ranges: number[][] } | null} right
+   * @param {Match | null} left
+   * @param {Match | null} right
    * @param {string} haystack
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {Match | null}
    */
   function betterAdmitted(left, right, haystack) {
-    if (!left) return right;
-    if (!right) return left;
-    var leftShown = admits(left.ranges, haystack);
-    if (leftShown !== admits(right.ranges, haystack)) return leftShown ? left : right;
-    return better(left, right);
+    if (!left) {
+      return right
+    }
+    if (!right) {
+      return left
+    }
+    var leftShown = admits(left.ranges, haystack)
+    if (leftShown !== admits(right.ranges, haystack)) {
+      return leftShown ? left : right
+    }
+    return better(left, right)
   }
 
   return {
@@ -105,5 +123,5 @@ var perfectionistMatchAdmit = (function () {
     aimed: aimed,
     admits: admits,
     betterAdmitted: betterAdmitted,
-  };
-})();
+  }
+})()
