@@ -1,15 +1,5 @@
 name: Check JS
 
-# Gates nothing, by construction: nothing `needs:` this workflow and nothing
-# calls it, so a red run here cannot hold back the Rust suite or a Pages
-# deploy. That is what makes an allow-list the right shape for the trigger
-# paths — a path missing from one costs a JS change its CI run and nothing
-# else, where the same omission in a gating workflow would skip CI on code
-# that needed it. (test.yaml gates, and takes a deny-list for that reason.)
-# The push and pull_request lists are kept identical by hand.
-#
-# The jobs do not `needs:` each other either, so a type error and a failing
-# test are reported in the same run instead of one hiding the other.
 on:
   push:
     branches: ['**']
@@ -78,9 +68,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # Pinned rather than left to the runner image's default, so the
-      # version the tests run under changes when this file says so and not
-      # when the image is rebuilt.
       - name: Install Node
         uses: actions/setup-node@v6
         with:
