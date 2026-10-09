@@ -92,13 +92,18 @@ var perfectionistRank = (function () {
   var proseHit = perfectionistMatch.matchPhrase
 
   /**
+   * A match in a paragraph, carrying the paragraph it was found in.
+   * @typedef {Match & { readonly text: string }} ParagraphHit
+   */
+
+  /**
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
    * @param {readonly string[]} paragraphs
-   * @returns {Match & { readonly text: string } | null}
+   * @returns {ParagraphHit | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {Match & { readonly text: string } | null} */
+    /** @type {ParagraphHit | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
