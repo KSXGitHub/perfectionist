@@ -98,10 +98,11 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Check the docs-site JavaScript: formatting, types, then unit tests
+# Check the docs-site JavaScript: formatting, types, lints, then unit tests
 check-js:
   just fmt-js
   just check-js-types
+  just lint-js
   just test-js
 
 # Check the docs-site JavaScript's formatting
@@ -133,6 +134,22 @@ check-js-types:
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
+
+# Lint the docs-site JavaScript, types included
+lint-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  # Same file list as `fmt-js`, for the same reason.
+  #
+  # `--type-aware` is what runs the rules that need to know a type, and
+  # it is the half worth having: the page scripts carry their types in
+  # JSDoc, so the scope-only pass sees almost nothing. It reads
+  # `tsconfig.json` to find them, which is why `check-js-types` runs
+  # first -- a type error there makes everything reported here suspect.
+  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+    | xargs -0 pnpm --dir "$root_dir" exec oxlint --type-aware
 
 # Run the docs-site JavaScript unit tests
 test-js:

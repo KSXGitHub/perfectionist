@@ -5,6 +5,8 @@
   "devDependencies": {
     "lightningcss-cli": "1.32.0",
     "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
+    "oxlint-tsgolint": "7.0.2003",
     "svgo": "4.0.1",
     "terser": "5.48.0",
     "typescript": "7.0.2",

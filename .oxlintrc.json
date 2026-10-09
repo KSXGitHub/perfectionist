@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // `pedantic`, `restriction` and `style` are left out on purpose: they
+  // lint for a language level this tree does not target. `restriction`
+  // alone reports every `var` in the page scripts, which are ES5 because
+  // the browsers `just minify-docs` compiles the CSS for cannot run
+  // anything newer.
+  "categories": {
+    "correctness": "deny",
+    "suspicious": "deny",
+    "perf": "deny"
+  },
+  "rules": {
+    // Whether a binding is used is `tsc`'s question, under
+    // `noUnusedLocals` / `noUnusedParameters`. See "`tsc` owns names,
+    // oxlint owns patterns" in CLAUDE.md.
+    "eslint/no-unused-vars": "off",
+    // A DOM narrowing is the only way to type `querySelector` from JSDoc,
+    // where a type argument cannot be passed. Every
+    // `/** @type {HTMLElement} */ (document.querySelector(...))` in the
+    // page scripts is one, and each is followed by the null check the
+    // assertion skips.
+    "typescript/no-unsafe-type-assertion": "off",
+    // The replacement this asks for, `Array#toSorted`, is ES2023. Both
+    // call sites already sort a copy.
+    "unicorn/no-array-sort": "off",
+    // `new Array(n).join(s)` is how a string is repeated without
+    // `String#repeat`, which is ES2015.
+    "unicorn/no-new-array": "off",
+    // A nested function reusing an outer name for the same quantity is
+    // this tree's convention, not an accident: `houseWords` indexes the
+    // query's words with `i`, and so does the `walk` it then calls.
+    "eslint/no-shadow": "off",
+    // The test runner evaluates the catalogue's libraries in order
+    // because each publishes a global the next one reads. Awaiting them
+    // together would run them in whatever order they happen to resolve.
+    "eslint/no-await-in-loop": "off"
+  },
+  "overrides": [
+    {
+      // `tsconfig.json` includes `*.js` and nothing else, so `run.mjs`
+      // is the one tracked file the type-aware pass reads without
+      // types. It mistakes `Number(bigint)` there for a conversion that
+      // changes nothing; obeying it would leave a `bigint / 1e9` that
+      // throws.
+      "files": ["**/*.mjs"],
+      "rules": {
+        "typescript/no-unnecessary-type-conversion": "off"
+      }
+    }
+  ]
+}

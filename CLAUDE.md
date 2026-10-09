@@ -469,6 +469,43 @@ trailing comma in a call or parameter list is ES2017 and a parse error
 there, which would take a whole script down. Keep it `es5` unless that
 browser floor moves.
 
+## Linting the docs-site JavaScript
+
+The same JavaScript is linted by
+[oxlint](https://oxc.rs/docs/guide/usage/linter.html), configured in
+[`.oxlintrc.json`](.oxlintrc.json) and pinned beside `oxfmt` in
+[`package.json`](package.json). `just lint-js` runs it over the tracked
+`*.js` and `*.mjs` files; `just check-js` runs it after the type-check.
+
+It is always run `--type-aware`, which is the half worth having here:
+the scripts carry their types in JSDoc, so a scope-only pass barely
+sees them. That mode needs a second pinned package,
+`oxlint-tsgolint`; without it `--type-aware` stops with an error
+naming the package rather than quietly linting less. The types come
+from `tsconfig.json`, so a file outside its `include` is linted
+without any — which is why `check-js-types` goes first, and why the
+one such file has its own `overrides` entry.
+
+**`tsc` owns names, oxlint owns patterns.** Whether a binding is used,
+and whether a name resolves, are questions `tsc` answers from the same
+JSDoc and across files — `noUnusedLocals` and `noUnusedParameters` are
+the flags that put the first of them. oxlint answers both from scope
+alone, where each library's published global —
+`var perfectionistMatchText = ...`, read by the next script rather than
+by this one — reads as unused and its uses read as undefined. Leave
+both to `tsc`. Reaching instead for a `globals` block or a
+`varsIgnorePattern` buys a second, worse answer to a question already
+settled.
+
+Only the categories that look for defects are enabled. `pedantic`,
+`restriction` and `style` lint for a language level the page scripts do
+not target — `restriction` alone reports every `var` in them.
+
+Every rule the config switches off names the finding it was switched
+off for. Before adding another, confirm the rule fires with the entry
+removed: one that was never going to fire is a line nothing keeps
+honest.
+
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the

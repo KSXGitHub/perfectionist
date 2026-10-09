@@ -8,8 +8,9 @@ name: Check JS
 # that needed it. (test.yaml gates, and takes a deny-list for that reason.)
 # The push and pull_request lists are kept identical by hand.
 #
-# The jobs do not `needs:` each other either, so a type error and a failing
-# test are reported in the same run instead of one hiding the other.
+# The jobs do not `needs:` each other either, so a type error, a lint and a
+# failing test are reported in the same run instead of one hiding the
+# others.
 on:
   push:
     branches: ['**']
@@ -17,6 +18,7 @@ on:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
       - '.oxfmtrc.json'
+      - '.oxlintrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -27,6 +29,7 @@ on:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
       - '.oxfmtrc.json'
+      - '.oxlintrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -79,6 +82,49 @@ jobs:
         run: |
           git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
             | xargs -0 pnpm exec oxfmt --check
+
+  lint:
+    name: Lint JS
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-jslint-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-jslint-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      # Same file list as the formatting job, for the same reason.
+      #
+      # `--type-aware` runs the rules that need to know a type, which on
+      # this tree is most of what oxlint has to offer: the scripts carry
+      # their types in JSDoc, so a scope-only pass barely sees them. The
+      # types come from `tsconfig.json`, and the `types` job reports an
+      # error in those first.
+      - name: Lint JavaScript
+        shell: bash
+        run: |
+          git ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+            | xargs -0 pnpm exec oxlint --type-aware
 
   types:
     name: Check JS types
