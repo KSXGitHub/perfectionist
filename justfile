@@ -126,14 +126,14 @@ minify-docs site_dir="gh-pages":
   # CSS: lightningcss minifies every file in place.
   css=(*.css)
   if [ "${#css[@]}" -gt 0 ]; then
-    pnpm exec lightningcss --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
+    pnpm --dir "$root_dir" exec lightningcss --minify --targets 'ie 11' --sourcemap --output-dir . "${css[@]}"
   fi
   # JS: terser minifies every file in place.
   for js in *.js; do
-    pnpm exec terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
+    pnpm --dir "$root_dir" exec terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
   done
   # SVG: svgo minifies every file in place.
   svg=(*.svg)
   if [ "${#svg[@]}" -gt 0 ]; then
-    pnpm exec svgo --quiet --folder .
+    pnpm --dir "$root_dir" exec svgo --quiet --folder .
   fi
