@@ -117,8 +117,11 @@ write-fmt-js:
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
-  pnpm install --frozen-lockfile
-  pnpm exec tsc --noEmit --project tsconfig.json
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
 
 # Lint the docs-site JavaScript, types included
 lint-js:
@@ -133,7 +136,7 @@ fix-js:
 
 # Run the docs-site JavaScript unit tests
 test-js:
-  node tools/gen-docs/tests/run.mjs
+  node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
 # Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
 minify-docs site_dir="gh-pages":
