@@ -64,7 +64,8 @@ var perfectionistTests = (function () {
     if (groups.length === 0) {
       throw new Error('`' + name + '` was registered before any group was opened')
     }
-    groups[groups.length - 1].cases.push({ name: name, run: run })
+    var open = /** @type {TestGroup} */ (groups[groups.length - 1])
+    open.cases.push({ name: name, run: run })
   }
 
   /** @returns {TestGroup[]} */

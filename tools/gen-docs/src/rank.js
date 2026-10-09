@@ -30,9 +30,9 @@
  * @typedef {object} Result
  * @property {Entry} entry
  * @property {number} score
- * @property {number[][]} nameRanges
+ * @property {Span[]} nameRanges
  * @property {string} text
- * @property {number[][]} textRanges
+ * @property {Span[]} textRanges
  */
 
 var perfectionistRank = (function () {
@@ -77,10 +77,11 @@ var perfectionistRank = (function () {
   function prose(raw) {
     var text = flatten(raw)
     for (var i = 0; i < PSEUDO_HEADINGS.length; i++) {
-      if (text.indexOf(PSEUDO_HEADINGS[i]) !== 0) {
+      var heading = /** @type {string} */ (PSEUDO_HEADINGS[i])
+      if (text.indexOf(heading) !== 0) {
         continue
       }
-      return text.slice(PSEUDO_HEADINGS[i].length).trim()
+      return text.slice(heading.length).trim()
     }
     return text
   }
@@ -95,20 +96,21 @@ var perfectionistRank = (function () {
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
    * @param {string[]} paragraphs
-   * @returns {{ score: number, ranges: number[][], text: string } | null}
+   * @returns {{ score: number, ranges: Span[], text: string } | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {{ score: number, ranges: number[][], text: string } | null} */
+    /** @type {{ score: number, ranges: Span[], text: string } | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
-      var found = proseHit(query, paragraphs[i])
+      var paragraph = /** @type {string} */ (paragraphs[i])
+      var found = proseHit(query, paragraph)
       if (!found) {
         continue
       }
       if (best && best.score >= found.score) {
         continue
       }
-      best = { score: found.score, ranges: found.ranges, text: paragraphs[i] }
+      best = { score: found.score, ranges: found.ranges, text: paragraph }
     }
     return best
   }
@@ -124,7 +126,7 @@ var perfectionistRank = (function () {
     /** @type {Result[]} */
     var out = []
     for (var i = 0; i < entries.length; i++) {
-      var entry = entries[i]
+      var entry = /** @type {Entry} */ (entries[i])
       var matchedName = nameHit(query, entry.name)
       var statementHit = proseHit(query, entry.statement)
       var paragraphHit = bestParagraph(query, entry.paragraphs)
@@ -140,7 +142,7 @@ var perfectionistRank = (function () {
       // windowed around the match. Either way the ranges handed to the
       // renderer are the ones matched in the text actually shown, so a
       // result highlights what the reader typed wherever they can see it.
-      /** @type {{ text: string, ranges: number[][] }} */
+      /** @type {{ text: string, ranges: Span[] }} */
       var shown
       if (paragraphHit && paragraphScore > nameScore && paragraphScore > statementScore) {
         shown = perfectionistMatch.excerpt(paragraphHit.text, paragraphHit.ranges, EXCERPT_LIMIT)

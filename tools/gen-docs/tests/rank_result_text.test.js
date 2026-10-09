@@ -68,11 +68,8 @@
     var long = padding + 'and then a bare URL at the very end'
     var hit = only([entry({ paragraphs: [long] })], 'bare url')
     t.greater(long.length, hit.text.length, 'the paragraph does not show whole')
-    t.equal(
-      hit.text.slice(hit.textRanges[0][0], hit.textRanges[0][1]),
-      'bare URL',
-      'and the mark still sits on the words that matched'
-    )
+    var marked = t.found(hit.textRanges[0], 'the paragraph carries a mark')
+    t.equal(hit.text.slice(marked[0], marked[1]), 'bare URL', 'and the mark still sits on the words that matched')
   })
 
   t.add('every range indexes into the text handed back with it', function () {
@@ -88,17 +85,18 @@
     )
     t.equal(ranked.length, 3, 'all three are results')
     for (var i = 0; i < ranked.length; i++) {
-      var hit = ranked[i]
+      var hit = t.found(ranked[i], 'a result')
       var bounds = [
         { ranges: hit.nameRanges, extent: hit.entry.name.length },
         { ranges: hit.textRanges, extent: hit.text.length },
       ]
       for (var j = 0; j < bounds.length; j++) {
-        for (var k = 0; k < bounds[j].ranges.length; k++) {
-          var range = bounds[j].ranges[k]
+        var bound = t.found(bounds[j], 'a string to index into')
+        for (var k = 0; k < bound.ranges.length; k++) {
+          var range = t.found(bound.ranges[k], 'a range')
           t.ok(range[0] >= 0, 'a range starts inside the string')
           t.greater(range[1], range[0], 'a range is not empty')
-          t.ok(range[1] <= bounds[j].extent, 'a range ends inside the string')
+          t.ok(range[1] <= bound.extent, 'a range ends inside the string')
         }
       }
     }

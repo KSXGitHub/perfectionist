@@ -25,7 +25,7 @@ var perfectionistMatch = (function () {
    * put them in order.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function matchFuzzy(query, target) {
     var needle = fold(query)
@@ -54,7 +54,7 @@ var perfectionistMatch = (function () {
    * from each other.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function matchPhrase(query, target) {
     var needle = fold(query)
@@ -77,26 +77,28 @@ var perfectionistMatch = (function () {
    * match is marked, and a match longer than the window is still most of
    * what they are looking at.
    * @param {string} text
-   * @param {number[][]} ranges
+   * @param {Span[]} ranges
    * @param {number} limit  the longest window to keep, in characters
-   * @returns {{ text: string, ranges: number[][] }}
+   * @returns {{ text: string, ranges: Span[] }}
    */
   function excerpt(text, ranges, limit) {
     if (text.length <= limit) {
       return { text: text, ranges: ranges }
     }
-    var anchor = ranges.length > 0 ? ranges[0][0] : 0
+    var first = ranges[0]
+    var anchor = first ? first[0] : 0
     // Keep a quarter of the window ahead of the match so the reader sees
     // what it sits in, and clamp to the text's ends so a match near either
     // one still fills the whole window.
     var start = Math.max(0, Math.min(anchor - Math.floor(limit / 4), text.length - limit))
     var end = start + limit
     var slice = text.slice(start, end)
-    /** @type {number[][]} */
+    /** @type {Span[]} */
     var shifted = []
     for (var i = 0; i < ranges.length; i++) {
-      var from = Math.max(ranges[i][0], start)
-      var to = Math.min(ranges[i][1], end)
+      var range = /** @type {Span} */ (ranges[i])
+      var from = Math.max(range[0], start)
+      var to = Math.min(range[1], end)
       if (from >= to) {
         continue
       }
@@ -105,8 +107,9 @@ var perfectionistMatch = (function () {
     var prefix = start > 0 ? '\u2026' : ''
     if (prefix) {
       for (var j = 0; j < shifted.length; j++) {
-        shifted[j][0] += prefix.length
-        shifted[j][1] += prefix.length
+        var moved = /** @type {Span} */ (shifted[j])
+        moved[0] += prefix.length
+        moved[1] += prefix.length
       }
     }
     return {

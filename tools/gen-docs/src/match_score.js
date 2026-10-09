@@ -85,9 +85,9 @@ var perfectionistMatchScore = (function () {
    * two apart — tiers that tie place the same characters, and the
    * ranges they hand back agree — so this settles the order rather than
    * any answer.
-   * @param {{ score: number, ranges: number[][] } | null} left
-   * @param {{ score: number, ranges: number[][] } | null} right
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @param {{ score: number, ranges: Span[] } | null} left
+   * @param {{ score: number, ranges: Span[] } | null} right
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function better(left, right) {
     if (!left) {

@@ -70,7 +70,8 @@
   /** @param {boolean} open */
   function setAllOpen(open) {
     for (var i = 0; i < panels.length; i++) {
-      panels[i].open = open
+      var panel = /** @type {HTMLDetailsElement} */ (panels[i])
+      panel.open = open
     }
   }
 
@@ -82,7 +83,8 @@
     var allOpen = true
     var allClosed = true
     for (var i = 0; i < panels.length; i++) {
-      if (panels[i].open) {
+      var panel = /** @type {HTMLDetailsElement} */ (panels[i])
+      if (panel.open) {
         allClosed = false
       } else {
         allOpen = false

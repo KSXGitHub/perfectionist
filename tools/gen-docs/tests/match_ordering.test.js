@@ -27,8 +27,9 @@
       t.found(m.matchFuzzy('b' + new Array(60).join('_') + 'l', 'bl'), 'a query of mostly padding'),
     ]
     for (var i = 0; i < samples.length; i++) {
-      t.greater(samples[i].score, 0, 'a match scores above nothing')
-      t.ok(samples[i].score <= 1, 'a match scores at most one')
+      var sample = t.found(samples[i], 'a sample')
+      t.greater(sample.score, 0, 'a match scores above nothing')
+      t.ok(sample.score <= 1, 'a match scores at most one')
     }
   })
 

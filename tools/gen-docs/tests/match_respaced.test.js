@@ -26,8 +26,9 @@
       m.matchPhrase('flagsclosureparameters', target),
       'a query run together still finds the words it ran together'
     )
+    var marked = t.found(hit.ranges[0], 'the phrase is marked')
     t.equal(
-      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
+      target.slice(marked[0], marked[1]),
       'Flags closure parameters',
       'the whole phrase is marked, the separators it stepped over included'
     )

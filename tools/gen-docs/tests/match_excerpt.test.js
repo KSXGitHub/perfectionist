@@ -15,6 +15,7 @@
   t.group('match_excerpt.test.js')
 
   t.add('a short text is left alone', function () {
+    /** @type {Span[]} */
     var ranges = [[4, 9]]
     var kept = m.excerpt('the quick brown fox', ranges, 100)
     t.equal(kept.text, 'the quick brown fox', 'nothing is cut')
@@ -28,14 +29,15 @@
     // Asserted before the range is read, so a window that lost it fails
     // on this claim rather than crashing on the next line.
     t.equal(windowed.ranges.length, 1, 'the match is inside the window the match anchored')
+    var shifted = t.found(windowed.ranges[0], 'the window kept the range')
     t.equal(
-      windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
+      windowed.text.slice(shifted[0], shifted[1]),
       'jumps',
       'the shifted range still covers the word that matched'
     )
     // A quarter of the window is kept ahead of the match, so the reader
     // sees what it sits in rather than meeting it against the ellipsis.
-    t.greater(windowed.ranges[0][0], 1, 'the window opens before the match, not on it')
+    t.greater(shifted[0], 1, 'the window opens before the match, not on it')
   })
 
   t.add('a match near either end still fills the window', function () {
@@ -45,11 +47,8 @@
     // long as one in the middle of it.
     var tail = m.excerpt(text, [[40, 43]], 20)
     t.greater(tail.text.length, 20, 'the window is as long as it would be anywhere else')
-    t.equal(
-      tail.text.slice(tail.ranges[0][0], tail.ranges[0][1]),
-      'dog',
-      'and the range still covers the word that matched'
-    )
+    var tailRange = t.found(tail.ranges[0], 'the window kept the range')
+    t.equal(tail.text.slice(tailRange[0], tailRange[1]), 'dog', 'and the range still covers the word that matched')
   })
 
   t.add('a match longer than the window is marked through it', function () {
@@ -60,11 +59,8 @@
     // fitting inside it.
     var windowed = m.excerpt(text, [[0, text.length]], 20)
     t.equal(windowed.ranges.length, 1, 'the range survives the window')
-    t.equal(
-      windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
-      'the quick brown fox ',
-      'cut to what the window shows of it'
-    )
+    var whole = t.found(windowed.ranges[0], 'the window kept the range')
+    t.equal(windowed.text.slice(whole[0], whole[1]), 'the quick brown fox ', 'cut to what the window shows of it')
   })
 
   t.add('a window that cuts either end says so', function () {
@@ -86,8 +82,9 @@
       12
     )
     t.equal(windowed.ranges.length, 1, 'the range that fell outside the window is gone')
+    var survivor = t.found(windowed.ranges[0], 'the window kept the range')
     t.equal(
-      windowed.text.slice(windowed.ranges[0][0], windowed.ranges[0][1]),
+      windowed.text.slice(survivor[0], survivor[1]),
       'dog',
       'and the one that survived covers what it covered before'
     )

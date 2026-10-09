@@ -156,7 +156,7 @@
   var heading = document.querySelector('h1#catalogue')
   if (heading && 'IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
-      var entry = entries[entries.length - 1]
+      var entry = /** @type {IntersectionObserverEntry} */ (entries[entries.length - 1])
       toggle.classList.toggle('nav-toggle-hidden', entry.isIntersecting)
     })
     observer.observe(heading)
@@ -254,7 +254,8 @@
   }
   function clearBackgroundInert() {
     for (var i = 0; i < inertedChildren.length; i++) {
-      inertedChildren[i].inert = false
+      var child = /** @type {HTMLElement} */ (inertedChildren[i])
+      child.inert = false
     }
     inertedChildren = []
   }
@@ -327,8 +328,8 @@
     if (focusable.length === 0) {
       return
     }
-    var first = focusable[0]
-    var last = focusable[focusable.length - 1]
+    var first = /** @type {HTMLElement} */ (focusable[0])
+    var last = /** @type {HTMLElement} */ (focusable[focusable.length - 1])
     if (!sidebar.contains(document.activeElement)) {
       event.preventDefault()
       first.focus()

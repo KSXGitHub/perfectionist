@@ -88,7 +88,8 @@
   /** @param {string} value */
   function selectRadio(value) {
     for (var i = 0; i < radios.length; i++) {
-      radios[i].checked = radios[i].value === value
+      var radio = /** @type {HTMLInputElement} */ (radios[i])
+      radio.checked = radio.value === value
     }
   }
 
@@ -113,7 +114,8 @@
   })
 
   for (var i = 0; i < radios.length; i++) {
-    radios[i].addEventListener('change', function (event) {
+    var choice = /** @type {HTMLInputElement} */ (radios[i])
+    choice.addEventListener('change', function (event) {
       var radio = /** @type {HTMLInputElement} */ (event.target)
       applyScheme(radio.value)
       persistScheme(radio.value)

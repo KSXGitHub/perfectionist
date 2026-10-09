@@ -143,7 +143,7 @@
   function textWithout(parent, omit) {
     var out = ''
     for (var i = 0; i < parent.childNodes.length; i++) {
-      var node = parent.childNodes[i]
+      var node = /** @type {ChildNode} */ (parent.childNodes[i])
       if (node === omit) {
         continue
       }
@@ -179,7 +179,7 @@
     var out = []
     var articles = document.querySelectorAll('article.rule')
     for (var i = 0; i < articles.length; i++) {
-      var article = articles[i]
+      var article = /** @type {HTMLElement} */ (articles[i])
       var nameHost = article.querySelector('h2 .lint-name')
       var id = article.getAttribute('id')
       if (!nameHost || !id) {
@@ -276,7 +276,7 @@
     }
     showOnly(results)
     for (var i = 0; i < ranked.length; i++) {
-      renderResult(ranked[i])
+      renderResult(/** @type {Result} */ (ranked[i]))
     }
   }
 
@@ -313,7 +313,8 @@
 
   function clearBackgroundInert() {
     for (var i = 0; i < inerted.length; i++) {
-      inerted[i].inert = false
+      var child = /** @type {HTMLElement} */ (inerted[i])
+      child.inert = false
     }
     inerted = []
   }
@@ -525,7 +526,8 @@
     // inert while the overlay is open, so there is nowhere else to go.
     var next = at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length
     event.preventDefault()
-    items[next].focus()
+    var target = /** @type {HTMLElement} */ (items[next])
+    target.focus()
   })
 
   // Following a result closes the overlay so the rule it lands on is

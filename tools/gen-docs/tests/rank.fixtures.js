@@ -36,7 +36,8 @@ var perfectionistRankFixtures = (function () {
   function only(entries, query) {
     var ranked = r.rank(entries, query)
     t.equal(ranked.length, 1, '`' + query + '` should find exactly one of these')
-    return ranked[0]
+
+    return t.found(ranked[0], 'the one result')
   }
 
   return {

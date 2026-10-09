@@ -72,12 +72,13 @@
   var failed = 0
 
   for (var g = 0; g < groups.length; g++) {
+    var group = /** @type {TestGroup} */ (groups[g])
     var heading = document.createElement('h2')
-    heading.textContent = groups[g].name
+    heading.textContent = group.name
     list.appendChild(heading)
 
     var rows = document.createElement('ul')
-    var cases = groups[g].cases
+    var cases = group.cases
     total += cases.length
 
     // Every row goes in untested, and is run afterwards. Nothing is
@@ -85,6 +86,7 @@
     // there for when the reporter itself throws part way through, which
     // leaves the rows past that point reading `untested` on screen
     // instead of never appearing at all.
+    /** @type {{ run: () => void, row: HTMLElement, indicator: HTMLElement }[]} */
     var pending = []
     for (var i = 0; i < cases.length; i++) {
       var row = document.createElement('li')
@@ -95,10 +97,11 @@
       row.appendChild(indicator)
       var name = document.createElement('span')
       name.className = 'name'
-      name.textContent = cases[i].name
+      var testCase = /** @type {TestCase} */ (cases[i])
+      name.textContent = testCase.name
       row.appendChild(name)
       rows.appendChild(row)
-      pending.push({ run: cases[i].run, row: row, indicator: indicator })
+      pending.push({ run: testCase.run, row: row, indicator: indicator })
     }
     list.appendChild(rows)
 
@@ -107,16 +110,17 @@
       // no message would otherwise read as having passed while still
       // counting against the total, and the summary would contradict
       // every row on the page.
+      var waiting = /** @type {{ run: () => void, row: HTMLElement, indicator: HTMLElement }} */ (pending[j])
       var broke = false
       var failure = ''
       try {
-        pending[j].run()
+        waiting.run()
       } catch (thrown) {
         broke = true
         failure = reason(thrown)
         failed += 1
       }
-      setState(pending[j].row, pending[j].indicator, broke ? 'failed' : 'passed')
+      setState(waiting.row, waiting.indicator, broke ? 'failed' : 'passed')
       if (!failure) {
         continue
       }
@@ -125,7 +129,7 @@
       var why = document.createElement('samp')
       why.className = 'why'
       why.textContent = failure
-      pending[j].row.appendChild(why)
+      waiting.row.appendChild(why)
     }
   }
 

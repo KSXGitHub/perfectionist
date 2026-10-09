@@ -17,8 +17,10 @@
   t.add('a name match outranks the same text in a statement', function () {
     var ranked = r.rank([entry({ statement: 'bare_url', order: 0 }), entry({ name: 'bare_url', order: 1 })], 'bare url')
     t.equal(ranked.length, 2, 'both are results')
-    t.deepEqual(ranked[0].nameRanges, [[0, 8]], 'the one whose name matched comes first')
-    t.greater(ranked[0].score, ranked[1].score, 'and it scores higher, order notwithstanding')
+    var top = t.found(ranked[0], 'a first result')
+    var second = t.found(ranked[1], 'a second result')
+    t.deepEqual(top.nameRanges, [[0, 8]], 'the one whose name matched comes first')
+    t.greater(top.score, second.score, 'and it scores higher, order notwithstanding')
   })
 
   t.add('a statement match outranks the same text in a paragraph', function () {
@@ -27,8 +29,10 @@
       'bare url'
     )
     t.equal(ranked.length, 2, 'both are results')
-    t.equal(ranked[0].entry.order, 1, 'the statement match comes first, despite being second on the page')
-    t.greater(ranked[0].score, ranked[1].score, 'a statement is worth more than body prose')
+    var top = t.found(ranked[0], 'a first result')
+    var second = t.found(ranked[1], 'a second result')
+    t.equal(top.entry.order, 1, 'the statement match comes first, despite being second on the page')
+    t.greater(top.score, second.score, 'a statement is worth more than body prose')
   })
 
   t.add('a rule matching in two fields scores by the better of them', function () {
@@ -46,8 +50,10 @@
     // ES2019 don't promise a stable sort, so the order has to be part of
     // the comparison rather than left to the sort.
     var ranked = r.rank([entry({ name: 'bare_url', order: 7 }), entry({ name: 'bare_url', order: 3 })], 'bare url')
-    t.equal(ranked[0].entry.order, 3, 'the one that comes first on the page comes first here')
-    t.equal(ranked[1].entry.order, 7, 'and the other after it')
+    var top = t.found(ranked[0], 'a first result')
+    var second = t.found(ranked[1], 'a second result')
+    t.equal(top.entry.order, 3, 'the one that comes first on the page comes first here')
+    t.equal(second.entry.order, 7, 'and the other after it')
   })
 
   t.add('the list is capped, and keeps the best of what it drops', function () {
@@ -59,7 +65,8 @@
     var ranked = r.rank(entries, 'bare url')
     t.greater(entries.length, ranked.length, 'more rules match than the list shows')
     for (var j = 0; j < ranked.length; j++) {
-      t.equal(ranked[j].entry.order, j, "what it keeps is the page's own first few")
+      var hit = t.found(ranked[j], 'a result')
+      t.equal(hit.entry.order, j, "what it keeps is the page's own first few")
     }
   })
 })()

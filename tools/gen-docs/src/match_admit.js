@@ -42,7 +42,7 @@ var perfectionistMatchAdmit = (function () {
    * words that identifier ran together — where one who types the `e` that
    * `single` ends in has typed a letter that happens to fall last.
    * @param {string} haystack
-   * @param {number[]} range
+   * @param {Span} range
    * @returns {boolean}
    */
   function aimed(haystack, range) {
@@ -66,17 +66,20 @@ var perfectionistMatchAdmit = (function () {
    * an answer nobody can rely on: one more character could push a result
    * back over a bar it had fallen under, so it leaves the list and
    * returns.
-   * @param {number[][]} ranges  the match's runs, in order, at least one
+   * @param {Span[]} ranges     the match's runs, in order
    * @param {string} haystack    folded target
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    if (!aimed(haystack, ranges[0])) {
+    var first = ranges[0]
+    // A match that marks nothing has nothing to show.
+    if (!first || !aimed(haystack, first)) {
       return false
     }
     var slips = 0
     for (var i = 1; i < ranges.length; i++) {
-      if (isWordStart(haystack, ranges[i][0])) {
+      var range = /** @type {Span} */ (ranges[i])
+      if (isWordStart(haystack, range[0])) {
         continue
       }
       slips++
@@ -98,10 +101,10 @@ var perfectionistMatchAdmit = (function () {
    *
    * This only orders, so a tier whose every placement is a coincidence
    * still comes back for `matchFuzzy` to turn away.
-   * @param {{ score: number, ranges: number[][] } | null} left
-   * @param {{ score: number, ranges: number[][] } | null} right
+   * @param {{ score: number, ranges: Span[] } | null} left
+   * @param {{ score: number, ranges: Span[] } | null} right
    * @param {string} haystack
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function betterAdmitted(left, right, haystack) {
     if (!left) {

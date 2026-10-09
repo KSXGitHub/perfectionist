@@ -21,6 +21,10 @@
    */
 
   /**
+   * @typedef {{ item: FilterItem, score: number, ranges: Span[] }} Matched
+   */
+
+  /**
    * @typedef {object} FilterBox
    * @property {(seed: string) => void} openWith
    */
@@ -142,12 +146,13 @@
   function wireBox(toggle, list, items, box, input) {
     function reset() {
       for (var i = 0; i < items.length; i++) {
-        items[i].element.hidden = false
-        items[i].element.removeAttribute('data-score')
-        renderName(items[i].nameHost, items[i].name, [])
+        var item = /** @type {FilterItem} */ (items[i])
+        item.element.hidden = false
+        item.element.removeAttribute('data-score')
+        renderName(item.nameHost, item.name, [])
         // `items` was collected in rendered order, so re-appending in that
         // order restores it.
-        list.appendChild(items[i].element)
+        list.appendChild(item.element)
       }
     }
 
@@ -157,17 +162,18 @@
         reset()
         return
       }
-      /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
+      /** @type {Matched[]} */
       var matched = []
       for (var i = 0; i < items.length; i++) {
-        var hit = matchFuzzy(query, items[i].name)
+        var item = /** @type {FilterItem} */ (items[i])
+        var hit = matchFuzzy(query, item.name)
         if (hit) {
-          matched.push({ item: items[i], score: hit.score, ranges: hit.ranges })
+          matched.push({ item: item, score: hit.score, ranges: hit.ranges })
           continue
         }
-        items[i].element.hidden = true
-        items[i].element.removeAttribute('data-score')
-        renderName(items[i].nameHost, items[i].name, [])
+        item.element.hidden = true
+        item.element.removeAttribute('data-score')
+        renderName(item.nameHost, item.name, [])
       }
       // The tie-break is explicit: sort stability cannot be assumed on the
       // engines this page targets.
@@ -178,7 +184,7 @@
         return left.item.order - right.item.order
       })
       for (var j = 0; j < matched.length; j++) {
-        var entry = matched[j]
+        var entry = /** @type {Matched} */ (matched[j])
         entry.item.element.hidden = false
         entry.item.element.setAttribute('data-score', entry.score.toFixed(4))
         renderName(entry.item.nameHost, entry.item.name, entry.ranges)
@@ -307,7 +313,8 @@
   var indexInView = true
   if ('IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
-      indexInView = entries[entries.length - 1].isIntersecting
+      var latest = /** @type {IntersectionObserverEntry} */ (entries[entries.length - 1])
+      indexInView = latest.isIntersecting
     })
     observer.observe(table)
   }
