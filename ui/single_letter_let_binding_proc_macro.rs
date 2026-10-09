@@ -5,7 +5,7 @@
 // by a proc-macro derive whose expansion attaches a user-source span
 // to the binding identifier. `clap_derive` does this when expanding
 // `#[clap(default_value_t = ...)]` into a `ToString`-based fallback;
-// the `SynthBinding` derive in this file mirrors the same span
+// the `SynthBinding` derive imported below mirrors the same span
 // shape on a minimal `#[synth_default]` attribute.
 
 #![allow(dead_code, unused_variables, reason = "ui fixture")]
