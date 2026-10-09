@@ -103,10 +103,11 @@ const CONSUME_HELP: &str = "either stop it borrowing: take `self` by value and m
                             where the name says it does";
 
 /// The second remedy for the borrowing half: the return type may be
-/// right and the prefix wrong, and `as_*` is the prefix for handing back
-/// a borrow that costs nothing.
-const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the prefix for a \
-                           conversion that hands back a borrow";
+/// right and the prefix wrong. Which prefix depends on what producing
+/// the borrow costs, since the guidelines let both `as_` and `to_`
+/// hand one back.
+const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*` where the borrow is \
+                           free, or `to_*` where producing it costs something";
 
 /// The prefix this rule measures, and one `cloning_getter` refuses to
 /// read as a getter. Both rules match the same field-copy shape, so
