@@ -107,8 +107,11 @@ check-js:
 
 # Check the docs-site JavaScript's formatting
 fmt-js:
-  pnpm install --frozen-lockfile
-  pnpm exec oxfmt --check '**/*.js' '**/*.mjs'
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --check '**/*.js' '**/*.mjs'
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
@@ -125,13 +128,19 @@ check-js-types:
 
 # Lint the docs-site JavaScript, types included
 lint-js:
-  pnpm install --frozen-lockfile
-  pnpm exec oxlint --type-aware
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware
 
 # Apply what oxlint can fix to the docs-site JavaScript, then reformat
 fix-js:
-  pnpm install --frozen-lockfile
-  pnpm exec oxlint --type-aware --fix
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware --fix
   just write-fmt-js
 
 # Run the docs-site JavaScript unit tests
