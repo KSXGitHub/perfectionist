@@ -21,6 +21,10 @@
    */
 
   /**
+   * @typedef {{ item: FilterItem, score: number, ranges: Span[] }} Matched
+   */
+
+  /**
    * @typedef {object} FilterBox
    * @property {(seed: string) => void} openWith
    */
@@ -157,7 +161,7 @@
         reset()
         return
       }
-      /** @type {{ item: FilterItem, score: number, ranges: number[][] }[]} */
+      /** @type {Matched[]} */
       var matched = []
       for (var i = 0; i < items.length; i++) {
         var hit = matchFuzzy(query, items[i].name)

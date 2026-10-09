@@ -30,9 +30,9 @@
  * @typedef {object} Result
  * @property {Entry} entry
  * @property {number} score
- * @property {number[][]} nameRanges
+ * @property {Span[]} nameRanges
  * @property {string} text
- * @property {number[][]} textRanges
+ * @property {Span[]} textRanges
  */
 
 var perfectionistRank = (function () {
@@ -95,10 +95,10 @@ var perfectionistRank = (function () {
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
    * @param {string[]} paragraphs
-   * @returns {{ score: number, ranges: number[][], text: string } | null}
+   * @returns {{ score: number, ranges: Span[], text: string } | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {{ score: number, ranges: number[][], text: string } | null} */
+    /** @type {{ score: number, ranges: Span[], text: string } | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
@@ -140,7 +140,7 @@ var perfectionistRank = (function () {
       // windowed around the match. Either way the ranges handed to the
       // renderer are the ones matched in the text actually shown, so a
       // result highlights what the reader typed wherever they can see it.
-      /** @type {{ text: string, ranges: number[][] }} */
+      /** @type {{ text: string, ranges: Span[] }} */
       var shown
       if (paragraphHit && paragraphScore > nameScore && paragraphScore > statementScore) {
         shown = perfectionistMatch.excerpt(paragraphHit.text, paragraphHit.ranges, EXCERPT_LIMIT)

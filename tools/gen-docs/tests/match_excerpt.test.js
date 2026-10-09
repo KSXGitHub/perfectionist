@@ -15,6 +15,7 @@
   t.group('match_excerpt.test.js')
 
   t.add('a short text is left alone', function () {
+    /** @type {Span[]} */
     var ranges = [[4, 9]]
     var kept = m.excerpt('the quick brown fox', ranges, 100)
     t.equal(kept.text, 'the quick brown fox', 'nothing is cut')

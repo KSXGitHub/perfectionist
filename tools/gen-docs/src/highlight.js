@@ -45,7 +45,7 @@ var perfectionistHighlight = (function () {
    * is how a cleared query undoes a highlight.
    * @param {HTMLElement} element
    * @param {string} text
-   * @param {number[][]} ranges
+   * @param {Span[]} ranges
    * @param {boolean} breakAfterUnderscore
    */
   function fill(element, text, ranges, breakAfterUnderscore) {
@@ -69,7 +69,7 @@ var perfectionistHighlight = (function () {
    * break opportunities the name needs in a narrow column.
    * @param {HTMLElement} element
    * @param {string} name
-   * @param {number[][]} ranges
+   * @param {Span[]} ranges
    */
   function renderName(element, name, ranges) {
     fill(element, name, ranges, true)
@@ -79,7 +79,7 @@ var perfectionistHighlight = (function () {
    * Render prose with its matches highlighted.
    * @param {HTMLElement} element
    * @param {string} text
-   * @param {number[][]} ranges
+   * @param {Span[]} ranges
    */
   function renderText(element, text, ranges) {
     fill(element, text, ranges, false)

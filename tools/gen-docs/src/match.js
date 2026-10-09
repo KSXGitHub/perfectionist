@@ -25,7 +25,7 @@ var perfectionistMatch = (function () {
    * put them in order.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function matchFuzzy(query, target) {
     var needle = fold(query)
@@ -54,7 +54,7 @@ var perfectionistMatch = (function () {
    * from each other.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: number[][] } | null}
+   * @returns {{ score: number, ranges: Span[] } | null}
    */
   function matchPhrase(query, target) {
     var needle = fold(query)
@@ -77,9 +77,9 @@ var perfectionistMatch = (function () {
    * match is marked, and a match longer than the window is still most of
    * what they are looking at.
    * @param {string} text
-   * @param {number[][]} ranges
+   * @param {Span[]} ranges
    * @param {number} limit  the longest window to keep, in characters
-   * @returns {{ text: string, ranges: number[][] }}
+   * @returns {{ text: string, ranges: Span[] }}
    */
   function excerpt(text, ranges, limit) {
     if (text.length <= limit) {
@@ -92,7 +92,7 @@ var perfectionistMatch = (function () {
     var start = Math.max(0, Math.min(anchor - Math.floor(limit / 4), text.length - limit))
     var end = start + limit
     var slice = text.slice(start, end)
-    /** @type {number[][]} */
+    /** @type {Span[]} */
     var shifted = []
     for (var i = 0; i < ranges.length; i++) {
       var from = Math.max(ranges[i][0], start)

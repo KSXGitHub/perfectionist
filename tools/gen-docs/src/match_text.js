@@ -4,6 +4,12 @@
 // stem it shares with its variants.
 // ==========================================================================
 
+/**
+ * Where a word begins and ends: a half-open character range, as
+ * `String#slice` takes them.
+ * @typedef {[start: number, end: number]} Span
+ */
+
 var perfectionistMatchText = (function () {
   /**
    * Case-fold a string and flatten `_`, `-` and a space to one another,
@@ -81,10 +87,10 @@ var perfectionistMatchText = (function () {
 
   /**
    * @param {string} text
-   * @returns {number[][]}
+   * @returns {Span[]}
    */
   function wordSpans(text) {
-    /** @type {number[][]} */
+    /** @type {Span[]} */
     var out = []
     var at = nextWord(text, 0)
     while (at >= 0) {
