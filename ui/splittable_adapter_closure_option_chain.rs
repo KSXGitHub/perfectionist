@@ -113,8 +113,8 @@ fn split_guarded_by_value(lines: std::vec::IntoIter<&'static str>) -> Vec<usize>
     lines.filter(|line| wanted(line)).map(|_| 1).collect()
 }
 
-// Bad: a consumer, whose answer still depends only on which items
-// satisfy the guard.
+// Bad: a consumer rather than an adapter, whose answer depends only on
+// which items satisfy the guard.
 fn found(mut lines: std::vec::IntoIter<&'static str>) -> Option<usize> {
     lines.find_map(|line| parse(line).and_then(validate))
 }
@@ -175,7 +175,8 @@ fn filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
         .collect()
 }
 
-// Good: the chain's split again.
+// Good: the stage before the guard lifted into a leading `map`, leaving
+// `map_while` the guard that stops the run.
 fn split_filtering_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(parse)

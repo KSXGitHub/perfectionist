@@ -76,15 +76,15 @@ fn named_twice(pairs: std::vec::IntoIter<&'static str>) -> Vec<String> {
     pairs.map(|pair| pair.trim().to_owned() + pair).collect()
 }
 
-// Not flagged: the item is named twice in a fold, where the chain is
-// still what the closure always reaches and the second mention would
-// still be left with no binding.
+// Not flagged: the item is named twice in a fold, where each step's own
+// closure would leave the second mention with no binding.
 fn named_twice_in_a_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + line.trim().len() + line.len())
 }
 
-// Not flagged: the item is named again inside a step's own closure,
-// which a visitor stopping at the closure boundary would not see.
+// Not flagged: the item is named twice, the second mention sitting inside
+// a step's own closure, which a visitor stopping at the closure boundary
+// would not see.
 fn named_in_a_nested_closure(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines
         .map(|line| line.trim().parse::<usize>().unwrap_or_else(|_| line.len()))
