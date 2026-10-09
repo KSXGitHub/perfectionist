@@ -383,8 +383,8 @@ var perfectionistMatchTiers = (function () {
       }
       if (found === previous + 1) {
         raw += BASE + RUN_BONUS
-        // Extend the run in place rather than opening a second range, so
-        // the highlight renders one <mark> per contiguous stretch.
+        // Extend the last range rather than opening a second one, so the
+        // highlight renders one <mark> per contiguous stretch.
         var open = ranges[ranges.length - 1]
         ranges[ranges.length - 1] = [open[0], found + 1]
       } else {
