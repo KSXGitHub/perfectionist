@@ -38,17 +38,17 @@ impl Person {
         &self.name
     }
 
-    // Bad: same, returning `&Path`.
+    // Bad: a `PathBuf` field handed over as a `&Path` costs nothing.
     fn to_home(&self) -> &Path {
         &self.home
     }
 
-    // Bad: same, returning a slice.
+    // Bad: a `Vec<String>` field handed over as a slice costs nothing.
     fn to_tags(&self) -> &[String] {
         &self.tags
     }
 
-    // Bad: dereferencing a `PathBuf` is free as well.
+    // Bad: writing the dereference out does not make it cost anything.
     fn to_home_path(&self) -> &Path {
         &*self.home
     }
@@ -101,13 +101,14 @@ impl Person {
         &self.table
     }
 
-    // Bad: the same deref written out.
+    // Bad: an explicit `LazyLock` dereference, which rustc records as a
+    // method call rather than as a coercion.
     fn to_table_explicit(&self) -> &[String] {
         &*self.table
     }
 
-    // Bad: a `Deref` of the author's own is assumed free too. One that
-    // costs something is an anti-pattern in its own right.
+    // Bad: a hand-written `Deref` is assumed free as much as a std one.
+    // One that costs something is an anti-pattern in its own right.
     fn to_slot(&self) -> &str {
         &self.slot
     }
