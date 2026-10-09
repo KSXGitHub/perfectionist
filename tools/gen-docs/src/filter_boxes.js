@@ -13,12 +13,11 @@
   /**
    * One filterable entry. `order` is its place in the rendered list, which
    * is what a cleared query puts it back into.
-   * @typedef {{
-   *   readonly element: HTMLElement,
-   *   readonly nameHost: HTMLElement,
-   *   readonly name: string,
-   *   readonly order: number,
-   * }} FilterItem
+   * @typedef {object} FilterItem
+   * @property {HTMLElement} element
+   * @property {HTMLElement} nameHost
+   * @property {string} name
+   * @property {number} order
    */
 
   /**
@@ -26,7 +25,8 @@
    */
 
   /**
-   * @typedef {{ readonly openWith: (seed: string) => void }} FilterBox
+   * @typedef {object} FilterBox
+   * @property {(seed: string) => void} openWith
    */
 
   /**

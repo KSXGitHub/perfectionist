@@ -27,14 +27,16 @@
 
 /**
  * One case: the claim it makes, and the function that checks it.
- * @typedef {{ readonly name: string, readonly run: () => void }} TestCase
+ * @typedef {object} TestCase
+ * @property {string} name
+ * @property {() => void} run
  */
 
 /**
  * One file's cases, which both runners report as a block.
- * `cases` is appended to as each case registers, so the field is fixed
- * but the array it names is not.
- * @typedef {{ readonly name: string, readonly cases: TestCase[] }} TestGroup
+ * @typedef {object} TestGroup
+ * @property {string} name
+ * @property {TestCase[]} cases
  */
 
 var perfectionistTests = (function () {

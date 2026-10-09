@@ -15,26 +15,24 @@
  * One rule, in the shape ranking needs: its name, where it lives on the
  * page, its one-line statement, its prose a paragraph at a time, and
  * its position in the page's own order, which breaks ties.
- * @typedef {{
- *   readonly name: string,
- *   readonly href: string,
- *   readonly statement: string,
- *   readonly paragraphs: readonly string[],
- *   readonly order: number,
- * }} Entry
+ * @typedef {object} Entry
+ * @property {string} name
+ * @property {string} href
+ * @property {string} statement
+ * @property {readonly string[]} paragraphs
+ * @property {number} order
  */
 
 /**
  * One ranked result: the rule, the score it ranked by, the matched
  * ranges of its name, and the text to show beneath the name with the
  * matched ranges of *that* text.
- * @typedef {{
- *   readonly entry: Entry,
- *   readonly score: number,
- *   readonly nameRanges: readonly Span[],
- *   readonly text: string,
- *   readonly textRanges: readonly Span[],
- * }} Result
+ * @typedef {object} Result
+ * @property {Entry} entry
+ * @property {number} score
+ * @property {readonly Span[]} nameRanges
+ * @property {string} text
+ * @property {readonly Span[]} textRanges
  */
 
 var perfectionistRank = (function () {

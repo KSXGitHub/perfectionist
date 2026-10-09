@@ -25,17 +25,16 @@
   // ---- Cloning the overlay into the page --------------------------------
 
   /**
-   * @typedef {{
-   *   readonly toggle: HTMLElement,
-   *   readonly resultBlueprint: HTMLTemplateElement,
-   *   readonly overlay: HTMLElement,
-   *   readonly dialog: HTMLElement,
-   *   readonly input: HTMLInputElement,
-   *   readonly close: Element,
-   *   readonly results: HTMLElement,
-   *   readonly emptyPrompt: HTMLElement,
-   *   readonly emptyNoMatch: HTMLElement,
-   * }} Parts
+   * @typedef {object} Parts
+   * @property {HTMLElement} toggle
+   * @property {HTMLTemplateElement} resultBlueprint
+   * @property {HTMLElement} overlay
+   * @property {HTMLElement} dialog
+   * @property {HTMLInputElement} input
+   * @property {Element} close
+   * @property {HTMLElement} results
+   * @property {HTMLElement} emptyPrompt
+   * @property {HTMLElement} emptyNoMatch
    */
 
   /**
