@@ -83,12 +83,14 @@ impl Owning {
         Box::new(str::len)
     }
 
-    // Good: a function pointer, for the same reason.
+    // Good: the `&str` in a function pointer's signature is bound by
+    // that pointer's own `for<'x>`, not by this method's binder.
     fn into_fn_ptr(&self) -> fn(&str) -> usize {
         str::len
     }
 
-    // Good: and one nested inside an owned collection.
+    // Good: a `Vec` of function pointers is owned, and the `&u8` each
+    // one takes is bound by that pointer's own `for<'x>`.
     fn into_fns(&self) -> Vec<fn(&u8) -> u8> {
         Vec::new()
     }
