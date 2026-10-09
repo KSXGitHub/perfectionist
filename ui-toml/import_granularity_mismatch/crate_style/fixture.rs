@@ -66,9 +66,9 @@ mod explicit_self {
     use crate::thing::{self, T};
 }
 
-// Good: the sibling-split form of the very same imports — the bare module
-// `thing` next to the item `T`. It is already one `use` per crate root
-// and preserves every namespace `thing` binds, so it is the minimal
+// Good: the sibling-split form of a module and an item from it — the bare
+// module `thing` next to the item `T`. It is already one `use` per crate
+// root and preserves every namespace `thing` binds, so it is the minimal
 // crate-granularity shape and is left alone — never "collapsed" further
 // into the `self` form, which the rule cannot prove is equivalent.
 mod sibling_form {

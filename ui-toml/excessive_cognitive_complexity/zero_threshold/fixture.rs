@@ -171,7 +171,7 @@ fn recursive(n: u32) -> u32 {
     if n == 0 { 0 } else { recursive(n - 1) }
 }
 
-// Bad: a method calling itself is recursion too.
+// Bad: a method calling itself is recursion, and the call counts 1.
 struct Counter;
 
 impl Counter {

@@ -12,7 +12,7 @@ fn four_operators(first: bool, second: bool, third: bool, fourth: bool, fifth: b
     }
 }
 
-// Good: the same predicate with its first half named.
+// Good: the predicate split in two, each half 2 operators.
 fn named_half(first: bool, second: bool, third: bool, fourth: bool, fifth: bool) {
     let leading = first && second && third;
     if leading && fourth && fifth {
@@ -29,7 +29,7 @@ fn three_operators(first: bool, second: bool, third: bool, fourth: bool) {
 }
 
 // Bad: 4 operators each — a `while` condition and a match guard are
-// conditions too.
+// both conditions the rule reads.
 fn other_heads(first: bool, second: bool, third: bool, fourth: bool, fifth: bool, value: u8) {
     while first || second || third || fourth || fifth {
         work();

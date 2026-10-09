@@ -29,8 +29,9 @@ mod named {
     use crate::prelude::A;
 }
 
-// Bad: same, with an `as` rename. The replaced span stops before the
-// rename, so the fix leaves it in place rather than reproducing it.
+// Bad: a renamed item cherry-picked from the prelude. The replaced
+// span stops before the rename, so the fix leaves it in place rather
+// than reproducing it.
 mod renamed {
     use crate::prelude::B as Renamed;
 }
