@@ -1,6 +1,6 @@
 use crate::common::DefaultState;
 use crate::field_copy::{
-    COPYING_METHODS, Eligible, FieldCopy, borrowed_form, eligible_method, field_copy,
+    COPYING_METHODS, Eligible, FieldCopy, borrowed_form, eligible_method, field_copy_of,
 };
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
@@ -175,10 +175,10 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
         if !ident.name.as_str().starts_with(INTO_PREFIX) {
             return;
         }
-        let Some(Eligible { method, def_span }) = eligible_method(cx, kind, decl, body, def_id)
-        else {
+        let Some(eligible) = eligible_method(cx, kind, decl, body, def_id) else {
             return;
         };
+        let Eligible { method, def_span } = eligible;
         let output = cx
             .tcx
             .fn_sig(def_id)
@@ -209,7 +209,7 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
         }
         let Some(FieldCopy {
             field, field_ty, ..
-        }) = field_copy(cx, kind, decl, body, def_id, &self.copying_methods)
+        }) = field_copy_of(cx, &eligible, body, def_id, &self.copying_methods)
         else {
             return;
         };
