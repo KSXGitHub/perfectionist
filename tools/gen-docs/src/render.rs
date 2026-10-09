@@ -193,13 +193,26 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-system.svg", include_str!("assets/theme-system.svg")),
 ];
 
-/// The search and filter control icons (Octicons, MIT), shipped beside
-/// `index.html` and referenced from search.css. Each tuple is
-/// `(filename, contents)`. Not prefetched, unlike [`THEME_ICONS`]: these
-/// are masked onto buttons that appear as soon as their script runs.
-pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
+/// The icons the stylesheets mask onto the page's controls (Octicons,
+/// MIT), shipped beside `index.html`. Each tuple is
+/// `(filename, contents)`. No prefetch hint is shipped for these, as
+/// one is for [`THEME_ICONS`]: the page paints most of them as soon as
+/// it loads, which fetches them without help.
+pub(crate) const CONTROL_ICONS: &[(&str, &str)] = &[
     ("search.svg", include_str!("assets/search.svg")),
     ("filter.svg", include_str!("assets/filter.svg")),
+    ("nav-menu.svg", include_str!("assets/nav-menu.svg")),
+    ("close.svg", include_str!("assets/close.svg")),
+    ("settings.svg", include_str!("assets/settings.svg")),
+    (
+        "disclosure-closed.svg",
+        include_str!("assets/disclosure-closed.svg"),
+    ),
+    (
+        "disclosure-open.svg",
+        include_str!("assets/disclosure-open.svg"),
+    ),
+    ("rule-jump.svg", include_str!("assets/rule-jump.svg")),
 ];
 
 /// `id` of the search overlay itself, shared by the overlay markup in
@@ -230,7 +243,7 @@ const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 /// activates it; the two must agree.
 pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
 
-/// The chain-link glyph for the rule-name heading anchors, shipped as
+/// The chain-link icon for the rule-name heading anchors, shipped as
 /// a standalone file beside `index.html` rather than inlined.
 pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
 
@@ -431,10 +444,12 @@ fn search_templates() -> Markup {
                     // in the search box, and so Tab reaches it after the
                     // results rather than before them.
                     button.search-close type="button" {
-                        // The ✕ is decoration beside the word; hiding it
-                        // from assistive tech keeps the button's
-                        // accessible name the word alone.
-                        span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                        // The cross is decoration beside the word; hiding
+                        // it from assistive tech keeps the button's
+                        // accessible name the word alone. It is drawn by
+                        // search.css, which masks `close.svg` over this
+                        // otherwise empty span.
+                        span.search-close-icon aria-hidden="true" {}
                         "Close"
                     }
                 }
@@ -617,11 +632,11 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
 /// phone-landscape / tablet, full-screen at <=600px / phone-
 /// portrait). The JS also locks body scroll while it's open,
 /// which stops the mobile URL bar from collapsing under it and
-/// keeps every `position: fixed` element steady. The close (✕)
-/// button lives inside the overlay in normal flow rather than as
-/// a fixed-position sibling, so it's never affected by
-/// visual-viewport quirks even on browsers where `position: fixed`
-/// drifts with the URL bar.
+/// keeps every `position: fixed` element steady. The close button
+/// lives inside the overlay in normal flow rather than as a
+/// fixed-position sibling, so it's never affected by visual-viewport
+/// quirks even on browsers where `position: fixed` drifts with the
+/// URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button.nav-toggle
@@ -636,7 +651,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                 button.nav-sidebar-close
                     type="button"
                     aria-label="Close navigation"
-                    title="Close navigation" { "\u{2715}" }
+                    title="Close navigation" {}
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -679,7 +694,15 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
-                a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
+                a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
+                    // The arrow is decoration beside the word; hiding it
+                    // from assistive tech keeps the link's accessible
+                    // name the `aria-label` alone. It is drawn by
+                    // rules.css, which masks `rule-jump.svg` over this
+                    // otherwise empty span.
+                    span.rule-jump-icon aria-hidden="true" {}
+                    "top"
+                }
             }
             p {
                 (state_badge(rule.default_state))

@@ -40,8 +40,8 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, PAGE_SCRIPT_FILES, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, STYLESHEETS, THEME_ICONS, render_page,
+    CONTROL_ICONS, HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, PAGE_SCRIPT_FILES,
+    RULE_ANCHOR_ICON, RULE_ANCHOR_ICON_FILENAME, STYLESHEETS, THEME_ICONS, render_page,
 };
 use crate::test_page::{TEST_PAGE_FILENAME, render_test_page, test_page_assets};
 use cargo_toml::Manifest;
@@ -216,9 +216,11 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
     fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
 
-    // The colour-scheme icons, referenced as CSS masks by settings.css,
-    // and the search / filter icons, referenced the same way by search.css.
-    for (name, content) in THEME_ICONS.iter().chain(SEARCH_ICONS) {
+    // Every icon the stylesheets reference as a CSS mask: the
+    // colour-scheme ones settings.css paints the Theme tiles with, and
+    // the control icons masked onto the page's buttons, links and
+    // disclosure summaries.
+    for (name, content) in THEME_ICONS.iter().chain(CONTROL_ICONS) {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }

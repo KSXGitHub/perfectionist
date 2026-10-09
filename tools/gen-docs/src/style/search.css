@@ -216,9 +216,16 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-.search-close-glyph {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 0.85rem;
+/* The cross beside the word, masked like `.search-toggle::before` and
+   `.filter-toggle::before`. The span the markup emits for it is empty,
+   so it needs a size of its own; being a flex item of `.search-close`
+   is what makes that size apply. */
+.search-close-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  background-color: currentColor;
+  -webkit-mask: url("close.svg") no-repeat center / contain;
+  mask: url("close.svg") no-repeat center / contain;
 }
 
 .search-results {

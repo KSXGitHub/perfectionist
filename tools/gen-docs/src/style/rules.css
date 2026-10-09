@@ -74,7 +74,7 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* `right: 100%` parks the glyph left of the heading's <code>, so the
+/* `right: 100%` parks the icon left of the heading's <code>, so the
    rule name stays aligned with body paragraphs; spanning <code> with
    `top`/`bottom: 0` centres it on the text, not the taller line box.
    The ~0.95rem reach stays within the body's 1rem padding to avoid
@@ -120,6 +120,21 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
+/* The arrow beside the word, masked like the page's other SVG icons.
+   The span the markup emits for it is empty, so `inline-block` plus a
+   size of its own is what gives it a box; the drop below the baseline
+   sits it level with the word it precedes. */
+article.rule h2 .rule-jump-icon {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.15em;
+  vertical-align: -0.12em;
+  background-color: currentColor;
+  -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
+  mask: url("rule-jump.svg") no-repeat center / contain;
+}
+
 article.rule .source {
   font-size: 0.85rem;
 }
@@ -151,14 +166,31 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
+/* The disclosure triangle, masked like the page's other SVG icons.
+   `inline-block` so the box takes a width and a height, and the drop
+   below the baseline sits it level with the summary's text. The box is
+   wider than the mark it shows: the icon draws a compact triangle in
+   the middle of a 16x16 viewBox, and `contain` scales that whole
+   viewBox, so a box sized to the text would leave a triangle far
+   lighter than the heading beside it. */
 details.config-details > summary::before {
-  content: "▸ ";
+  content: "";
   display: inline-block;
-  width: 1em;
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.1em;
+  vertical-align: -0.3em;
+  background-color: currentColor;
+  -webkit-mask: url("disclosure-closed.svg") no-repeat center / contain;
+  mask: url("disclosure-closed.svg") no-repeat center / contain;
 }
 
+/* Only the image swaps when the section opens; every other
+   declaration the closed state sets still applies. Both longhands, to
+   match the prefixed and unprefixed shorthands that set them. */
 details.config-details[open] > summary::before {
-  content: "▾ ";
+  -webkit-mask-image: url("disclosure-open.svg");
+  mask-image: url("disclosure-open.svg");
 }
 
 dl.config {
