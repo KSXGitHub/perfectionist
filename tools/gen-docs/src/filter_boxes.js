@@ -37,11 +37,17 @@
     var candidates = list.querySelectorAll(itemSelector)
     for (var i = 0; i < candidates.length; i++) {
       var element = candidates[i]
-      if (!(element instanceof HTMLElement)) continue
+      if (!(element instanceof HTMLElement)) {
+        continue
+      }
       var nameHost = element.querySelector(nameSelector)
-      if (!(nameHost instanceof HTMLElement)) continue
+      if (!(nameHost instanceof HTMLElement)) {
+        continue
+      }
       var name = nameHost.textContent || ''
-      if (!name) continue
+      if (!name) {
+        continue
+      }
       items.push({
         element: element,
         nameHost: nameHost,
@@ -59,8 +65,12 @@
    * @returns {boolean}
    */
   function isEditable(target) {
-    if (!(target instanceof HTMLElement)) return false
-    if (target.isContentEditable) return true
+    if (!(target instanceof HTMLElement)) {
+      return false
+    }
+    if (target.isContentEditable) {
+      return true
+    }
     var tag = target.tagName
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   }
@@ -77,9 +87,15 @@
     var toggle = document.querySelector('.' + kind + '-filter-toggle')
     var container = document.querySelector('.' + kind + '-filter-container')
     var list = document.querySelector(listSelector)
-    if (!(toggle instanceof HTMLElement)) return null
-    if (!(container instanceof HTMLElement)) return null
-    if (!(list instanceof HTMLElement)) return null
+    if (!(toggle instanceof HTMLElement)) {
+      return null
+    }
+    if (!(container instanceof HTMLElement)) {
+      return null
+    }
+    if (!(list instanceof HTMLElement)) {
+      return null
+    }
     return wireFilter(toggle, container, list, itemSelector, nameSelector)
   }
 
@@ -93,17 +109,25 @@
    */
   function wireFilter(toggle, container, list, itemSelector, nameSelector) {
     var items = collectItems(list, itemSelector, nameSelector)
-    if (items.length === 0) return null
+    if (items.length === 0) {
+      return null
+    }
 
     // A browser without `<template>` parses it as an unknown element and
     // fails this check, leaving the funnel hidden.
     var blueprint = container.querySelector('template')
-    if (!(blueprint instanceof HTMLTemplateElement)) return null
+    if (!(blueprint instanceof HTMLTemplateElement)) {
+      return null
+    }
     container.appendChild(blueprint.content.cloneNode(true))
     var box = container.querySelector('.filter-box')
     var input = container.querySelector('.filter-input')
-    if (!(box instanceof HTMLElement)) return null
-    if (!(input instanceof HTMLInputElement)) return null
+    if (!(box instanceof HTMLElement)) {
+      return null
+    }
+    if (!(input instanceof HTMLInputElement)) {
+      return null
+    }
     return wireBox(toggle, list, items, box, input)
   }
 
@@ -148,7 +172,9 @@
       // The tie-break is explicit: sort stability cannot be assumed on the
       // engines this page targets.
       matched.sort(function (left, right) {
-        if (right.score !== left.score) return right.score - left.score
+        if (right.score !== left.score) {
+          return right.score - left.score
+        }
         return left.item.order - right.item.order
       })
       for (var j = 0; j < matched.length; j++) {
@@ -200,7 +226,9 @@
     input.addEventListener('keydown', function (event) {
       // Neither key means anything to an IME mid-composition, where Enter
       // accepts the candidate and Escape abandons it.
-      if (event.isComposing) return
+      if (event.isComposing) {
+        return
+      }
       if (event.key === 'Enter') {
         // The input is in no form, so Enter submits nothing; suppressing
         // the default only keeps a stray form association from navigating.
@@ -208,7 +236,9 @@
         apply()
         return
       }
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape') {
+        return
+      }
       // A `type="search"` input clears itself on Escape in WebKit and
       // Blink, which is half of what should happen here; suppressing the
       // default and doing the whole of it keeps every engine alike.
@@ -226,11 +256,19 @@
     // has to stay too.
     list.addEventListener('click', function (event) {
       var target = event.target
-      if (!(target instanceof Element)) return
+      if (!(target instanceof Element)) {
+        return
+      }
       var link = target.closest('a')
-      if (!link) return
-      if (event.button !== 0) return
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      if (!link) {
+        return
+      }
+      if (event.button !== 0) {
+        return
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return
+      }
       closeBox()
     })
 
@@ -257,7 +295,9 @@
 
   // ---- Keyboard entry into the Index box --------------------------------
   var indexTable = document.querySelector('table.index')
-  if (!indexFilter || !(indexTable instanceof HTMLElement)) return
+  if (!indexFilter || !(indexTable instanceof HTMLElement)) {
+    return
+  }
   var table = indexTable
   var filter = indexFilter
 
@@ -275,20 +315,34 @@
   // Without `preventDefault` the browser inserts the letter again once the
   // input has focus, doubling the one the box is seeded with.
   document.addEventListener('keydown', function (event) {
-    if (!indexInView) return
-    if (event.altKey || event.ctrlKey || event.metaKey) return
-    if (event.isComposing) return
+    if (!indexInView) {
+      return
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey) {
+      return
+    }
+    if (event.isComposing) {
+      return
+    }
     // A named key spells itself out in `key`, so one character is how a
     // letter is told from `Tab` or an arrow.
-    if (event.key.length !== 1) return
+    if (event.key.length !== 1) {
+      return
+    }
     // Seeded as typed; only the range test folds.
     var letter = event.key
     var folded = letter.toLowerCase()
-    if (folded < 'a' || folded > 'z') return
-    if (isEditable(event.target)) return
+    if (folded < 'a' || folded > 'z') {
+      return
+    }
+    if (isEditable(event.target)) {
+      return
+    }
     // Typing belongs to whatever covers the page, where something does,
     // rather than to the table underneath it.
-    if (table.closest('[inert]')) return
+    if (table.closest('[inert]')) {
+      return
+    }
     event.preventDefault()
     filter.openWith(letter)
   })

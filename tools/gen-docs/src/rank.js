@@ -77,7 +77,9 @@ var perfectionistRank = (function () {
   function prose(raw) {
     var text = flatten(raw)
     for (var i = 0; i < PSEUDO_HEADINGS.length; i++) {
-      if (text.indexOf(PSEUDO_HEADINGS[i]) !== 0) continue
+      if (text.indexOf(PSEUDO_HEADINGS[i]) !== 0) {
+        continue
+      }
       return text.slice(PSEUDO_HEADINGS[i].length).trim()
     }
     return text
@@ -100,8 +102,12 @@ var perfectionistRank = (function () {
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
-      if (!found) continue
-      if (best && best.score >= found.score) continue
+      if (!found) {
+        continue
+      }
+      if (best && best.score >= found.score) {
+        continue
+      }
       best = { score: found.score, ranges: found.ranges, text: paragraphs[i] }
     }
     return best
@@ -126,7 +132,9 @@ var perfectionistRank = (function () {
       var statementScore = statementHit ? statementHit.score * STATEMENT_WEIGHT : 0
       var paragraphScore = paragraphHit ? paragraphHit.score * TEXT_WEIGHT : 0
       var score = Math.max(nameScore, statementScore, paragraphScore)
-      if (score <= 0) continue
+      if (score <= 0) {
+        continue
+      }
       // The text beneath the name is the rule's statement, except where a
       // prose paragraph is what matched — then it is that paragraph,
       // windowed around the match. Either way the ranges handed to the
@@ -150,7 +158,9 @@ var perfectionistRank = (function () {
     // The tie-break is explicit: sort stability cannot be assumed on the
     // engines this page targets.
     out.sort(function (left, right) {
-      if (right.score !== left.score) return right.score - left.score
+      if (right.score !== left.score) {
+        return right.score - left.score
+      }
       return left.entry.order - right.entry.order
     })
     return out.slice(0, RESULT_LIMIT)

@@ -30,7 +30,9 @@ var perfectionistMatch = (function () {
   function matchFuzzy(query, target) {
     var needle = fold(query)
     var haystack = fold(target)
-    if (needle.length === 0 || haystack.length === 0) return null
+    if (needle.length === 0 || haystack.length === 0) {
+      return null
+    }
     // Every tier is tried, because a greedy subsequence scan does not
     // always find the best match (`ab` against `a_xab` takes `a` at 0 and
     // `b` at 4, missing the contiguous `ab` at 3) — which is why that
@@ -57,7 +59,9 @@ var perfectionistMatch = (function () {
   function matchPhrase(query, target) {
     var needle = fold(query)
     var haystack = fold(target)
-    if (needle.length === 0 || haystack.length === 0) return null
+    if (needle.length === 0 || haystack.length === 0) {
+      return null
+    }
     var found = matchVerbatim(needle, haystack)
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack)
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack)
@@ -78,7 +82,9 @@ var perfectionistMatch = (function () {
    * @returns {{ text: string, ranges: number[][] }}
    */
   function excerpt(text, ranges, limit) {
-    if (text.length <= limit) return { text: text, ranges: ranges }
+    if (text.length <= limit) {
+      return { text: text, ranges: ranges }
+    }
     var anchor = ranges.length > 0 ? ranges[0][0] : 0
     // Keep a quarter of the window ahead of the match so the reader sees
     // what it sits in, and clamp to the text's ends so a match near either
@@ -91,7 +97,9 @@ var perfectionistMatch = (function () {
     for (var i = 0; i < ranges.length; i++) {
       var from = Math.max(ranges[i][0], start)
       var to = Math.min(ranges[i][1], end)
-      if (from >= to) continue
+      if (from >= to) {
+        continue
+      }
       shifted.push([from - start, to - start])
     }
     var prefix = start > 0 ? '\u2026' : ''

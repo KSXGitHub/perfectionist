@@ -31,7 +31,9 @@ var perfectionistMatchTiers = (function () {
   function matchVerbatim(needle, haystack) {
     // `indexOf("")` clamps past the end rather than returning -1, so an
     // empty needle would never leave the loop.
-    if (needle.length === 0) return null
+    if (needle.length === 0) {
+      return null
+    }
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null
     var at = haystack.indexOf(needle)
@@ -68,9 +70,15 @@ var perfectionistMatchTiers = (function () {
     var places = []
     var at = start
     for (var i = 0; i < needle.length; i++) {
-      if (needle.charAt(i) === ' ') continue
-      while (at < haystack.length && haystack.charAt(at) === ' ') at++
-      if (haystack.charAt(at) !== needle.charAt(i)) return null
+      if (needle.charAt(i) === ' ') {
+        continue
+      }
+      while (at < haystack.length && haystack.charAt(at) === ' ') {
+        at++
+      }
+      if (haystack.charAt(at) !== needle.charAt(i)) {
+        return null
+      }
       places.push(at)
       at++
     }
@@ -93,8 +101,11 @@ var perfectionistMatchTiers = (function () {
     // -2 so the first position can never read as contiguous with it.
     var previous = -2
     for (var i = 0; i < places.length; i++) {
-      if (places[i] === previous + 1) raw += BASE + RUN_BONUS
-      else raw += opening(haystack, places[i])
+      if (places[i] === previous + 1) {
+        raw += BASE + RUN_BONUS
+      } else {
+        raw += opening(haystack, places[i])
+      }
       previous = places[i]
     }
     return {
@@ -115,8 +126,12 @@ var perfectionistMatchTiers = (function () {
     // candidate match begins on one of its occurrences, and a query of
     // nothing but separators has none to begin on.
     var lead = 0
-    while (lead < needle.length && needle.charAt(lead) === ' ') lead++
-    if (lead >= needle.length) return null
+    while (lead < needle.length && needle.charAt(lead) === ' ') {
+      lead++
+    }
+    if (lead >= needle.length) {
+      return null
+    }
     var head = needle.charAt(lead)
     /** @type {{ score: number, ranges: number[][] } | null} */
     var best = null
@@ -150,22 +165,29 @@ var perfectionistMatchTiers = (function () {
     for (var i = 0; i < parts.length; i++) {
       if (i > 0) {
         at = nextWord(haystack, at)
-        if (at < 0) return null
+        if (at < 0) {
+          return null
+        }
       }
       var end = wordEnd(haystack, at)
       var word = haystack.slice(at, end)
       // The target's word opens with the query's, once the ending the
       // query's would drop is allowed for — `cloned` against `cloning`,
       // and a word still being typed, three letters into `getter`.
-      if (word.indexOf(stems[i]) !== 0) return null
+      if (word.indexOf(stems[i]) !== 0) {
+        return null
+      }
       var shared = commonPrefix(parts[i], word)
       raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1)
       // A phrase is marked as the phrase, as the respaced tier marks it:
       // marks merge across a run of separators but not across letters, so
       // `clone` stops short of `cloning`'s `ing`. Scoring is untouched.
       var last = ranges[ranges.length - 1]
-      if (last && onlySeparators(haystack, last[1], at)) last[1] = at + shared
-      else ranges.push([at, at + shared])
+      if (last && onlySeparators(haystack, last[1], at)) {
+        last[1] = at + shared
+      } else {
+        ranges.push([at, at + shared])
+      }
       at = end
     }
     return { score: blend(raw, length, haystack.length), ranges: ranges }
@@ -182,7 +204,9 @@ var perfectionistMatchTiers = (function () {
    */
   function matchVariants(needle, haystack) {
     var parts = words(needle)
-    if (parts.length === 0) return null
+    if (parts.length === 0) {
+      return null
+    }
     /** @type {string[]} */
     var stems = []
     // The words, not the delimiters: nothing is matched against one here,
@@ -244,9 +268,13 @@ var perfectionistMatchTiers = (function () {
       /** @type {number[]} */
       var fits = []
       for (var j = 0; j < spans.length; j++) {
-        if (haystack.slice(spans[j][0], spans[j][1]).indexOf(stems[i]) === 0) fits.push(j)
+        if (haystack.slice(spans[j][0], spans[j][1]).indexOf(stems[i]) === 0) {
+          fits.push(j)
+        }
       }
-      if (fits.length === 0) return null
+      if (fits.length === 0) {
+        return null
+      }
       options.push(fits)
     }
     /** @type {boolean[]} */
@@ -261,14 +289,20 @@ var perfectionistMatchTiers = (function () {
      * @returns {number[] | null}
      */
     function walk(i) {
-      if (i === parts.length) return []
+      if (i === parts.length) {
+        return []
+      }
       for (var k = 0; k < options[i].length; k++) {
         var j = options[i][k]
-        if (taken[j]) continue
+        if (taken[j]) {
+          continue
+        }
         taken[j] = true
         var rest = walk(i + 1)
         taken[j] = false
-        if (rest) return [j].concat(rest)
+        if (rest) {
+          return [j].concat(rest)
+        }
       }
       return null
     }
@@ -289,9 +323,13 @@ var perfectionistMatchTiers = (function () {
    */
   function matchReordered(needle, haystack) {
     var parts = words(needle)
-    if (parts.length < 2) return null
+    if (parts.length < 2) {
+      return null
+    }
     var spans = wordSpans(haystack)
-    if (parts.length > spans.length) return null
+    if (parts.length > spans.length) {
+      return null
+    }
     /** @type {string[]} */
     var stems = []
     var span = 0
@@ -300,7 +338,9 @@ var perfectionistMatchTiers = (function () {
       span += parts[i].length
     }
     var housed = houseWords(parts, stems, haystack, spans)
-    if (!housed) return null
+    if (!housed) {
+      return null
+    }
     // Marked where the target reads them, not where the query typed them.
     var chosen = housed.slice().sort(function (left, right) {
       return left - right
@@ -313,8 +353,11 @@ var perfectionistMatchTiers = (function () {
       var found = wordAgainstWord(parts[housed.indexOf(chosen[k])], haystack, spans[chosen[k]])
       raw += found.raw
       var last = ranges[ranges.length - 1]
-      if (last && onlySeparators(haystack, last[1], at)) last[1] = found.range[1]
-      else ranges.push(found.range)
+      if (last && onlySeparators(haystack, last[1], at)) {
+        last[1] = found.range[1]
+      } else {
+        ranges.push(found.range)
+      }
     }
     return { score: blend(raw, span, haystack.length), ranges: ranges }
   }
@@ -335,7 +378,9 @@ var perfectionistMatchTiers = (function () {
     var previous = -2
     for (var i = 0; i < needle.length; i++) {
       var found = haystack.indexOf(needle.charAt(i), cursor)
-      if (found < 0) return null
+      if (found < 0) {
+        return null
+      }
       if (found === previous + 1) {
         raw += BASE + RUN_BONUS
         // Extend the run in place rather than opening a second range, so

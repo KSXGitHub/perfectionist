@@ -18,19 +18,25 @@ var perfectionistHighlight = (function () {
    * @param {boolean} breakAfterUnderscore
    */
   function appendRun(parent, text, from, to, breakAfterUnderscore) {
-    if (from >= to) return
+    if (from >= to) {
+      return
+    }
     if (!breakAfterUnderscore) {
       parent.appendChild(document.createTextNode(text.slice(from, to)))
       return
     }
     var start = from
     for (var i = from; i < to; i++) {
-      if (text.charAt(i) !== '_' || i === text.length - 1) continue
+      if (text.charAt(i) !== '_' || i === text.length - 1) {
+        continue
+      }
       parent.appendChild(document.createTextNode(text.slice(start, i + 1)))
       parent.appendChild(document.createElement('wbr'))
       start = i + 1
     }
-    if (start < to) parent.appendChild(document.createTextNode(text.slice(start, to)))
+    if (start < to) {
+      parent.appendChild(document.createTextNode(text.slice(start, to)))
+    }
   }
 
   /**
@@ -43,7 +49,9 @@ var perfectionistHighlight = (function () {
    * @param {boolean} breakAfterUnderscore
    */
   function fill(element, text, ranges, breakAfterUnderscore) {
-    while (element.firstChild) element.removeChild(element.firstChild)
+    while (element.firstChild) {
+      element.removeChild(element.firstChild)
+    }
     var cursor = 0
     for (var i = 0; i < ranges.length; i++) {
       appendRun(element, text, cursor, ranges[i][0], breakAfterUnderscore)

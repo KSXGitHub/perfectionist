@@ -499,7 +499,15 @@ settled.
 
 Only the categories that look for defects are enabled. `pedantic`,
 `restriction` and `style` lint for a language level the page scripts do
-not target — `restriction` alone reports every `var` in them.
+not target — `restriction` alone reports every `var` in them. A single
+rule out of one of those can still be named in `rules`, which is how
+`curly` is on without the rest of `style`: a controlled statement is
+always a block, so no body trails its own `if` or `while`.
+
+`just fix-js` applies what oxlint can fix and then reformats, because a
+fix lands as valid code rather than as formatted code — the braces
+`curly` adds arrive on the line they came from, and oxfmt is what opens
+them out.
 
 Every rule the config switches off names the finding it was switched
 off for. Before adding another, confirm the rule fires with the entry

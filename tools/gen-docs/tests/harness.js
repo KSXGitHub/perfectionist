@@ -89,7 +89,9 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function ok(value, claim) {
-    if (value) return
+    if (value) {
+      return
+    }
     throw new Error(claim + ' — got ' + show(value))
   }
 
@@ -117,7 +119,9 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function equal(actual, expected, claim) {
-    if (actual === expected) return
+    if (actual === expected) {
+      return
+    }
     throw new Error(claim + ' — expected ' + show(expected) + ', got ' + show(actual))
   }
 
@@ -130,7 +134,9 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function deepEqual(actual, expected, claim) {
-    if (show(actual) === show(expected)) return
+    if (show(actual) === show(expected)) {
+      return
+    }
     throw new Error(claim + ' — expected ' + show(expected) + ', got ' + show(actual))
   }
 
@@ -140,7 +146,9 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function greater(larger, smaller, claim) {
-    if (larger > smaller) return
+    if (larger > smaller) {
+      return
+    }
     throw new Error(claim + ' — expected ' + show(larger) + ' > ' + show(smaller))
   }
 

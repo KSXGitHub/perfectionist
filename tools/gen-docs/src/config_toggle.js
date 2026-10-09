@@ -40,7 +40,9 @@
 
 ;(function () {
   var section = /** @type {HTMLElement | null} */ (document.querySelector('.config-controls'))
-  if (!section) return
+  if (!section) {
+    return
+  }
 
   // Non-null casts (not `HTMLButtonElement | null`): the guard below still
   // rejects a missing button at runtime, but TypeScript won't carry that
@@ -48,7 +50,9 @@
   // otherwise read the buttons as nullable.
   var expandButton = /** @type {HTMLButtonElement} */ (section.querySelector('button[data-config-open="true"]'))
   var collapseButton = /** @type {HTMLButtonElement} */ (section.querySelector('button[data-config-open="false"]'))
-  if (!expandButton || !collapseButton) return
+  if (!expandButton || !collapseButton) {
+    return
+  }
 
   // The Configuration panels. A generated catalogue is static after render
   // (nothing adds or removes panels at runtime), so query once and reuse the
@@ -59,7 +63,9 @@
   // Nothing to toggle means nothing to reveal: a catalogue with no
   // configurable rule renders no `details.config-details`, so leaving the
   // section hidden avoids two buttons that would silently do nothing.
-  if (panels.length === 0) return
+  if (panels.length === 0) {
+    return
+  }
 
   /** @param {boolean} open */
   function setAllOpen(open) {
@@ -83,7 +89,9 @@
       }
       // Mixed state is terminal: neither flag can flip back to true, so the
       // remaining panels can't change the outcome. Stop scanning them.
-      if (!allOpen && !allClosed) break
+      if (!allOpen && !allClosed) {
+        break
+      }
     }
     expandButton.setAttribute('aria-pressed', String(allOpen))
     collapseButton.setAttribute('aria-pressed', String(allClosed))
@@ -99,7 +107,9 @@
     reflectState()
   }
   function scheduleReflect() {
-    if (frame) return
+    if (frame) {
+      return
+    }
     frame = window.requestAnimationFrame(runReflect)
   }
 

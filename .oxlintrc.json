@@ -4,13 +4,23 @@
   // lint for a language level this tree does not target. `restriction`
   // alone reports every `var` in the page scripts, which are ES5 because
   // the browsers `just minify-docs` compiles the CSS for cannot run
-  // anything newer.
+  // anything newer. A rule from one of them can still be named in
+  // `rules` below, which is how `curly` is on without the rest of
+  // `style`.
   "categories": {
     "correctness": "deny",
     "suspicious": "deny",
     "perf": "deny"
   },
   "rules": {
+    // A controlled statement is always a block, so a body is never a
+    // bare statement trailing its own `if` or `while`. `all` is the only
+    // setting that says so: `multi-line` and `multi-or-nest` both allow
+    // a one-line body, which is the shape this forbids. Passing a
+    // `keywords` list instead -- to brace the loops and leave the `if`s
+    // -- switches the rule off without a word, so there is no narrower
+    // form of this than all of it.
+    "eslint/curly": ["error", "all"],
     // Whether a binding is used is `tsc`'s question, under
     // `noUnusedLocals` / `noUnusedParameters`. See "`tsc` owns names,
     // oxlint owns patterns" in CLAUDE.md.

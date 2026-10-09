@@ -135,6 +135,18 @@ check-js-types:
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
 
+# Apply what oxlint can fix to the docs-site JavaScript, then reformat
+fix-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  git -C "$root_dir" ls-files '*.js' '*.mjs' | tr '\n' '\0' \
+    | xargs -0 pnpm --dir "$root_dir" exec oxlint --type-aware --fix
+  # A fix lands as valid code, not as formatted code: the braces `curly`
+  # adds arrive on the line they came from, so the formatter runs after.
+  just write-fmt-js
+
 # Lint the docs-site JavaScript, types included
 lint-js:
   #!/usr/bin/env bash
