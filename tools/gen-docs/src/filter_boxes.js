@@ -21,7 +21,7 @@
    */
 
   /**
-   * @typedef {Match & { readonly item: FilterItem }} Matched
+   * @typedef {Match & { item: FilterItem }} Matched
    */
 
   /**
