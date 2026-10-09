@@ -95,10 +95,10 @@ var perfectionistRank = (function () {
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
    * @param {string[]} paragraphs
-   * @returns {{ score: number, ranges: Span[], text: string } | null}
+   * @returns {Match & { text: string } | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {{ score: number, ranges: Span[], text: string } | null} */
+    /** @type {Match & { text: string } | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
@@ -140,7 +140,7 @@ var perfectionistRank = (function () {
       // windowed around the match. Either way the ranges handed to the
       // renderer are the ones matched in the text actually shown, so a
       // result highlights what the reader typed wherever they can see it.
-      /** @type {{ text: string, ranges: Span[] }} */
+      /** @type {Excerpt} */
       var shown
       if (paragraphHit && paragraphScore > nameScore && paragraphScore > statementScore) {
         shown = perfectionistMatch.excerpt(paragraphHit.text, paragraphHit.ranges, EXCERPT_LIMIT)

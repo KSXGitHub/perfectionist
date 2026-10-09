@@ -4,6 +4,11 @@
 // re-tuned without changing which targets a query reaches.
 // ==========================================================================
 
+/**
+ * What a tier found: a score, and the runs of the target it marks.
+ * @typedef {{ score: number, ranges: Span[] }} Match
+ */
+
 var perfectionistMatchScore = (function () {
   var isWordStart = perfectionistMatchText.isWordStart
 
@@ -85,9 +90,9 @@ var perfectionistMatchScore = (function () {
    * two apart — tiers that tie place the same characters, and the
    * ranges they hand back agree — so this settles the order rather than
    * any answer.
-   * @param {{ score: number, ranges: Span[] } | null} left
-   * @param {{ score: number, ranges: Span[] } | null} right
-   * @returns {{ score: number, ranges: Span[] } | null}
+   * @param {Match | null} left
+   * @param {Match | null} right
+   * @returns {Match | null}
    */
   function better(left, right) {
     if (!left) {
