@@ -237,6 +237,68 @@ The
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
 is this one's complement: repeat words freely, never facts.
 
+## Every passage must read on its own
+
+A sentence that takes its meaning from a neighbouring one breaks when
+anything is inserted between them, and nothing fails when it does. The
+reader rarely arrives in writing order either: they land on one fixture
+case from a `grep` hit, one hunk of a diff, or one rule's file in the
+in-tree catalogue, where `rules/<rule_name>.md` carries that rule and
+nothing else.
+
+Two shapes carry the fault:
+
+- **A positional reference** — "the case below", "`configure` above",
+  "the fixtures above", "the same shape spelled as a tuple". Insert an
+  item and it points at the wrong one. A name is greppable and survives
+  reordering, so "the counterpart of `into_extended`" beats "the
+  counterpart of the above"; where the target is in another file, name
+  the file.
+- **A dangling comparative** — a bare "likewise", "the same", "too",
+  "either", "as well" or "ditto" whose antecedent sits in another item
+  rather than in the passage holding it. Restate what it borrowed;
+  a clause repeated costs less than the reference did.
+
+These are *not* the fault, and a sweep that rewrites them makes the
+prose worse:
+
+- **A back-reference inside the same passage.** "two bindings of the
+  same path", "not `Copy` either" — the antecedent is in the sentence
+  or the one before it, so the reader never leaves.
+- **A threshold.** "one above the default limit of 10", "exactly 15 is
+  not above the limit" — "above" is the number, not a position.
+- **Source order that is the subject.** "a `pub use` below a private
+  import" is the violation `arbitrary_source_item_ordering` reports.
+- **Prose introducing what immediately follows.**
+- **An idiom.** "all the same", "either way", "in the same boat".
+
+The `// Bad:` / `// Good:` / `// Not flagged:` labels under `ui/`,
+`ui-toml/` and `tests/fixtures/` are where this bites hardest: each is
+written beside its sibling and then read alone. Start a sweep of them
+at the label itself:
+
+```sh
+grep -rnE '^\s*//+ ?(Bad|Good|Not flagged)[:,].*\b(likewise|ditto|as well|the same|too|either|above|below)\b' \
+  ui/ ui-toml/ tests/fixtures/
+```
+
+Read every hit rather than the count — most are the exceptions above,
+and dropping the label anchor floods the output with those exceptions
+without finding much more. A label's own continuation lines are not in
+that output, so re-read the whole comment at each hit; the words that
+are nearly always the fault wherever they fall are "likewise", "ditto"
+and "as well".
+
+One trap is specific to a fixture: its comment may be the very text a
+rule lints (`bare_issue_reference` scans plain line comments), and the
+`.stderr` quotes the whole source line, so rewording the comment moves
+the fixture's expected output with it.
+
+This rule applies the
+[fact-duplication rule](#do-not-write-documentation-that-restates-the-code)'s
+test — ask what would make it go stale — to a reference rather than to
+a copied fact.
+
 ## Shipped docs address the consumer, not the contributor
 
 A doc is *shipped* if a consumer reads it without cloning: `README.md`,
