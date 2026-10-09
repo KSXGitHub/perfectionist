@@ -44,9 +44,6 @@
   padding: 0;
 }
 
-/* The hamburger: a masked SVG, the recipe search.css spells out for
-   the search and filter buttons, so one icon file serves both colour
-   schemes. */
 .nav-toggle::before {
   content: "";
   width: 1.2rem;

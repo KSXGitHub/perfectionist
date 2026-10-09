@@ -216,10 +216,9 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-/* The cross beside the word, masked like `.search-toggle::before` and
-   `.filter-toggle::before`. The span the markup emits for it is empty,
-   so it needs a size of its own; being a flex item of `.search-close`
-   is what makes that size apply. */
+/* The span the markup emits for the cross is empty, so it needs a
+   size of its own; being a flex item of `.search-close` is what makes
+   that size apply. */
 .search-close-icon {
   width: 0.85rem;
   height: 0.85rem;
