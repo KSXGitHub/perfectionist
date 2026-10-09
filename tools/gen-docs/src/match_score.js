@@ -8,7 +8,7 @@
  * What a tier found: a score, and the runs of the target it marks.
  * @typedef {object} Match
  * @property {number} score
- * @property {Span[]} ranges
+ * @property {readonly Span[]} ranges
  */
 
 var perfectionistMatchScore = (function () {

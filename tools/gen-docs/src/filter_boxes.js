@@ -21,7 +21,7 @@
    */
 
   /**
-   * @typedef {Match & { item: FilterItem }} Matched
+   * @typedef {Match & { readonly item: FilterItem }} Matched
    */
 
   /**
@@ -33,7 +33,7 @@
    * @param {HTMLElement} list
    * @param {string} itemSelector
    * @param {string} nameSelector
-   * @returns {FilterItem[]}
+   * @returns {readonly FilterItem[]}
    */
   function collectItems(list, itemSelector, nameSelector) {
     /** @type {FilterItem[]} */
@@ -138,7 +138,7 @@
   /**
    * @param {HTMLElement} toggle
    * @param {HTMLElement} list
-   * @param {FilterItem[]} items
+   * @param {readonly FilterItem[]} items
    * @param {HTMLElement} box
    * @param {HTMLInputElement} input
    * @returns {FilterBox}
