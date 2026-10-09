@@ -7,7 +7,7 @@
 /**
  * Where a word begins and ends: a half-open character range, as
  * `String#slice` takes them.
- * @typedef {[start: number, end: number]} Span
+ * @typedef {readonly [start: number, end: number]} Span
  */
 
 var perfectionistMatchText = (function () {
@@ -87,7 +87,7 @@ var perfectionistMatchText = (function () {
 
   /**
    * @param {string} text
-   * @returns {Span[]}
+   * @returns {readonly Span[]}
    */
   function wordSpans(text) {
     /** @type {Span[]} */
@@ -103,7 +103,7 @@ var perfectionistMatchText = (function () {
 
   /**
    * @param {string} text
-   * @returns {string[]}
+   * @returns {readonly string[]}
    */
   function words(text) {
     var spans = wordSpans(text)

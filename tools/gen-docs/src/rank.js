@@ -19,7 +19,7 @@
  * @property {string} name
  * @property {string} href
  * @property {string} statement
- * @property {string[]} paragraphs
+ * @property {readonly string[]} paragraphs
  * @property {number} order
  */
 
@@ -30,9 +30,9 @@
  * @typedef {object} Result
  * @property {Entry} entry
  * @property {number} score
- * @property {Span[]} nameRanges
+ * @property {readonly Span[]} nameRanges
  * @property {string} text
- * @property {Span[]} textRanges
+ * @property {readonly Span[]} textRanges
  */
 
 var perfectionistRank = (function () {
@@ -92,13 +92,18 @@ var perfectionistRank = (function () {
   var proseHit = perfectionistMatch.matchPhrase
 
   /**
+   * A match in a paragraph, carrying the paragraph it was found in.
+   * @typedef {Match & { readonly text: string }} ParagraphHit
+   */
+
+  /**
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
-   * @param {string[]} paragraphs
-   * @returns {Match & { text: string } | null}
+   * @param {readonly string[]} paragraphs
+   * @returns {ParagraphHit | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {Match & { text: string } | null} */
+    /** @type {ParagraphHit | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
@@ -116,9 +121,9 @@ var perfectionistRank = (function () {
   /**
    * Rank `entries` against `query`, best first, capped at
    * `RESULT_LIMIT`.
-   * @param {Entry[]} entries
+   * @param {readonly Entry[]} entries
    * @param {string} query
-   * @returns {Result[]}
+   * @returns {readonly Result[]}
    */
   function rank(entries, query) {
     /** @type {Result[]} */

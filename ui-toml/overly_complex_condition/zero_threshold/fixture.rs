@@ -62,7 +62,8 @@ fn let_chain_trailing_group(input: Option<u8>, first: bool, second: bool) {
     }
 }
 
-// Bad: 1 operator — the same, with the part leading the chain.
+// Bad: 1 operator — the `&&` beside the `let` is not counted, the one
+// joining the two ordinary clauses before it is.
 fn let_chain_leading_group(input: Option<u8>, first: bool, second: bool) {
     if first && second && let Some(_value) = input {
         work();
@@ -147,7 +148,7 @@ fn nested_head(first: bool, second: bool, third: bool, fourth: bool, fifth: bool
 }
 
 // Bad: 1 operator — a nested `match`'s arm bodies are not part of the
-// condition either.
+// condition.
 fn nested_match(first: bool, second: bool, third: bool, value: u8) {
     if first && (match value {
         0 => second && third,
@@ -227,7 +228,7 @@ fn user_head_macro_inside(first: bool, second: bool, third: bool) {
 }
 
 // Bad: 1 operator — a postfix `match` is as author-written as any
-// other, so its arm bodies are not part of the condition either.
+// other, so its arm bodies are not part of the condition.
 fn nested_postfix_match(first: bool, second: bool, third: bool, value: u8) {
     if first
         && value.match {

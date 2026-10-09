@@ -29,7 +29,7 @@ var perfectionistRankFixtures = (function () {
    * The one result `entries` yields for `query`, having asserted that it
    * yields exactly one. Most cases are about a single rule, and a second
    * result would make every assertion below it read the wrong row.
-   * @param {Entry[]} entries
+   * @param {readonly Entry[]} entries
    * @param {string} query
    * @returns {Result}
    */

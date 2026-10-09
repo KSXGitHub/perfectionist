@@ -1,7 +1,7 @@
 //! UI sweep for `bare_identifier_reference` under the default configuration.
 //!
 //! The crate-level mention of `Helper` resolves at the crate root, so
-//! this very line is flagged too.
+//! this very line is flagged.
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(

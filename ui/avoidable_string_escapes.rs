@@ -48,8 +48,8 @@ fn _format_with_inline_placeholder() {
     let _ = format!("url(\"{name}\")");
 }
 
-// Bad: same split reached through `println!` with a positional
-// placeholder rather than an inline-captured one.
+// Bad: a positional placeholder in `println!` hides the split literal
+// from the late pass, and the pre-expansion pass rescues it.
 fn _println_with_positional_placeholder() {
     println!("path: \"{}\"", "x");
 }
