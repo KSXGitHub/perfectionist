@@ -41,7 +41,7 @@
 
 var perfectionistTests = (function () {
   /** @type {TestGroup[]} */
-  var groups = [];
+  var groups = []
 
   /**
    * Open a group, which a case file does once at the top with its own
@@ -50,7 +50,7 @@ var perfectionistTests = (function () {
    * @param {string} name
    */
   function group(name) {
-    groups.push({ name: name, cases: [] });
+    groups.push({ name: name, cases: [] })
   }
 
   /**
@@ -62,14 +62,14 @@ var perfectionistTests = (function () {
    */
   function add(name, run) {
     if (groups.length === 0) {
-      throw new Error("`" + name + "` was registered before any group was opened");
+      throw new Error('`' + name + '` was registered before any group was opened')
     }
-    groups[groups.length - 1].cases.push({ name: name, run: run });
+    groups[groups.length - 1].cases.push({ name: name, run: run })
   }
 
   /** @returns {TestGroup[]} */
   function all() {
-    return groups;
+    return groups
   }
 
   /**
@@ -80,8 +80,8 @@ var perfectionistTests = (function () {
    * @returns {string}
    */
   function show(value) {
-    var text = JSON.stringify(value);
-    return text === undefined ? String(value) : text;
+    var text = JSON.stringify(value)
+    return text === undefined ? String(value) : text
   }
 
   /**
@@ -89,8 +89,10 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function ok(value, claim) {
-    if (value) return;
-    throw new Error(claim + " — got " + show(value));
+    if (value) {
+      return
+    }
+    throw new Error(claim + ' — got ' + show(value))
   }
 
   /**
@@ -106,9 +108,9 @@ var perfectionistTests = (function () {
    */
   function found(value, claim) {
     if (value === null || value === undefined) {
-      throw new Error(claim + " — got " + show(value));
+      throw new Error(claim + ' — got ' + show(value))
     }
-    return value;
+    return value
   }
 
   /**
@@ -117,8 +119,10 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function equal(actual, expected, claim) {
-    if (actual === expected) return;
-    throw new Error(claim + " — expected " + show(expected) + ", got " + show(actual));
+    if (actual === expected) {
+      return
+    }
+    throw new Error(claim + ' — expected ' + show(expected) + ', got ' + show(actual))
   }
 
   /**
@@ -130,8 +134,10 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function deepEqual(actual, expected, claim) {
-    if (show(actual) === show(expected)) return;
-    throw new Error(claim + " — expected " + show(expected) + ", got " + show(actual));
+    if (show(actual) === show(expected)) {
+      return
+    }
+    throw new Error(claim + ' — expected ' + show(expected) + ', got ' + show(actual))
   }
 
   /**
@@ -140,8 +146,10 @@ var perfectionistTests = (function () {
    * @param {string} claim
    */
   function greater(larger, smaller, claim) {
-    if (larger > smaller) return;
-    throw new Error(claim + " — expected " + show(larger) + " > " + show(smaller));
+    if (larger > smaller) {
+      return
+    }
+    throw new Error(claim + ' — expected ' + show(larger) + ' > ' + show(smaller))
   }
 
   return {
@@ -153,5 +161,5 @@ var perfectionistTests = (function () {
     equal: equal,
     deepEqual: deepEqual,
     greater: greater,
-  };
-})();
+  }
+})()
