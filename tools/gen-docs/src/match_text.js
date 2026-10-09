@@ -4,6 +4,12 @@
 // stem it shares with its variants.
 // ==========================================================================
 
+/**
+ * Where a word begins and ends: a half-open character range, as
+ * `String#slice` takes them.
+ * @typedef {[start: number, end: number]} Span
+ */
+
 var perfectionistMatchText = (function () {
   /**
    * Case-fold a string and flatten `_`, `-` and a space to one another,
@@ -20,8 +26,8 @@ var perfectionistMatchText = (function () {
    * @returns {string}
    */
   function fold(text) {
-    var lowered = text.toLowerCase();
-    return (lowered.length === text.length ? lowered : text).replace(/[-_\s]/g, " ");
+    var lowered = text.toLowerCase()
+    return (lowered.length === text.length ? lowered : text).replace(/[-_\s]/g, ' ')
   }
 
   /**
@@ -33,9 +39,11 @@ var perfectionistMatchText = (function () {
    * @returns {boolean}
    */
   function isWordStart(haystack, index) {
-    if (index <= 0) return true;
-    var previous = haystack.charAt(index - 1);
-    return !(previous >= "a" && previous <= "z") && !(previous >= "0" && previous <= "9");
+    if (index <= 0) {
+      return true
+    }
+    var previous = haystack.charAt(index - 1)
+    return !(previous >= 'a' && previous <= 'z') && !(previous >= '0' && previous <= '9')
   }
 
   // ---- Words ------------------------------------------------------------
@@ -48,7 +56,7 @@ var perfectionistMatchText = (function () {
    * @returns {boolean}
    */
   function isAlnum(ch) {
-    return (ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9");
+    return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9')
   }
 
   /**
@@ -57,9 +65,11 @@ var perfectionistMatchText = (function () {
    * @returns {number}
    */
   function wordEnd(text, from) {
-    var at = from;
-    while (at < text.length && isAlnum(text.charAt(at))) at++;
-    return at;
+    var at = from
+    while (at < text.length && isAlnum(text.charAt(at))) {
+      at++
+    }
+    return at
   }
 
   /**
@@ -68,25 +78,27 @@ var perfectionistMatchText = (function () {
    * @returns {number}
    */
   function nextWord(text, from) {
-    var at = from;
-    while (at < text.length && !isAlnum(text.charAt(at))) at++;
-    return at < text.length ? at : -1;
+    var at = from
+    while (at < text.length && !isAlnum(text.charAt(at))) {
+      at++
+    }
+    return at < text.length ? at : -1
   }
 
   /**
    * @param {string} text
-   * @returns {number[][]}
+   * @returns {Span[]}
    */
   function wordSpans(text) {
-    /** @type {number[][]} */
-    var out = [];
-    var at = nextWord(text, 0);
+    /** @type {Span[]} */
+    var out = []
+    var at = nextWord(text, 0)
     while (at >= 0) {
-      var end = wordEnd(text, at);
-      out.push([at, end]);
-      at = nextWord(text, end);
+      var end = wordEnd(text, at)
+      out.push([at, end])
+      at = nextWord(text, end)
     }
-    return out;
+    return out
   }
 
   /**
@@ -94,11 +106,13 @@ var perfectionistMatchText = (function () {
    * @returns {string[]}
    */
   function words(text) {
-    var spans = wordSpans(text);
+    var spans = wordSpans(text)
     /** @type {string[]} */
-    var out = [];
-    for (var i = 0; i < spans.length; i++) out.push(text.slice(spans[i][0], spans[i][1]));
-    return out;
+    var out = []
+    for (var i = 0; i < spans.length; i++) {
+      out.push(text.slice(spans[i][0], spans[i][1]))
+    }
+    return out
   }
 
   /**
@@ -109,9 +123,11 @@ var perfectionistMatchText = (function () {
    */
   function onlySeparators(text, from, to) {
     for (var at = from; at < to; at++) {
-      if (text.charAt(at) !== " ") return false;
+      if (text.charAt(at) !== ' ') {
+        return false
+      }
     }
-    return true;
+    return true
   }
 
   /**
@@ -120,10 +136,12 @@ var perfectionistMatchText = (function () {
    * @returns {number}
    */
   function commonPrefix(left, right) {
-    var limit = Math.min(left.length, right.length);
-    var at = 0;
-    while (at < limit && left.charAt(at) === right.charAt(at)) at++;
-    return at;
+    var limit = Math.min(left.length, right.length)
+    var at = 0
+    while (at < limit && left.charAt(at) === right.charAt(at)) {
+      at++
+    }
+    return at
   }
 
   // ---- Stems ------------------------------------------------------------
@@ -131,9 +149,9 @@ var perfectionistMatchText = (function () {
   // The shortest word a suffix comes off, and the shortest stem left
   // behind. `bed` is too short to take an ending off at all, and `doing`
   // would leave too little of itself to tell from another word.
-  var MIN_STEM_WORD = 4;
+  var MIN_STEM_WORD = 4
 
-  var MIN_STEM = 3;
+  var MIN_STEM = 3
 
   /**
    * Does `text` end with `suffix`? Spelled out rather than
@@ -143,8 +161,8 @@ var perfectionistMatchText = (function () {
    * @returns {boolean}
    */
   function endsWith(text, suffix) {
-    var at = text.length - suffix.length;
-    return at >= 0 && text.indexOf(suffix, at) === at;
+    var at = text.length - suffix.length
+    return at >= 0 && text.indexOf(suffix, at) === at
   }
 
   /**
@@ -156,11 +174,17 @@ var perfectionistMatchText = (function () {
    * @returns {string}
    */
   function undouble(word) {
-    if (word.length - 1 < MIN_STEM) return word;
-    var last = word.charAt(word.length - 1);
-    if (last !== word.charAt(word.length - 2)) return word;
-    if (last === "l" || last === "s" || last === "z") return word;
-    return word.slice(0, word.length - 1);
+    if (word.length - 1 < MIN_STEM) {
+      return word
+    }
+    var last = word.charAt(word.length - 1)
+    if (last !== word.charAt(word.length - 2)) {
+      return word
+    }
+    if (last === 'l' || last === 's' || last === 'z') {
+      return word
+    }
+    return word.slice(0, word.length - 1)
   }
 
   /**
@@ -175,29 +199,26 @@ var perfectionistMatchText = (function () {
    * @returns {string}
    */
   function stem(word) {
-    if (word.length < MIN_STEM_WORD) return word;
-    var out = word;
+    if (word.length < MIN_STEM_WORD) {
+      return word
+    }
+    var out = word
     // A plural or a third person. An `ss` or a `us` is neither: `pass`
     // and `status` end that way on their own account.
-    if (
-      endsWith(out, "s") &&
-      !endsWith(out, "ss") &&
-      !endsWith(out, "us") &&
-      out.length - 1 >= MIN_STEM
-    ) {
-      out = out.slice(0, out.length - 1);
+    if (endsWith(out, 's') && !endsWith(out, 'ss') && !endsWith(out, 'us') && out.length - 1 >= MIN_STEM) {
+      out = out.slice(0, out.length - 1)
     }
-    if (endsWith(out, "ing") && out.length - 3 >= MIN_STEM) {
-      out = undouble(out.slice(0, out.length - 3));
-    } else if (endsWith(out, "ed") && out.length - 2 >= MIN_STEM) {
-      out = undouble(out.slice(0, out.length - 2));
+    if (endsWith(out, 'ing') && out.length - 3 >= MIN_STEM) {
+      out = undouble(out.slice(0, out.length - 3))
+    } else if (endsWith(out, 'ed') && out.length - 2 >= MIN_STEM) {
+      out = undouble(out.slice(0, out.length - 2))
     }
     // The `e` an `-ing` or an `-ed` form drops anyway, so `clone` is met
     // where `cloning` and `cloned` already are.
-    if (endsWith(out, "e") && out.length - 1 >= MIN_STEM) {
-      out = out.slice(0, out.length - 1);
+    if (endsWith(out, 'e') && out.length - 1 >= MIN_STEM) {
+      out = out.slice(0, out.length - 1)
     }
-    return out;
+    return out
   }
 
   return {
@@ -215,5 +236,5 @@ var perfectionistMatchText = (function () {
     endsWith: endsWith,
     undouble: undouble,
     stem: stem,
-  };
-})();
+  }
+})()

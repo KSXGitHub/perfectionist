@@ -1,0 +1,165 @@
+/* The JavaScript test page. It loads neither of the catalogue's colour
+   sheets, so its colours are here, in the catalogue's own values; and
+   with no theme control on the page, one `prefers-color-scheme` block is
+   the whole of them. */
+
+html {
+  color-scheme: light;
+}
+
+body {
+  color: #1f2328;
+  background-color: #ffffff;
+}
+
+h1 {
+  border-bottom-color: #d0d7de;
+}
+
+/* The user agent's blue and visited purple are picked for a white
+   background and reach 2.01:1 and 1.72:1 on the dark one. An author rule
+   on `a` outranks the user agent's `a:visited` by origin, so a followed
+   link needs no rule of its own. */
+a {
+  color: #0969da;
+}
+
+#summary {
+  font-weight: 700;
+}
+
+/* A sentence, so it is read as text and 4.5:1 is the bar. The palette's
+   green is held below that on purpose, so the summary takes its own.
+   Nothing sits beside it to be sorted from, and the words say which it
+   is. */
+#summary[data-result="passed"] {
+  color: #1a7f37;
+}
+
+/* Empty means the reporter never ran: scripting off, a blocked script,
+   a parse error before the handlers attach. */
+#summary:empty::before {
+  content: "the reporter did not run";
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Both spellings, because lightningcss leaves `overflow-wrap` alone even
+   when told to target an engine that only knows `word-wrap`. */
+#engine {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  color: #57606a;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* No empty gap above the list where the reporter never ran. */
+#engine:empty {
+  display: none;
+}
+
+#cases ul {
+  list-style: none;
+  padding: 0;
+}
+
+/* Set like the filename it holds. */
+#cases h2 {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1em;
+}
+
+/* The border and the indicator carry the state's colour; the name keeps
+   its own, so a failing row does not read as a block of red.
+
+   Passed and failed are parted by lightness, not only by hue: picked for
+   the same contrast against the background, as they first were, they sat
+   1.01:1 apart from each other — nothing, to a reader who cannot sort
+   red from green. Failed is the loud one in both schemes. A glyph or a
+   border needs 3:1 (WCAG 1.4.11); failed also colours the message text
+   under a case, so it clears 4.5:1. */
+#cases li {
+  border-left: 0.25rem solid currentcolor;
+  margin: 0.5rem 0;
+  padding: 0 0 0 0.75rem;
+}
+
+[data-result="untested"] {
+  color: #6e7781;
+}
+
+[data-result="passed"] {
+  color: #2da44e;
+}
+
+[data-result="failed"] {
+  color: #82071e;
+}
+
+/* A column of its own, so the names line up whatever glyph precedes
+   them. */
+.result {
+  display: inline-block;
+  width: 1.25em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.name {
+  color: #1f2328;
+}
+
+/* Indented to the name rather than to the glyph, so the message reads as
+   belonging to the case above it. */
+.why {
+  display: block;
+  margin-left: 1.25em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  /* A quoted serialised value has nowhere to break. */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+  }
+
+  h1 {
+    border-bottom-color: #30363d;
+  }
+
+  a {
+    color: #4493f8;
+  }
+
+  [data-result="untested"] {
+    color: #8b949e;
+  }
+
+  [data-result="passed"] {
+    color: #238636;
+  }
+
+  #summary[data-result="passed"] {
+    color: #2ea043;
+  }
+
+  [data-result="failed"] {
+    color: #ffb3ab;
+  }
+
+  .name {
+    color: #e6edf3;
+  }
+
+  #engine {
+    color: #9198a1;
+  }
+}
