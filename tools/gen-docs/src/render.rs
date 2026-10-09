@@ -229,13 +229,24 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// The icon definitions, emitted once as the first thing in `<body>` so
-/// every [`icon`] below it resolves against symbols already parsed.
+/// The icon definitions, emitted once at the foot of `<body>`, after
+/// the content and before [`PAGE_SCRIPTS`].
+///
+/// Every [`icon`] therefore refers forward to a symbol the parser has
+/// not reached yet, which renders nothing until it does and then
+/// resolves on its own. Nothing on this page observes that window: the
+/// search, filter and theme icons sit on controls emitted `hidden`,
+/// which only their scripts reveal, and those scripts load from below
+/// this point; the rule-heading anchors are the one exception and are
+/// transparent until their heading is hovered.
 ///
 /// The sprite carries the HTML `hidden` attribute, which base.css makes
 /// unconditional with `[hidden] { display: none !important }`. A
 /// `<symbol>` is not rendered where it is defined in any case; `hidden`
-/// also keeps the element from occupying a line box of its own.
+/// also keeps the element from occupying a line box of its own. Note
+/// that this works *because* the icons are `<symbol>`s: `<use>` cannot
+/// instantiate a `display: none` target, so a sprite of plain `<svg>`
+/// elements hidden the same way would draw nothing at all.
 fn icon_sprite() -> Markup {
     PreEscaped(ICON_SPRITE.to_owned())
 }
@@ -288,7 +299,6 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 }
             }
             body {
-                (icon_sprite())
                 h1 id="catalogue" { "perfectionist lints" }
                 (nav_drawer(rules))
                 (search_toggle())
@@ -340,6 +350,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     "Generated from " code { "src/rules/" }
                     " at " code { (commit_sha) } "."
                 }
+                (icon_sprite())
                 @for &src in PAGE_SCRIPTS {
                     script src=(src) {}
                 }
