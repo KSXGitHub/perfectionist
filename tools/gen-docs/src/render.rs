@@ -193,14 +193,12 @@ pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
     ("theme-system.svg", include_str!("assets/theme-system.svg")),
 ];
 
-/// The search and filter control icons (Octicons, MIT), shipped beside
-/// `index.html` and referenced from search.css. Each tuple is
-/// `(filename, contents)`. Not prefetched, unlike [`THEME_ICONS`]: these
-/// are masked onto buttons that appear as soon as their script runs.
-pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
-    ("search.svg", include_str!("assets/search.svg")),
-    ("filter.svg", include_str!("assets/filter.svg")),
-];
+/// The filter control icons (Octicons, MIT), shipped beside `index.html`
+/// and referenced from search.css. Each tuple is `(filename, contents)`.
+/// Not prefetched, unlike [`THEME_ICONS`]: these are masked onto buttons
+/// that appear as soon as their script runs.
+pub(crate) const FILTER_ICONS: &[(&str, &str)] =
+    &[("filter.svg", include_str!("assets/filter.svg"))];
 
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
@@ -374,6 +372,11 @@ fn settings_panel() -> Markup {
 /// names the key while the `aria-label` stays the bare name: the label is
 /// the button's accessible name, read on every visit, and a keyboard hint
 /// in it would be read along with it.
+///
+/// The button carries no content of its own because its magnifier is a
+/// character drawn by search.css, the way the settings gear's is drawn by
+/// settings.css. Naming the button is left to the `aria-label`, which
+/// takes precedence over a glyph a stylesheet supplies.
 fn search_toggle() -> Markup {
     html! {
         button.search-toggle
