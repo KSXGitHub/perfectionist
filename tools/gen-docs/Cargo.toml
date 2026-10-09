@@ -20,6 +20,7 @@ maud = "0.27.0"
 pipe-trait = "0.4.0"
 proc-macro2 = "1.0.95"
 pulldown-cmark = { version = "0.13.4", default-features = false, features = ["html"] }
+quick-xml = "0.39.4"
 quote = "1.0.40"
 strum = { version = "0.28.0", features = ["derive"] }
 syn = { version = "2.0.105", features = ["full", "parsing", "extra-traits"] }

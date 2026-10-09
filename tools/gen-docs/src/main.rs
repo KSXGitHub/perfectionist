@@ -30,6 +30,7 @@
 mod check_md;
 mod extract;
 mod fonts;
+mod icons;
 mod model;
 mod render;
 mod render_md;

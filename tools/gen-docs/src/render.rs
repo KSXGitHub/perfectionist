@@ -185,17 +185,6 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-/// Every icon the page draws, as one hidden `<svg>` of `<symbol>`s
-/// inlined at the top of `<body>` (see [`icon_sprite`]). Each use site
-/// is a `<use>` of one symbol, built by [`icon`].
-///
-/// Inlined rather than shipped as sibling files because a `mask-image`
-/// or `background-image` pointing at one is a fetch, and a fetch is what
-/// breaks: a page opened over `file://` has the opaque origin `null`, so
-/// the mask fetch is refused as cross-origin and the icon silently does
-/// not paint. A same-document `<use>` fetches nothing.
-const ICON_SPRITE: &str = include_str!("assets/icon-sprite.svg");
-
 /// `id` of the magnifier symbol, on the button that opens the search
 /// overlay.
 const SEARCH_ICON_ID: &str = "icon-search";
@@ -229,8 +218,8 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// The icon definitions, emitted once at the foot of `<body>`, after
-/// the content and before [`PAGE_SCRIPTS`].
+/// The icon definitions ([`crate::icons::sprite`]), emitted once at the
+/// foot of `<body>`, after the content and before [`PAGE_SCRIPTS`].
 ///
 /// Every [`icon`] therefore refers forward to a symbol the parser has
 /// not reached yet, which renders nothing until it does and then
@@ -248,7 +237,7 @@ const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 /// instantiate a `display: none` target, so a sprite of plain `<svg>`
 /// elements hidden the same way would draw nothing at all.
 fn icon_sprite() -> Markup {
-    PreEscaped(ICON_SPRITE.to_owned())
+    PreEscaped(crate::icons::sprite())
 }
 
 /// One icon, drawn by referring to the [`ICON_SPRITE`] symbol named by
