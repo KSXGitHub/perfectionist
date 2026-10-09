@@ -9,9 +9,6 @@
     "perf": "deny"
   },
   "rules": {
-    // `all` rather than something narrower: `multi-line` and
-    // `multi-or-nest` both permit the one-line body this forbids, and a
-    // `keywords` list switches the rule off instead of narrowing it.
     "eslint/curly": ["error", "all"],
 
     "eslint/eqeqeq": "error",

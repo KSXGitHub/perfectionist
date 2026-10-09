@@ -60,11 +60,6 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile
 
-      # `--check` is not the default: a bare `oxfmt` rewrites what it is
-      # given, which in CI would pass while reporting nothing. The globs
-      # are not decoration either -- oxfmt formats YAML, JSON and
-      # markdown too, and this tree holds files of each whose exact bytes
-      # are a fixture.
       - name: Check JS formatting
         shell: bash
         run: pnpm exec oxfmt --check '**/*.js' '**/*.mjs'
@@ -99,8 +94,6 @@ jobs:
         shell: bash
         run: pnpm install --frozen-lockfile
 
-      # Without `--type-aware` the rules that read these scripts' JSDoc
-      # types do not run, which is most of what oxlint has to offer here.
       - name: Lint JavaScript
         shell: bash
         run: pnpm exec oxlint --type-aware
