@@ -110,8 +110,7 @@ var perfectionistMatchText = (function () {
     /** @type {string[]} */
     var out = []
     for (var i = 0; i < spans.length; i++) {
-      var span = /** @type {Span} */ (spans[i])
-      out.push(text.slice(span[0], span[1]))
+      out.push(text.slice(spans[i][0], spans[i][1]))
     }
     return out
   }

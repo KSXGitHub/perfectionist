@@ -66,20 +66,17 @@ var perfectionistMatchAdmit = (function () {
    * an answer nobody can rely on: one more character could push a result
    * back over a bar it had fallen under, so it leaves the list and
    * returns.
-   * @param {Span[]} ranges     the match's runs, in order
+   * @param {Span[]} ranges  the match's runs, in order, at least one
    * @param {string} haystack    folded target
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    var first = ranges[0]
-    // A match that marks nothing has nothing to show.
-    if (!first || !aimed(haystack, first)) {
+    if (!aimed(haystack, ranges[0])) {
       return false
     }
     var slips = 0
     for (var i = 1; i < ranges.length; i++) {
-      var range = /** @type {Span} */ (ranges[i])
-      if (isWordStart(haystack, range[0])) {
+      if (isWordStart(haystack, ranges[i][0])) {
         continue
       }
       slips++

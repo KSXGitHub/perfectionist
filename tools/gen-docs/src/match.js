@@ -85,8 +85,7 @@ var perfectionistMatch = (function () {
     if (text.length <= limit) {
       return { text: text, ranges: ranges }
     }
-    var first = ranges[0]
-    var anchor = first ? first[0] : 0
+    var anchor = ranges.length > 0 ? ranges[0][0] : 0
     // Keep a quarter of the window ahead of the match so the reader sees
     // what it sits in, and clamp to the text's ends so a match near either
     // one still fills the whole window.
@@ -96,9 +95,8 @@ var perfectionistMatch = (function () {
     /** @type {Span[]} */
     var shifted = []
     for (var i = 0; i < ranges.length; i++) {
-      var range = /** @type {Span} */ (ranges[i])
-      var from = Math.max(range[0], start)
-      var to = Math.min(range[1], end)
+      var from = Math.max(ranges[i][0], start)
+      var to = Math.min(ranges[i][1], end)
       if (from >= to) {
         continue
       }
@@ -107,9 +105,8 @@ var perfectionistMatch = (function () {
     var prefix = start > 0 ? '\u2026' : ''
     if (prefix) {
       for (var j = 0; j < shifted.length; j++) {
-        var moved = /** @type {Span} */ (shifted[j])
-        moved[0] += prefix.length
-        moved[1] += prefix.length
+        shifted[j][0] += prefix.length
+        shifted[j][1] += prefix.length
       }
     }
     return {

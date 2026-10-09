@@ -77,11 +77,10 @@ var perfectionistRank = (function () {
   function prose(raw) {
     var text = flatten(raw)
     for (var i = 0; i < PSEUDO_HEADINGS.length; i++) {
-      var heading = /** @type {string} */ (PSEUDO_HEADINGS[i])
-      if (text.indexOf(heading) !== 0) {
+      if (text.indexOf(PSEUDO_HEADINGS[i]) !== 0) {
         continue
       }
-      return text.slice(heading.length).trim()
+      return text.slice(PSEUDO_HEADINGS[i].length).trim()
     }
     return text
   }
@@ -102,15 +101,14 @@ var perfectionistRank = (function () {
     /** @type {{ score: number, ranges: Span[], text: string } | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
-      var paragraph = /** @type {string} */ (paragraphs[i])
-      var found = proseHit(query, paragraph)
+      var found = proseHit(query, paragraphs[i])
       if (!found) {
         continue
       }
       if (best && best.score >= found.score) {
         continue
       }
-      best = { score: found.score, ranges: found.ranges, text: paragraph }
+      best = { score: found.score, ranges: found.ranges, text: paragraphs[i] }
     }
     return best
   }
@@ -126,7 +124,7 @@ var perfectionistRank = (function () {
     /** @type {Result[]} */
     var out = []
     for (var i = 0; i < entries.length; i++) {
-      var entry = /** @type {Entry} */ (entries[i])
+      var entry = entries[i]
       var matchedName = nameHit(query, entry.name)
       var statementHit = proseHit(query, entry.statement)
       var paragraphHit = bestParagraph(query, entry.paragraphs)

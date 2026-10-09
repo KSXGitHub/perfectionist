@@ -146,13 +146,12 @@
   function wireBox(toggle, list, items, box, input) {
     function reset() {
       for (var i = 0; i < items.length; i++) {
-        var item = /** @type {FilterItem} */ (items[i])
-        item.element.hidden = false
-        item.element.removeAttribute('data-score')
-        renderName(item.nameHost, item.name, [])
+        items[i].element.hidden = false
+        items[i].element.removeAttribute('data-score')
+        renderName(items[i].nameHost, items[i].name, [])
         // `items` was collected in rendered order, so re-appending in that
         // order restores it.
-        list.appendChild(item.element)
+        list.appendChild(items[i].element)
       }
     }
 
@@ -165,15 +164,14 @@
       /** @type {Matched[]} */
       var matched = []
       for (var i = 0; i < items.length; i++) {
-        var item = /** @type {FilterItem} */ (items[i])
-        var hit = matchFuzzy(query, item.name)
+        var hit = matchFuzzy(query, items[i].name)
         if (hit) {
-          matched.push({ item: item, score: hit.score, ranges: hit.ranges })
+          matched.push({ item: items[i], score: hit.score, ranges: hit.ranges })
           continue
         }
-        item.element.hidden = true
-        item.element.removeAttribute('data-score')
-        renderName(item.nameHost, item.name, [])
+        items[i].element.hidden = true
+        items[i].element.removeAttribute('data-score')
+        renderName(items[i].nameHost, items[i].name, [])
       }
       // The tie-break is explicit: sort stability cannot be assumed on the
       // engines this page targets.
@@ -184,7 +182,7 @@
         return left.item.order - right.item.order
       })
       for (var j = 0; j < matched.length; j++) {
-        var entry = /** @type {Matched} */ (matched[j])
+        var entry = matched[j]
         entry.item.element.hidden = false
         entry.item.element.setAttribute('data-score', entry.score.toFixed(4))
         renderName(entry.item.nameHost, entry.item.name, entry.ranges)
@@ -313,8 +311,7 @@
   var indexInView = true
   if ('IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
-      var latest = /** @type {IntersectionObserverEntry} */ (entries[entries.length - 1])
-      indexInView = latest.isIntersecting
+      indexInView = entries[entries.length - 1].isIntersecting
     })
     observer.observe(table)
   }

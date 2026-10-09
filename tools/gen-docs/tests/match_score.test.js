@@ -31,9 +31,8 @@
     // `blend` would divide it by itself and hold for any divisor at all.
     var targets = ['a', 'url', 'bare url', 'core instead of std', 'x y z']
     for (var i = 0; i < targets.length; i++) {
-      var target = t.found(targets[i], 'a target')
-      var hit = t.found(perfectionistMatchTiers.matchVerbatim(target, target), 'a target matches itself')
-      t.equal(hit.score, 1, '`' + target + '` scores 1 against itself')
+      var hit = t.found(perfectionistMatchTiers.matchVerbatim(targets[i], targets[i]), 'a target matches itself')
+      t.equal(hit.score, 1, '`' + targets[i] + '` scores 1 against itself')
     }
   })
 

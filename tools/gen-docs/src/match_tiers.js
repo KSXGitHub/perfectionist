@@ -63,7 +63,7 @@ var perfectionistMatchTiers = (function () {
    * @param {string} needle    folded query
    * @param {string} haystack  folded target
    * @param {number} start
-   * @returns {[number, ...number[]] | null}
+   * @returns {number[] | null}
    */
   function placeRespaced(needle, haystack, start) {
     /** @type {number[]} */
@@ -82,7 +82,7 @@ var perfectionistMatchTiers = (function () {
       places.push(at)
       at++
     }
-    return places.length > 0 ? /** @type {[number, ...number[]]} */ (places) : null
+    return places.length > 0 ? places : null
   }
 
   /**
@@ -91,7 +91,7 @@ var perfectionistMatchTiers = (function () {
    * whose separators do not line up scores below one whose do. The
    * highlight is the whole span, separators included: a reader who typed a
    * phrase expects to see the phrase marked.
-   * @param {[number, ...number[]]} places
+   * @param {number[]} places
    * @param {number} length    the query's length
    * @param {string} haystack  folded target
    * @returns {{ score: number, ranges: Span[] }}
@@ -101,17 +101,16 @@ var perfectionistMatchTiers = (function () {
     // -2 so the first position can never read as contiguous with it.
     var previous = -2
     for (var i = 0; i < places.length; i++) {
-      var place = /** @type {number} */ (places[i])
-      if (place === previous + 1) {
+      if (places[i] === previous + 1) {
         raw += BASE + RUN_BONUS
       } else {
-        raw += opening(haystack, place)
+        raw += opening(haystack, places[i])
       }
-      previous = place
+      previous = places[i]
     }
     return {
       score: blend(raw, length, haystack.length),
-      ranges: [[places[0], previous + 1]],
+      ranges: [[places[0], places[places.length - 1] + 1]],
     }
   }
 
@@ -175,11 +174,10 @@ var perfectionistMatchTiers = (function () {
       // The target's word opens with the query's, once the ending the
       // query's would drop is allowed for — `cloned` against `cloning`,
       // and a word still being typed, three letters into `getter`.
-      var partStem = /** @type {string} */ (stems[i])
-      if (word.indexOf(partStem) !== 0) {
+      if (word.indexOf(stems[i]) !== 0) {
         return null
       }
-      var shared = commonPrefix(/** @type {string} */ (parts[i]), word)
+      var shared = commonPrefix(parts[i], word)
       raw += opening(haystack, at) + (BASE + RUN_BONUS) * (shared - 1)
       // A phrase is marked as the phrase, as the respaced tier marks it:
       // marks merge across a run of separators but not across letters, so
@@ -216,22 +214,20 @@ var perfectionistMatchTiers = (function () {
     // one who stopped at `cloned`.
     var span = 0
     for (var i = 0; i < parts.length; i++) {
-      var part = /** @type {string} */ (parts[i])
-      stems.push(stem(part))
-      span += part.length
+      stems.push(stem(parts[i]))
+      span += parts[i].length
     }
     /** @type {{ score: number, ranges: Span[] } | null} */
     var best = null
     // A stem is a prefix of every word it came from, so every haystack
     // word that could align with the query's first starts with that
     // word's stem — which is one `indexOf` away.
-    var firstStem = /** @type {string} */ (stems[0])
-    var at = haystack.indexOf(firstStem)
+    var at = haystack.indexOf(stems[0])
     while (at >= 0) {
       if (isWordStart(haystack, at)) {
         best = betterAdmitted(best, alignWords(parts, stems, span, haystack, at), haystack)
       }
-      at = haystack.indexOf(firstStem, at + 1)
+      at = haystack.indexOf(stems[0], at + 1)
     }
     return best
   }
@@ -271,10 +267,8 @@ var perfectionistMatchTiers = (function () {
     for (var i = 0; i < parts.length; i++) {
       /** @type {number[]} */
       var fits = []
-      var partStem = /** @type {string} */ (stems[i])
       for (var j = 0; j < spans.length; j++) {
-        var wordSpan = /** @type {Span} */ (spans[j])
-        if (haystack.slice(wordSpan[0], wordSpan[1]).indexOf(partStem) === 0) {
+        if (haystack.slice(spans[j][0], spans[j][1]).indexOf(stems[i]) === 0) {
           fits.push(j)
         }
       }
@@ -298,9 +292,8 @@ var perfectionistMatchTiers = (function () {
       if (i === parts.length) {
         return []
       }
-      var choices = /** @type {number[]} */ (options[i])
-      for (var k = 0; k < choices.length; k++) {
-        var j = /** @type {number} */ (choices[k])
+      for (var k = 0; k < options[i].length; k++) {
+        var j = options[i][k]
         if (taken[j]) {
           continue
         }
@@ -341,9 +334,8 @@ var perfectionistMatchTiers = (function () {
     var stems = []
     var span = 0
     for (var i = 0; i < parts.length; i++) {
-      var part = /** @type {string} */ (parts[i])
-      stems.push(stem(part))
-      span += part.length
+      stems.push(stem(parts[i]))
+      span += parts[i].length
     }
     var housed = houseWords(parts, stems, haystack, spans)
     if (!housed) {
@@ -357,10 +349,8 @@ var perfectionistMatchTiers = (function () {
     /** @type {Span[]} */
     var ranges = []
     for (var k = 0; k < chosen.length; k++) {
-      var pick = /** @type {number} */ (chosen[k])
-      var wordSpan = /** @type {Span} */ (spans[pick])
-      var at = wordSpan[0]
-      var found = wordAgainstWord(/** @type {string} */ (parts[housed.indexOf(pick)]), haystack, wordSpan)
+      var at = spans[chosen[k]][0]
+      var found = wordAgainstWord(parts[housed.indexOf(chosen[k])], haystack, spans[chosen[k]])
       raw += found.raw
       var last = ranges[ranges.length - 1]
       if (last && onlySeparators(haystack, last[1], at)) {
@@ -395,8 +385,7 @@ var perfectionistMatchTiers = (function () {
         raw += BASE + RUN_BONUS
         // Extend the run in place rather than opening a second range, so
         // the highlight renders one <mark> per contiguous stretch.
-        var open = /** @type {Span} */ (ranges[ranges.length - 1])
-        open[1] = found + 1
+        ranges[ranges.length - 1][1] = found + 1
       } else {
         raw += opening(haystack, found)
         ranges.push([found, found + 1])

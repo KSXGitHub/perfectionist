@@ -44,8 +44,7 @@
     // ahead of a match would shift the range one along from what matched.
     var target = '\u0130stanbul_rule'
     var hit = t.found(m.matchFuzzy('stanbul', target), '`stanbul` is in there')
-    var marked = t.found(hit.ranges[0], 'the match is marked')
-    t.equal(target.slice(marked[0], marked[1]), 'stanbul', 'the range covers what matched')
+    t.equal(target.slice(hit.ranges[0][0], hit.ranges[0][1]), 'stanbul', 'the range covers what matched')
   })
 
   t.add('a run of separators folds to a run of spaces, not to one', function () {
@@ -55,9 +54,8 @@
     // Collapsing would shift every index after the run.
     var target = 'a  bare  url'
     var hit = t.found(m.matchPhrase('bare', target), '`bare` appears')
-    var phrase = t.found(hit.ranges[0], 'the phrase is marked')
     t.equal(
-      target.slice(phrase[0], phrase[1]),
+      target.slice(hit.ranges[0][0], hit.ranges[0][1]),
       'bare',
       'the range still cuts the word out of the string as it was given'
     )

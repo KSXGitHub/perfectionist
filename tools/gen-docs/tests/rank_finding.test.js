@@ -42,9 +42,8 @@
   t.add('a rule is found by its statement, and the statement is marked', function () {
     var hit = only([entry({ statement: 'a bare URL in a comment' })], 'bare url')
     t.equal(hit.text, 'a bare URL in a comment', 'the statement is what shows')
-    var marked = t.found(hit.textRanges[0], 'the statement is marked')
     t.equal(
-      hit.text.slice(marked[0], marked[1]),
+      hit.text.slice(hit.textRanges[0][0], hit.textRanges[0][1]),
       'bare URL',
       'and the mark sits on the words that matched, in the casing the page uses'
     )
@@ -85,7 +84,6 @@
       'bare'
     )
     t.equal(ranked.length, 1, 'only the rule the reader meant')
-    var top = t.found(ranked[0], 'a first result')
-    t.equal(top.entry.name, 'bare_url', 'and that is the one')
+    t.equal(ranked[0].entry.name, 'bare_url', 'and that is the one')
   })
 })()

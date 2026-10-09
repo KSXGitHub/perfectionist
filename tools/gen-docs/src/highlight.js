@@ -54,13 +54,12 @@ var perfectionistHighlight = (function () {
     }
     var cursor = 0
     for (var i = 0; i < ranges.length; i++) {
-      var range = /** @type {Span} */ (ranges[i])
-      appendRun(element, text, cursor, range[0], breakAfterUnderscore)
+      appendRun(element, text, cursor, ranges[i][0], breakAfterUnderscore)
       var mark = document.createElement('mark')
       mark.className = 'match-highlight'
-      appendRun(mark, text, range[0], range[1], breakAfterUnderscore)
+      appendRun(mark, text, ranges[i][0], ranges[i][1], breakAfterUnderscore)
       element.appendChild(mark)
-      cursor = range[1]
+      cursor = ranges[i][1]
     }
     appendRun(element, text, cursor, text.length, breakAfterUnderscore)
   }
