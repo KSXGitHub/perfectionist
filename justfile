@@ -115,8 +115,11 @@ fmt-js:
 
 # Format the docs-site JavaScript in place
 write-fmt-js:
-  pnpm install --frozen-lockfile
-  pnpm exec oxfmt --write '**/*.js' '**/*.mjs'
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --write '**/*.js' '**/*.mjs'
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
