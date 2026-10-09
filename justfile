@@ -98,10 +98,28 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Check the docs-site JavaScript: types, then unit tests
+# Check the docs-site JavaScript: formatting, types, lints, then unit tests
 check-js:
+  just fmt-js
   just check-js-types
+  just lint-js
   just test-js
+
+# Check the docs-site JavaScript's formatting
+fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --check '**/*.js' '**/*.mjs'
+
+# Format the docs-site JavaScript in place
+write-fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --write '**/*.js' '**/*.mjs'
 
 # Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
@@ -110,6 +128,23 @@ check-js-types:
   root_dir="{{justfile_directory()}}"
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
+
+# Lint the docs-site JavaScript, types included
+lint-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware
+
+# Apply what oxlint can fix to the docs-site JavaScript, then reformat
+fix-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware --fix
+  just write-fmt-js
 
 # Run the docs-site JavaScript unit tests
 test-js:

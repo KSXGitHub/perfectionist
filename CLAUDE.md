@@ -435,6 +435,18 @@ the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
 
+## The docs-site JavaScript
+
+The JavaScript under `tools/gen-docs/` is formatted by
+[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) and linted by
+[oxlint](https://oxc.rs/docs/guide/usage/linter.html), both pinned in
+[`package.json`](package.json) and configured in
+[`.oxfmtrc.json`](.oxfmtrc.json) and
+[`.oxlintrc.json`](.oxlintrc.json). After touching any of it, run
+`just check-js`. `just fix-js` applies what oxlint can fix and then
+reformats, in that order because a fix lands as valid code rather than
+as formatted code.
+
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the

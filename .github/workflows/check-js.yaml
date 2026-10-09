@@ -6,6 +6,8 @@ on:
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
+      - '.oxfmtrc.json'
+      - '.oxlintrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'tools/gen-docs/src/*.js'
       - 'tools/gen-docs/tests/**'
+      - '.oxfmtrc.json'
+      - '.oxlintrc.json'
       - 'tsconfig.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -26,6 +30,74 @@ permissions:
   contents: read
 
 jobs:
+  fmt:
+    name: Check JS formatting
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-jsfmt-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-jsfmt-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Check JS formatting
+        shell: bash
+        run: pnpm exec oxfmt --check '**/*.js' '**/*.mjs'
+
+  lint:
+    name: Lint JS
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Locate pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v5
+        timeout-minutes: 1
+        continue-on-error: true
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-jslint-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-jslint-${{ runner.os }}-
+
+      - name: Install packages
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint JavaScript
+        shell: bash
+        run: pnpm exec oxlint --type-aware
+
   types:
     name: Check JS types
 
