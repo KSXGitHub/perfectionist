@@ -1,0 +1,50 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
+   |
+LL |     items.map(|text| text.trim().len()).into_items()
+   |           ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.map(|text| text.trim().len()).into_items()
+LL +     items.map(str::trim).map(str::len).into_items()
+   |
+
+warning: this closure chains 3 steps onto the item, so `map_while` does all of them
+  --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
+   |
+LL |         .map_while(|text| text.trim().parse::<usize>().ok())
+   |          ^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map_while(|text| text.trim().parse::<usize>().ok())
+LL +         .map(str::trim).map(str::parse::<usize>).map_while(Result::ok)
+   |
+
+warning: this predicate runs 2 tests on the item, so `take_while` does all of them
+  --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
+   |
+LL |         .take_while(|text| wanted(text) && text.starts_with('#'))
+   |          ^^^^^^^^^^
+   |
+help: give every test but the last a leading `take_while` of its own, so each adapter asks one question
+   |
+LL -         .take_while(|text| wanted(text) && text.starts_with('#'))
+LL +         .take_while(|text| wanted(text)).take_while(|text| text.starts_with('#'))
+   |
+
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
+   |
+LL |     items.any(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).any(|text| text.starts_with('#'))
+   |
+
+warning: N warnings emitted

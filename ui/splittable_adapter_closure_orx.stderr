@@ -1,0 +1,116 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.map(|text| text.trim().len()).into_items()
+   |           ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.map(|text| text.trim().len()).into_items()
+LL +     items.map(str::trim).map(str::len).into_items()
+   |
+
+warning: this closure chains 3 steps onto the item, so `for_each` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.for_each(|text| record(text.trim().len()));
+   |           ^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.for_each(|text| record(text.trim().len()));
+LL +     items.map(str::trim).map(str::len).for_each(record);
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.fold(|| 0, |sum, text| *sum += text.trim().len())
+   |           ^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold(|| 0, |sum, text| *sum += text.trim().len())
+LL +     items.map(str::trim).map(str::len).fold(|| 0, |sum, /* name */| *sum += /* name */)
+   |
+
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.any(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).any(|text| text.starts_with('#'))
+   |
+
+warning: this predicate runs 2 tests on the item, so `find` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.find(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.find(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).find(|text| text.starts_with('#'))
+   |
+
+warning: this closure chains 3 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |         .filter_map(|text| text.trim().parse::<usize>().ok())
+   |          ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|text| text.trim().parse::<usize>().ok())
+LL +         .map(str::trim).map(str::parse::<usize>).filter_map(Result::ok)
+   |
+
+warning: this closure chains 2 steps onto the item, so `flat_map` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.flat_map(|text| text.trim().chars()).into_items()
+   |           ^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.flat_map(|text| text.trim().chars()).into_items()
+LL +     items.map(str::trim).flat_map(str::chars).into_items()
+   |
+
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |     items.any(|mut text| wanted(text) && text.starts_with('#'))
+   |           ^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.any(|mut text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|mut text| wanted(text)).any(|mut text| text.starts_with('#'))
+   |
+
+warning: generic type parameter `H` has a single-letter name
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |         fn map<Out, H>(self, h: H) -> Parallel<Out>
+   |                     ^
+   |
+   = help: rename to a descriptive identifier (e.g. `Element`, `Key`, `Reader`)
+   = note: `#[warn(perfectionist::single_letter_generic)]` on by default
+
+warning: function parameter `h` has a single-letter name
+  --> $DIR/splittable_adapter_closure_orx.rs:LL:CC
+   |
+LL |         fn map<Out, H>(self, h: H) -> Parallel<Out>
+   |                              ^
+   |
+   = help: rename to a descriptive identifier
+   = note: `#[warn(perfectionist::single_letter_function_param)]` on by default
+
+warning: N warnings emitted

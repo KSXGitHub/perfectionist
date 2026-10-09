@@ -8,6 +8,118 @@ its error in the same step; the suggestion rewrote it so that each
 adapter did one thing. Neither style guide covers this, so the wording
 below is the catalogue's own rather than a quotation.
 
+## Status
+
+One rule implements this file's three triggers, in
+[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs)
+and the trigger modules beside it. Three rules were tried first and read
+wrong against
+[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule):
+that section asks whether the sub-checks can be *cleanly separated*, and
+these cannot. They share the family table and the gates on captures,
+receiver moves and the extra reference a lifted test is handed; their
+configuration is disjoint only because all three have none; and the
+adapters whose closure returns an `Option` are a seam both the chain and
+the guard-and-value trigger have a split for, so which trigger answers is
+a question about what the closure holds rather than about which adapter
+holds it.
+
+| trigger         | module                                                                       | a lifted part goes into                          |
+|-----------------|------------------------------------------------------------------------------|--------------------------------------------------|
+| guard and value | [`option_chain.rs`](../src/rules/splittable_adapter_closure/option_chain.rs) | the combinator's counterpart, discipline-matched |
+| predicate       | [`predicate.rs`](../src/rules/splittable_adapter_closure/predicate.rs)       | `filter` or `take_while`, by discipline          |
+| chain           | [`step_chain.rs`](../src/rules/splittable_adapter_closure/step_chain.rs)     | the adapter mapping the item's channel           |
+
+The triggers are asked in that order and the first finding wins.
+
+Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
+`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator`, `Pipe` and
+`orx-parallel`'s own.
+
+The last is read from the signatures its methods are declared with rather
+than from a table of names, which
+[`src/rules/splittable_adapter_closure/signature.rs`](../src/rules/splittable_adapter_closure/signature.rs)
+is about. A table is a copy of a dependency's API: `orx-parallel` renamed its
+trait from `ParIter` to `Par`, dropped `take_while` and `map_while` and gained
+`fold` across one major release, and a copy would have stopped matching
+silently. What did not change is how each closure is declared, which is what
+the rule needs, so the reading answers both generations. `ui/auxiliary/`
+carries a stub per generation and a fixture apiece holds the rule to each,
+the way the `command-extra` stubs do for the rules naming that trait.
+
+Narrower than this file describes, each narrowing measured against this
+crate's own source:
+
+- **`Result::map_or_else`'s error closure is left alone.** It takes one
+  closure per channel, as [`Option` and `Result`](#option-and-result)
+  records, and the table holds one adapter per name, so the value closure
+  is the one read.
+- **Comparisons that all bound one quantity stay folded.** A comparison is
+  a bound rather than a question, and bounds on one quantity are how Rust
+  spells one test, so each gets no adapter of its own. Which side of the
+  operator the quantity falls on is not asked, and a quantity read twice
+  through a call counts as one, so `line.len() > 3 && line.len() < 80` is
+  the one length range it reads as. Bounds on two quantities ask two
+  questions and do split, as does one comparison among named questions.
+- **Liftability asks about a step's own receiver** rather than the item,
+  which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
+  the item is the receiver of the first step alone, and a step applied to
+  an owned value declines however safe the borrow its result carries,
+  since the regions in typeck results are erased. What the step's
+  *arguments* could lend is read from the declared signature instead,
+  where they are not.
+- **The guard-and-value trigger declines a stage whose result borrows.**
+  The stage that stays becomes the next adapter's item, so a borrow leaves
+  the closure with it, and the erased regions make a borrow of the item
+  indistinguishable from one that outlives the closure. A stage returning
+  `Option<&str>` is the cost, and the cost is in which split is offered
+  rather than in silence: the chain trigger reads the same body as two
+  steps.
+- **The guard-and-value trigger counts every split as moving the
+  receiver**, where only a leading lift does. The shapes lifting work to
+  the right hand the receiver to the adapter that already had it, so
+  `find_map`, the one adapter among the three taking its receiver by
+  reference, declines a receiver named again for a split that would not
+  have moved it.
+- **A borrowing adapter whose receiver is named again is declined**
+  rather than suggesting the reborrow of
+  [Which adapters](#which-adapters), which is the cheaper error that
+  section asks for. A split whose head keeps the folded method borrows the
+  receiver where the folded form did, so the piping methods that hand a
+  borrow are not declined for it.
+
+Not implemented, and the rest of this file is their active spec:
+
+- No autofix for the guard-and-value shape, which has more than one
+  reasonable text, nor for a chain under an adapter that keeps the method at
+  the head, which puts the leading step in its own method.
+- A conjunction is applied as one adapter per test, each keeping the closure
+  the test was written in, with
+  `clippy::redundant_closure_for_method_calls` left to reduce the ones that
+  reduce. Nothing in `clippy::all`, `pedantic`, `nursery` or `restriction`
+  asks for the closure form back, so the two fixes compose in that order and
+  stop.
+- A chain is applied as one adapter per step, each step named as the function
+  it already is. Reusing the item's name was tried and rejected: only the
+  first step is handed the item, so `|line| line.len()` above a `trim` binds
+  a length to a name meaning a line. A step that cannot be named declines to
+  a closure over the item where it is the first, and to a placeholder for the
+  reader above that, which is offered rather than applied. The path form is
+  only taken where the method's self type has the borrow depth and the base
+  type the receiver has, which is what keeps an item of `String` away from
+  the `str::len` it reaches through a deref, and where the name it would be
+  written as resolves where the chain sits -- a name needing an import is
+  offered alongside the `use` lines that would make it resolve, rather than
+  written as a path nobody writes by hand.
+- A chain under an adapter taking the whole chain, `fold` among them, is
+  applied by editing the closure rather than replacing it: the accumulator
+  parameter and the body around the chain are the reader's and stay, while the
+  item's parameter and the chain become the lifted value. The name for that
+  value is the reader's too, the item's own name having described what the
+  chain was handed rather than what it produces, so a placeholder stands in
+  and the rewrite is offered rather than applied.
+- Both `## Deferred` sections below.
+
 ## Statement
 
 An adapter should do one thing. A closure doing several makes one

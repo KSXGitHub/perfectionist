@@ -1,10 +1,10 @@
 use crate::command_extra::{imports, is_the_trait};
-use crate::common::{DefaultState, hir_in_external_macro};
+use crate::common::{DefaultState, drops_a_comment, hir_in_external_macro};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use clippy_utils::source::{snippet_opt, snippet_with_applicability};
 use clippy_utils::sugg::Sugg;
-use clippy_utils::{is_from_proc_macro, span_extract_comments, sym};
+use clippy_utils::{is_from_proc_macro, sym};
 use rustc_errors::Applicability;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::def_id::DefId;
@@ -12,7 +12,7 @@ use rustc_hir::{Expr, ExprKind, QPath};
 use rustc_lint::{LateContext, LateLintPass, LintStore};
 use rustc_middle::ty::print::CratePrefixGuard;
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::{Span, kw};
+use rustc_span::kw;
 
 mod folder;
 mod initial;
@@ -348,14 +348,6 @@ fn emit<'tcx>(
             }
         },
     );
-}
-
-/// Whether `fold` holds a comment outside every span in `kept`, which is
-/// all the suggestion carries over. The spans in `kept` lie inside
-/// `fold` and apart from each other, so comparing counts is enough.
-fn drops_a_comment(cx: &LateContext<'_>, fold: Span, kept: [Span; 2]) -> bool {
-    let count = |span| span_extract_comments(cx.tcx, span).len();
-    count(fold) > kept.into_iter().map(count).sum::<usize>()
 }
 
 /// The trait's path as the folder spells it, or else its definition path.

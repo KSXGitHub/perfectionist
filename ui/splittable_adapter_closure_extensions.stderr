@@ -1,0 +1,358 @@
+warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.map_ok(|text| text.trim().len()).collect()
+   |           ^^^^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.map_ok(|text| text.trim().len()).collect()
+LL +     items.map_ok(str::trim).map_ok(str::len).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.fold_ok(0, |total, text| total + text.trim().len())
+   |           ^^^^^^^
+   |
+help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold_ok(0, |total, text| total + text.trim().len())
+LL +     items.map_ok(str::trim).map_ok(str::len).fold_ok(0, |total, /* name */| total + /* name */)
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |         .fold_while(0, |total, text| {
+   |          ^^^^^^^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~         .map(str::trim).map(str::len).fold_while(0, |total, /* name */| {
+LL +             itertools::FoldWhile::Continue(total + /* name */)
+LL +         })
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.map(|text| text.trim().len())
+   |           ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.map(|text| text.trim().len())
+LL +     items.map(str::trim).map(str::len)
+   |
+
+warning: this closure chains 2 steps onto the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.any(|text| text.trim().is_empty())
+   |           ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.any(|text| text.trim().is_empty())
+LL +     items.map(str::trim).any(str::is_empty)
+   |
+
+warning: this closure chains 2 steps onto the item, so `pipe` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe(|number| render(double(number)))
+   |           ^^^^
+   |
+help: lift all but the last step into a leading `pipe` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     value.pipe(|number| render(double(number)))
+LL +     value.pipe(double).pipe(render)
+   |
+
+warning: this predicate runs 2 tests on the item, so `any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.any(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).any(|text| text.starts_with('#'))
+   |
+
+warning: this closure chains 2 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_ref(|text| text.trim().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_ref(|text| text.trim().to_uppercase().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` and each later one into a `pipe` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_mut(|all| all.as_mut_slice().len())
+   |           ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_as_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_as_ref(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_as_ref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_as_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_as_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_as_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_deref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_deref(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_deref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_deref_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_deref_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_deref_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_borrow` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_borrow(|text: &str| text.trim().len())
+   |           ^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_borrow` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_borrow_mut` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     value.pipe_borrow_mut(|text: &mut str| text.trim().len())
+   |           ^^^^^^^^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_borrow_mut` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 2 steps onto the item, so `pipe_ref` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     let length = value.pipe_ref(|text| text.trim().len());
+   |                        ^^^^^^^^
+   |
+   = help: lift the first step into a leading `pipe_ref` of its own, leaving the closure the step that is the adapter's
+
+warning: this closure chains 3 steps onto the item, so `filter_map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |         .filter_map_ok(|text| text.trim().parse().ok())
+   |          ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map_ok(|text| text.trim().parse().ok())
+LL +         .map_ok(str::trim).map_ok(str::parse).filter_map_ok(Result::ok)
+   |
+
+warning: this closure chains 2 steps onto the item, so `counts_by` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     lines.counts_by(|text| text.trim().len())
+   |           ^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.counts_by(|text| text.trim().len())
+LL +     lines.map(str::trim).counts_by(str::len)
+   |
+
+warning: this closure chains 2 steps onto the item, so `partition_map` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     lines.partition_map(|text| classify(text.trim()))
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.partition_map(|text| classify(text.trim()))
+LL +     lines.map(str::trim).partition_map(classify)
+   |
+
+warning: this closure chains 3 steps onto the item, so `for_each` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.for_each(|text| drop(text.trim().len()));
+   |           ^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.for_each(|text| drop(text.trim().len()));
+LL +     items.map(str::trim).map(str::len).for_each(drop);
+   |
+
+warning: this closure chains 2 steps onto the item, so `all` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.all(|text| text.trim().is_empty())
+   |           ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.all(|text| text.trim().is_empty())
+LL +     items.map(str::trim).all(str::is_empty)
+   |
+
+warning: this closure chains 2 steps onto the item, so `position_any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.position_any(|text| text.trim().is_empty())
+   |           ^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.position_any(|text| text.trim().is_empty())
+LL +     items.map(str::trim).position_any(str::is_empty)
+   |
+
+warning: this closure chains 2 steps onto the item, so `position_first` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.position_first(|text| text.trim().is_empty())
+   |           ^^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.position_first(|text| text.trim().is_empty())
+LL +     items.map(str::trim).position_first(str::is_empty)
+   |
+
+warning: this closure chains 2 steps onto the item, so `position_last` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.position_last(|text| text.trim().is_empty())
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.position_last(|text| text.trim().is_empty())
+LL +     items.map(str::trim).position_last(str::is_empty)
+   |
+
+warning: this closure chains 3 steps onto the item, so `find_map_any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.find_map_any(|text| text.trim().parse().ok())
+   |           ^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.find_map_any(|text| text.trim().parse().ok())
+LL +     items.map(str::trim).map(str::parse).find_map_any(Result::ok)
+   |
+
+warning: this closure chains 3 steps onto the item, so `find_map_first` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.find_map_first(|text| text.trim().parse().ok())
+   |           ^^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.find_map_first(|text| text.trim().parse().ok())
+LL +     items.map(str::trim).map(str::parse).find_map_first(Result::ok)
+   |
+
+warning: this closure chains 3 steps onto the item, so `find_map_last` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.find_map_last(|text| text.trim().parse().ok())
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.find_map_last(|text| text.trim().parse().ok())
+LL +     items.map(str::trim).map(str::parse).find_map_last(Result::ok)
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.fold(|| 0, |total, text| total + text.trim().len())
+   |           ^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold(|| 0, |total, text| total + text.trim().len())
+LL +     items.map(str::trim).map(str::len).fold(|| 0, |total, /* name */| total + /* name */)
+   |
+
+warning: this closure chains 2 steps onto the item, so `try_fold` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
+   |           ^^^^^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     items.try_fold(|| 0, |total, text| Some(total + text.trim().len()))
+LL +     items.map(str::trim).map(str::len).try_fold(|| 0, |total, /* name */| Some(total + /* name */))
+   |
+
+warning: this predicate runs 2 tests on the item, so `find_first` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.find_first(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^^^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.find_first(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).find_first(|text| text.starts_with('#'))
+   |
+
+warning: this predicate runs 2 tests on the item, so `find_any` does all of them
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.find_any(|text| wanted(text) && text.starts_with('#'))
+   |           ^^^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     items.find_any(|text| wanted(text) && text.starts_with('#'))
+LL +     items.filter(|text| wanted(text)).find_any(|text| text.starts_with('#'))
+   |
+
+warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
+  --> $DIR/splittable_adapter_closure_extensions.rs:LL:CC
+   |
+LL |     items.for_each(|text| drop(text.trim().len()));
+   |                           ^^^^^-----------------^
+   |                                |
+   |                                argument has type `usize`
+   |
+   = note: use `let _ = ...` to ignore the expression or result
+   = note: `#[warn(dropping_copy_types)]` on by default
+
+warning: N warnings emitted
