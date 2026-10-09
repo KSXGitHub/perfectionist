@@ -145,13 +145,20 @@ article.rule h2 .rule-jump-icon::selection {
   background-color: Highlight;
 }
 
+/* Centred over the character rather than stretched to fit it, so the
+   arrow is sized here instead of taking whatever advance width a font
+   happens to give `↑` -- which is narrower than the mark wants, and
+   differs from font to font. The box overspills the character, but the
+   icon keeps a margin inside its own viewBox, so the ink still lands
+   within the span that the link's underline runs under. */
 article.rule h2 .rule-jump-icon::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0.1em;
-  height: 0.9em;
+  left: 50%;
+  top: 50%;
+  width: 1.05em;
+  height: 1.05em;
+  transform: translate(-50%, -50%);
   background-color: currentColor;
   -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
   mask: url("rule-jump.svg") no-repeat center / contain;
