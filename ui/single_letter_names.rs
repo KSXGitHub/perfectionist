@@ -121,10 +121,10 @@ fn run() {
     // so `q` fires.
     let _applied = apply(|q| q * 2 + 1);
 
-    // Good: the same plain-call shape, but the callee path's final
-    // segment (`fold`) is on the trivial-callback list, so the
-    // single-letter parameters stay quiet even though `a + b` is not a
-    // trivial wrapper.
+    // Good: a closure argument to a plain function call whose callee
+    // path's final segment (`fold`) is on the trivial-callback list,
+    // so the single-letter parameters stay quiet even though `a + b`
+    // is not a trivial wrapper.
     let _folded = Iterator::fold(sorted.iter(), 0_i32, |a, b| a + b);
 
     // Bad: multi-statement closure body, single-letter parameter.
