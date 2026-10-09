@@ -7,7 +7,9 @@
 
 /**
  * A window onto a longer text, with the ranges moved to index it.
- * @typedef {{ text: string, ranges: Span[] }} Excerpt
+ * @typedef {object} Excerpt
+ * @property {string} text
+ * @property {Span[]} ranges
  */
 
 var perfectionistMatch = (function () {
