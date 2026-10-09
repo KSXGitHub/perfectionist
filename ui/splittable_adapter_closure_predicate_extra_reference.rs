@@ -78,8 +78,8 @@ fn mutable_option_item(slot: Option<&mut Counter>) -> bool {
     slot.is_some_and(|counter| counter.bump() && counter.flagged())
 }
 
-// Not flagged: and an owned item bound `mut` is written to just as a
-// `&mut` one is, with no `&mut` in the type to read it from.
+// Not flagged: an owned item bound `mut` is written to just as a `&mut`
+// one is, with no `&mut` in the type to read it from.
 fn owned_mutable_item(counters: Vec<Counter>) -> bool {
     counters
         .into_iter()
@@ -92,8 +92,9 @@ fn owned_item_by_value(mut counts: std::vec::IntoIter<usize>) -> bool {
     counts.any(|count| even(count) && large(count))
 }
 
-// Bad: the same adapter where every lifted test reads the item through a
-// method call, which autoderefs to whatever depth it is handed.
+// Bad: an adapter handed the item by value, where every lifted test reads
+// it through a method call, which autoderefs to whatever depth it is
+// handed.
 fn owned_item_by_method(names: std::vec::IntoIter<String>) -> bool {
     names
         .into_iter()
@@ -144,8 +145,9 @@ fn unsized_parameter(hashes: Vec<[u8; 32]>) -> bool {
     hashes.iter().any(|hash| checksum(hash) && hash.is_ascii())
 }
 
-// Not flagged: and neither does `&Concrete` to `&dyn Marker`, a user
-// trait carrying no blanket impl for a reference.
+// Not flagged: a `dyn` coercion at the outer reference has no step to
+// repeat, `&Concrete` reaching `&dyn Marker` where `&&Concrete` does not,
+// the user trait carrying no blanket impl for a reference.
 fn dyn_parameter(items: Vec<Concrete>) -> bool {
     items.iter().any(|item| marked_by(item) && item.marked())
 }

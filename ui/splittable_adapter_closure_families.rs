@@ -103,7 +103,8 @@ fn split_control_flow_break(flow: ControlFlow<&'static str, usize>) -> ControlFl
     flow.map_break(str::trim).map_break(str::len)
 }
 
-// Bad: and its continue channel.
+// Bad: the continue channel, whose `map_continue` maps the value it
+// carries.
 fn control_flow_continue(flow: ControlFlow<usize, &'static str>) -> ControlFlow<usize, usize> {
     flow.map_continue(|text| text.trim().len())
 }
@@ -146,7 +147,7 @@ fn split_option_map_or(header: Option<&'static str>) -> usize {
     header.map(str::trim).map_or(0, str::len)
 }
 
-// Bad: and the one whose default is a closure of its own.
+// Bad: the `Option` adapter whose default is a closure of its own.
 fn option_map_or_else(header: Option<&'static str>) -> usize {
     header.map_or_else(|| 0, |text| text.trim().len())
 }
@@ -247,7 +248,7 @@ fn split_result_unwrap_or_else(outcome: Result<usize, &'static str>) -> usize {
     outcome.map_err(str::trim).unwrap_or_else(str::len)
 }
 
-// Bad: and the predicate-shaped one.
+// Bad: the predicate-shaped adapter on the error channel.
 fn result_is_err_and(outcome: Result<usize, &'static str>) -> bool {
     outcome.is_err_and(|text| text.trim().is_empty())
 }

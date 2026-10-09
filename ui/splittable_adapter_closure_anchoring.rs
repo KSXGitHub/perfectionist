@@ -355,9 +355,9 @@ fn divides_before_the_chain(divisor: usize, lines: std::vec::IntoIter<&'static s
     lines.fold(0, |total, line| total + 1 / divisor + line.trim().len())
 }
 
-// Not flagged: a compound division panics without being a call too, and
-// is a shape of its own: the arm reading the plain spelling does not
-// reach it.
+// Not flagged: a compound division panics without being a call, so the
+// item's steps would run before the panic that stopped them. It is a
+// shape of its own: the arm reading the plain spelling does not reach it.
 fn divides_in_place_before_the_chain(
     divisor: usize,
     lines: std::vec::IntoIter<&'static str>,

@@ -26,8 +26,9 @@ fn wanted(text: &str) -> bool {
     !text.is_empty()
 }
 
-// Bad: the trait under its older name is read the same way, `map` being
-// handed the item there too.
+// Bad: the trait under its older name, `ParIter`, declares `map` handing
+// the item over by value, which is what the rule reads rather than the
+// name.
 fn mapping(items: Parallel<&'static str>) -> Vec<usize> {
     items.map(|text| text.trim().len()).into_items()
 }

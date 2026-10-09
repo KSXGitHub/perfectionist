@@ -53,8 +53,9 @@ fn split_parse_the_trimmed(lines: std::vec::IntoIter<&'static str>) -> Vec<usize
     lines.map(str::trim).filter_map(maybe).collect()
 }
 
-// Bad: the same over items that are `&String`, where what the step borrows
-// sits behind the reference and so outlives the closure.
+// Bad: a fallible call applied to a step, over items that are `&String`,
+// where what the step borrows sits behind the reference and so outlives
+// the closure.
 fn parse_the_trimmed_borrowed(lines: std::slice::Iter<'static, String>) -> Vec<usize> {
     lines.filter_map(|line| maybe(line.trim())).collect()
 }

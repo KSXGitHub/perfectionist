@@ -94,7 +94,7 @@ fn receiver_moved_twice(mut lines: std::vec::IntoIter<&'static str>) -> usize {
     hits
 }
 
-// Not flagged: and the body to count mentions in is the one declaring the
+// Not flagged: the body to count mentions in is the one declaring the
 // receiver, not the closure the call sits in.
 fn receiver_named_outside(mut lines: std::vec::IntoIter<&'static str>) -> bool {
     let found = (|| lines.find(|line| wanted(line) && line.starts_with('#')))();

@@ -76,8 +76,9 @@ fn named_twice(pairs: std::vec::IntoIter<&'static str>) -> Vec<String> {
     pairs.map(|pair| pair.trim().to_owned() + pair).collect()
 }
 
-// Not flagged: the same in a fold, where the chain is still what the
-// closure always reaches.
+// Not flagged: the item is named twice in a fold, where the chain is
+// still what the closure always reaches and the second mention would
+// still be left with no binding.
 fn named_twice_in_a_fold(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + line.trim().len() + line.len())
 }
@@ -149,7 +150,8 @@ fn destructured(pairs: std::vec::IntoIter<(usize, &'static str)>) -> usize {
     pairs.fold(0, |total, (_key, value)| total + value.trim().len())
 }
 
-// Not flagged: the same, with no step that borrows.
+// Not flagged: a destructured parameter bottoms the chain out at a
+// binding the pattern introduced, with no step that borrows.
 fn destructured_without_a_borrow(pairs: std::vec::IntoIter<(usize, usize)>) -> usize {
     pairs.fold(0, |total, (_key, value)| total + value.wrapping_add(1).wrapping_mul(2))
 }

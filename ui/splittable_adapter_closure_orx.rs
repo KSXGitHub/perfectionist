@@ -35,7 +35,7 @@ fn split_mapping(items: Parallel<&'static str>) -> Vec<usize> {
     items.map(str::trim).map(str::len).into_items()
 }
 
-// Bad: `for_each` is handed the item too, consuming rather than adapting.
+// Bad: `for_each` is handed the item, consuming rather than adapting.
 fn each(items: Parallel<&'static str>) {
     items.for_each(|text| record(text.trim().len()));
 }
@@ -111,8 +111,8 @@ fn reducing(items: Parallel<&'static str>) -> Option<&'static str> {
     })
 }
 
-// Not flagged: `max_by` is handed the item twice as well, and behind a
-// reference, so neither trigger has a split for it.
+// Not flagged: `max_by` is handed the item twice, and behind a reference,
+// so neither trigger has a split for it.
 fn largest(items: Parallel<&'static str>) -> Option<&'static str> {
     items.max_by(|left, right| left.len().cmp(&right.len()))
 }
@@ -134,7 +134,7 @@ fn split_parsing(items: Parallel<&'static str>) -> Vec<usize> {
         .into_items()
 }
 
-// Bad: `flat_map` is handed the item too, and flattens what it answers.
+// Bad: `flat_map` is handed the item, and flattens what it answers.
 fn letters(items: Parallel<&'static str>) -> Vec<char> {
     items.flat_map(|text| text.trim().chars()).into_items()
 }

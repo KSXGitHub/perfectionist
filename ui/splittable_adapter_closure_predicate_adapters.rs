@@ -34,13 +34,14 @@ fn split_find_tests(lines: std::vec::IntoIter<&'static str>) -> Option<&'static 
         .find(|line| line.starts_with('#'))
 }
 
-// Bad: the same from the other end.
+// Bad: a consumer reading from the other end, whose answer depends only
+// on which items satisfy the predicate.
 fn rfind_tests(mut lines: std::vec::IntoIter<&'static str>) -> Option<&'static str> {
     lines.rfind(|line| wanted(line) && line.starts_with('#'))
 }
 
-// Good: the same from the other end, `Filter` being double-ended wherever
-// its iterator is.
+// Good: the leading test filters, the search reading from the other end,
+// `Filter` being double-ended wherever its iterator is.
 fn split_rfind_tests(lines: std::vec::IntoIter<&'static str>) -> Option<&'static str> {
     lines
         .filter(|line| wanted(line))
@@ -108,7 +109,8 @@ fn split_option_filter(line: Option<&'static str>) -> Option<&'static str> {
         .filter(|line| line.starts_with('#'))
 }
 
-// Bad: and so is `Option::is_some_and`.
+// Bad: `Option::is_some_and` asks its tests of the value it holds, so a
+// leading `Option::filter` can take all but the last.
 fn option_is_some_and(line: Option<&'static str>) -> bool {
     line.is_some_and(|line| wanted(line) && line.starts_with('#'))
 }
