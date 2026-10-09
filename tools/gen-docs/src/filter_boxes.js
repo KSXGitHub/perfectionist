@@ -21,7 +21,7 @@
    */
 
   /**
-   * @typedef {{ item: FilterItem, score: number, ranges: Span[] }} Matched
+   * @typedef {Match & { item: FilterItem }} Matched
    */
 
   /**

@@ -65,9 +65,9 @@
     // Within a tier as well as between tiers: a tier that kept only its
     // highest-scoring placement would drop the target when that placement
     // was a coincidence and a lower-scoring one was the real match.
-    /** @type {{ score: number, ranges: Span[] }} */
+    /** @type {Match} */
     var coincidence = { score: 0.9, ranges: [[1, 3]] }
-    /** @type {{ score: number, ranges: Span[] }} */
+    /** @type {Match} */
     var aimedAt = { score: 0.5, ranges: [[0, 4]] }
     t.equal(
       a.betterAdmitted(coincidence, aimedAt, 'bare url'),
@@ -78,9 +78,9 @@
   })
 
   t.add('between two worth showing, the score decides', function () {
-    /** @type {{ score: number, ranges: Span[] }} */
+    /** @type {Match} */
     var low = { score: 0.5, ranges: [[0, 4]] }
-    /** @type {{ score: number, ranges: Span[] }} */
+    /** @type {Match} */
     var high = { score: 0.9, ranges: [[5, 8]] }
     t.equal(a.betterAdmitted(low, high, 'bare url'), high, 'the higher-scoring one wins')
     t.equal(a.betterAdmitted(null, low, 'bare url'), low, 'and either side may be absent')

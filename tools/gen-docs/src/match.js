@@ -5,6 +5,11 @@
 // browser around it.
 // ==========================================================================
 
+/**
+ * A window onto a longer text, with the ranges moved to index it.
+ * @typedef {{ text: string, ranges: Span[] }} Excerpt
+ */
+
 var perfectionistMatch = (function () {
   var fold = perfectionistMatchText.fold
   var admits = perfectionistMatchAdmit.admits
@@ -25,7 +30,7 @@ var perfectionistMatch = (function () {
    * put them in order.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: Span[] } | null}
+   * @returns {Match | null}
    */
   function matchFuzzy(query, target) {
     var needle = fold(query)
@@ -54,7 +59,7 @@ var perfectionistMatch = (function () {
    * from each other.
    * @param {string} query
    * @param {string} target
-   * @returns {{ score: number, ranges: Span[] } | null}
+   * @returns {Match | null}
    */
   function matchPhrase(query, target) {
     var needle = fold(query)
@@ -79,7 +84,7 @@ var perfectionistMatch = (function () {
    * @param {string} text
    * @param {Span[]} ranges
    * @param {number} limit  the longest window to keep, in characters
-   * @returns {{ text: string, ranges: Span[] }}
+   * @returns {Excerpt}
    */
   function excerpt(text, ranges, limit) {
     if (text.length <= limit) {

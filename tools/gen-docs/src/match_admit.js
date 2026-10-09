@@ -98,10 +98,10 @@ var perfectionistMatchAdmit = (function () {
    *
    * This only orders, so a tier whose every placement is a coincidence
    * still comes back for `matchFuzzy` to turn away.
-   * @param {{ score: number, ranges: Span[] } | null} left
-   * @param {{ score: number, ranges: Span[] } | null} right
+   * @param {Match | null} left
+   * @param {Match | null} right
    * @param {string} haystack
-   * @returns {{ score: number, ranges: Span[] } | null}
+   * @returns {Match | null}
    */
   function betterAdmitted(left, right, haystack) {
     if (!left) {
