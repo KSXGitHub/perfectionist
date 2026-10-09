@@ -136,7 +136,9 @@
   // handler that reads `toggle`/`sidebar` would otherwise see them as nullable.
   var toggle = /** @type {HTMLElement} */ (document.querySelector('.nav-toggle'))
   var sidebar = /** @type {HTMLElement} */ (document.querySelector('.nav-sidebar'))
-  if (!toggle || !sidebar) return
+  if (!toggle || !sidebar) {
+    return
+  }
 
   // ---- Hamburger fade ---------------------------------------------------
   //
@@ -200,7 +202,9 @@
   var bodyLocked = false
 
   function lockBodyScroll() {
-    if (bodyLocked) return
+    if (bodyLocked) {
+      return
+    }
     savedScrollY = window.scrollY
     document.body.style.position = 'fixed'
     document.body.style.top = '-' + savedScrollY + 'px'
@@ -210,7 +214,9 @@
   }
 
   function unlockBodyScroll() {
-    if (!bodyLocked) return
+    if (!bodyLocked) {
+      return
+    }
     document.body.style.position = ''
     document.body.style.top = ''
     document.body.style.left = ''
@@ -236,14 +242,20 @@
     inertedChildren = []
     for (var i = 0; i < document.body.children.length; i++) {
       var el = /** @type {HTMLElement} */ (document.body.children[i])
-      if (el === toggle || el === sidebar) continue
-      if (el.inert) continue
+      if (el === toggle || el === sidebar) {
+        continue
+      }
+      if (el.inert) {
+        continue
+      }
       el.inert = true
       inertedChildren.push(el)
     }
   }
   function clearBackgroundInert() {
-    for (var i = 0; i < inertedChildren.length; i++) inertedChildren[i].inert = false
+    for (var i = 0; i < inertedChildren.length; i++) {
+      inertedChildren[i].inert = false
+    }
     inertedChildren = []
   }
 
@@ -258,7 +270,9 @@
     toggle.setAttribute('aria-expanded', 'true')
     lockBodyScroll()
     setBackgroundInert()
-    if (closeBtn) closeBtn.focus({ preventScroll: true })
+    if (closeBtn) {
+      closeBtn.focus({ preventScroll: true })
+    }
   }
 
   function closeSidebar() {
@@ -277,7 +291,9 @@
   })
 
   var closeBtn = /** @type {HTMLElement | null} */ (sidebar.querySelector('.nav-sidebar-close'))
-  if (closeBtn) closeBtn.addEventListener('click', closeSidebar)
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeSidebar)
+  }
 
   // ---- Focus trap fallback ----------------------------------------------
   //
@@ -299,12 +315,18 @@
   // the header's filter funnel is a `<button>`, but the filter input
   // below it is an `<input>`.
   document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Tab') return
-    if (toggle.getAttribute('aria-expanded') !== 'true') return
+    if (event.key !== 'Tab') {
+      return
+    }
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
     var focusable = /** @type {NodeListOf<HTMLElement>} */ (
       sidebar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
     )
-    if (focusable.length === 0) return
+    if (focusable.length === 0) {
+      return
+    }
     var first = focusable[0]
     var last = focusable[focusable.length - 1]
     if (!sidebar.contains(document.activeElement)) {
@@ -334,12 +356,20 @@
   // tabindex="-1" before .focus().
   sidebar.addEventListener('click', function (event) {
     var link = /** @type {Element} */ (event.target).closest('a')
-    if (!link) return
-    if (event.button !== 0) return
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (!link) {
+      return
+    }
+    if (event.button !== 0) {
+      return
+    }
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
     closeSidebar()
     var hash = link.hash
-    if (!hash) return
+    if (!hash) {
+      return
+    }
     // Rule fragments are `#/rule/<name>`, whose `/` characters make
     // them invalid CSS id selectors — `querySelector("#/rule/...")`
     // would throw. Resolve the raw id with getElementById instead,
@@ -350,7 +380,9 @@
     // error aids debugging.
     var id = decodeURIComponent(hash.slice('#'.length))
     var target = document.getElementById(id)
-    if (!target) return
+    if (!target) {
+      return
+    }
     target.setAttribute('tabindex', '-1')
     target.focus({ preventScroll: true })
   })

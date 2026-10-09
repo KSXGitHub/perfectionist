@@ -46,36 +46,62 @@
    */
   function buildOverlay() {
     var toggle = document.querySelector('.search-toggle')
-    if (!(toggle instanceof HTMLElement)) return null
+    if (!(toggle instanceof HTMLElement)) {
+      return null
+    }
     // A browser without `<template>` parses both as unknown elements, fails
     // these checks and leaves the magnifier hidden, which is the right
     // outcome: there is nothing for it to open.
     var overlayBlueprint = document.getElementById('search-overlay-template')
     var resultBlueprint = document.getElementById('search-result-template')
-    if (!(overlayBlueprint instanceof HTMLTemplateElement)) return null
-    if (!(resultBlueprint instanceof HTMLTemplateElement)) return null
+    if (!(overlayBlueprint instanceof HTMLTemplateElement)) {
+      return null
+    }
+    if (!(resultBlueprint instanceof HTMLTemplateElement)) {
+      return null
+    }
     // The result blueprint's shape is checked once, here, rather than per
     // result: it is fixed markup, so if it is wrong it is wrong every time —
     // and failing now, before the reveal, leaves no dead button behind.
-    if (!resultBlueprint.content.querySelector('.search-result')) return null
-    if (!resultBlueprint.content.querySelector('.search-result-name')) return null
-    if (!resultBlueprint.content.querySelector('.search-result-text')) return null
+    if (!resultBlueprint.content.querySelector('.search-result')) {
+      return null
+    }
+    if (!resultBlueprint.content.querySelector('.search-result-name')) {
+      return null
+    }
+    if (!resultBlueprint.content.querySelector('.search-result-text')) {
+      return null
+    }
 
     document.body.appendChild(overlayBlueprint.content.cloneNode(true))
     var overlay = document.querySelector('.search-overlay')
-    if (!(overlay instanceof HTMLElement)) return null
+    if (!(overlay instanceof HTMLElement)) {
+      return null
+    }
     var dialog = overlay.querySelector('.search-dialog')
     var input = overlay.querySelector('.search-input')
     var close = overlay.querySelector('.search-close')
     var results = overlay.querySelector('.search-results')
     var emptyPrompt = overlay.querySelector('.search-empty-prompt')
     var emptyNoMatch = overlay.querySelector('.search-empty-no-match')
-    if (!(dialog instanceof HTMLElement)) return null
-    if (!(input instanceof HTMLInputElement)) return null
-    if (!close) return null
-    if (!(results instanceof HTMLElement)) return null
-    if (!(emptyPrompt instanceof HTMLElement)) return null
-    if (!(emptyNoMatch instanceof HTMLElement)) return null
+    if (!(dialog instanceof HTMLElement)) {
+      return null
+    }
+    if (!(input instanceof HTMLInputElement)) {
+      return null
+    }
+    if (!close) {
+      return null
+    }
+    if (!(results instanceof HTMLElement)) {
+      return null
+    }
+    if (!(emptyPrompt instanceof HTMLElement)) {
+      return null
+    }
+    if (!(emptyNoMatch instanceof HTMLElement)) {
+      return null
+    }
     return {
       toggle: toggle,
       resultBlueprint: resultBlueprint,
@@ -90,7 +116,9 @@
   }
 
   var parts = buildOverlay()
-  if (!parts) return
+  if (!parts) {
+    return
+  }
   var toggle = parts.toggle
   var resultBlueprint = parts.resultBlueprint
   var overlay = parts.overlay
@@ -116,7 +144,9 @@
     var out = ''
     for (var i = 0; i < parent.childNodes.length; i++) {
       var node = parent.childNodes[i]
-      if (node === omit) continue
+      if (node === omit) {
+        continue
+      }
       out += node.textContent || ''
     }
     return out
@@ -130,8 +160,12 @@
    * @returns {boolean}
    */
   function isRepeated(block) {
-    if (block.classList.contains('source')) return true
-    if (block.classList.contains('config-none')) return true
+    if (block.classList.contains('source')) {
+      return true
+    }
+    if (block.classList.contains('config-none')) {
+      return true
+    }
     var parent = block.parentElement
     return !!parent && parent.matches('details.config-details')
   }
@@ -148,7 +182,9 @@
       var article = articles[i]
       var nameHost = article.querySelector('h2 .lint-name')
       var id = article.getAttribute('id')
-      if (!nameHost || !id) continue
+      if (!nameHost || !id) {
+        continue
+      }
       // The default-state badge marks the statement paragraph; the
       // statement is that paragraph minus the badge's own word.
       var badge = article.querySelector('p .state')
@@ -158,10 +194,16 @@
       var blocks = article.querySelectorAll('p, li')
       for (var j = 0; j < blocks.length; j++) {
         var block = blocks[j]
-        if (!(block instanceof HTMLElement)) continue
-        if (block === statementHost || isRepeated(block)) continue
+        if (!(block instanceof HTMLElement)) {
+          continue
+        }
+        if (block === statementHost || isRepeated(block)) {
+          continue
+        }
         var text = perfectionistRank.prose(block.textContent || '')
-        if (text) paragraphs.push(text)
+        if (text) {
+          paragraphs.push(text)
+        }
       }
       out.push({
         name: perfectionistRank.flatten(nameHost.textContent || ''),
@@ -185,8 +227,12 @@
     var link = item.querySelector('.search-result')
     var name = item.querySelector('.search-result-name')
     var text = item.querySelector('.search-result-text')
-    if (!(link instanceof HTMLAnchorElement)) return
-    if (!(name instanceof HTMLElement) || !(text instanceof HTMLElement)) return
+    if (!(link instanceof HTMLAnchorElement)) {
+      return
+    }
+    if (!(name instanceof HTMLElement) || !(text instanceof HTMLElement)) {
+      return
+    }
     link.href = result.entry.href
     // The score the result was ranked by, for whoever is debugging a
     // ranking that reads wrong.
@@ -208,7 +254,9 @@
   }
 
   function apply() {
-    while (results.firstChild) results.removeChild(results.firstChild)
+    while (results.firstChild) {
+      results.removeChild(results.firstChild)
+    }
     var query = input.value.trim()
     // Nothing typed yet, so say what typing will do rather than leave the
     // dialog a blank panel.
@@ -216,7 +264,9 @@
       showOnly(emptyPrompt)
       return
     }
-    if (!entries) entries = scrape()
+    if (!entries) {
+      entries = scrape()
+    }
     var ranked = rank(entries, query)
     // A query that matches nothing is worth saying so: an empty list
     // reads the same as one that has not been searched yet.
@@ -225,7 +275,9 @@
       return
     }
     showOnly(results)
-    for (var i = 0; i < ranked.length; i++) renderResult(ranked[i])
+    for (var i = 0; i < ranked.length; i++) {
+      renderResult(ranked[i])
+    }
   }
 
   // ---- Background inertness --------------------------------------------
@@ -245,16 +297,24 @@
     inerted = []
     for (var i = 0; i < document.body.children.length; i++) {
       var child = document.body.children[i]
-      if (!(child instanceof HTMLElement)) continue
-      if (child === overlay) continue
-      if (child.inert) continue
+      if (!(child instanceof HTMLElement)) {
+        continue
+      }
+      if (child === overlay) {
+        continue
+      }
+      if (child.inert) {
+        continue
+      }
       child.inert = true
       inerted.push(child)
     }
   }
 
   function clearBackgroundInert() {
-    for (var i = 0; i < inerted.length; i++) inerted[i].inert = false
+    for (var i = 0; i < inerted.length; i++) {
+      inerted[i].inert = false
+    }
     inerted = []
   }
 
@@ -294,7 +354,9 @@
   // — dismisses it, the conventional gesture for a modal.
   overlay.addEventListener('click', function (event) {
     var target = event.target
-    if (target instanceof Node && dialog.contains(target)) return
+    if (target instanceof Node && dialog.contains(target)) {
+      return
+    }
     closeOverlay()
   })
 
@@ -302,12 +364,18 @@
   // overlay is open, so Escape keeps its ordinary meaning everywhere else
   // on the page.
   document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Escape') return
+    if (event.key !== 'Escape') {
+      return
+    }
     // Mid-composition the key belongs to the IME, which abandons the
     // candidate on it. Closing the overlay here would dismiss the dialog
     // and commit the half-composed text into the input it just hid.
-    if (event.isComposing) return
-    if (!isOpen()) return
+    if (event.isComposing) {
+      return
+    }
+    if (!isOpen()) {
+      return
+    }
     event.preventDefault()
     closeOverlay()
   })
@@ -329,21 +397,33 @@
    * @returns {boolean}
    */
   function isEditable(target) {
-    if (!(target instanceof HTMLElement)) return false
-    if (target.isContentEditable) return true
+    if (!(target instanceof HTMLElement)) {
+      return false
+    }
+    if (target.isContentEditable) {
+      return true
+    }
     var tag = target.tagName
     return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   }
 
   document.addEventListener('keydown', function (event) {
-    if (event.key !== '/') return
+    if (event.key !== '/') {
+      return
+    }
     // A modifier turns the keystroke into something the browser or the OS
     // owns. Shift is not among them: on a layout where `/` is a shifted
     // key it is how the character is typed at all, and `key` is the
     // character either way.
-    if (event.ctrlKey || event.altKey || event.metaKey) return
-    if (event.isComposing) return
-    if (isEditable(event.target)) return
+    if (event.ctrlKey || event.altKey || event.metaKey) {
+      return
+    }
+    if (event.isComposing) {
+      return
+    }
+    if (isEditable(event.target)) {
+      return
+    }
     // `preventDefault` goes only on the keystroke each branch handles,
     // never on one it declined. On the way in it is load-bearing twice
     // over: it keeps Firefox's Quick Find shut, and it keeps the browser
@@ -356,7 +436,9 @@
     // A `/` typed over something covering the page belongs to that, not
     // here. Asked only on the way in, because opening the overlay inerts
     // this button too.
-    if (toggle.closest('[inert]')) return
+    if (toggle.closest('[inert]')) {
+      return
+    }
     event.preventDefault()
     openOverlay()
   })
@@ -364,10 +446,14 @@
   input.addEventListener('input', apply)
   input.addEventListener('search', apply)
   input.addEventListener('keydown', function (event) {
-    if (event.key !== 'Enter') return
+    if (event.key !== 'Enter') {
+      return
+    }
     // Mid-composition Enter accepts the IME's candidate, and the `input`
     // event that follows re-runs the query anyway.
-    if (event.isComposing) return
+    if (event.isComposing) {
+      return
+    }
     // The input is in no form, so Enter submits nothing; suppressing the
     // default only keeps a stray form association from navigating.
     event.preventDefault()
@@ -400,20 +486,32 @@
     var out = []
     for (var i = 0; i < found.length; i++) {
       var element = found[i]
-      if (!(element instanceof HTMLElement)) continue
-      if (element.getClientRects().length > 0) out.push(element)
+      if (!(element instanceof HTMLElement)) {
+        continue
+      }
+      if (element.getClientRects().length > 0) {
+        out.push(element)
+      }
     }
     return out
   }
 
   overlay.addEventListener('keydown', function (event) {
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+      return
+    }
     // A modifier turns these into something the browser or the OS owns,
     // and an arrow mid-composition belongs to the IME.
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-    if (event.isComposing) return
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
+    if (event.isComposing) {
+      return
+    }
     var items = focusables()
-    if (items.length === 0) return
+    if (items.length === 0) {
+      return
+    }
     var step = event.key === 'ArrowDown' ? 1 : -1
     var active = document.activeElement
     var at = -1
@@ -439,19 +537,31 @@
   // `tabindex="-1"` goes on first.
   results.addEventListener('click', function (event) {
     var clicked = event.target
-    if (!(clicked instanceof Element)) return
+    if (!(clicked instanceof Element)) {
+      return
+    }
     var link = clicked.closest('a')
-    if (!link) return
-    if (event.button !== 0) return
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (!link) {
+      return
+    }
+    if (event.button !== 0) {
+      return
+    }
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
     closeOverlay()
     var hash = link.hash
-    if (!hash) return
+    if (!hash) {
+      return
+    }
     // Rule fragments are `#/rule/<name>`, whose `/` characters make them
     // invalid CSS id selectors — `querySelector("#/rule/...")` would
     // throw. `getElementById` matches the literal `id` and accepts them.
     var target = document.getElementById(decodeURIComponent(hash.slice('#'.length)))
-    if (!target) return
+    if (!target) {
+      return
+    }
     target.setAttribute('tabindex', '-1')
     target.focus({ preventScroll: true })
   })

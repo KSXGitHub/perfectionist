@@ -33,7 +33,9 @@ var perfectionistMatchText = (function () {
    * @returns {boolean}
    */
   function isWordStart(haystack, index) {
-    if (index <= 0) return true
+    if (index <= 0) {
+      return true
+    }
     var previous = haystack.charAt(index - 1)
     return !(previous >= 'a' && previous <= 'z') && !(previous >= '0' && previous <= '9')
   }
@@ -58,7 +60,9 @@ var perfectionistMatchText = (function () {
    */
   function wordEnd(text, from) {
     var at = from
-    while (at < text.length && isAlnum(text.charAt(at))) at++
+    while (at < text.length && isAlnum(text.charAt(at))) {
+      at++
+    }
     return at
   }
 
@@ -69,7 +73,9 @@ var perfectionistMatchText = (function () {
    */
   function nextWord(text, from) {
     var at = from
-    while (at < text.length && !isAlnum(text.charAt(at))) at++
+    while (at < text.length && !isAlnum(text.charAt(at))) {
+      at++
+    }
     return at < text.length ? at : -1
   }
 
@@ -97,7 +103,9 @@ var perfectionistMatchText = (function () {
     var spans = wordSpans(text)
     /** @type {string[]} */
     var out = []
-    for (var i = 0; i < spans.length; i++) out.push(text.slice(spans[i][0], spans[i][1]))
+    for (var i = 0; i < spans.length; i++) {
+      out.push(text.slice(spans[i][0], spans[i][1]))
+    }
     return out
   }
 
@@ -109,7 +117,9 @@ var perfectionistMatchText = (function () {
    */
   function onlySeparators(text, from, to) {
     for (var at = from; at < to; at++) {
-      if (text.charAt(at) !== ' ') return false
+      if (text.charAt(at) !== ' ') {
+        return false
+      }
     }
     return true
   }
@@ -122,7 +132,9 @@ var perfectionistMatchText = (function () {
   function commonPrefix(left, right) {
     var limit = Math.min(left.length, right.length)
     var at = 0
-    while (at < limit && left.charAt(at) === right.charAt(at)) at++
+    while (at < limit && left.charAt(at) === right.charAt(at)) {
+      at++
+    }
     return at
   }
 
@@ -156,10 +168,16 @@ var perfectionistMatchText = (function () {
    * @returns {string}
    */
   function undouble(word) {
-    if (word.length - 1 < MIN_STEM) return word
+    if (word.length - 1 < MIN_STEM) {
+      return word
+    }
     var last = word.charAt(word.length - 1)
-    if (last !== word.charAt(word.length - 2)) return word
-    if (last === 'l' || last === 's' || last === 'z') return word
+    if (last !== word.charAt(word.length - 2)) {
+      return word
+    }
+    if (last === 'l' || last === 's' || last === 'z') {
+      return word
+    }
     return word.slice(0, word.length - 1)
   }
 
@@ -175,7 +193,9 @@ var perfectionistMatchText = (function () {
    * @returns {string}
    */
   function stem(word) {
-    if (word.length < MIN_STEM_WORD) return word
+    if (word.length < MIN_STEM_WORD) {
+      return word
+    }
     var out = word
     // A plural or a third person. An `ss` or a `us` is neither: `pass`
     // and `status` end that way on their own account.

@@ -19,7 +19,9 @@
   var list = /** @type {HTMLElement} */ (document.querySelector('#cases'))
   var summary = /** @type {HTMLElement} */ (document.querySelector('#summary'))
   var engine = /** @type {HTMLElement} */ (document.querySelector('#engine'))
-  if (!list || !summary || !engine) return
+  if (!list || !summary || !engine) {
+    return
+  }
 
   // The result below means little without the engine that produced it.
   engine.textContent = navigator.userAgent
@@ -115,7 +117,9 @@
         failed += 1
       }
       setState(pending[j].row, pending[j].indicator, broke ? 'failed' : 'passed')
-      if (!failure) continue
+      if (!failure) {
+        continue
+      }
       // The harness's message, quoted verbatim: output from a program,
       // which is what `samp` is for.
       var why = document.createElement('samp')

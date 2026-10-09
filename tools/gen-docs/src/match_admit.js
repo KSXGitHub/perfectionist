@@ -28,7 +28,9 @@ var perfectionistMatchAdmit = (function () {
    */
   function wordStartBefore(haystack, index) {
     var at = index
-    while (at > 0 && isAlnum(haystack.charAt(at - 1))) at--
+    while (at > 0 && isAlnum(haystack.charAt(at - 1))) {
+      at--
+    }
     return at
   }
 
@@ -45,8 +47,12 @@ var perfectionistMatchAdmit = (function () {
    */
   function aimed(haystack, range) {
     var start = range[0]
-    if (isWordStart(haystack, start)) return true
-    if (isAlnum(haystack.charAt(range[1]))) return false
+    if (isWordStart(haystack, start)) {
+      return true
+    }
+    if (isAlnum(haystack.charAt(range[1]))) {
+      return false
+    }
     return range[1] - start >= start - wordStartBefore(haystack, start)
   }
 
@@ -65,12 +71,18 @@ var perfectionistMatchAdmit = (function () {
    * @returns {boolean}
    */
   function admits(ranges, haystack) {
-    if (!aimed(haystack, ranges[0])) return false
+    if (!aimed(haystack, ranges[0])) {
+      return false
+    }
     var slips = 0
     for (var i = 1; i < ranges.length; i++) {
-      if (isWordStart(haystack, ranges[i][0])) continue
+      if (isWordStart(haystack, ranges[i][0])) {
+        continue
+      }
       slips++
-      if (slips > SLIPS_ALLOWED) return false
+      if (slips > SLIPS_ALLOWED) {
+        return false
+      }
     }
     return true
   }
@@ -92,10 +104,16 @@ var perfectionistMatchAdmit = (function () {
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function betterAdmitted(left, right, haystack) {
-    if (!left) return right
-    if (!right) return left
+    if (!left) {
+      return right
+    }
+    if (!right) {
+      return left
+    }
     var leftShown = admits(left.ranges, haystack)
-    if (leftShown !== admits(right.ranges, haystack)) return leftShown ? left : right
+    if (leftShown !== admits(right.ranges, haystack)) {
+      return leftShown ? left : right
+    }
     return better(left, right)
   }
 

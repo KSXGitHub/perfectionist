@@ -35,8 +35,12 @@ var perfectionistMatchScore = (function () {
    * @returns {number}
    */
   function opening(haystack, index) {
-    if (index === 0) return BASE + WORD_BONUS + START_BONUS
-    if (isWordStart(haystack, index)) return BASE + WORD_BONUS
+    if (index === 0) {
+      return BASE + WORD_BONUS + START_BONUS
+    }
+    if (isWordStart(haystack, index)) {
+      return BASE + WORD_BONUS
+    }
     return BASE
   }
 
@@ -86,8 +90,12 @@ var perfectionistMatchScore = (function () {
    * @returns {{ score: number, ranges: number[][] } | null}
    */
   function better(left, right) {
-    if (!left) return right
-    if (!right) return left
+    if (!left) {
+      return right
+    }
+    if (!right) {
+      return left
+    }
     return right.score > left.score + SCORE_EPSILON ? right : left
   }
 

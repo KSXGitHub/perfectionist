@@ -24,7 +24,9 @@ const src = join(here, '..', 'src')
 const beside = await readdir(here)
 const cases = beside.filter(name => name.endsWith('.test.js')).sort()
 const fixtures = beside.filter(name => name.endsWith('.fixtures.js')).sort()
-if (cases.length === 0) throw new Error(`no *.test.js in ${here}`)
+if (cases.length === 0) {
+  throw new Error(`no *.test.js in ${here}`)
+}
 
 // The catalogue's libraries, in load order: each publishes a global the
 // next ones read.

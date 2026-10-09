@@ -104,7 +104,9 @@
     for (var i = 1; i <= full.length; i++) {
       var typed = full.slice(0, i)
       var shown = !!m.matchFuzzy(typed, 'cloning_getter')
-      if (seen) t.ok(shown, JSON.stringify(typed) + ' still finds cloning_getter')
+      if (seen) {
+        t.ok(shown, JSON.stringify(typed) + ' still finds cloning_getter')
+      }
       seen = seen || shown
     }
     t.ok(seen, 'and it was found somewhere along the way')
@@ -115,7 +117,9 @@
     // what a reader can find must not follow it about. So the library
     // exports no number a caller could weigh a match against.
     var offered = []
-    for (var key in m) offered.push(key)
+    for (var key in m) {
+      offered.push(key)
+    }
     offered.sort()
     t.deepEqual(offered, ['excerpt', 'matchFuzzy', 'matchPhrase'], 'no bound is exported')
   })

@@ -53,10 +53,14 @@
   // `toggle`/`panel` as nullable. See the matching note in nav_toggle.js.
   var toggle = /** @type {HTMLElement} */ (document.querySelector('.settings-toggle'))
   var panel = /** @type {HTMLElement} */ (document.querySelector('.settings-panel'))
-  if (!toggle || !panel) return
+  if (!toggle || !panel) {
+    return
+  }
 
   var radios = /** @type {NodeListOf<HTMLInputElement>} */ (panel.querySelectorAll('input[name="color-scheme"]'))
-  if (radios.length === 0) return
+  if (radios.length === 0) {
+    return
+  }
 
   // Apply a choice to the live page. "dark"/"light" set the override
   // attribute (tier 3); anything else ("system") removes it so the
@@ -121,16 +125,24 @@
   // document so any stray click closes the dropdown, the conventional
   // behaviour for this kind of menu.
   document.addEventListener('click', function (event) {
-    if (toggle.getAttribute('aria-expanded') !== 'true') return
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
     var clickTarget = /** @type {Node | null} */ (event.target)
-    if (toggle.contains(clickTarget) || panel.contains(clickTarget)) return
+    if (toggle.contains(clickTarget) || panel.contains(clickTarget)) {
+      return
+    }
     closePanel()
   })
 
   // Escape closes the panel and returns focus to the gear.
   document.addEventListener('keydown', function (event) {
-    if (event.key !== 'Escape') return
-    if (toggle.getAttribute('aria-expanded') !== 'true') return
+    if (event.key !== 'Escape') {
+      return
+    }
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
     closePanel()
     toggle.focus()
   })
