@@ -695,13 +695,13 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
-                    // The arrow is decoration beside the word; hiding it
-                    // from assistive tech keeps the link's accessible
-                    // name the `aria-label` alone. It is drawn by
-                    // rules.css, which masks `rule-jump.svg` over this
-                    // otherwise empty span.
-                    span.rule-jump-icon aria-hidden="true" {}
-                    "top"
+                    // A real arrow character, so the link underlines,
+                    // selects and copies as one run; rules.css paints
+                    // `rule-jump.svg` over it, and that is what the
+                    // reader sees. Hidden from assistive tech, which
+                    // takes the link's name from its `aria-label`.
+                    span.rule-jump-icon aria-hidden="true" { "\u{2191}" }
+                    " top"
                 }
             }
             p {

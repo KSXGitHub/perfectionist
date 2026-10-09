@@ -120,16 +120,38 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
-/* The arrow beside the word, masked like the page's other SVG icons.
-   The span the markup emits for it is empty, so `inline-block` plus a
-   size of its own is what gives it a box; the drop below the baseline
-   sits it level with the word it precedes. */
+/* The arrow keeps the character the markup gives it, so the heading
+   link underlines, selects and copies as one run, and only its fill is
+   dropped: `-webkit-text-fill-color` leaves `color` alone, which is
+   what both the arrow's mask and the link's underline are drawn in.
+
+   The mask goes on the pseudo-element rather than on the span, because
+   masking an element clips everything painted over it, the stretch of
+   the link's underline that crosses it included. Masking the span is
+   what once left the arrow sitting outside the underline. */
 article.rule h2 .rule-jump-icon {
-  display: inline-block;
-  width: 0.9em;
+  position: relative;
+  -webkit-text-fill-color: transparent;
+}
+
+/* A highlight repaints the text it covers in its own colour, which
+   brings the dropped fill back and shows the character through the
+   arrow drawn over it. `color` is the property that governs there, a
+   highlight ignoring `-webkit-text-fill-color`. Naming a highlight at
+   all drops the one the browser would otherwise paint, so the system
+   colour it is drawn in has to be asked for back. */
+article.rule h2 .rule-jump-icon::selection {
+  color: transparent;
+  background-color: Highlight;
+}
+
+article.rule h2 .rule-jump-icon::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0.1em;
   height: 0.9em;
-  margin-right: 0.15em;
-  vertical-align: -0.12em;
   background-color: currentColor;
   -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
   mask: url("rule-jump.svg") no-repeat center / contain;
@@ -166,8 +188,7 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
-/* The disclosure triangle, masked like the page's other SVG icons.
-   `inline-block` so the box takes a width and a height, and the drop
+/* `inline-block` so the box takes a width and a height, and the drop
    below the baseline sits it level with the summary's text. The box is
    wider than the mark it shows: the icon draws a compact triangle in
    the middle of a 16x16 viewBox, and `contain` scales that whole
