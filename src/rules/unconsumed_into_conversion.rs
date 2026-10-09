@@ -109,7 +109,9 @@ const RENAME_HELP: &str = "or stop it being an `into_*`: rename it `as_*`, the p
                            conversion that hands back a borrow";
 
 /// The prefix this rule measures, and one `cloning_getter` refuses to
-/// read as a getter.
+/// read as a getter. Both rules match the same field-copy shape, so
+/// that refusal is what keeps them from reporting one method twice;
+/// the test beside this file is what notices if it stops.
 const INTO_PREFIX: &str = "into_";
 
 const CONFIG_KEY: &str = "perfectionist::unconsumed_into_conversion";
@@ -236,3 +238,6 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
 fn borrows_from_receiver<'tcx>(ty: Ty<'tcx>) -> bool {
     ty.has_escaping_bound_vars()
 }
+
+#[cfg(test)]
+mod tests;
