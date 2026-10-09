@@ -172,8 +172,3 @@ minify-docs site_dir="gh-pages":
   if [ "${#svg[@]}" -gt 0 ]; then
     pnpm exec svgo --quiet --folder .
   fi
-
-# first line of doc
-# second line of doc
-_probe-d:
-  echo ran
