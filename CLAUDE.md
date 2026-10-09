@@ -447,20 +447,6 @@ The JavaScript under `tools/gen-docs/` is formatted by
 reformats, in that order because a fix lands as valid code rather than
 as formatted code.
 
-Two things those files cannot say for themselves. The scripts
-[`PAGE_SCRIPTS`](tools/gen-docs/src/render.rs) ships are ES5, for the
-same old browsers `just minify-docs` compiles the CSS for, so a
-suggestion that reaches past that floor is declined however sound it
-looks — `trailingComma` is `es5` for the same reason. And unused or
-unresolved names belong to `tsc`, which reads the same JSDoc across
-files where oxlint sees one file's scope: leave `no-unused-vars` off
-rather than reaching for a `globals` block or a `varsIgnorePattern`.
-
-A test that matches one of these scripts as source text is matching
-something the formatter owns, so spell the needle to survive
-rewrapping: read a value out of its quotes rather than one line at a
-time.
-
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
