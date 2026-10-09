@@ -252,7 +252,8 @@ fn count_boolean_operators<'tcx>(condition: &'tcx Expr<'tcx>) -> Operators {
 
     let counted_joins = clauses
         .windows(2)
-        .filter(|pair| !expr_is_let(pair[0]) && !expr_is_let(pair[1]))
+        .filter(|pair| !expr_is_let(pair[0]))
+        .filter(|pair| !expr_is_let(pair[1]))
         .count();
     let mut count = counted_joins;
     for clause in &clauses {
