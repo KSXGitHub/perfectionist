@@ -95,10 +95,10 @@ var perfectionistRank = (function () {
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
    * @param {readonly string[]} paragraphs
-   * @returns {Match & { text: string } | null}
+   * @returns {Match & { readonly text: string } | null}
    */
   function bestParagraph(query, paragraphs) {
-    /** @type {Match & { text: string } | null} */
+    /** @type {Match & { readonly text: string } | null} */
     var best = null
     for (var i = 0; i < paragraphs.length; i++) {
       var found = proseHit(query, paragraphs[i])
