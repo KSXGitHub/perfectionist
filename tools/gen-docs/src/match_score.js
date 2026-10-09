@@ -6,7 +6,7 @@
 
 /**
  * What a tier found: a score, and the runs of the target it marks.
- * @typedef {{ score: number, ranges: Span[] }} Match
+ * @typedef {{ readonly score: number, readonly ranges: readonly Span[] }} Match
  */
 
 var perfectionistMatchScore = (function () {

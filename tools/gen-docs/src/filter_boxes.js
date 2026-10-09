@@ -13,27 +13,27 @@
   /**
    * One filterable entry. `order` is its place in the rendered list, which
    * is what a cleared query puts it back into.
-   * @typedef {object} FilterItem
-   * @property {HTMLElement} element
-   * @property {HTMLElement} nameHost
-   * @property {string} name
-   * @property {number} order
+   * @typedef {{
+   *   readonly element: HTMLElement,
+   *   readonly nameHost: HTMLElement,
+   *   readonly name: string,
+   *   readonly order: number,
+   * }} FilterItem
    */
 
   /**
-   * @typedef {Match & { item: FilterItem }} Matched
+   * @typedef {Match & { readonly item: FilterItem }} Matched
    */
 
   /**
-   * @typedef {object} FilterBox
-   * @property {(seed: string) => void} openWith
+   * @typedef {{ readonly openWith: (seed: string) => void }} FilterBox
    */
 
   /**
    * @param {HTMLElement} list
    * @param {string} itemSelector
    * @param {string} nameSelector
-   * @returns {FilterItem[]}
+   * @returns {readonly FilterItem[]}
    */
   function collectItems(list, itemSelector, nameSelector) {
     /** @type {FilterItem[]} */
@@ -138,7 +138,7 @@
   /**
    * @param {HTMLElement} toggle
    * @param {HTMLElement} list
-   * @param {FilterItem[]} items
+   * @param {readonly FilterItem[]} items
    * @param {HTMLElement} box
    * @param {HTMLInputElement} input
    * @returns {FilterBox}

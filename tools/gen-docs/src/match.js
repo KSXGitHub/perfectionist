@@ -7,7 +7,7 @@
 
 /**
  * A window onto a longer text, with the ranges moved to index it.
- * @typedef {{ text: string, ranges: Span[] }} Excerpt
+ * @typedef {{ readonly text: string, readonly ranges: readonly Span[] }} Excerpt
  */
 
 var perfectionistMatch = (function () {
@@ -82,7 +82,7 @@ var perfectionistMatch = (function () {
    * match is marked, and a match longer than the window is still most of
    * what they are looking at.
    * @param {string} text
-   * @param {Span[]} ranges
+   * @param {readonly Span[]} ranges
    * @param {number} limit  the longest window to keep, in characters
    * @returns {Excerpt}
    */
@@ -97,6 +97,9 @@ var perfectionistMatch = (function () {
     var start = Math.max(0, Math.min(anchor - Math.floor(limit / 4), text.length - limit))
     var end = start + limit
     var slice = text.slice(start, end)
+    var prefix = start > 0 ? '\u2026' : ''
+    // What the window cut from the front, less what the ellipsis puts back.
+    var offset = prefix.length - start
     /** @type {Span[]} */
     var shifted = []
     for (var i = 0; i < ranges.length; i++) {
@@ -105,14 +108,7 @@ var perfectionistMatch = (function () {
       if (from >= to) {
         continue
       }
-      shifted.push([from - start, to - start])
-    }
-    var prefix = start > 0 ? '\u2026' : ''
-    if (prefix) {
-      for (var j = 0; j < shifted.length; j++) {
-        shifted[j][0] += prefix.length
-        shifted[j][1] += prefix.length
-      }
+      shifted.push([from + offset, to + offset])
     }
     return {
       text: prefix + slice + (end < text.length ? '\u2026' : ''),

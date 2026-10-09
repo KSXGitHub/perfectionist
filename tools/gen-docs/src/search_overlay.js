@@ -25,16 +25,17 @@
   // ---- Cloning the overlay into the page --------------------------------
 
   /**
-   * @typedef {object} Parts
-   * @property {HTMLElement} toggle
-   * @property {HTMLTemplateElement} resultBlueprint
-   * @property {HTMLElement} overlay
-   * @property {HTMLElement} dialog
-   * @property {HTMLInputElement} input
-   * @property {Element} close
-   * @property {HTMLElement} results
-   * @property {HTMLElement} emptyPrompt
-   * @property {HTMLElement} emptyNoMatch
+   * @typedef {{
+   *   readonly toggle: HTMLElement,
+   *   readonly resultBlueprint: HTMLTemplateElement,
+   *   readonly overlay: HTMLElement,
+   *   readonly dialog: HTMLElement,
+   *   readonly input: HTMLInputElement,
+   *   readonly close: Element,
+   *   readonly results: HTMLElement,
+   *   readonly emptyPrompt: HTMLElement,
+   *   readonly emptyNoMatch: HTMLElement,
+   * }} Parts
    */
 
   /**
@@ -131,7 +132,7 @@
 
   // ---- Scraping the page ------------------------------------------------
 
-  /** @type {Entry[] | null} */
+  /** @type {readonly Entry[] | null} */
   var entries = null
 
   /**
@@ -172,7 +173,7 @@
 
   /**
    * Read every rule off the page. Called once, on the first open.
-   * @returns {Entry[]}
+   * @returns {readonly Entry[]}
    */
   function scrape() {
     /** @type {Entry[]} */
@@ -478,7 +479,7 @@
    * Everything in the overlay that can take focus, in the order Tab
    * reaches it. A rendered element has client rects and a hidden one has
    * none, so the test skips whatever the reader cannot see.
-   * @returns {HTMLElement[]}
+   * @returns {readonly HTMLElement[]}
    */
   function focusables() {
     var found = overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')

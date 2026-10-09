@@ -15,24 +15,26 @@
  * One rule, in the shape ranking needs: its name, where it lives on the
  * page, its one-line statement, its prose a paragraph at a time, and
  * its position in the page's own order, which breaks ties.
- * @typedef {object} Entry
- * @property {string} name
- * @property {string} href
- * @property {string} statement
- * @property {string[]} paragraphs
- * @property {number} order
+ * @typedef {{
+ *   readonly name: string,
+ *   readonly href: string,
+ *   readonly statement: string,
+ *   readonly paragraphs: readonly string[],
+ *   readonly order: number,
+ * }} Entry
  */
 
 /**
  * One ranked result: the rule, the score it ranked by, the matched
  * ranges of its name, and the text to show beneath the name with the
  * matched ranges of *that* text.
- * @typedef {object} Result
- * @property {Entry} entry
- * @property {number} score
- * @property {Span[]} nameRanges
- * @property {string} text
- * @property {Span[]} textRanges
+ * @typedef {{
+ *   readonly entry: Entry,
+ *   readonly score: number,
+ *   readonly nameRanges: readonly Span[],
+ *   readonly text: string,
+ *   readonly textRanges: readonly Span[],
+ * }} Result
  */
 
 var perfectionistRank = (function () {
@@ -94,7 +96,7 @@ var perfectionistRank = (function () {
   /**
    * The best-matching of a rule's prose paragraphs.
    * @param {string} query
-   * @param {string[]} paragraphs
+   * @param {readonly string[]} paragraphs
    * @returns {Match & { text: string } | null}
    */
   function bestParagraph(query, paragraphs) {
@@ -116,9 +118,9 @@ var perfectionistRank = (function () {
   /**
    * Rank `entries` against `query`, best first, capped at
    * `RESULT_LIMIT`.
-   * @param {Entry[]} entries
+   * @param {readonly Entry[]} entries
    * @param {string} query
-   * @returns {Result[]}
+   * @returns {readonly Result[]}
    */
   function rank(entries, query) {
     /** @type {Result[]} */
