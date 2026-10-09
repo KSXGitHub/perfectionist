@@ -274,20 +274,20 @@ prose worse:
 
 The `// Bad:` / `// Good:` / `// Not flagged:` labels under `ui/`,
 `ui-toml/` and `tests/fixtures/` are where this bites hardest: each is
-written beside its sibling and then read alone. Start a sweep of them
-at the label itself:
+written beside its sibling and then read alone. Sweep them by searching
+those directories for a label line that also carries "the same", "too",
+"either", "as well", "likewise", "ditto", "above" or "below". Anchor the
+search on the label itself, or the output fills with the exceptions
+above; then read each matching comment whole, because a label's
+continuation lines carry the fault as often as its first line does and a
+line-oriented search returns only the line it matched.
 
-```sh
-grep -rnE '^\s*//+ ?(Bad|Good|Not flagged)[:,].*\b(likewise|ditto|as well|the same|too|either|above|below)\b' \
-  ui/ ui-toml/ tests/fixtures/
-```
-
-Read every hit rather than the count — most are the exceptions above,
-and dropping the label anchor floods the output with those exceptions
-without finding much more. A label's own continuation lines are not in
-that output, so re-read the whole comment at each hit; the words that
-are nearly always the fault wherever they fall are "likewise", "ditto"
-and "as well".
+Judge every hit; never count them. "Above" and "below" are the noisiest,
+most of their hits being a threshold or the source order a rule reports.
+"The same" and "too" are the offenders you will meet most, and are also
+often innocent, so weigh each one. "Likewise" and "ditto" are rare and
+nearly always the fault; "as well" is usually a back-reference inside
+its own comment.
 
 One trap is specific to a fixture: its comment may be the very text a
 rule lints (`bare_issue_reference` scans plain line comments), and the
