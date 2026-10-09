@@ -58,10 +58,11 @@
 //
 //   3. Imperative open/close from arbitrary events. The CSS-only
 //      `<details>`/`<summary>` toggle can't be closed in response
-//      to a sidebar link tap or a separate close-button tap; CSS
-//      has no event-handler equivalent. (Eliminating `<details>`
-//      also avoids a separate Firefox-Mobile containing-block
-//      quirk that turned the supposedly-fixed `<summary>` into
+//      to a sidebar link tap, a separate close-button tap, or a
+//      tap on the page behind the drawer; CSS has no
+//      event-handler equivalent. (Eliminating `<details>` also
+//      avoids a separate Firefox-Mobile containing-block quirk
+//      that turned the supposedly-fixed `<summary>` into
 //      effective `position: absolute`, but that's a happy side
 //      effect of switching to a `<button>`, not the reason for
 //      the switch.)
@@ -193,11 +194,11 @@
   //
   // See category A item 1 in the file header for the load-bearing role
   // of the scroll lock. The drawer is opened by tapping `.nav-toggle` and
-  // closed by tapping `.nav-sidebar-close` (the ✕ inside the overlay).
-  // Body scroll lock has the side benefit of stopping the page behind
-  // from scrolling when the user swipes within the overlay. We preserve
-  // the scroll position by snapping body to `top: -<y>px` while locked
-  // and restoring `scrollTo(0, y)` on unlock.
+  // closed by tapping `.nav-sidebar-close` (the ✕ inside the overlay) or
+  // the page behind the drawer. Body scroll lock has the side benefit of
+  // stopping the page behind from scrolling when the user swipes within
+  // the overlay. We preserve the scroll position by snapping body to
+  // `top: -<y>px` while locked and restoring `scrollTo(0, y)` on unlock.
   var savedScrollY = 0
   var bodyLocked = false
 
@@ -294,6 +295,38 @@
   if (closeBtn) {
     closeBtn.addEventListener('click', closeSidebar)
   }
+
+  // ---- Close on an outside click ----------------------------------------
+  //
+  // Dismissing the drawer by tapping the page behind it is the
+  // conventional gesture for an overlay, and the one the Settings panel
+  // and the search overlay already honour. It goes through the same
+  // `closeSidebar` the ✕ does, so the drawer comes down in exactly the
+  // state the ✕ leaves it in.
+  //
+  // The listener goes on the document because there is no backdrop
+  // element to put it on: the drawer is a bare `position: fixed` panel
+  // over the page rather than a dialog inside a full-viewport overlay.
+  // `setBackgroundInert` is no obstacle — hit-testing inside an inert
+  // subtree acts as if `pointer-events: none` were set on it, so a tap
+  // on the page behind arrives with <body> as its target and bubbles to
+  // the document from there (confirmed in Chromium).
+  //
+  // Clicks on the toggle and inside the sidebar are left to their own
+  // handlers above: the toggle's toggles, and the sidebar's closes after
+  // a link follow. The `aria-expanded` guard is also what keeps the
+  // permanent >=1100px sidebar out of this — it is shown by the media
+  // query, not by the attribute, which stays "false" there.
+  document.addEventListener('click', function (event) {
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
+    var clickTarget = /** @type {Node | null} */ (event.target)
+    if (toggle.contains(clickTarget) || sidebar.contains(clickTarget)) {
+      return
+    }
+    closeSidebar()
+  })
 
   // ---- Focus trap fallback ----------------------------------------------
   //
@@ -393,10 +426,11 @@
   // or rotates into the >=1100px band, the desktop CSS hides the close
   // button (`.nav-sidebar-close { display: none }`) while leaving the
   // body still scroll-locked and the background still `inert`. With
-  // the close button gone and the page background dead, the only way
-  // out would be a sidebar-link click — and even then the reader is
-  // stranded if they didn't want to navigate. Watch the breakpoint
-  // with `matchMedia` and tear the open state down on crossing.
+  // the close button gone, the reader is left to guess at a recovery
+  // gesture — a click on the page beside the sidebar, or a sidebar-link
+  // click that strands them if they didn't want to navigate. Watch
+  // the breakpoint with `matchMedia` and tear the open state down on
+  // crossing.
   if (window.matchMedia) {
     var desktopMQ = window.matchMedia('(min-width: 1100px)')
     var handleBreakpoint = function () {
