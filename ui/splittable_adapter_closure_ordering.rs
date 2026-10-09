@@ -62,7 +62,7 @@ fn tuple_element(lines: std::vec::IntoIter<&'static str>) -> Vec<(usize, usize)>
     lines.map(|text| (record(0), text.trim().len())).collect()
 }
 
-// Not flagged: and an element of an array, which evaluates the same way.
+// Not flagged: an element of an array before the chain's own runs first.
 fn array_element(lines: std::vec::IntoIter<&'static str>) -> Vec<[usize; 2]> {
     lines.map(|text| [record(0), text.trim().len()]).collect()
 }

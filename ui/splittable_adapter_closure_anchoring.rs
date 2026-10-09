@@ -349,14 +349,15 @@ fn accumulator_has_an_effect(lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| counted(total) + line.trim().len())
 }
 
-// Not flagged: a division by zero leaves the closure without being a
-// call, so the item's steps would run before a panic that stopped them.
+// Not flagged: a division by zero panics without being a call, so the
+// item's steps would run before the panic that stopped them.
 fn divides_before_the_chain(divisor: usize, lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + 1 / divisor + line.trim().len())
 }
 
-// Not flagged: and a compound division is the same, which the plain
-// spelling's arm does not cover.
+// Not flagged: a compound division panics without being a call too, and
+// is a shape of its own: the arm reading the plain spelling does not
+// reach it.
 fn divides_in_place_before_the_chain(
     divisor: usize,
     lines: std::vec::IntoIter<&'static str>,
@@ -368,7 +369,8 @@ fn divides_in_place_before_the_chain(
     })
 }
 
-// Not flagged: and an index out of bounds is the same.
+// Not flagged: an index out of bounds panics without being a call, so
+// the item's steps would run before the panic that stopped them.
 fn indexes_before_the_chain(table: [usize; 2], lines: std::vec::IntoIter<&'static str>) -> usize {
     lines.fold(0, |total, line| total + table[total] + line.trim().len())
 }
