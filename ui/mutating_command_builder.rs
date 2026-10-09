@@ -92,7 +92,7 @@ fn empty_turbofish() {
 
 // Bad: `with_envs` happens to take the same three generic parameters,
 // so this turbofish would survive the rename; the guard, though, is one
-// predicate over the whole table, and the generic-arguments help has to
+// predicate over the whole table, and the generic-arguments line has to
 // avoid claiming the counterpart's set differs.
 fn turbofished_envs() {
     Command::new("ls").envs::<[(&str, &str); 1], &str, &str>([("LANG", "C")]);
