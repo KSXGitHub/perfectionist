@@ -156,8 +156,8 @@ article.rule h2 .rule-jump-icon::before {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 1.05em;
-  height: 1.05em;
+  width: 0.9em;
+  height: 0.9em;
   transform: translate(-50%, -50%);
   background-color: currentColor;
   -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
