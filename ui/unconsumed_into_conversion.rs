@@ -44,6 +44,25 @@ impl Person {
     fn intonation(&self) -> String {
         self.name.clone()
     }
+    // Not flagged: `&mut self` is not the receiver this measures.
+    fn into_mut_name(&mut self) -> String {
+        self.name.clone()
+    }
+
+    // Not flagged: an explicitly typed receiver is `ImplicitSelfKind::None`
+    // however it is spelled, so the eligibility test does not see the
+    // `&self` this is equivalent to.
+    fn into_spelled_out(self: &Self) -> String {
+        self.name.clone()
+    }
+
+    // Not flagged: takes an argument, so it is converting something more
+    // than `self`. The body is a field copy, so this pins that the arity
+    // requirement is what excludes it.
+    fn into_name_or(&self, fallback: &str) -> String {
+        self.name.clone()
+    }
+
     // Not flagged: what an `async fn` signature names is the opaque
     // future, which carries the receiver's lifetime however the body
     // behaves -- here it neither borrows nor copies.
@@ -112,6 +131,17 @@ impl Owning {
     // one takes is bound by that pointer's own `for<'x>`.
     fn into_fns(&self) -> Vec<fn(&u8) -> u8> {
         Vec::new()
+    }
+}
+
+// Not flagged: a trait fixes the signature, so the impl cannot change it.
+trait IntoName {
+    fn into_name(&self) -> String;
+}
+
+impl IntoName for Person {
+    fn into_name(&self) -> String {
+        self.name.clone()
     }
 }
 
