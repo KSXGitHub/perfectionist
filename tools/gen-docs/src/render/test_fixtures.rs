@@ -2,12 +2,9 @@
 //!
 //! These are `pub(super)` rather than private because the groups that
 //! use them are siblings, not descendants: a module's private items
-//! reach its own descendants and nothing else. What is here is what
-//! more than one group wants; `strip_css_comments` is not, because only
-//! the one that reads colour layers has a use for it.
+//! reach its own descendants and nothing else.
 
 use crate::model::{ConfigDoc, DefaultState, RenderContext, Rule};
-use crate::render::STYLESHEETS;
 use std::path::PathBuf;
 
 pub(super) fn fake_rule(name: &str) -> Rule {
@@ -31,18 +28,6 @@ pub(super) fn fake_context() -> RenderContext<'static> {
         commit_sha: "0000000000000000000000000000000000000000",
         repo_url: "https://example.invalid/perfectionist",
     }
-}
-
-/// Look a stylesheet up by its emitted file name. Tests assert
-/// against the specific sheet that owns a declaration rather
-/// than the whole bundle, mirroring the one-file-per-sheet
-/// layout the page now links.
-pub(super) fn stylesheet(name: &str) -> &'static str {
-    STYLESHEETS
-        .iter()
-        .find(|(sheet_name, _)| *sheet_name == name)
-        .map(|(_, content)| *content)
-        .unwrap_or_else(|| panic!("no stylesheet named {name}"))
 }
 
 /// Locate the sidebar's `<ul>` and return the slice spanning

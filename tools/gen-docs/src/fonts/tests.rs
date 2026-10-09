@@ -1,4 +1,4 @@
-use super::{DOWNLOADS, cache_dir_from, ensure_cached, install_into};
+use super::{cache_dir_from, ensure_cached, install_into};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 
@@ -26,15 +26,6 @@ impl TempDir {
 impl Drop for TempDir {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
-    }
-}
-
-#[test]
-fn downloads_list_ships_the_font_and_its_license() {
-    let names: Vec<&str> = DOWNLOADS.iter().map(|&(name, _)| name).collect();
-    assert_eq!(names, ["cantarell.otf", "Cantarell-OFL.txt"]);
-    for &(_, url) in DOWNLOADS {
-        assert!(url.starts_with("https://"), "each URL must be https: {url}");
     }
 }
 
