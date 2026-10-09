@@ -298,25 +298,20 @@
 
   // ---- Close on an outside click ----------------------------------------
   //
-  // Dismissing the drawer by tapping the page behind it is the
-  // conventional gesture for an overlay, and the one the Settings panel
-  // and the search overlay already honour. It goes through the same
-  // `closeSidebar` the ✕ does, so the drawer comes down in exactly the
-  // state the ✕ leaves it in.
+  // Dismissing the drawer by clicking the page behind it is the gesture
+  // the Settings panel and the search overlay already honour. The
+  // listener goes on the document because there is no backdrop element
+  // to put it on: the drawer is a bare `position: fixed` panel, not a
+  // dialog inside a full-viewport overlay. `setBackgroundInert` is no
+  // obstacle — the HTML standard has hit-testing in an inert subtree
+  // act as if `pointer-events: none` were set, so the click lands on
+  // <body> and bubbles from there.
   //
-  // The listener goes on the document because there is no backdrop
-  // element to put it on: the drawer is a bare `position: fixed` panel
-  // over the page rather than a dialog inside a full-viewport overlay.
-  // `setBackgroundInert` is no obstacle — hit-testing inside an inert
-  // subtree acts as if `pointer-events: none` were set on it, so a tap
-  // on the page behind arrives with <body> as its target and bubbles to
-  // the document from there (confirmed in Chromium).
-  //
-  // Clicks on the toggle and inside the sidebar are left to their own
-  // handlers above: the toggle's toggles, and the sidebar's closes after
-  // a link follow. The `aria-expanded` guard is also what keeps the
-  // permanent >=1100px sidebar out of this — it is shown by the media
-  // query, not by the attribute, which stays "false" there.
+  // Excluding the toggle is load-bearing, not deference to its own
+  // handler: the click that opens the drawer bubbles on to this
+  // listener with `aria-expanded` already "true", and would close it
+  // again. The same guard covers the permanent >=1100px sidebar, which
+  // the media query shows with the attribute still "false".
   document.addEventListener('click', function (event) {
     if (toggle.getAttribute('aria-expanded') !== 'true') {
       return
@@ -425,12 +420,10 @@
   // If the user opens the drawer at a narrow viewport and then resizes
   // or rotates into the >=1100px band, the desktop CSS hides the close
   // button (`.nav-sidebar-close { display: none }`) while leaving the
-  // body still scroll-locked and the background still `inert`. With
-  // the close button gone, the reader is left to guess at a recovery
-  // gesture — a click on the page beside the sidebar, or a sidebar-link
-  // click that strands them if they didn't want to navigate. Watch
-  // the breakpoint with `matchMedia` and tear the open state down on
-  // crossing.
+  // body still scroll-locked and the background still `inert`. An
+  // outside click still gets the reader out, but nothing makes that
+  // obvious once the close button is gone. Watch the breakpoint with
+  // `matchMedia` and tear the open state down on crossing.
   if (window.matchMedia) {
     var desktopMQ = window.matchMedia('(min-width: 1100px)')
     var handleBreakpoint = function () {
