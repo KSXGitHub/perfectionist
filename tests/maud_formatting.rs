@@ -5,7 +5,7 @@ use command_extra::CommandExtra;
 use into_sorted::IntoSorted;
 use maudfmt::{FormatOptions, try_fmt_file};
 use pipe_trait::Pipe;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::{env, fs};
@@ -48,7 +48,7 @@ fn relevant_files(root: &Path) -> Vec<PathBuf> {
 
 /// Each directory holding a `rustfmt.toml`, against whether that file
 /// switches formatting off.
-fn rustfmt_configs(root: &Path, listed: &[PathBuf]) -> BTreeMap<PathBuf, bool> {
+fn rustfmt_configs(root: &Path, listed: &[PathBuf]) -> HashMap<PathBuf, bool> {
     listed
         .iter()
         .filter(|path| {
@@ -77,7 +77,7 @@ fn rustfmt_configs(root: &Path, listed: &[PathBuf]) -> BTreeMap<PathBuf, bool> {
 
 /// Whether rustfmt leaves `path` alone, by the nearest `rustfmt.toml`
 /// above it -- which is the one rustfmt itself reads.
-fn rustfmt_skips(path: &Path, configs: &BTreeMap<PathBuf, bool>) -> bool {
+fn rustfmt_skips(path: &Path, configs: &HashMap<PathBuf, bool>) -> bool {
     path.ancestors()
         .skip(1)
         .find_map(|directory| configs.get(directory))
