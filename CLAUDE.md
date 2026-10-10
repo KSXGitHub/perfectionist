@@ -513,6 +513,15 @@ The JavaScript under `tools/gen-docs/` is formatted by
 reformats, in that order because a fix lands as valid code rather than
 as formatted code.
 
+## The maud templates
+
+rustfmt does not format the body of a `{`-delimited macro invocation,
+so `just fmt` leaves the layout inside a `maud::html!` body alone.
+[maudfmt](https://docs.rs/maudfmt) settles it, pinned as a
+dev-dependency in [`Cargo.toml`](Cargo.toml), and
+[`tests/maud_formatting.rs`](tests/maud_formatting.rs) holds every
+template to its output.
+
 ## Normalised `.stderr` fixtures
 
 A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
