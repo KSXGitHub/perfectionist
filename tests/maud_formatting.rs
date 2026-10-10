@@ -122,10 +122,10 @@ fn git_diff(mismatches: &[Mismatch]) -> String {
     } in mismatches
     {
         for (side, content) in [("a", written), ("b", formatted)] {
-            let path = mirror.path().join(side).join(relative);
-            let parent = path.parent().expect("a copy should have a parent");
-            fs::create_dir_all(parent).expect("failed to create a directory for a copy");
-            fs::write(&path, content).expect("failed to write a copy");
+            let file = mirror.path().join(side).join(relative);
+            let dir = file.parent().expect("a copy should have a parent");
+            fs::create_dir_all(dir).expect("failed to create a directory for a copy");
+            fs::write(&file, content).expect("failed to write a copy");
         }
     }
     let output = "git"
