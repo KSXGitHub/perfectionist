@@ -6,30 +6,39 @@ use into_sorted::IntoSorted;
 use maudfmt::{FormatOptions, try_fmt_file};
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
-use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::{env, fs};
 use toml::{Table, Value};
 
-fn git_capture<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
-where
-    Args: IntoIterator<Item = Arg>,
-    Arg: AsRef<OsStr>,
-{
+/// Every `.rs` file and every `rustfmt.toml` the repository at `root`
+/// counts as its own, tracked or not, NUL-separated as `-z` leaves them.
+fn git_ls_files(root: &Path) -> String {
     let output = "git"
         .pipe(Command::new)
         .with_current_dir(root)
-        .with_args(args)
+        .with_args([
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--",
+            "*.rs",
+            "*rustfmt.toml",
+        ])
         .output()
         .expect("failed to invoke `git`");
     assert!(
         output.status.success(),
-        "`git` failed ({}): {}",
+        "`git ls-files` failed ({}): {}",
         output.status,
         String::from_utf8_lossy(&output.stderr).trim(),
     );
-    output.stdout
+    output
+        .stdout
+        .pipe(String::from_utf8)
+        .expect("`git ls-files` produced non-UTF-8 output")
 }
 
 /// Each directory holding a `rustfmt.toml`, against whether that file
@@ -71,25 +80,11 @@ fn rustfmt_skips(path: &Path, configs: &BTreeMap<PathBuf, bool>) -> bool {
         .unwrap_or(false)
 }
 
-/// Every `.rs` file the repository at `root` counts as its own, tracked
-/// or not, minus the ones rustfmt is switched off for. `try_fmt_file`
-/// parses a whole file, and those are the files not meant to parse.
+/// The listed `.rs` files, minus the ones rustfmt is switched off for.
+/// `try_fmt_file` parses a whole file, and those are the files not meant
+/// to parse.
 fn sources(root: &Path) -> Vec<PathBuf> {
-    let listing = git_capture(
-        root,
-        [
-            "ls-files",
-            "-z",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "--",
-            "*.rs",
-            "*rustfmt.toml",
-        ],
-    )
-    .pipe(String::from_utf8)
-    .expect("`git ls-files` produced non-UTF-8 output");
+    let listing = git_ls_files(root);
     let listed: Vec<&Path> = listing
         .split('\0')
         .filter(|entry| !entry.is_empty())
