@@ -41,7 +41,7 @@ struct Braces {
 }
 
 /// Run `git` in `root` with `args`, and give back its stdout.
-fn git<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
+fn git_capture<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
 where
     Args: IntoIterator<Item = Arg>,
     Arg: AsRef<OsStr>,
@@ -68,7 +68,7 @@ where
 /// other, so the listing they make together needs sorting to be read
 /// and reported in a stable order.
 fn sources(root: &Path) -> Vec<PathBuf> {
-    let listing = git(
+    let listing = git_capture(
         root,
         [
             "ls-files",
@@ -406,8 +406,8 @@ fn the_listing_holds_the_repository_s_own_rust_files_only() {
         fs::create_dir_all(parent).expect("failed to create a fixture directory");
         fs::write(&path, content).expect("failed to write a fixture");
     }
-    git(root, ["init"]);
-    git(root, ["add", "tracked.rs"]);
+    git_capture(root, ["init"]);
+    git_capture(root, ["add", "tracked.rs"]);
 
     // `built/generated.rs` is ignored, and the two fixture trees are
     // unjudged by choice; `notes.txt` is not Rust.
