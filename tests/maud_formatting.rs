@@ -103,11 +103,22 @@ fn sources(root: &Path) -> Vec<PathBuf> {
         .into_sorted()
 }
 
+struct Mismatch {
+    relative: PathBuf,
+    written: String,
+    formatted: String,
+}
+
 /// The diff from how each file is written to how `maudfmt` writes it,
 /// in the form `git apply` takes.
-fn git_diff(offenders: &[(PathBuf, String, String)]) -> String {
+fn git_diff(mismatches: &[Mismatch]) -> String {
     let mirror = TempDir::new().expect("failed to create a temp dir");
-    for (relative, written, formatted) in offenders {
+    for Mismatch {
+        relative,
+        written,
+        formatted,
+    } in mismatches
+    {
         for (side, source) in [("a", written), ("b", formatted)] {
             let path = mirror.path().join(side).join(relative);
             let parent = path.parent().expect("a copy should have a parent");
@@ -140,11 +151,15 @@ fn git_diff(offenders: &[(PathBuf, String, String)]) -> String {
 #[test]
 fn one_patch_names_every_file_the_way_git_apply_reads_it() {
     let names = ["src/lib.rs", "tools/gen-docs/src/main.rs"];
-    let offenders: Vec<(PathBuf, String, String)> = names
+    let mismatches: Vec<Mismatch> = names
         .iter()
-        .map(|name| (PathBuf::from(name), "one\n".to_owned(), "two\n".to_owned()))
+        .map(|name| Mismatch {
+            relative: PathBuf::from(name),
+            written: "one\n".to_owned(),
+            formatted: "two\n".to_owned(),
+        })
         .collect();
-    let patch = git_diff(&offenders);
+    let patch = git_diff(&mismatches);
     for name in names {
         assert!(patch.contains(&format!("--- a/{name}\n")), "{patch}");
         assert!(patch.contains(&format!("+++ b/{name}\n")), "{patch}");
@@ -163,7 +178,7 @@ fn every_maud_template_is_formatted() {
     );
 
     let options = FormatOptions::default();
-    let mut offenders = Vec::new();
+    let mut mismatches = Vec::new();
     for relative in &paths {
         let written = root
             .join(relative)
@@ -172,13 +187,17 @@ fn every_maud_template_is_formatted() {
         let formatted = try_fmt_file(&written, &options)
             .unwrap_or_else(|error| panic!("{}: {error}", relative.display()));
         if formatted != written {
-            offenders.push((relative.clone(), written, formatted));
+            mismatches.push(Mismatch {
+                relative: relative.clone(),
+                written,
+                formatted,
+            });
         }
     }
-    if offenders.is_empty() {
+    if mismatches.is_empty() {
         return;
     }
-    let patch = git_diff(&offenders);
+    let patch = git_diff(&mismatches);
 
     // Named after the process so two runs at once cannot clobber one
     // another's patch, and so a stale one is replaced rather than kept.
@@ -186,9 +205,9 @@ fn every_maud_template_is_formatted() {
     fs::write(&saved, &patch).expect("failed to write the patch");
     panic!(
         "these are not written the way `maudfmt` writes them:\n{}\n\n{patch}\nto apply:\n    git apply {}",
-        offenders
+        mismatches
             .iter()
-            .map(|(relative, ..)| relative.display().to_string())
+            .map(|mismatch| mismatch.relative.display().to_string())
             .collect::<Vec<_>>()
             .join("\n"),
         saved.display(),
