@@ -9,30 +9,28 @@
 //! before anything checked for it.
 //!
 //! Nothing here is specific to a template. A plain misindented block
-//! would be caught too, and the walk covers the whole repository rather
-//! than the one crate that happens to use maud.
+//! would be caught too, and the listing covers the whole repository
+//! rather than the one crate that happens to use maud.
 
+use _utils::TempDir;
+use command_extra::CommandExtra;
 use core::str::FromStr;
+use pipe_trait::Pipe;
 use proc_macro2::{Delimiter, LexError, TokenStream, TokenTree};
+use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use text_block_macros::text_block;
 
-/// Paths, relative to the repository root, the walk does not enter.
+/// Paths, relative to the repository root, that are left unjudged.
 ///
-/// `ui/`, `ui-toml/` and `tests/fixtures/` hold code written to be
-/// linted, some of it written to be wrong on purpose, so how it is laid
-/// out is the fixture's business and not this check's. The rest is
-/// build output and dependencies.
-const UNSCANNED: &[&str] = &[
-    "ui",
-    "ui-toml",
-    "tests/fixtures",
-    "target",
-    "node_modules",
-    "gh-pages",
-    ".git",
-];
+/// These hold code written to be linted, some of it written to be wrong
+/// on purpose, so how it is laid out is the fixture's business and not
+/// this check's. Build output and dependencies need no entry: the
+/// listing comes from git, so `.gitignore` is the one place that says
+/// which directories hold them.
+const UNSCANNED: &[&str] = &["ui", "ui-toml", "tests/fixtures"];
 
 /// Where a block's braces sit: the line the `{` is on, and the line and
 /// column of the `}` closing it.
@@ -42,24 +40,57 @@ struct Braces {
     closed_at: usize,
 }
 
-/// Collect every `.rs` file under `dir` that is not [`UNSCANNED`].
-fn sources(root: &Path, dir: &Path, found: &mut Vec<PathBuf>) {
-    let entries = fs::read_dir(dir).unwrap_or_else(|error| panic!("{}: {error}", dir.display()));
-    for entry in entries {
-        let path = entry.expect("a directory entry should be readable").path();
-        let relative = path.strip_prefix(root).unwrap_or(&path);
-        if UNSCANNED
-            .iter()
-            .any(|skipped| relative == Path::new(skipped))
-        {
-            continue;
-        }
-        if path.is_dir() {
-            sources(root, &path, found);
-        } else if path.extension().is_some_and(|extension| extension == "rs") {
-            found.push(path);
-        }
-    }
+/// Run `git` in `root` with `args`, and give back its stdout.
+fn git<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
+where
+    Args: IntoIterator<Item = Arg>,
+    Arg: AsRef<OsStr>,
+{
+    let output = "git"
+        .pipe(Command::new)
+        .with_current_dir(root)
+        .with_args(args)
+        .output()
+        .expect("failed to invoke `git`");
+    assert!(
+        output.status.success(),
+        "`git` failed ({}): {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr).trim(),
+    );
+    output.stdout
+}
+
+/// Every `.rs` file the repository at `root` counts as its own --
+/// tracked, or untracked and not ignored -- minus [`UNSCANNED`].
+///
+/// `--cached` and `--others` each list in order, but one runs after the
+/// other, so the listing they make together needs sorting to be read
+/// and reported in a stable order.
+fn sources(root: &Path) -> Vec<PathBuf> {
+    let listing = git(
+        root,
+        [
+            "ls-files",
+            "-z",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "--",
+            "*.rs",
+        ],
+    )
+    .pipe(String::from_utf8)
+    .expect("`git ls-files` produced non-UTF-8 output");
+    let mut found: Vec<PathBuf> = listing
+        .split('\0')
+        .filter(|listed| !listed.is_empty())
+        .map(Path::new)
+        .filter(|listed| !UNSCANNED.iter().any(|skipped| listed.starts_with(skipped)))
+        .map(|listed| root.join(listed))
+        .collect();
+    found.sort();
+    found
 }
 
 /// Collect the braces of every `{ ... }` group in `stream`, the groups
@@ -119,12 +150,10 @@ fn complaints(source: &str) -> Vec<String> {
 #[test]
 fn every_block_closes_where_it_opened() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let mut paths = Vec::new();
-    sources(root, root, &mut paths);
-    paths.sort();
+    let paths = sources(root);
     assert!(
         paths.len() > 100,
-        "only {} file(s) found under {} -- has the walk stopped early?",
+        "only {} file(s) listed under {} -- has the listing gone wrong?",
         paths.len(),
         root.display(),
     );
@@ -356,5 +385,34 @@ fn every_misaligned_block_is_reported_in_source_order() {
             "line 2 opens at column 4, but line 4 closes it at column 2",
             "line 5 opens at column 4, but line 7 closes it at column 6",
         ]
+    );
+}
+
+#[test]
+fn the_listing_holds_the_repository_s_own_rust_files_only() {
+    let temp = TempDir::new().expect("failed to create a temp dir");
+    let root = temp.path();
+    for (relative, content) in [
+        (".gitignore", "/built\n"),
+        ("tracked.rs", "fn tracked() {}\n"),
+        ("untracked.rs", "fn untracked() {}\n"),
+        ("built/generated.rs", "fn generated() {}\n"),
+        ("ui/fixture.rs", "fn fixture() {}\n"),
+        ("tests/fixtures/fixture.rs", "fn fixture() {}\n"),
+        ("notes.txt", "not rust\n"),
+    ] {
+        let path = root.join(relative);
+        let parent = path.parent().expect("a fixture path should have a parent");
+        fs::create_dir_all(parent).expect("failed to create a fixture directory");
+        fs::write(&path, content).expect("failed to write a fixture");
+    }
+    git(root, ["init"]);
+    git(root, ["add", "tracked.rs"]);
+
+    // `built/generated.rs` is ignored, and the two fixture trees are
+    // unjudged by choice; `notes.txt` is not Rust.
+    assert_eq!(
+        sources(root),
+        [root.join("tracked.rs"), root.join("untracked.rs"),]
     );
 }
