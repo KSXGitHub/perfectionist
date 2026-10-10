@@ -48,20 +48,12 @@ const ICONS: &[Icon] = &[
     },
 ];
 
-/// Rewrite one `<svg>` document as a `<symbol>` under `id`.
+/// Take the root `<svg>`'s `viewBox`, leaving `reader` just past that
+/// start tag.
 ///
-/// The drawing is sliced out of `source` rather than rebuilt from the
-/// parsed events, so the bytes on disk are the bytes on the page.
-/// Advance `reader` to the root `<svg>` and take its `viewBox`,
-/// leaving the reader positioned just after that start tag.
-///
-/// Anything before it — a prolog, a comment, whitespace — is passed
-/// over by recursing on the next event.
-///
-/// The value comes back escaped for the `"`-delimited attribute it is
-/// written into. Reusing the source's own spelling would not do: XML
-/// also allows `'` to delimit an attribute, and the value of one so
-/// written may hold a `"` that would end the attribute early.
+/// The value is escaped for the `"`-delimited attribute it lands in.
+/// Its own spelling will not do: XML also lets `'` delimit an
+/// attribute, and such a value may hold a `"`.
 fn view_box(reader: &mut Reader<&[u8]>, id: &str) -> Result<String, String> {
     match reader.read_event() {
         Ok(Event::Start(root)) if root.local_name().as_ref() == b"svg" => root
@@ -79,12 +71,10 @@ fn view_box(reader: &mut Reader<&[u8]>, id: &str) -> Result<String, String> {
     }
 }
 
-/// Advance `reader` to the `</svg>` closing the root element and give
-/// the position where that tag begins, `depth` counting the elements
-/// opened since the root and still unclosed.
+/// Give the position where the `</svg>` closing the root begins.
 ///
-/// A `</g>` therefore does not end the search, which is what the depth
-/// is for.
+/// `depth` counts the elements opened since the root and still
+/// unclosed, so a `</g>` does not end the search.
 fn drawing_end(reader: &mut Reader<&[u8]>, id: &str, depth: usize) -> Result<usize, String> {
     // Read before the event, so the closing tag reports where it begins
     // rather than where it ends.
@@ -101,6 +91,10 @@ fn drawing_end(reader: &mut Reader<&[u8]>, id: &str, depth: usize) -> Result<usi
     }
 }
 
+/// Rewrite one `<svg>` document as a `<symbol>` under `id`.
+///
+/// The drawing is sliced out of `source` rather than rebuilt from the
+/// parsed events, so the bytes on disk are the bytes on the page.
 fn symbol(id: &str, source: &str) -> Result<String, String> {
     let mut reader = Reader::from_str(source);
     let view_box = view_box(&mut reader, id)?;
