@@ -113,9 +113,7 @@
   padding: 0;
 }
 
-/* A shade smaller than `.nav-toggle::before`: this button sits on the
-   drawer's header row beside the title rather than alone in a
-   corner. */
+/* Smaller than `.nav-toggle::before`, which sits alone in a corner. */
 .nav-sidebar-close::before {
   content: "";
   width: 1rem;

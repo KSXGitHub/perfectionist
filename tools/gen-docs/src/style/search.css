@@ -216,9 +216,7 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-/* The span the markup emits for the cross is empty, so it needs a
-   size of its own; being a flex item of `.search-close` is what makes
-   that size apply. */
+/* An empty span: it needs a size, which applies as a flex item. */
 .search-close-icon {
   width: 0.85rem;
   height: 0.85rem;

@@ -34,8 +34,7 @@
   transition: opacity 0.18s ease;
 }
 
-/* Sized to match `.nav-toggle::before`, the hamburger in the opposite
-   corner. */
+/* Sized to match `.nav-toggle::before` in the opposite corner. */
 .settings-toggle::before {
   content: "";
   width: 1.2rem;
