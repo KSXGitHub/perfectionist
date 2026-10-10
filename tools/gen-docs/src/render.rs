@@ -395,9 +395,8 @@ fn search_toggle() -> Markup {
             aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
-            title="Search lints (press /)" {
-                (icon(SEARCH_ICON_ID, "search-toggle-icon"))
-            }
+            title="Search lints (press /)"
+        { (icon(SEARCH_ICON_ID, "search-toggle-icon")) }
     }
 }
 
@@ -517,9 +516,8 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-controls=(controls)
             aria-expanded="false"
             aria-label=(label)
-            title=(label) {
-                (icon(FILTER_ICON_ID, "filter-toggle-icon"))
-            }
+            title=(label)
+        { (icon(FILTER_ICON_ID, "filter-toggle-icon")) }
     }
 }
 
@@ -687,9 +685,8 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
-                        aria-label="Permalink to this rule" {
-                            (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon"))
-                        }
+                        aria-label="Permalink to this rule"
+                    { (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon")) }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
