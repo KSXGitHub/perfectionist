@@ -130,7 +130,7 @@
   html:not([color-scheme-override="light"]) details.config-details > summary.config-summary {
     color: #e6edf3;
   }
-  html:not([color-scheme-override="light"]) details.config-details > summary::before {
+  html:not([color-scheme-override="light"]) details.config-details > summary::marker {
     color: #8b949e;
   }
   html:not([color-scheme-override="light"]) p.config-none {
@@ -432,7 +432,7 @@ html[color-scheme-override="dark"] article.rule .source {
 html[color-scheme-override="dark"] details.config-details > summary.config-summary {
   color: #e6edf3;
 }
-html[color-scheme-override="dark"] details.config-details > summary::before {
+html[color-scheme-override="dark"] details.config-details > summary::marker {
   color: #8b949e;
 }
 html[color-scheme-override="dark"] p.config-none {

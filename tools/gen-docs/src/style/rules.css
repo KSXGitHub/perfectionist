@@ -139,11 +139,6 @@ p.config-none {
 
 details.config-details > summary {
   cursor: pointer;
-  list-style: none;
-}
-
-details.config-details > summary::-webkit-details-marker {
-  display: none;
 }
 
 details.config-details > summary.config-summary {
@@ -151,13 +146,17 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
-details.config-details > summary::before {
+/* The summary's own marker, rather than a `::before` standing in for
+   one. An engine that cannot open and close a `details` gives its
+   summary no marker box at all, so the mark goes where the toggling
+   goes, instead of claiming a section is shut that is in fact open.
+   One that has `details` but not `content` on `::marker` keeps its
+   native mark, which says the same thing in its own glyph. */
+details.config-details > summary::marker {
   content: "▸ ";
-  display: inline-block;
-  width: 1em;
 }
 
-details.config-details[open] > summary::before {
+details.config-details[open] > summary::marker {
   content: "▾ ";
 }
 

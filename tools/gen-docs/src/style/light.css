@@ -144,7 +144,7 @@ article.rule .source {
 details.config-details > summary.config-summary {
   color: #1f2328;
 }
-details.config-details > summary::before {
+details.config-details > summary::marker {
   color: #57606a;
 }
 p.config-none {
