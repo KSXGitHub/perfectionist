@@ -1,22 +1,32 @@
-//! Every Rust file in the repository closes a block at the indent it
+//! Every block written inside a macro body closes at the indent it
 //! opened at.
 //!
-//! rustfmt settles this for ordinary code, but it does not enter a
-//! macro body, so a `maud::html!` template whose `{` and `}` disagree
+//! rustfmt settles this everywhere else, but it does not enter a macro
+//! body, so a `maud::html!` template whose `{` and `}` disagree
 //! compiles, renders correctly and passes every other step. It reads
 //! wrong, though: a child indented level with the attributes above it
 //! looks like another attribute. That shape had been written twice
 //! before anything checked for it.
 //!
-//! Nothing here is specific to a template. A plain misindented block
-//! would be caught too, and the listing covers the whole repository
-//! rather than the one crate that happens to use maud.
+//! The boundary is where rustfmt stops, and it is narrower than "a
+//! macro". rustfmt reformats an invocation delimited by `(` or `[`
+//! whole -- `vec![..]` and `assert_eq!(..)` are rewritten, misaligned
+//! braces and all -- and enters a `{`-delimited one not at all. Even
+//! there it places the body's own two braces, moving the closing one
+//! to the indent of the line its `{` is on. What is left over, and all
+//! that is judged here, is the relative indent of the blocks written
+//! inside a `{`-delimited body. Ordinary code is rustfmt's throughout,
+//! and `just all` runs `cargo fmt -- --check` before this test.
+//!
+//! Nothing here is specific to maud, or to the one crate that uses it.
+//! Any macro body in any crate is covered, which is why the listing is
+//! the whole repository.
 
 use _utils::TempDir;
 use command_extra::CommandExtra;
 use core::str::FromStr;
 use pipe_trait::Pipe;
-use proc_macro2::{Delimiter, LexError, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, LexError, Spacing, TokenStream, TokenTree};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -93,27 +103,50 @@ fn sources(root: &Path) -> Vec<PathBuf> {
     found
 }
 
-/// Collect the braces of every `{ ... }` group in `stream`, the groups
-/// nested inside one another included.
-fn braces(stream: TokenStream, found: &mut Vec<Braces>) {
-    for tree in stream {
-        if let TokenTree::Group(group) = tree {
-            if group.delimiter() == Delimiter::Brace {
-                let open = group.span_open().start();
-                let close = group.span_close().start();
-                found.push(Braces {
-                    opened_on: open.line,
-                    closed_on: close.line,
-                    closed_at: close.column,
-                });
-            }
-            braces(group.stream(), found);
+/// Whether the group at `index` is a macro invocation's arguments: a
+/// `!` directly before it, with an identifier before that. Requiring
+/// the `!` to stand alone is what keeps the `!=` of `a != b` out.
+fn is_invocation(trees: &[TokenTree], index: usize) -> bool {
+    let bang = index.checked_sub(1).and_then(|at| trees.get(at));
+    let name = index.checked_sub(2).and_then(|at| trees.get(at));
+    let banged = matches!(
+        bang,
+        Some(TokenTree::Punct(punct))
+            if punct.as_char() == '!' && punct.spacing() == Spacing::Alone
+    );
+    banged && matches!(name, Some(TokenTree::Ident(_)))
+}
+
+/// Collect the braces of every `{ ... }` block written inside a macro
+/// body, the blocks nested inside one another included.
+///
+/// `in_macro` says whether `stream` is itself a macro body or sits
+/// within one. A body's own braces are reached with it still false, so
+/// they go unrecorded: rustfmt places those. Only a `{`-delimited
+/// invocation opens a body, because rustfmt reformats a `(`- or
+/// `[`-delimited one for itself.
+fn braces(stream: TokenStream, in_macro: bool, found: &mut Vec<Braces>) {
+    let trees: Vec<TokenTree> = stream.into_iter().collect();
+    for (index, tree) in trees.iter().enumerate() {
+        let TokenTree::Group(group) = tree else {
+            continue;
+        };
+        if in_macro && group.delimiter() == Delimiter::Brace {
+            let open = group.span_open().start();
+            let close = group.span_close().start();
+            found.push(Braces {
+                opened_on: open.line,
+                closed_on: close.line,
+                closed_at: close.column,
+            });
         }
+        let opens_body = group.delimiter() == Delimiter::Brace && is_invocation(&trees, index);
+        braces(group.stream(), in_macro || opens_body, found);
     }
 }
 
-/// Report every block whose `}` sits at a different column from the
-/// indent of the line its `{` is on.
+/// Report every block inside a macro body whose `}` sits at a different
+/// column from the indent of the line its `{` is on.
 ///
 /// The pairing comes from a parse of `source` rather than from matching
 /// braces in its text, so a brace inside a string literal, a character
@@ -123,7 +156,7 @@ fn braces(stream: TokenStream, found: &mut Vec<Braces>) {
 /// alone.
 fn misaligned(source: &str) -> Result<Vec<String>, LexError> {
     let mut found = Vec::new();
-    braces(TokenStream::from_str(source)?, &mut found);
+    braces(TokenStream::from_str(source)?, false, &mut found);
     let lines: Vec<&str> = source.lines().collect();
     let mut report = Vec::new();
     for block in found {
@@ -148,7 +181,7 @@ fn complaints(source: &str) -> Vec<String> {
 }
 
 #[test]
-fn every_block_closes_where_it_opened() {
+fn every_macro_body_block_closes_where_it_opened() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let paths = sources(root);
     assert!(
@@ -189,30 +222,118 @@ fn a_block_closing_short_of_its_opening_is_reported() {
     // The shape this exists to catch: the `{` rides the last attribute
     // line, so the child lands level with the attributes.
     let source = text_block! {
+        "html! {"
         "    p"
         r#"        role="status" {"#
         r#"        "text""#
         "    }"
+        "}"
     };
     assert_eq!(
         complaints(source),
-        ["line 2 opens at column 8, but line 4 closes it at column 4"],
+        ["line 3 opens at column 8, but line 5 closes it at column 4"],
     );
 }
 
 #[test]
 fn a_block_closing_past_its_opening_is_reported() {
-    // The opposite slip from the one that motivated the check: the `}`
-    // lands deeper than the line its `{` is on, not short of it.
+    // A `}` deeper than the line its `{` is on is as misindented as one
+    // short of it, so both directions are reported.
     let source = text_block! {
-        "p {"
-        r#"    "text""#
-        "    }"
+        "html! {"
+        "    p {"
+        r#"        "text""#
+        "        }"
+        "}"
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 3 closes it at column 4"],
+        ["line 2 opens at column 4, but line 4 closes it at column 8"],
     );
+}
+
+#[test]
+fn a_block_outside_a_macro_body_is_left_to_rustfmt() {
+    // rustfmt aligns this one, and `just fmt` runs before this test, so
+    // judging it here would be a second opinion on a settled question.
+    let source = text_block! {
+        "fn f() {"
+        "    if x {"
+        "        a"
+        "        }"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_macro_body_s_own_braces_are_left_to_rustfmt() {
+    // rustfmt moves the `}` closing a macro body to the indent of the
+    // line its `{` is on, so this misalignment is one it fixes. The `p`
+    // block inside closes where it opened and is the only one judged.
+    let source = text_block! {
+        "fn f() {"
+        "    let markup = html! {"
+        "        p {"
+        r#"            "text""#
+        "        }"
+        "        };"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_macro_body_nested_in_ordinary_code_is_covered() {
+    // The body sits inside a `fn`, which is not a macro body, so
+    // reaching it means descending through ordinary code first.
+    let source = text_block! {
+        "fn f() {"
+        "    let markup = html! {"
+        "        p {"
+        r#"            "text""#
+        "          }"
+        "    };"
+        "}"
+    };
+    assert_eq!(
+        complaints(source),
+        ["line 3 opens at column 8, but line 5 closes it at column 10"],
+    );
+}
+
+#[test]
+fn a_block_inside_a_bracket_macro_is_left_to_rustfmt() {
+    // rustfmt rewrites a `(`- or `[`-delimited invocation whole: this
+    // `vec![..]` comes back as `vec![Foo { a: 1 }]`, so the misaligned
+    // `}` is its to fix and never reaches here.
+    let source = text_block! {
+        "fn f() {"
+        "    let v = vec!["
+        "        Foo {"
+        "            a: 1,"
+        "            },"
+        "    ];"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_bang_without_an_identifier_is_not_a_macro() {
+    // `!{ ... }` negates a block, and `#![...]` carries no name
+    // either, so neither opens a macro body. Taking the `!` alone as
+    // the signal would read both as one and judge what they enclose.
+    let source = text_block! {
+        "fn f() {"
+        "    let flag = !{"
+        "        if x {"
+        "            a"
+        "            }"
+        "    };"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
 }
 
 #[test]
@@ -220,25 +341,52 @@ fn a_misaligned_block_inside_another_is_reported_on_its_own() {
     // Only the inner block disagrees, and the pairing is per block, so
     // the outer one is not blamed for it.
     let source = text_block! {
-        "div {"
-        "    p {"
-        r#"        "text""#
-        "  }"
+        "html! {"
+        "    div {"
+        "        p {"
+        r#"            "text""#
+        "      }"
+        "    }"
         "}"
     };
     assert_eq!(
         complaints(source),
-        ["line 2 opens at column 4, but line 4 closes it at column 2"],
+        ["line 3 opens at column 8, but line 5 closes it at column 6"],
+    );
+}
+
+#[test]
+fn every_misaligned_block_is_reported_in_source_order() {
+    let source = text_block! {
+        "html! {"
+        "    div {"
+        "        p {"
+        r#"            "first""#
+        "      }"
+        "        p {"
+        r#"            "second""#
+        "          }"
+        "    }"
+        "}"
+    };
+    assert_eq!(
+        complaints(source),
+        [
+            "line 3 opens at column 8, but line 5 closes it at column 6",
+            "line 6 opens at column 8, but line 8 closes it at column 10",
+        ]
     );
 }
 
 #[test]
 fn a_line_that_closes_then_opens_is_read_in_that_order() {
     let source = text_block! {
-        "if x {"
-        "    a"
-        "} else {"
-        "    b"
+        "html! {"
+        "    @if x {"
+        r#"        "a""#
+        "    } @else {"
+        r#"        "b""#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -249,8 +397,10 @@ fn a_pair_written_on_one_line_is_left_alone() {
     // `dt { code { "key" } }` opens and closes within the line, so it
     // has no indent of its own to disagree with.
     let source = text_block! {
-        "dl {"
-        r#"    dt { code { "key" } }"#
+        "html! {"
+        "    dl {"
+        r#"        dt { code { "key" } }"#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -258,28 +408,32 @@ fn a_pair_written_on_one_line_is_left_alone() {
 
 #[test]
 fn closers_sharing_a_line_are_judged_at_their_own_columns() {
-    // Line 4 carries two `}`, four columns apart. The inner block
-    // closes where it opened; the outer one closes at column 5, which
-    // is what it is reported as -- a text scan has only the one indent
-    // the line starts at to compare either against.
+    // Line 5 carries two `}`, one column apart. The inner block closes
+    // where it opened; the outer one closes at column 9, which is what
+    // it is reported as -- a text scan has only the one indent the line
+    // starts at to compare either against.
     let source = text_block! {
-        "div {"
-        "    p {"
-        r#"        "text""#
-        "    }}"
+        "html! {"
+        "    div {"
+        "        p {"
+        r#"            "text""#
+        "        }}"
+        "}"
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 4 closes it at column 5"],
+        ["line 2 opens at column 4, but line 5 closes it at column 9"],
     );
 }
 
 #[test]
 fn a_commented_brace_is_not_a_block() {
     let source = text_block! {
-        "p {"
-        "    // a trailing brace in prose {"
-        r#"    "text""#
+        "html! {"
+        "    p {"
+        "        // a trailing brace in prose {"
+        r#"        "text""#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -288,10 +442,12 @@ fn a_commented_brace_is_not_a_block() {
 #[test]
 fn a_brace_in_a_block_comment_is_not_a_block() {
     let source = text_block! {
-        "fn f() {"
-        "    /* a trailing brace in prose {"
-        "     */"
-        "    let a = 1;"
+        "html! {"
+        "    p {"
+        "        /* a trailing brace in prose {"
+        "         */"
+        r#"        "text""#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -302,9 +458,11 @@ fn a_brace_in_a_string_literal_is_not_a_block() {
     // The literal spans lines and holds a block whose own braces
     // disagree. It is text, so none of it is a block.
     let source = text_block! {
-        "fn f() {"
-        r#"    let template = "p {"#
-        r#"}";"#
+        "html! {"
+        "    p {"
+        r#"        "a template p {"#
+        r#"}""#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -313,11 +471,13 @@ fn a_brace_in_a_string_literal_is_not_a_block() {
 #[test]
 fn a_brace_in_a_raw_string_is_not_a_block() {
     let source = text_block! {
-        "fn f() {"
-        r#"    let template = r""#
-        r#"        p {"#
+        "html! {"
+        "    p {"
+        r#"        r""#
+        "        p {"
         "    }"
-        r#"";"#
+        r#"""#
+        "    }"
         "}"
     };
     assert!(complaints(source).is_empty());
@@ -326,19 +486,21 @@ fn a_brace_in_a_raw_string_is_not_a_block() {
 #[test]
 fn a_brace_in_a_character_literal_is_not_a_block() {
     // `'a` is a lifetime rather than a literal opening at the `'`, and
-    // telling the two apart is what keeps the `{` ending line 1 in
+    // telling the two apart is what keeps the `{` ending line 2 in
     // code. Read as a literal instead, it would swallow that `{` and
     // the misaligned `}` would go unreported.
     let source = text_block! {
-        "fn f<'a>(x: &'a str) {"
-        "    let open = '{';"
-        "    let close = '}';"
-        "    let _ = (open, close, x);"
+        "quote! {"
+        "    fn f<'a>(x: &'a str) {"
+        "        let open = '{';"
+        "        let close = '}';"
+        "        let _ = (open, close, x);"
         "        }"
+        "}"
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 5 closes it at column 8"],
+        ["line 2 opens at column 4, but line 6 closes it at column 8"],
     );
 }
 
@@ -348,9 +510,12 @@ fn an_open_brace_with_a_trailing_comment_still_pairs() {
     // never records the block and blames an enclosing one for the `}`
     // that closes it.
     let source = text_block! {
-        "fn f() {"
-        "    if x { // note"
-        "        a"
+        "html! {"
+        "    p {"
+        "        @if x { // note"
+        r#"            "a""#
+        "        }"
+        r#"        "b""#
         "    }"
         "}"
     };
@@ -360,32 +525,11 @@ fn an_open_brace_with_a_trailing_comment_still_pairs() {
 #[test]
 fn a_source_that_does_not_tokenise_is_reported() {
     let source = text_block! {
-        "fn f() {"
-        r#"    let unterminated = "text;"#
+        "html! {"
+        r#"    p { "unterminated"#
         "}"
     };
     assert!(misaligned(source).is_err());
-}
-
-#[test]
-fn every_misaligned_block_is_reported_in_source_order() {
-    let source = text_block! {
-        "div {"
-        "    p {"
-        r#"        "first""#
-        "  }"
-        "    p {"
-        r#"        "second""#
-        "      }"
-        "}"
-    };
-    assert_eq!(
-        complaints(source),
-        [
-            "line 2 opens at column 4, but line 4 closes it at column 2",
-            "line 5 opens at column 4, but line 7 closes it at column 6",
-        ],
-    );
 }
 
 #[test]
