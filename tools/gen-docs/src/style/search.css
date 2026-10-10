@@ -64,7 +64,15 @@
 .search-toggle::before,
 .filter-toggle::before {
   content: "";
-  background-color: currentColor;
+}
+
+/* Unmasked, the colour would fill the whole box, so it is only given
+   where a mask can clip it. */
+@supports (mask-image: none) or (-webkit-mask-image: none) {
+  .search-toggle::before,
+  .filter-toggle::before {
+    background-color: currentColor;
+  }
 }
 
 .search-toggle::before {
