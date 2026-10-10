@@ -1,19 +1,7 @@
 //! Every maud template is written the way `maudfmt` writes it.
 //!
-//! rustfmt does not enter a `{`-delimited macro invocation, so the
-//! layout inside a `maud::html!` body is beyond what `just fmt`
-//! settles. A template whose `{` and `}` disagree compiles, renders
-//! correctly and passes every other step; it reads wrong, though,
-//! because a child indented level with the attributes above it looks
-//! like another attribute. That shape had been written twice before
-//! anything checked for it.
-//!
-//! [`maudfmt`](https://docs.rs/maudfmt) settles the whole layout of
-//! such a body rather than its braces alone. It is a library as well
-//! as a command, so this formats each file in memory and compares,
-//! writing nothing and shelling out to nothing. A file holding no
-//! maud macro comes back unchanged, which is why every file can be
-//! handed over rather than only those naming one.
+//! rustfmt does not enter a `{`-delimited macro invocation, so a
+//! `maud::html!` body is beyond what `just fmt` settles.
 
 use command_extra::CommandExtra;
 use maudfmt::{FormatOptions, try_fmt_file};
@@ -23,18 +11,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// Paths, relative to the repository root, that are left unformatted.
-///
-/// These hold code written to be linted, some of it written to be
-/// wrong on purpose, so how it is laid out is the fixture's business.
-/// Some of it is not meant to parse either, and `maudfmt` parses a
-/// whole file before it reaches any macro in it. Build output and
-/// dependencies need no entry: the listing comes from git, so
-/// `.gitignore` is the one place that says which directories hold
-/// them.
+/// Fixture trees, left out because `try_fmt_file` parses a whole file
+/// and some of these are not meant to parse.
 const UNSCANNED: &[&str] = &["ui", "ui-toml", "tests/fixtures"];
 
-/// Run `git` in `root` with `args`, and give back its stdout.
 fn git_capture<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
 where
     Args: IntoIterator<Item = Arg>,
@@ -55,12 +35,8 @@ where
     output.stdout
 }
 
-/// Every `.rs` file the repository at `root` counts as its own --
-/// tracked, or untracked and not ignored -- minus [`UNSCANNED`].
-///
-/// `--cached` and `--others` each list in order, but one runs after
-/// the other, so the listing they make together needs sorting to be
-/// read and reported in a stable order.
+/// Every `.rs` file the repository at `root` counts as its own,
+/// tracked or not, minus [`UNSCANNED`].
 fn sources(root: &Path) -> Vec<PathBuf> {
     let listing = git_capture(
         root,
@@ -83,12 +59,13 @@ fn sources(root: &Path) -> Vec<PathBuf> {
         .filter(|listed| !UNSCANNED.iter().any(|skipped| listed.starts_with(skipped)))
         .map(Path::to_path_buf)
         .collect();
+    // `--cached` and `--others` each list in order, but one runs after
+    // the other.
     found.sort();
     found
 }
 
-/// The line number, counting from 1, where `written` and `formatted`
-/// first part ways.
+/// The 1-based line number where `written` and `formatted` first differ.
 fn first_difference(written: &str, formatted: &str) -> usize {
     let parting = written
         .lines()
