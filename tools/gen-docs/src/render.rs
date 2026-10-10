@@ -407,8 +407,8 @@ fn search_toggle() -> Markup {
             aria-expanded="false"
             aria-label="Search lints"
             title="Search lints (press /)" {
-            (icon(SEARCH_ICON_ID, "search-toggle-icon"))
-        }
+                (icon(SEARCH_ICON_ID, "search-toggle-icon"))
+            }
     }
 }
 
@@ -524,8 +524,8 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-expanded="false"
             aria-label=(label)
             title=(label) {
-            (icon(FILTER_ICON_ID, "filter-toggle-icon"))
-        }
+                (icon(FILTER_ICON_ID, "filter-toggle-icon"))
+            }
     }
 }
 
