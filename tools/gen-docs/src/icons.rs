@@ -62,7 +62,7 @@ const ICONS: &[Icon] = &[
 /// written into. Reusing the source's own spelling would not do: XML
 /// also allows `'` to delimit an attribute, and the value of one so
 /// written may hold a `"` that would end the attribute early.
-fn view_box(id: &str, reader: &mut Reader<&[u8]>) -> Result<String, String> {
+fn view_box(reader: &mut Reader<&[u8]>, id: &str) -> Result<String, String> {
     match reader.read_event() {
         Ok(Event::Start(root)) if root.local_name().as_ref() == b"svg" => root
             .try_get_attribute("viewBox")
@@ -74,7 +74,7 @@ fn view_box(id: &str, reader: &mut Reader<&[u8]>) -> Result<String, String> {
             .into_owned()
             .pipe(Ok),
         Ok(Event::Eof) => Err(format!("{id}: no root <svg>")),
-        Ok(_) => view_box(id, reader),
+        Ok(_) => view_box(reader, id),
         Err(error) => Err(format!("{id}: {error}")),
     }
 }
@@ -85,27 +85,27 @@ fn view_box(id: &str, reader: &mut Reader<&[u8]>) -> Result<String, String> {
 ///
 /// A `</g>` therefore does not end the search, which is what the depth
 /// is for.
-fn drawing_end(id: &str, reader: &mut Reader<&[u8]>, depth: usize) -> Result<usize, String> {
+fn drawing_end(reader: &mut Reader<&[u8]>, id: &str, depth: usize) -> Result<usize, String> {
     // Read before the event, so the closing tag reports where it begins
     // rather than where it ends.
     let position = reader.buffer_position() as usize;
     match reader.read_event() {
-        Ok(Event::Start(_)) => drawing_end(id, reader, depth + 1),
+        Ok(Event::Start(_)) => drawing_end(reader, id, depth + 1),
         Ok(Event::End(_)) => match depth.checked_sub(1) {
-            Some(remaining) => drawing_end(id, reader, remaining),
+            Some(remaining) => drawing_end(reader, id, remaining),
             None => Ok(position),
         },
         Ok(Event::Eof) => Err(format!("{id}: the root <svg> is never closed")),
-        Ok(_) => drawing_end(id, reader, depth),
+        Ok(_) => drawing_end(reader, id, depth),
         Err(error) => Err(format!("{id}: {error}")),
     }
 }
 
 fn symbol(id: &str, source: &str) -> Result<String, String> {
     let mut reader = Reader::from_str(source);
-    let view_box = view_box(id, &mut reader)?;
+    let view_box = view_box(&mut reader, id)?;
     let start = reader.buffer_position() as usize;
-    let end = drawing_end(id, &mut reader, 0)?;
+    let end = drawing_end(&mut reader, id, 0)?;
 
     let drawing = source
         .get(start..end)
