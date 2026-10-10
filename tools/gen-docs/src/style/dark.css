@@ -118,6 +118,9 @@
   html:not([color-scheme-override="light"]) article.rule h2 .lint-prefix {
     color: #8b949e;
   }
+  html:not([color-scheme-override="light"]) article.rule h2 .rule-anchor {
+    color: #8b949e;
+  }
   html:not([color-scheme-override="light"]) article.rule h2 .rule-jump-link {
     color: #8b949e;
   }
@@ -418,6 +421,9 @@ html[color-scheme-override="dark"] article.rule {
   border-top-color: #21262d;
 }
 html[color-scheme-override="dark"] article.rule h2 .lint-prefix {
+  color: #8b949e;
+}
+html[color-scheme-override="dark"] article.rule h2 .rule-anchor {
   color: #8b949e;
 }
 html[color-scheme-override="dark"] article.rule h2 .rule-jump-link {

@@ -30,6 +30,7 @@
 mod check_md;
 mod extract;
 mod fonts;
+mod icons;
 mod model;
 mod render;
 mod render_md;
@@ -40,8 +41,8 @@ use crate::extract::collect_rules;
 use crate::model::{RenderContext, Rule};
 use crate::render::markdown::HIGHLIGHT_CSS;
 use crate::render::{
-    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, PAGE_SCRIPT_FILES, RULE_ANCHOR_ICON,
-    RULE_ANCHOR_ICON_FILENAME, SEARCH_ICONS, STYLESHEETS, THEME_ICONS, render_page,
+    HIGHLIGHT_CSS_DARK_FILENAME, HIGHLIGHT_CSS_LIGHT_FILENAME, PAGE_SCRIPT_FILES, STYLESHEETS,
+    render_page,
 };
 use crate::test_page::{TEST_PAGE_FILENAME, render_test_page, test_page_assets};
 use cargo_toml::Manifest;
@@ -207,18 +208,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     fs::write(out_dir.join(TEST_PAGE_FILENAME), render_test_page())
         .unwrap_or_else(|error| panic!("failed to write {TEST_PAGE_FILENAME}: {error}"));
     for (name, content) in test_page_assets() {
-        let path = out_dir.join(name);
-        fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
-    }
-
-    // Lands beside index.html so the stylesheet's relative `url(...)`
-    // resolves.
-    let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
-    fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
-
-    // The colour-scheme icons, referenced as CSS masks by settings.css,
-    // and the search / filter icons, referenced the same way by search.css.
-    for (name, content) in THEME_ICONS.iter().chain(SEARCH_ICONS) {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
     }

@@ -59,26 +59,19 @@
   outline-offset: 2px;
 }
 
-/* A mask rather than an `<img>`, so no light and dark copy of each icon
-   file has to ship. */
-.search-toggle::before,
-.filter-toggle::before {
-  content: "";
-  background-color: currentColor;
+.search-toggle-icon,
+.filter-toggle-icon {
+  fill: currentColor;
 }
 
-.search-toggle::before {
+.search-toggle-icon {
   width: 1.2rem;
   height: 1.2rem;
-  -webkit-mask: url("search.svg") no-repeat center / contain;
-  mask: url("search.svg") no-repeat center / contain;
 }
 
-.filter-toggle::before {
+.filter-toggle-icon {
   width: 1rem;
   height: 1rem;
-  -webkit-mask: url("filter.svg") no-repeat center / contain;
-  mask: url("filter.svg") no-repeat center / contain;
 }
 
 /* Not wrapped in a flex container of its own: that would change the

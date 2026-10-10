@@ -90,9 +90,17 @@ article.rule h2 .rule-anchor {
   bottom: 0;
   width: 0.8rem;
   margin-right: 0.15rem;
-  background: url("rule-anchor.svg") no-repeat center / 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   transition: opacity 0.12s ease-in-out;
+}
+
+article.rule h2 .rule-anchor-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: currentColor;
 }
 
 article.rule h2:hover .rule-anchor,

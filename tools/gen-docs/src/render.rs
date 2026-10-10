@@ -185,22 +185,15 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-/// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
-/// and referenced from settings.css. Each tuple is `(filename, contents)`.
-pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
-    ("theme-light.svg", include_str!("assets/theme-light.svg")),
-    ("theme-dark.svg", include_str!("assets/theme-dark.svg")),
-    ("theme-system.svg", include_str!("assets/theme-system.svg")),
-];
+/// `id` of the magnifier symbol, on the button that opens the search
+/// overlay.
+const SEARCH_ICON_ID: &str = "icon-search";
 
-/// The search and filter control icons (Octicons, MIT), shipped beside
-/// `index.html` and referenced from search.css. Each tuple is
-/// `(filename, contents)`. Not prefetched, unlike [`THEME_ICONS`]: these
-/// are masked onto buttons that appear as soon as their script runs.
-pub(crate) const SEARCH_ICONS: &[(&str, &str)] = &[
-    ("search.svg", include_str!("assets/search.svg")),
-    ("filter.svg", include_str!("assets/filter.svg")),
-];
+/// `id` of the funnel symbol, on both filter toggles.
+const FILTER_ICON_ID: &str = "icon-filter";
+
+/// `id` of the chain-link symbol, on each rule heading's permalink.
+const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
 
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
@@ -225,18 +218,37 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// `id` shared by the inert prefetch `<template>`
-/// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
-/// activates it; the two must agree.
-pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
+/// The sprite, at the foot of `<body>` and before [`PAGE_SCRIPTS`].
+///
+/// Every [`icon`] above it therefore points at a symbol the parser has
+/// not reached, drawing nothing until it does. Nothing here sees that
+/// window: the controls carrying icons stay `hidden` until scripts
+/// below this point reveal them, and the rule anchors are transparent
+/// until hovered.
+///
+/// Hiding the sprite works only because the icons are `<symbol>`s —
+/// `<use>` cannot instantiate a `display: none` target.
+fn icon_sprite() -> Markup {
+    PreEscaped(crate::icons::sprite())
+}
 
-/// The chain-link glyph for the rule-name heading anchors, shipped as
-/// a standalone file beside `index.html` rather than inlined.
-pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
-
-/// File name [`RULE_ANCHOR_ICON`] is written under. `rules.css`
-/// references the same name in a relative `url(...)`, so they must agree.
-pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
+/// One icon, as a `<use>` of the sprite symbol named by `id`, under
+/// `class` for the stylesheets to size and colour.
+///
+/// The reference is spelled twice: Safari did not read SVG 2's plain
+/// `href` until 12.1 (iOS 12.2), and SVG 1.1's `xlink:href` is
+/// deprecated but universal. No `xmlns:xlink` is needed, the HTML
+/// parser assigning that namespace itself.
+///
+/// `aria-hidden`, because the control around it carries the name.
+fn icon(id: &str, class: &str) -> Markup {
+    let href = format!("#{id}");
+    html! {
+        svg class=(class) aria-hidden="true" {
+            use href=(href) xlink:href=(href) {}
+        }
+    }
+}
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -269,7 +281,6 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 (search_toggle())
                 (search_templates())
                 (settings_panel())
-                (theme_icon_prefetch_template())
                 div.banner {
                     "Showing docs for "
                     code { (git_ref) }
@@ -315,6 +326,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     code { (commit_sha) }
                     "."
                 }
+                (icon_sprite())
                 @for &src in PAGE_SCRIPTS {
                     script src=(src) {}
                 }
@@ -383,7 +395,8 @@ fn search_toggle() -> Markup {
             aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
-            title="Search lints (press /)" {}
+            title="Search lints (press /)"
+        { (icon(SEARCH_ICON_ID, "search-toggle-icon")) }
     }
 }
 
@@ -503,7 +516,8 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-controls=(controls)
             aria-expanded="false"
             aria-label=(label)
-            title=(label) {}
+            title=(label)
+        { (icon(FILTER_ICON_ID, "filter-toggle-icon")) }
     }
 }
 
@@ -566,35 +580,20 @@ fn config_controls() -> Markup {
     }
 }
 
-/// The inert `<template>` of `<link rel="prefetch" as="image">` hints, one
-/// per [`THEME_ICONS`] entry, warming the cache for the colour-scheme icons
-/// (reachable only through settings.css masks). The `<template>` keeps the
-/// links dormant until `theme_toggle.js` clones them into `<head>`, so they
-/// load only once the Settings panel is used.
-fn theme_icon_prefetch_template() -> Markup {
-    html! {
-        template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
-            @for &(name, _) in THEME_ICONS {
-                link rel="prefetch" as="image" href=(name);
-            }
-        }
-    }
-}
-
 /// One theme radio plus its visible label. The radio keeps real
 /// `<input type="radio">` semantics (exclusive choice, keyboard arrows,
 /// form labelling) but is visually hidden by settings.css; the adjacent
 /// `<label>` is the styled tile, so the pure-CSS
 /// `.theme-radio:checked + .theme-option` selector can highlight the
 /// chosen one. The label must therefore stay the input's immediate next
-/// sibling. The icon is an empty span the stylesheet fills via a CSS
-/// mask referencing one of [`THEME_ICONS`].
+/// sibling. The tile's icon is the sprite symbol named after `value`.
 fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
     let option_class = format!("theme-option theme-option-{value}");
+    let icon_id = format!("icon-theme-{value}");
     html! {
         input.theme-radio type="radio" name="color-scheme" id=(id) value=(value) checked[checked];
         label class=(option_class) for=(id) {
-            span.theme-icon aria-hidden="true" {}
+            (icon(&icon_id, "theme-icon"))
             span.theme-label { (label) }
         }
     }
@@ -686,7 +685,8 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
-                        aria-label="Permalink to this rule" {}
+                        aria-label="Permalink to this rule"
+                    { (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon")) }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
