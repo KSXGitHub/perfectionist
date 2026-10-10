@@ -105,11 +105,6 @@ fn sources(root: &Path) -> Vec<PathBuf> {
 
 /// The diff from `written` to `formatted` for `relative`, in the form
 /// `git apply` takes.
-///
-/// `git diff --no-index` prefixes whatever paths it is handed, so the
-/// two copies sit at `a/<relative>` and `b/<relative>` and the
-/// prefixes are emptied, leaving the `a/` and `b/` that `git apply`
-/// strips. It exits 1 when the files differ, which is why it is here.
 fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
     let mirror = TempDir::new().expect("failed to create a temp dir");
     let mut sides = Vec::new();
@@ -141,6 +136,13 @@ fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
         .stdout
         .pipe(String::from_utf8)
         .expect("`git diff` produced non-UTF-8 output")
+}
+
+#[test]
+fn a_patch_names_the_file_the_way_git_apply_reads_it() {
+    let patch = git_diff(Path::new("src/lib.rs"), "one\n", "two\n");
+    assert!(patch.contains("--- a/src/lib.rs\n"), "{patch}");
+    assert!(patch.contains("+++ b/src/lib.rs\n"), "{patch}");
 }
 
 #[test]
