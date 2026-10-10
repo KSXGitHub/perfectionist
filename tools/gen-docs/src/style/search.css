@@ -64,7 +64,6 @@
 .search-toggle::before,
 .filter-toggle::before {
   content: "";
-  background-color: currentColor;
 }
 
 .search-toggle::before {
@@ -220,9 +219,18 @@ h2.index-heading {
 .search-close-icon {
   width: 0.85rem;
   height: 0.85rem;
-  background-color: currentColor;
   -webkit-mask: url("close.svg") no-repeat center / contain;
   mask: url("close.svg") no-repeat center / contain;
+}
+
+/* Unmasked, the colour would fill the whole box, so it is only given
+   where a mask can clip it. */
+@supports (mask-image: none) or (-webkit-mask-image: none) {
+  .search-toggle::before,
+  .filter-toggle::before,
+  .search-close-icon {
+    background-color: currentColor;
+  }
 }
 
 .search-results {

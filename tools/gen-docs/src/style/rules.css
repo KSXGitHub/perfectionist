@@ -125,14 +125,6 @@ article.rule h2 .rule-jump-link:hover {
    underline crossing it, so the mask sits on `::before`. */
 article.rule h2 .rule-jump-icon {
   position: relative;
-  -webkit-text-fill-color: transparent;
-}
-
-/* A highlight repaints the text, restoring the fill; `color` is what
-   governs there. Naming one at all drops the browser's own. */
-article.rule h2 .rule-jump-icon::selection {
-  color: transparent;
-  background-color: Highlight;
 }
 
 /* Sized here, not by the font's advance for `↑`. The box overspills
@@ -145,9 +137,31 @@ article.rule h2 .rule-jump-icon::before {
   width: 0.9em;
   height: 0.9em;
   transform: translate(-50%, -50%);
-  background-color: currentColor;
   -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
   mask: url("rule-jump.svg") no-repeat center / contain;
+}
+
+/* Unmasked, the colour would fill these boxes, so it is only given
+   where a mask can clip it, and the `↑` is only dropped where the icon
+   can stand in for it. An engine without `details` leaves its section
+   open, where a disclosure mark would misreport the state, so that one
+   just goes. */
+@supports (mask-image: none) or (-webkit-mask-image: none) {
+  article.rule h2 .rule-jump-icon {
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* A highlight repaints the text, restoring the fill; `color` is what
+     governs there. Naming one at all drops the browser's own. */
+  article.rule h2 .rule-jump-icon::selection {
+    color: transparent;
+    background-color: Highlight;
+  }
+
+  article.rule h2 .rule-jump-icon::before,
+  details.config-details > summary::before {
+    background-color: currentColor;
+  }
 }
 
 article.rule .source {
@@ -190,7 +204,6 @@ details.config-details > summary::before {
   height: 1.4em;
   margin-right: 0.1em;
   vertical-align: -0.3em;
-  background-color: currentColor;
   -webkit-mask: url("disclosure-closed.svg") no-repeat center / contain;
   mask: url("disclosure-closed.svg") no-repeat center / contain;
 }
