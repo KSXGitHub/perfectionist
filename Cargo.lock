@@ -352,6 +352,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crop"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fa28d21af9044d49bcfb1eceddeeb9fadc6a17207c6a1bf0d841ef0bd9ad36e"
+dependencies = [
+ "str_indices",
+]
+
+[[package]]
 name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -642,6 +651,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
+
+[[package]]
 name = "hashbrown"
 version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +709,12 @@ dependencies = [
  "serde",
  "serde_core",
 ]
+
+[[package]]
+name = "into-sorted"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e01b0686852f0dc0a48a830e141633c8a411078dbe98c7a817d2f42ec4c2e936"
 
 [[package]]
 name = "is_terminal_polyfill"
@@ -842,6 +863,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "maudfmt"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e38464fe220f2b24dba157d2e0f9f7c154f35a13164d1fc79fde2b6fd7415443"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crop",
+ "glob",
+ "prettyplease",
+ "proc-macro2",
+ "proc-macro2-diagnostics",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -908,6 +946,8 @@ dependencies = [
  "clippy_utils",
  "command-extra",
  "dylint_linting",
+ "into-sorted",
+ "maudfmt",
  "pipe-trait",
  "serde",
  "text-block-macros",
@@ -1243,6 +1283,12 @@ name = "smallvec"
 version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
+
+[[package]]
+name = "str_indices"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d08889ec5408683408db66ad89e0e1f93dff55c73a4ccc71c427d5b277ee47e6"
 
 [[package]]
 name = "strsim"
