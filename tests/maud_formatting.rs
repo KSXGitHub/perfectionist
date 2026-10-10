@@ -18,16 +18,14 @@ fn relevant_files(root: &Path) -> Vec<PathBuf> {
     let output = "git"
         .pipe(Command::new)
         .with_current_dir(root)
-        .with_args([
-            "ls-files",
-            "-z",
-            "--cached",
-            "--others",
-            "--exclude-standard",
-            "--",
-            "*.rs",
-            "*rustfmt.toml",
-        ])
+        .with_arg("ls-files")
+        .with_arg("-z")
+        .with_arg("--cached")
+        .with_arg("--others")
+        .with_arg("--exclude-standard")
+        .with_arg("--")
+        .with_arg("*.rs")
+        .with_arg("*rustfmt.toml")
         .output()
         .expect("failed to invoke `git`");
     assert!(
