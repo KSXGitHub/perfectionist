@@ -24,6 +24,10 @@ any file of an integration-test or benchmark target — is
 measured like any other; set `exempt_tests` to leave it
 alone.
 
+Set `exclude_imports` to avoid counting lines belonging to top-level
+`use` items. This is useful when a project chooses a vertical import
+layout, where formatting can add several lines without adding code.
+
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A file
@@ -66,3 +70,11 @@ Whether files of test code are left alone: a module behind
 `#[cfg(test)]`, and every file of an integration-test or
 benchmark target. Defaults to `false`, so a test file is held
 to the same limit as the code it exercises.
+
+### Field: `exclude_imports`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Whether lines belonging to top-level `use` items are excluded.
+Defaults to `false`.
