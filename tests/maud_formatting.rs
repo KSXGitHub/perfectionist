@@ -87,8 +87,10 @@ fn every_maud_template_is_formatted() {
     let options = FormatOptions::default();
     let mut report = Vec::new();
     for relative in &paths {
-        let written =
-            fs::read_to_string(root.join(relative)).expect("a listed source should be readable");
+        let written = root
+            .join(relative)
+            .pipe(fs::read_to_string)
+            .expect("a listed source should be readable");
         let formatted = try_fmt_file(&written, &options)
             .unwrap_or_else(|error| panic!("{}: {error}", relative.display()));
         if formatted != written {
