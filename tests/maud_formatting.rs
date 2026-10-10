@@ -52,7 +52,9 @@ fn rustfmt_configs(root: &Path, listed: &[&Path]) -> BTreeMap<PathBuf, bool> {
                 .and_then(Value::as_bool)
                 .unwrap_or(false);
             (
-                path.parent().unwrap_or(Path::new("")).to_path_buf(),
+                path.parent()
+                    .unwrap_or_else(|| panic!("path {path:?} has no parent"))
+                    .to_path_buf(),
                 disabled,
             )
         })
