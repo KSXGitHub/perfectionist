@@ -106,9 +106,9 @@ struct Mismatch {
     formatted: String,
 }
 
-/// The diff from how each file is written to how `maudfmt` writes it,
+/// A patch from how each file is written to how `maudfmt` writes it,
 /// in the form `git apply` takes.
-fn git_diff(mismatches: &[Mismatch]) -> String {
+fn formatting_patch(mismatches: &[Mismatch]) -> String {
     let mirror = TempDir::new().expect("failed to create a temp dir");
     for Mismatch {
         relative,
@@ -156,7 +156,7 @@ fn one_patch_names_every_file_the_way_git_apply_reads_it() {
             formatted: "two\n".to_owned(),
         })
         .collect();
-    let patch = git_diff(&mismatches);
+    let patch = formatting_patch(&mismatches);
     for name in names {
         assert!(patch.contains(&format!("--- a/{name}\n")), "{patch}");
         assert!(patch.contains(&format!("+++ b/{name}\n")), "{patch}");
@@ -194,7 +194,7 @@ fn every_maud_template_is_formatted() {
     if mismatches.is_empty() {
         return;
     }
-    let patch = git_diff(&mismatches);
+    let patch = formatting_patch(&mismatches);
 
     // Named after the process so two runs at once cannot clobber one
     // another's patch, and so a stale one is replaced rather than kept.
