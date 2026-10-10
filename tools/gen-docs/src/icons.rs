@@ -51,45 +51,55 @@ const ICONS: &[Icon] = &[
 ///
 /// The drawing is sliced out of `source` rather than rebuilt from the
 /// parsed events, so the bytes on disk are the bytes on the page.
+/// Advance `reader` to the root `<svg>` and take its `viewBox`,
+/// leaving the reader positioned just after that start tag.
+///
+/// Anything before it — a prolog, a comment, whitespace — is passed
+/// over by recursing on the next event.
+fn view_box(id: &str, reader: &mut Reader<&[u8]>) -> Result<String, String> {
+    match reader.read_event() {
+        Ok(Event::Start(root)) if root.local_name().as_ref() == b"svg" => root
+            .try_get_attribute("viewBox")
+            .map_err(|error| format!("{id}: reading the root <svg>: {error}"))?
+            .ok_or_else(|| format!("{id}: the root <svg> has no viewBox"))?
+            // The raw value: it goes straight back into an attribute.
+            .value
+            .into_owned()
+            .pipe(String::from_utf8)
+            .map_err(|error| format!("{id}: the viewBox is not UTF-8: {error}")),
+        Ok(Event::Eof) => Err(format!("{id}: no root <svg>")),
+        Ok(_) => view_box(id, reader),
+        Err(error) => Err(format!("{id}: {error}")),
+    }
+}
+
+/// Advance `reader` to the `</svg>` closing the root element and give
+/// the position where that tag begins, `depth` counting the elements
+/// opened since the root and still unclosed.
+///
+/// A `</g>` therefore does not end the search, which is what the depth
+/// is for.
+fn drawing_end(id: &str, reader: &mut Reader<&[u8]>, depth: usize) -> Result<usize, String> {
+    // Read before the event, so the closing tag reports where it begins
+    // rather than where it ends.
+    let position = reader.buffer_position() as usize;
+    match reader.read_event() {
+        Ok(Event::Start(_)) => drawing_end(id, reader, depth + 1),
+        Ok(Event::End(_)) => match depth.checked_sub(1) {
+            Some(remaining) => drawing_end(id, reader, remaining),
+            None => Ok(position),
+        },
+        Ok(Event::Eof) => Err(format!("{id}: the root <svg> is never closed")),
+        Ok(_) => drawing_end(id, reader, depth),
+        Err(error) => Err(format!("{id}: {error}")),
+    }
+}
+
 fn symbol(id: &str, source: &str) -> Result<String, String> {
     let mut reader = Reader::from_str(source);
-    let view_box = loop {
-        match reader.read_event() {
-            Ok(Event::Start(root)) if root.local_name().as_ref() == b"svg" => {
-                let attribute = root
-                    .try_get_attribute("viewBox")
-                    .map_err(|error| format!("{id}: reading the root <svg>: {error}"))?
-                    .ok_or_else(|| format!("{id}: the root <svg> has no viewBox"))?;
-                // The raw value: it goes straight back into an attribute.
-                break attribute
-                    .value
-                    .into_owned()
-                    .pipe(String::from_utf8)
-                    .map_err(|error| format!("{id}: the viewBox is not UTF-8: {error}"))?;
-            }
-            Ok(Event::Eof) => return Err(format!("{id}: no root <svg>")),
-            Ok(_) => {}
-            Err(error) => return Err(format!("{id}: {error}")),
-        }
-    };
-
+    let view_box = view_box(id, &mut reader)?;
     let start = reader.buffer_position() as usize;
-    let mut depth = 0usize;
-    let end = loop {
-        // Read before the event, so the closing tag reports where it
-        // begins rather than where it ends.
-        let position = reader.buffer_position() as usize;
-        match reader.read_event() {
-            Ok(Event::Start(_)) => depth += 1,
-            Ok(Event::End(_)) => match depth.checked_sub(1) {
-                Some(remaining) => depth = remaining,
-                None => break position,
-            },
-            Ok(Event::Eof) => return Err(format!("{id}: the root <svg> is never closed")),
-            Ok(_) => {}
-            Err(error) => return Err(format!("{id}: {error}")),
-        }
-    };
+    let end = drawing_end(id, &mut reader, 0)?;
 
     let drawing = source
         .get(start..end)

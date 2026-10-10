@@ -139,11 +139,6 @@
     background-color 0.15s ease;
 }
 
-/* `fill: currentColor` takes the label's own `color`, so the icon
-   follows the theme and the highlighted state below without shipping a
-   separate light/dark copy of each SVG. Which symbol a tile draws is
-   decided in the markup, so the three tiles need no rule of their own
-   here. */
 .theme-icon {
   width: 1.4rem;
   height: 1.4rem;

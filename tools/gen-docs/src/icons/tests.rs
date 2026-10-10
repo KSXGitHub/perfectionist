@@ -1,9 +1,7 @@
 use super::{ICONS, sprite, symbol};
 
 #[test]
-fn every_vendored_icon_becomes_a_symbol() {
-    // The whole set, so a file that stops parsing fails here rather
-    // than by rendering a page with one icon silently missing.
+fn every_icon_becomes_a_symbol() {
     for icon in ICONS {
         let symbol = symbol(icon.id, icon.source)
             .unwrap_or_else(|error| panic!("{} should rewrite: {error}", icon.id));
@@ -23,8 +21,6 @@ fn every_vendored_icon_becomes_a_symbol() {
 
 #[test]
 fn the_rewrite_keeps_the_upstream_path_verbatim() {
-    // What a reader actually sees is the path data, so it is the one
-    // thing the rewrite must not touch.
     let source = r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M1 2h3Z"/></svg>"#;
     assert_eq!(
         symbol("icon-demo", source).expect("should rewrite"),
@@ -34,9 +30,6 @@ fn the_rewrite_keeps_the_upstream_path_verbatim() {
 
 #[test]
 fn the_root_keeps_nothing_that_would_override_the_stylesheet() {
-    // `width` and `height` would pin the drawn size, and `fill` would
-    // beat the `currentColor` the icons are themed through. An
-    // upstream file carrying all three must lose all three.
     let source = r##"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="#000000"><path d="M1 2h3Z"/></svg>"##;
     let symbol = symbol("icon-demo", source).expect("should rewrite");
     assert!(!symbol.contains("width="), "kept width: {symbol}");
@@ -46,8 +39,6 @@ fn the_root_keeps_nothing_that_would_override_the_stylesheet() {
 
 #[test]
 fn a_prolog_and_comments_are_skipped() {
-    // Not every publisher writes the bare element the current files
-    // do, and a vendored file is replaced wholesale on an upgrade.
     let source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
          <!-- a note from whoever drew it -->\n\
          <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path d=\"M1 2h3Z\"/></svg>";
@@ -81,8 +72,6 @@ fn an_attribute_value_may_hold_the_tag_delimiter() {
 
 #[test]
 fn a_root_without_a_view_box_is_refused() {
-    // Without it a `<use>` cannot scale the drawing, so the icon would
-    // render at whatever size the symbol happened to imply.
     let error = symbol(
         "icon-demo",
         r#"<svg xmlns="http://www.w3.org/2000/svg"></svg>"#,

@@ -59,9 +59,6 @@
   outline-offset: 2px;
 }
 
-/* `currentColor` rather than a pair of light and dark icon files: the
-   symbol carries no `fill` of its own, so it takes this one, and the
-   button's colour already differs per theme. */
 .search-toggle-icon,
 .filter-toggle-icon {
   fill: currentColor;
