@@ -288,8 +288,8 @@
   // the overlay while it is open. A
   // child already inert is not recorded, so clearing undoes only what this
   // set. Browsers too old for `inert` ignore it and fall back to what the
-  // page gives for free: the overlay is still dismissible by its ✕ and by
-  // Escape.
+  // page gives for free: the overlay is still dismissible by its close
+  // button and by Escape.
   /** @type {HTMLElement[]} */
   var inerted = []
 

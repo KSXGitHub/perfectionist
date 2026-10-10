@@ -74,7 +74,7 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* `right: 100%` parks the glyph left of the heading's <code>, so the
+/* `right: 100%` parks the icon left of the heading's <code>, so the
    rule name stays aligned with body paragraphs; spanning <code> with
    `top`/`bottom: 0` centres it on the text, not the taller line box.
    The ~0.95rem reach stays within the body's 1rem padding to avoid
@@ -120,6 +120,50 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
+/* The `↑` stays as text so the link underlines, selects and copies as
+   one run; only its fill goes. Masking the span would clip the
+   underline crossing it, so the mask sits on `::before`. */
+article.rule h2 .rule-jump-icon {
+  position: relative;
+}
+
+/* Sized here, not by the font's advance for `↑`. The box overspills
+   the character; the icon's own margin keeps the ink underlined. */
+article.rule h2 .rule-jump-icon::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.9em;
+  height: 0.9em;
+  transform: translate(-50%, -50%);
+  -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
+  mask: url("rule-jump.svg") no-repeat center / contain;
+}
+
+/* Unmasked, the colour would fill these boxes, so it is only given
+   where a mask can clip it, and the `↑` is only dropped where the icon
+   can stand in for it. An engine without `details` leaves its section
+   open, where a disclosure mark would misreport the state, so that one
+   just goes. */
+@supports (mask-image: none) or (-webkit-mask-image: none) {
+  article.rule h2 .rule-jump-icon {
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* A highlight repaints the text, restoring the fill; `color` is what
+     governs there. Naming one at all drops the browser's own. */
+  article.rule h2 .rule-jump-icon::selection {
+    color: transparent;
+    background-color: Highlight;
+  }
+
+  article.rule h2 .rule-jump-icon::before,
+  details.config-details > summary::before {
+    background-color: currentColor;
+  }
+}
+
 article.rule .source {
   font-size: 0.85rem;
 }
@@ -151,14 +195,23 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
+/* Wider than the text it marks: the icon draws a compact triangle in
+   the middle of its viewBox, and `contain` scales the whole viewBox. */
 details.config-details > summary::before {
-  content: "▸ ";
+  content: "";
   display: inline-block;
-  width: 1em;
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.1em;
+  vertical-align: -0.3em;
+  -webkit-mask: url("disclosure-closed.svg") no-repeat center / contain;
+  mask: url("disclosure-closed.svg") no-repeat center / contain;
 }
 
+/* Longhands, so only the image swaps. */
 details.config-details[open] > summary::before {
-  content: "▾ ";
+  -webkit-mask-image: url("disclosure-open.svg");
+  mask-image: url("disclosure-open.svg");
 }
 
 dl.config {

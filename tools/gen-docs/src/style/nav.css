@@ -38,8 +38,6 @@
   border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 1.4rem;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -47,8 +45,11 @@
 }
 
 .nav-toggle::before {
-  content: "\2630"; /* ☰ */
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  content: "";
+  width: 1.2rem;
+  height: 1.2rem;
+  -webkit-mask: url("nav-menu.svg") no-repeat center / contain;
+  mask: url("nav-menu.svg") no-repeat center / contain;
 }
 
 .nav-toggle:focus-visible {
@@ -56,9 +57,9 @@
   outline-offset: 2px;
 }
 
-/* The hamburger goes away while the drawer is open: the close (✕)
-   button lives inside the overlay in normal flow, so no fixed-
-   position element needs to act as both opener and closer. */
+/* The hamburger goes away while the drawer is open: the close button
+   lives inside the overlay in normal flow, so no fixed-position
+   element needs to act as both opener and closer. */
 .nav-toggle[aria-expanded="true"] {
   display: none;
 }
@@ -99,19 +100,34 @@
 }
 
 .nav-sidebar-close {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   width: 2.5rem;
   height: 2.5rem;
   flex: none;
   border: 1px solid;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+}
+
+/* Smaller than `.nav-toggle::before`, which sits alone in a corner. */
+.nav-sidebar-close::before {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  -webkit-mask: url("close.svg") no-repeat center / contain;
+  mask: url("close.svg") no-repeat center / contain;
+}
+
+/* Unmasked, the colour would fill the whole box, so it is only given
+   where a mask can clip it. */
+@supports (mask-image: none) or (-webkit-mask-image: none) {
+  .nav-toggle::before,
+  .nav-sidebar-close::before {
+    background-color: currentColor;
+  }
 }
 
 .nav-sidebar-close:focus-visible {
