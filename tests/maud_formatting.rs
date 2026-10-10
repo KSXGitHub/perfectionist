@@ -11,9 +11,10 @@ use std::process::{self, Command};
 use std::{env, fs};
 use toml::{Table, Value};
 
-/// Every `.rs` file and every `rustfmt.toml` the repository at `root`
-/// counts as its own, tracked or not, NUL-separated as `-z` leaves them.
-fn git_ls_files(root: &Path) -> String {
+/// What the test looks at: the `.rs` files to format, and the
+/// `rustfmt.toml` files deciding which to leave alone. Tracked or not,
+/// as the repository at `root` counts them.
+fn relevant_files(root: &Path) -> Vec<PathBuf> {
     let output = "git"
         .pipe(Command::new)
         .with_current_dir(root)
@@ -39,11 +40,15 @@ fn git_ls_files(root: &Path) -> String {
         .stdout
         .pipe(String::from_utf8)
         .expect("`git ls-files` produced non-UTF-8 output")
+        .split('\0')
+        .filter(|entry| !entry.is_empty())
+        .map(PathBuf::from)
+        .collect()
 }
 
 /// Each directory holding a `rustfmt.toml`, against whether that file
 /// switches formatting off.
-fn rustfmt_configs(root: &Path, listed: &[&Path]) -> BTreeMap<PathBuf, bool> {
+fn rustfmt_configs(root: &Path, listed: &[PathBuf]) -> BTreeMap<PathBuf, bool> {
     listed
         .iter()
         .filter(|path| {
@@ -84,12 +89,7 @@ fn rustfmt_skips(path: &Path, configs: &BTreeMap<PathBuf, bool>) -> bool {
 /// `try_fmt_file` parses a whole file, and those are the files not meant
 /// to parse.
 fn sources(root: &Path) -> Vec<PathBuf> {
-    let listing = git_ls_files(root);
-    let listed: Vec<&Path> = listing
-        .split('\0')
-        .filter(|entry| !entry.is_empty())
-        .map(Path::new)
-        .collect();
+    let listed = relevant_files(root);
     let configs = rustfmt_configs(root, &listed);
     listed
         .iter()
