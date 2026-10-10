@@ -194,8 +194,6 @@ fn every_maud_template_is_formatted() {
     }
     let patch = formatting_patch(&mismatches);
 
-    // Named after the process so two runs at once cannot clobber one
-    // another's patch, and so a stale one is replaced rather than kept.
     let saved = env::temp_dir().join(format!("perfectionist-maudfmt-{}.patch", process::id()));
     fs::write(&saved, &patch).expect("failed to write the patch");
     panic!(
