@@ -262,10 +262,10 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                meta name="description" content="Catalogue of perfectionist's lints — a Dylint plugin adding stylistic and correctness lints for Rust projects.";
-                title {
-                    "perfectionist lints — " (git_ref)
-                }
+                meta
+                    name="description"
+                    content="Catalogue of perfectionist's lints — a Dylint plugin adding stylistic and correctness lints for Rust projects.";
+                title { "perfectionist lints — " (git_ref) }
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);
                 }
@@ -282,18 +282,18 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 (search_templates())
                 (settings_panel())
                 div.banner {
-                    "Showing docs for " code { (git_ref) } "."
+                    "Showing docs for "
+                    code { (git_ref) }
+                    "."
                 }
                 p {
                     "perfectionist is a Dylint plugin; see the "
                     a href=(repo_url) { "README" }
                     " for setup. Lint-control attributes use the "
-                    code { (NAMESPACE) } " namespace."
+                    code { (NAMESPACE) }
+                    " namespace."
                 }
-                h2.index-heading {
-                    "Index"
-                    (filter_toggle("index", INDEX_FILTER_LABEL))
-                }
+                h2.index-heading { "Index" (filter_toggle("index", INDEX_FILTER_LABEL)) }
                 (filter_container("index", INDEX_FILTER_LABEL))
                 table.index {
                     thead {
@@ -312,20 +312,19 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                                     }
                                 }
                                 td { (state_badge(rule.default_state)) }
-                                td {
-                                    (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
-                                }
+                                td { (PreEscaped(markdown_inline_to_html(&rule.short_desc))) }
                             }
                         }
                     }
                 }
                 h2 { "Rules" }
-                @for rule in rules {
-                    (rule_article(rule, context))
-                }
+                @for rule in rules { (rule_article(rule, context)) }
                 footer {
-                    "Generated from " code { "src/rules/" }
-                    " at " code { (commit_sha) } "."
+                    "Generated from "
+                    code { "src/rules/" }
+                    " at "
+                    code { (commit_sha) }
+                    "."
                 }
                 (icon_sprite())
                 @for &src in PAGE_SCRIPTS {
@@ -349,7 +348,8 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// (see [`config_controls`]). It is shaped to gain further sections.
 fn settings_panel() -> Markup {
     html! {
-        button.settings-toggle
+        button
+            .settings-toggle
             type="button"
             hidden
             aria-controls="settings-panel"
@@ -388,7 +388,8 @@ fn settings_panel() -> Markup {
 /// in it would be read along with it.
 fn search_toggle() -> Markup {
     html! {
-        button.search-toggle
+        button
+            .search-toggle
             type="button"
             hidden
             aria-controls=(SEARCH_OVERLAY_ID)
@@ -416,42 +417,45 @@ fn search_templates() -> Markup {
     html! {
         template id=(SEARCH_OVERLAY_TEMPLATE_ID) {
             div.search-overlay id=(SEARCH_OVERLAY_ID) hidden {
-                div.search-dialog
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Search lints" {
-                        div.search-box {
-                            (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
-                        }
-                        // Hidden until there is something to list: an
-                        // empty `<ul>` still claims the dialog's whole
-                        // remaining height, which would push either message
-                        // below it.
-                        ul.search-results aria-label="Search results" hidden {}
-                        // What the reader sees instead, one at a time. Both
-                        // are rendered here rather than written by the script
-                        // so the wording lives with the rest of the page's
-                        // text. `role="status"` asks assistive tech to read
-                        // whichever is revealed; support for that on an
-                        // un-hidden region varies, so it is a courtesy, not
-                        // the only way to learn the result.
-                        p.search-empty.search-empty-prompt role="status" {
-                            "Type to search lint names and documentation."
-                        }
-                        p.search-empty.search-empty-no-match role="status" hidden {
-                            "No lint matches that search."
-                        }
-                        // Last, so it sits in the results' corner rather than
-                        // in the search box, and so Tab reaches it after the
-                        // results rather than before them.
-                        button.search-close type="button" {
-                            // The ✕ is decoration beside the word; hiding it
-                            // from assistive tech keeps the button's
-                            // accessible name the word alone.
-                            span.search-close-glyph aria-hidden="true" { "\u{2715}" }
-                            "Close"
-                        }
+                div.search-dialog role="dialog" aria-modal="true" aria-label="Search lints" {
+                    div.search-box {
+                        ({
+                            search_text_input(
+                                "search-input",
+                                "Search lints\u{2026}",
+                                "Search lints",
+                            )
+                        })
                     }
+                    // Hidden until there is something to list: an
+                    // empty `<ul>` still claims the dialog's whole
+                    // remaining height, which would push either message
+                    // below it.
+                    ul.search-results aria-label="Search results" hidden {}
+                    // What the reader sees instead, one at a time. Both
+                    // are rendered here rather than written by the script
+                    // so the wording lives with the rest of the page's
+                    // text. `role="status"` asks assistive tech to read
+                    // whichever is revealed; support for that on an
+                    // un-hidden region varies, so it is a courtesy, not
+                    // the only way to learn the result.
+                    p.search-empty.search-empty-prompt role="status" {
+                        "Type to search lint names and documentation."
+                    }
+                    p.search-empty.search-empty-no-match role="status" hidden {
+                        "No lint matches that search."
+                    }
+                    // Last, so it sits in the results' corner rather than
+                    // in the search box, and so Tab reaches it after the
+                    // results rather than before them.
+                    button.search-close type="button" {
+                        // The ✕ is decoration beside the word; hiding it
+                        // from assistive tech keeps the button's
+                        // accessible name the word alone.
+                        span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                        "Close"
+                    }
+                }
             }
         }
         template id=(SEARCH_RESULT_TEMPLATE_ID) {
@@ -476,7 +480,8 @@ fn search_templates() -> Markup {
 /// snake_case identifier.
 fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
     html! {
-        input class=(class)
+        input
+            class=(class)
             type="search"
             placeholder=(placeholder)
             aria-label=(label)
@@ -505,7 +510,8 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
     let class = format!("filter-toggle {kind}-filter-toggle");
     let controls = format!("{kind}-filter");
     html! {
-        button class=(class)
+        button
+            class=(class)
             type="button"
             hidden
             aria-controls=(controls)
@@ -533,7 +539,13 @@ fn filter_container(kind: &str, label: &str) -> Markup {
         div class=(class) id=(id) {
             template {
                 div.filter-box hidden {
-                    (search_text_input("filter-input", "Filter by name\u{2026}", label))
+                    ({
+                        search_text_input(
+                            "filter-input",
+                            "Filter by name\u{2026}",
+                            label,
+                        )
+                    })
                 }
             }
         }
@@ -581,12 +593,7 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
     let option_class = format!("theme-option theme-option-{value}");
     let icon_id = format!("icon-theme-{value}");
     html! {
-        input.theme-radio
-            type="radio"
-            name="color-scheme"
-            id=(id)
-            value=(value)
-            checked[checked];
+        input.theme-radio type="radio" name="color-scheme" id=(id) value=(value) checked[checked];
         label class=(option_class) for=(id) {
             (icon(&icon_id, "theme-icon"))
             span.theme-label { (label) }
@@ -625,7 +632,8 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
 /// drifts with the URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
-        button.nav-toggle
+        button
+            .nav-toggle
             type="button"
             hidden
             aria-controls="nav-sidebar"
@@ -634,10 +642,12 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             title="Toggle navigation" {}
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
-                button.nav-sidebar-close
+                button
+                    .nav-sidebar-close
                     type="button"
                     aria-label="Close navigation"
-                    title="Close navigation" { "\u{2715}" }
+                    title="Close navigation"
+                { "\u{2715}" }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -675,9 +685,11 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
         article.rule id=(anchor_for(&rule.namespaced)) {
             h2 {
                 code {
-                    a.rule-anchor href={ "#" (anchor_for(&rule.namespaced)) } aria-label="Permalink to this rule" {
-                        (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon"))
-                    }
+                    a   .rule-anchor
+                        href={ "#" (anchor_for(&rule.namespaced)) }
+                        aria-label="Permalink to this rule" {
+                            (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon"))
+                        }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
@@ -692,7 +704,9 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
             (config_section(&rule.config))
             p.source {
                 "Source: "
-                a href=(source_url) { code { (source_path) } }
+                a href=(source_url) {
+                    code { (source_path) }
+                }
             }
         }
     }

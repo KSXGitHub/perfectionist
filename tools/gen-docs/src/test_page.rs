@@ -165,7 +165,9 @@ pub(crate) fn render_test_page() -> String {
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                meta name="description" content="Unit tests for the perfectionist lint catalogue's own browser scripts.";
+                meta
+                    name="description"
+                    content="Unit tests for the perfectionist lint catalogue's own browser scripts.";
                 // A contributor's tool that happens to sit on a public
                 // site: a reader searching for a lint should not land on
                 // a list of assertions.
