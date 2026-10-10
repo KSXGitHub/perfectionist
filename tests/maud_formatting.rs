@@ -1,14 +1,15 @@
 //! Every maud template is written the way `maudfmt` writes it.
 
+use _utils::TempDir;
 use command_extra::CommandExtra;
 use into_sorted::IntoSorted;
 use maudfmt::{FormatOptions, try_fmt_file};
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
-use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{self, Command};
+use std::{env, fs};
 use toml::{Table, Value};
 
 fn git_capture<Args, Arg>(root: &Path, args: Args) -> Vec<u8>
@@ -102,14 +103,44 @@ fn sources(root: &Path) -> Vec<PathBuf> {
         .into_sorted()
 }
 
-/// The 1-based line number where `written` and `formatted` first differ.
-fn first_difference(written: &str, formatted: &str) -> usize {
-    let parting = written
-        .lines()
-        .zip(formatted.lines())
-        .position(|(left, right)| left != right);
-    let shortest = written.lines().count().min(formatted.lines().count());
-    parting.unwrap_or(shortest) + 1
+/// The diff from `written` to `formatted` for `relative`, in the form
+/// `git apply` takes.
+///
+/// `git diff --no-index` prefixes whatever paths it is handed, so the
+/// two copies sit at `a/<relative>` and `b/<relative>` and the
+/// prefixes are emptied, leaving the `a/` and `b/` that `git apply`
+/// strips. It exits 1 when the files differ, which is why it is here.
+fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
+    let mirror = TempDir::new().expect("failed to create a temp dir");
+    let mut sides = Vec::new();
+    for (side, source) in [("a", written), ("b", formatted)] {
+        let side = Path::new(side).join(relative);
+        let path = mirror.path().join(&side);
+        let parent = path.parent().expect("a copy should have a parent");
+        fs::create_dir_all(parent).expect("failed to create a directory for a copy");
+        fs::write(&path, source).expect("failed to write a copy");
+        sides.push(side);
+    }
+    let output = "git"
+        .pipe(Command::new)
+        .with_current_dir(mirror.path())
+        .with_arg("diff")
+        .with_arg("--no-index")
+        .with_arg("--src-prefix=")
+        .with_arg("--dst-prefix=")
+        .with_args(&sides)
+        .output()
+        .expect("failed to invoke `git diff`");
+    assert!(
+        matches!(output.status.code(), Some(0 | 1)),
+        "`git diff` failed ({}): {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr).trim(),
+    );
+    output
+        .stdout
+        .pipe(String::from_utf8)
+        .expect("`git diff` produced non-UTF-8 output")
 }
 
 #[test]
@@ -124,7 +155,8 @@ fn every_maud_template_is_formatted() {
     );
 
     let options = FormatOptions::default();
-    let mut report = Vec::new();
+    let mut offenders = Vec::new();
+    let mut patch = String::new();
     for relative in &paths {
         let written = root
             .join(relative)
@@ -133,16 +165,21 @@ fn every_maud_template_is_formatted() {
         let formatted = try_fmt_file(&written, &options)
             .unwrap_or_else(|error| panic!("{}: {error}", relative.display()));
         if formatted != written {
-            report.push(format!(
-                "{} differs from line {}",
-                relative.display(),
-                first_difference(&written, &formatted),
-            ));
+            offenders.push(relative.display().to_string());
+            patch.push_str(&git_diff(relative, &written, &formatted));
         }
     }
-    assert!(
-        report.is_empty(),
-        "these are not written the way `maudfmt` writes them; run `maudfmt` on each:\n{}",
-        report.join("\n"),
+    if offenders.is_empty() {
+        return;
+    }
+
+    // Named after the process so two runs at once cannot clobber one
+    // another's patch, and so a stale one is replaced rather than kept.
+    let saved = env::temp_dir().join(format!("perfectionist-maudfmt-{}.patch", process::id()));
+    fs::write(&saved, &patch).expect("failed to write the patch");
+    panic!(
+        "these are not written the way `maudfmt` writes them:\n{}\n\n{patch}\nto apply:\n    git apply {}",
+        offenders.join("\n"),
+        saved.display(),
     );
 }
