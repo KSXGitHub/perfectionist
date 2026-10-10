@@ -57,8 +57,8 @@ unicode-width = "0.2.2"
 [dev-dependencies]
 _utils = { path = "utils" }
 command-extra = "1.2.0"
+maudfmt = "0.1.9"
 pipe-trait = "0.4.0"
-proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
 text-block-macros = "0.2.0"
 
 [package.metadata.rust-analyzer]
