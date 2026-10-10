@@ -11,6 +11,7 @@
 
 use pipe_trait::Pipe;
 use quick_xml::Reader;
+use quick_xml::escape::escape;
 use quick_xml::events::Event;
 
 /// One icon: the `id` a `<use>` points at, and the file behind it.
@@ -56,17 +57,22 @@ const ICONS: &[Icon] = &[
 ///
 /// Anything before it — a prolog, a comment, whitespace — is passed
 /// over by recursing on the next event.
+///
+/// The value comes back escaped for the `"`-delimited attribute it is
+/// written into. Reusing the source's own spelling would not do: XML
+/// also allows `'` to delimit an attribute, and the value of one so
+/// written may hold a `"` that would end the attribute early.
 fn view_box(id: &str, reader: &mut Reader<&[u8]>) -> Result<String, String> {
     match reader.read_event() {
         Ok(Event::Start(root)) if root.local_name().as_ref() == b"svg" => root
             .try_get_attribute("viewBox")
             .map_err(|error| format!("{id}: reading the root <svg>: {error}"))?
             .ok_or_else(|| format!("{id}: the root <svg> has no viewBox"))?
-            // The raw value: it goes straight back into an attribute.
-            .value
+            .unescape_value()
+            .map_err(|error| format!("{id}: reading the viewBox: {error}"))?
+            .pipe_deref(escape)
             .into_owned()
-            .pipe(String::from_utf8)
-            .map_err(|error| format!("{id}: the viewBox is not UTF-8: {error}")),
+            .pipe(Ok),
         Ok(Event::Eof) => Err(format!("{id}: no root <svg>")),
         Ok(_) => view_box(id, reader),
         Err(error) => Err(format!("{id}: {error}")),

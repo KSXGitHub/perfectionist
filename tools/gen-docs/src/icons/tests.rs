@@ -100,3 +100,16 @@ fn the_sprite_holds_every_icon() {
     assert!(sprite.starts_with("<svg "), "sprite is not an <svg>");
     assert!(sprite.ends_with("</svg>"), "sprite was left open");
 }
+
+#[test]
+fn a_single_quoted_attribute_cannot_end_the_one_it_is_written_into() {
+    // XML lets `'` delimit an attribute, and the value of one so
+    // written may hold a `"`. Reusing the source's spelling would close
+    // the `viewBox="..."` early and leave the symbol in pieces.
+    let source = r#"<svg viewBox='0 0 16 "16"'><path d="M1 2h3Z"/></svg>"#;
+    let symbol = symbol("icon-demo", source).expect("should rewrite");
+    assert_eq!(
+        symbol,
+        r#"<symbol id="icon-demo" viewBox="0 0 16 &quot;16&quot;"><path d="M1 2h3Z"/></symbol>"#,
+    );
+}
