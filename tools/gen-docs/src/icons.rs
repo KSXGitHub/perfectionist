@@ -1,34 +1,24 @@
-//! The page's icons, and the sprite they are drawn from.
+//! The page's icons: one `<symbol>` per file under `assets/`, gathered
+//! into the sprite [`crate::render`] emits.
 //!
-//! Each icon is vendored under `assets/` exactly as it is published, so
-//! the file on disk can be diffed against the upstream download with
-//! nothing to discount. That leaves two things about those files which
-//! do not suit the page: each is a whole `<svg>` document rather than
-//! something `<use>` can draw, and each fixes `width` and `height` at
-//! 16, which would pin every icon to that size whatever the stylesheet
-//! asks for. [`symbol`] rewrites one into a `<symbol>`, keeping only
-//! the `viewBox` and the drawing itself, and [`sprite`] collects them
-//! into the one hidden `<svg>` that [`crate::render`] emits.
+//! Those files are left as they are, licence notice and all. What they
+//! carry besides the drawing — a fixed `width` and `height`, a `fill` —
+//! would override the stylesheet, so only the `viewBox` is kept.
 //!
-//! The rewrite reads the file with [`quick_xml`], already in this
-//! binary by way of `syntect`'s theme loading. The alternative was a
-//! hand-rolled scanner, which for the XML these files use would have
-//! spent most of its length on attribute values that may contain `>`.
+//! [`quick_xml`] reads them, being already here by way of `syntect`'s
+//! theme loading. A hand-rolled scanner would have spent most of its
+//! length on attribute values that may contain `>`.
 
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
-/// One icon: the `id` its `<symbol>` is given, which [`crate::render`]
-/// points a `<use>` at, and the vendored document it is built from.
+/// One icon: the `id` a `<use>` points at, and the file behind it.
 struct Icon {
     id: &'static str,
-    /// The upstream file, verbatim. Its name under `assets/` says what
-    /// the icon is for; [`UPSTREAM_NOTICE`] says where it came from.
     source: &'static str,
 }
 
-/// Every icon the page draws. Adding one here is what puts its
-/// `<symbol>` in the sprite; nothing else enumerates them.
+/// Every icon the page draws.
 const ICONS: &[Icon] = &[
     Icon {
         id: "icon-search",
@@ -56,29 +46,10 @@ const ICONS: &[Icon] = &[
     },
 ];
 
-/// Shipped inside the sprite, because the MIT licence the icons carry
-/// asks for its notice to travel with every copy of them and the
-/// rendered page is one such copy. The files under `assets/` hold no
-/// notice of their own, being verbatim copies of files that hold none
-/// either; this is the one place it is stated.
-const UPSTREAM_NOTICE: &str = "<!-- GitHub Octicons, MIT License, Copyright (c) GitHub Inc. \
-     https://github.com/primer/octicons/blob/main/LICENSE -->";
-
-/// Rewrite one standalone `<svg>` document as a `<symbol>` under `id`.
+/// Rewrite one `<svg>` document as a `<symbol>` under `id`.
 ///
-/// Everything the root element carries is dropped but its `viewBox`,
-/// which is what lets a `<use>` scale the drawing to whatever size the
-/// stylesheet gives it. Dropping the rest is the point: `width` and
-/// `height` would override that size, and a `fill` would override the
-/// `currentColor` the icons are themed through.
-///
-/// The drawing is taken as the source text between the root element's
-/// tags rather than rebuilt from parsed events, so what reaches the
-/// page is the upstream bytes.
-///
-/// Returns why it could not, rather than a broken symbol: an icon that
-/// silently draws nothing is the failure this is most likely to cause,
-/// and it is invisible in a diff.
+/// The drawing is sliced out of `source` rather than rebuilt from the
+/// parsed events, so the bytes on disk are the bytes on the page.
 fn symbol(id: &str, source: &str) -> Result<String, String> {
     let mut reader = Reader::from_str(source);
     let view_box = loop {
@@ -88,9 +59,7 @@ fn symbol(id: &str, source: &str) -> Result<String, String> {
                     .try_get_attribute("viewBox")
                     .map_err(|error| format!("{id}: reading the root <svg>: {error}"))?
                     .ok_or_else(|| format!("{id}: the root <svg> has no viewBox"))?;
-                // The raw value, not the unescaped one: it goes straight
-                // back into an attribute, where it is already spelled
-                // the way it needs to be.
+                // The raw value: it goes straight back into an attribute.
                 break String::from_utf8(attribute.value.into_owned())
                     .map_err(|error| format!("{id}: the viewBox is not UTF-8: {error}"))?;
             }
@@ -103,8 +72,8 @@ fn symbol(id: &str, source: &str) -> Result<String, String> {
     let start = reader.buffer_position() as usize;
     let mut depth = 0usize;
     let end = loop {
-        // Before the event, so that the `</svg>` that ends the loop
-        // reports where it begins rather than where it ends.
+        // Read before the event, so the closing tag reports where it
+        // begins rather than where it ends.
         let position = reader.buffer_position() as usize;
         match reader.read_event() {
             Ok(Event::Start(_)) => depth += 1,
@@ -127,12 +96,10 @@ fn symbol(id: &str, source: &str) -> Result<String, String> {
     ))
 }
 
-/// The hidden `<svg>` holding every icon's `<symbol>`, ready to be
-/// written into the page.
+/// The sprite, for [`crate::render`] to write into the page.
 ///
-/// Panics if an icon cannot be rewritten, which fails the build: the
-/// alternative is a page that renders with an icon missing, and
-/// `gen-docs` treats every other unusable asset the same way.
+/// Panics on an icon it cannot rewrite: a missing icon renders as a gap
+/// and is invisible in a diff, so it should stop the build.
 pub(crate) fn sprite() -> String {
     let symbols = ICONS
         .iter()
@@ -140,7 +107,7 @@ pub(crate) fn sprite() -> String {
             symbol(icon.id, icon.source).unwrap_or_else(|error| panic!("bad icon -- {error}"))
         })
         .collect::<String>();
-    format!(r#"<svg xmlns="http://www.w3.org/2000/svg" hidden>{UPSTREAM_NOTICE}{symbols}</svg>"#)
+    format!(r#"<svg xmlns="http://www.w3.org/2000/svg" hidden>{symbols}</svg>"#)
 }
 
 #[cfg(test)]

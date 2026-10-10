@@ -218,41 +218,29 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// The icon definitions ([`crate::icons::sprite`]), emitted once at the
-/// foot of `<body>`, after the content and before [`PAGE_SCRIPTS`].
+/// The sprite, at the foot of `<body>` and before [`PAGE_SCRIPTS`].
 ///
-/// Every [`icon`] therefore refers forward to a symbol the parser has
-/// not reached yet, which renders nothing until it does and then
-/// resolves on its own. Nothing on this page observes that window: the
-/// search, filter and theme icons sit on controls emitted `hidden`,
-/// which only their scripts reveal, and those scripts load from below
-/// this point; the rule-heading anchors are the one exception and are
-/// transparent until their heading is hovered.
+/// Every [`icon`] above it therefore points at a symbol the parser has
+/// not reached, drawing nothing until it does. Nothing here sees that
+/// window: the controls carrying icons stay `hidden` until scripts
+/// below this point reveal them, and the rule anchors are transparent
+/// until hovered.
 ///
-/// The sprite carries the HTML `hidden` attribute, which base.css makes
-/// unconditional with `[hidden] { display: none !important }`. A
-/// `<symbol>` is not rendered where it is defined in any case; `hidden`
-/// also keeps the element from occupying a line box of its own. Note
-/// that this works *because* the icons are `<symbol>`s: `<use>` cannot
-/// instantiate a `display: none` target, so a sprite of plain `<svg>`
-/// elements hidden the same way would draw nothing at all.
+/// Hiding the sprite works only because the icons are `<symbol>`s —
+/// `<use>` cannot instantiate a `display: none` target.
 fn icon_sprite() -> Markup {
     PreEscaped(crate::icons::sprite())
 }
 
-/// One icon, drawn by referring to the [`ICON_SPRITE`] symbol named by
-/// `id`. `class` is what the stylesheets size and colour it through.
+/// One icon, as a `<use>` of the sprite symbol named by `id`, under
+/// `class` for the stylesheets to size and colour.
 ///
-/// The reference is spelled twice. SVG 2's plain `href` is what every
-/// current engine reads, but Safari did not accept it until 12.1 (iOS
-/// 12.2); SVG 1.1's `xlink:href` is deprecated and read by everything
-/// ever shipped. An engine that understands both prefers `href`. The
-/// XLink namespace needs no `xmlns:xlink` declaration here, because the
-/// HTML parser assigns it to that attribute itself.
+/// The reference is spelled twice: Safari did not read SVG 2's plain
+/// `href` until 12.1 (iOS 12.2), and SVG 1.1's `xlink:href` is
+/// deprecated but universal. No `xmlns:xlink` is needed, the HTML
+/// parser assigning that namespace itself.
 ///
-/// Always `aria-hidden`: every icon in this page sits inside a control
-/// that carries its own `aria-label`, so exposing the graphic as well
-/// would name it twice.
+/// `aria-hidden`, because the control around it carries the name.
 fn icon(id: &str, class: &str) -> Markup {
     let href = format!("#{id}");
     html! {

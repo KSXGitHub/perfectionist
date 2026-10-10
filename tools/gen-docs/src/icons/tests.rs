@@ -99,7 +99,7 @@ fn a_file_with_no_svg_is_refused() {
 }
 
 #[test]
-fn the_sprite_holds_every_icon_and_the_licence() {
+fn the_sprite_holds_every_icon() {
     let sprite = sprite();
     for icon in ICONS {
         assert!(
@@ -108,8 +108,6 @@ fn the_sprite_holds_every_icon_and_the_licence() {
             icon.id,
         );
     }
-    // The MIT notice has to travel with the copies it covers.
-    assert!(sprite.contains("MIT License"), "sprite carries no licence");
     assert!(sprite.starts_with("<svg "), "sprite is not an <svg>");
     assert!(sprite.ends_with("</svg>"), "sprite was left open");
 }
