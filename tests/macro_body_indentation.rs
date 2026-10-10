@@ -109,11 +109,12 @@ fn sources(root: &Path) -> Vec<PathBuf> {
 fn is_invocation(trees: &[TokenTree], index: usize) -> bool {
     let bang = index.checked_sub(1).and_then(|at| trees.get(at));
     let name = index.checked_sub(2).and_then(|at| trees.get(at));
-    let banged = matches!(
-        bang,
-        Some(TokenTree::Punct(punct))
-            if punct.as_char() == '!' && punct.spacing() == Spacing::Alone
-    );
+    let banged = match bang {
+        Some(TokenTree::Punct(punct)) => {
+            punct.as_char() == '!' && punct.spacing() == Spacing::Alone
+        }
+        _ => false,
+    };
     banged && matches!(name, Some(TokenTree::Ident(_)))
 }
 
@@ -374,7 +375,7 @@ fn every_misaligned_block_is_reported_in_source_order() {
         [
             "line 3 opens at column 8, but line 5 closes it at column 6",
             "line 6 opens at column 8, but line 8 closes it at column 10",
-        ]
+        ],
     );
 }
 
