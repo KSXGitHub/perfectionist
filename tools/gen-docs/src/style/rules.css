@@ -146,12 +146,9 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
-/* The summary's own marker, rather than a `::before` standing in for
-   one. An engine that cannot open and close a `details` gives its
-   summary no marker box at all, so the mark goes where the toggling
-   goes, instead of claiming a section is shut that is in fact open.
-   One that has `details` but not `content` on `::marker` keeps its
-   native mark, which says the same thing in its own glyph. */
+/* Narrower support than `::before`, deliberately: an engine ignoring
+   `content` here keeps its native mark, and one without `details` has
+   no marker box, where `::before` would mark an open section shut. */
 details.config-details > summary::marker {
   content: "▸ ";
 }
