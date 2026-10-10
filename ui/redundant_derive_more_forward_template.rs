@@ -19,7 +19,7 @@ use derive_more::{Display, Display as Renamed};
 #[display("{_0}")]
 struct SanitizedHtml(String);
 
-// Bad: the named-field spelling of the same thing.
+// Bad: a named field restating the forward.
 #[derive(Display)]
 #[display("{message}")]
 struct Warning {
@@ -39,7 +39,8 @@ struct UninlinedPositional(String);
 #[display("{}", self.0)]
 struct SelfIndexed(String);
 
-// Good: the same, spelled with a named field.
+// Good: a named field reached through `self` is an expression rather
+// than a bare field name, so deleting it would rewrite the body.
 #[derive(Display)]
 #[display("{}", self.message)]
 struct SelfNamed {
@@ -68,12 +69,12 @@ struct EmptySpec(String);
 #[display("{_0}")]
 struct QualifiedDerive(String);
 
-// Bad: the same shape under a non-`Display` formatting trait.
+// Bad: a tuple newtype restating the forward under `LowerHex`.
 #[derive(derive_more::LowerHex)]
 #[lower_hex("{_0:x}")]
 struct Mask(u32);
 
-// Bad: and under another one.
+// Bad: a tuple newtype restating the forward under `Binary`.
 #[derive(derive_more::Binary)]
 #[binary("{_0:b}")]
 struct Flags(u8);
@@ -215,7 +216,7 @@ struct UnitStruct;
 #[display("<{_0}>")]
 struct Angled(String);
 
-// Good: an escaped brace is literal text too.
+// Good: an escaped brace is literal text, not a field reference.
 #[derive(Display)]
 #[display("{{{_0}}}")]
 struct Braced(String);
@@ -281,8 +282,9 @@ mod inline_module {
 // declined subject is the disabled variant inside it.
 #[derive(Display)]
 enum DisabledVariant {
-    // Good: a gated variant is declined for the same reason, and the
-    // enclosing enum is live, so a finding would anchor at it.
+    // Good: a `cfg` that never holds leaves the variant unbuilt, so
+    // there is nothing in it to find, and the enclosing enum is live, so
+    // a finding would anchor at it.
     #[cfg(any())]
     #[display("{_0}")]
     Gone(String),
@@ -319,7 +321,8 @@ struct Bounded<Inner>(Inner);
 #[display(bound(Inner: Display))]
 struct BoundBesideTemplate<Inner>(Inner);
 
-// Good: `where(...)` is the same attribute under another spelling.
+// Good: `where(...)` is `bound(...)` under another spelling, so
+// deleting the template here would drop its predicate.
 #[derive(Display)]
 #[display("{_0}")]
 #[display(where(Inner: Display))]
@@ -339,7 +342,7 @@ enum VariantBound<Inner> {
 #[display(fmt = "{}", _0)]
 struct LegacyShape(String);
 
-// Bad: a container declared inside a function body is reached too.
+// Bad: a container declared inside a function body is reached.
 fn local_container() {
     #[derive(Display)]
     #[display("{_0}")]

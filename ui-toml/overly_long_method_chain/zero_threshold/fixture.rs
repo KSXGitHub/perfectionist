@@ -50,7 +50,7 @@ fn closure_chain(rows: &[Vec<u32>]) -> usize {
     rows.iter().map(|row| row.len()).count()
 }
 
-// Bad: 2 calls and 1 call — an argument's chain is its own too.
+// Bad: 2 calls and 1 call — an argument's chain is its own.
 fn argument_chain(items: &[u32], other: &[u32]) -> bool {
     items.iter().eq(other.iter())
 }

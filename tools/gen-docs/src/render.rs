@@ -420,38 +420,38 @@ fn search_templates() -> Markup {
                     role="dialog"
                     aria-modal="true"
                     aria-label="Search lints" {
-                    div.search-box {
-                        (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
+                        div.search-box {
+                            (search_text_input("search-input", "Search lints\u{2026}", "Search lints"))
+                        }
+                        // Hidden until there is something to list: an
+                        // empty `<ul>` still claims the dialog's whole
+                        // remaining height, which would push either message
+                        // below it.
+                        ul.search-results aria-label="Search results" hidden {}
+                        // What the reader sees instead, one at a time. Both
+                        // are rendered here rather than written by the script
+                        // so the wording lives with the rest of the page's
+                        // text. `role="status"` asks assistive tech to read
+                        // whichever is revealed; support for that on an
+                        // un-hidden region varies, so it is a courtesy, not
+                        // the only way to learn the result.
+                        p.search-empty.search-empty-prompt role="status" {
+                            "Type to search lint names and documentation."
+                        }
+                        p.search-empty.search-empty-no-match role="status" hidden {
+                            "No lint matches that search."
+                        }
+                        // Last, so it sits in the results' corner rather than
+                        // in the search box, and so Tab reaches it after the
+                        // results rather than before them.
+                        button.search-close type="button" {
+                            // The ✕ is decoration beside the word; hiding it
+                            // from assistive tech keeps the button's
+                            // accessible name the word alone.
+                            span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                            "Close"
+                        }
                     }
-                    // Hidden until there is something to list: an
-                    // empty `<ul>` still claims the dialog's whole
-                    // remaining height, which would push either message
-                    // below it.
-                    ul.search-results aria-label="Search results" hidden {}
-                    // What the reader sees instead, one at a time. Both
-                    // are rendered here rather than written by the script
-                    // so the wording lives with the rest of the page's
-                    // text. `role="status"` asks assistive tech to read
-                    // whichever is revealed; support for that on an
-                    // un-hidden region varies, so it is a courtesy, not
-                    // the only way to learn the result.
-                    p.search-empty.search-empty-prompt role="status" {
-                        "Type to search lint names and documentation."
-                    }
-                    p.search-empty.search-empty-no-match role="status" hidden {
-                        "No lint matches that search."
-                    }
-                    // Last, so it sits in the results' corner rather than
-                    // in the search box, and so Tab reaches it after the
-                    // results rather than before them.
-                    button.search-close type="button" {
-                        // The ✕ is decoration beside the word; hiding it
-                        // from assistive tech keeps the button's
-                        // accessible name the word alone.
-                        span.search-close-glyph aria-hidden="true" { "\u{2715}" }
-                        "Close"
-                    }
-                }
             }
         }
         template id=(SEARCH_RESULT_TEMPLATE_ID) {

@@ -56,7 +56,7 @@ struct SecondHalf {
     field_6: u32,
 }
 
-// Bad: 11 fields — a tuple struct is measured too.
+// Bad: 11 fields — a tuple struct is measured.
 struct Tuple(u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
 
 // Not flagged: an enum's variants are not measured.

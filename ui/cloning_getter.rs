@@ -119,7 +119,8 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: `into_*` likewise announces that it costs something.
+    // Good: `into_*` announces a costly conversion, so the copy is
+    // what the name already promises.
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }
@@ -217,7 +218,8 @@ impl Holder {
         self.handle.clone()
     }
 
-    // Good: an `Rc` for the same reason.
+    // Good: an `Rc` clone bumps a refcount rather than copying what it
+    // points at, and a caller that keeps the handle needs to own one.
     fn counted(&self) -> Rc<Config> {
         self.counted.clone()
     }

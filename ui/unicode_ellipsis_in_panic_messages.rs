@@ -48,7 +48,7 @@ fn _quiet() {
     eprintln!("log line with …");
     let _ = format!("formatted message with …");
     // The synthetic message inserted by bare `assert!(cond)` has no
-    // U+2026, so it doesn't fire here either.
+    // U+2026, so it doesn't fire here.
     assert!(true);
     // Literal expressed via escape — source has `\u{2026}`, not the
     // raw codepoint — is not flagged.
