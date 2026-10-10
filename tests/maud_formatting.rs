@@ -59,8 +59,6 @@ fn sources(root: &Path) -> Vec<PathBuf> {
         .filter(|listed| !UNSCANNED.iter().any(|skipped| listed.starts_with(skipped)))
         .map(Path::to_path_buf)
         .collect();
-    // `--cached` and `--others` each list in order, but one runs after
-    // the other.
     found.sort();
     found
 }
