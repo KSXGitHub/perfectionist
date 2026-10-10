@@ -103,18 +103,17 @@ fn sources(root: &Path) -> Vec<PathBuf> {
         .into_sorted()
 }
 
-/// The diff from `written` to `formatted` for `relative`, in the form
-/// `git apply` takes.
-fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
+/// The diff from how each file is written to how `maudfmt` writes it,
+/// in the form `git apply` takes.
+fn git_diff(offenders: &[(PathBuf, String, String)]) -> String {
     let mirror = TempDir::new().expect("failed to create a temp dir");
-    let mut sides = Vec::new();
-    for (side, source) in [("a", written), ("b", formatted)] {
-        let side = Path::new(side).join(relative);
-        let path = mirror.path().join(&side);
-        let parent = path.parent().expect("a copy should have a parent");
-        fs::create_dir_all(parent).expect("failed to create a directory for a copy");
-        fs::write(&path, source).expect("failed to write a copy");
-        sides.push(side);
+    for (relative, written, formatted) in offenders {
+        for (side, source) in [("a", written), ("b", formatted)] {
+            let path = mirror.path().join(side).join(relative);
+            let parent = path.parent().expect("a copy should have a parent");
+            fs::create_dir_all(parent).expect("failed to create a directory for a copy");
+            fs::write(&path, source).expect("failed to write a copy");
+        }
     }
     let output = "git"
         .pipe(Command::new)
@@ -123,7 +122,8 @@ fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
         .with_arg("--no-index")
         .with_arg("--src-prefix=")
         .with_arg("--dst-prefix=")
-        .with_args(&sides)
+        .with_arg("a")
+        .with_arg("b")
         .output()
         .expect("failed to invoke `git diff`");
     assert!(
@@ -139,10 +139,17 @@ fn git_diff(relative: &Path, written: &str, formatted: &str) -> String {
 }
 
 #[test]
-fn a_patch_names_the_file_the_way_git_apply_reads_it() {
-    let patch = git_diff(Path::new("src/lib.rs"), "one\n", "two\n");
-    assert!(patch.contains("--- a/src/lib.rs\n"), "{patch}");
-    assert!(patch.contains("+++ b/src/lib.rs\n"), "{patch}");
+fn one_patch_names_every_file_the_way_git_apply_reads_it() {
+    let names = ["src/lib.rs", "tools/gen-docs/src/main.rs"];
+    let offenders: Vec<(PathBuf, String, String)> = names
+        .iter()
+        .map(|name| (PathBuf::from(name), "one\n".to_owned(), "two\n".to_owned()))
+        .collect();
+    let patch = git_diff(&offenders);
+    for name in names {
+        assert!(patch.contains(&format!("--- a/{name}\n")), "{patch}");
+        assert!(patch.contains(&format!("+++ b/{name}\n")), "{patch}");
+    }
 }
 
 #[test]
@@ -158,7 +165,6 @@ fn every_maud_template_is_formatted() {
 
     let options = FormatOptions::default();
     let mut offenders = Vec::new();
-    let mut patch = String::new();
     for relative in &paths {
         let written = root
             .join(relative)
@@ -167,13 +173,13 @@ fn every_maud_template_is_formatted() {
         let formatted = try_fmt_file(&written, &options)
             .unwrap_or_else(|error| panic!("{}: {error}", relative.display()));
         if formatted != written {
-            offenders.push(relative.display().to_string());
-            patch.push_str(&git_diff(relative, &written, &formatted));
+            offenders.push((relative.clone(), written, formatted));
         }
     }
     if offenders.is_empty() {
         return;
     }
+    let patch = git_diff(&offenders);
 
     // Named after the process so two runs at once cannot clobber one
     // another's patch, and so a stale one is replaced rather than kept.
@@ -181,7 +187,11 @@ fn every_maud_template_is_formatted() {
     fs::write(&saved, &patch).expect("failed to write the patch");
     panic!(
         "these are not written the way `maudfmt` writes them:\n{}\n\n{patch}\nto apply:\n    git apply {}",
-        offenders.join("\n"),
+        offenders
+            .iter()
+            .map(|(relative, ..)| relative.display().to_string())
+            .collect::<Vec<_>>()
+            .join("\n"),
         saved.display(),
     );
 }
