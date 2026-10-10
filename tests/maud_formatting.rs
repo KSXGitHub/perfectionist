@@ -1,7 +1,4 @@
 //! Every maud template is written the way `maudfmt` writes it.
-//!
-//! rustfmt does not enter a `{`-delimited macro invocation, so a
-//! `maud::html!` body is beyond what `just fmt` settles.
 
 use command_extra::CommandExtra;
 use into_sorted::IntoSorted;
