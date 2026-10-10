@@ -192,17 +192,17 @@ fn every_maud_template_is_formatted() {
     if mismatches.is_empty() {
         return;
     }
-    let patch = formatting_patch(&mismatches);
+    let patch_content = formatting_patch(&mismatches);
 
-    let saved = env::temp_dir().join(format!("perfectionist-maudfmt-{}.patch", process::id()));
-    fs::write(&saved, &patch).expect("failed to write the patch");
+    let patch_file = env::temp_dir().join(format!("perfectionist-maudfmt-{}.patch", process::id()));
+    fs::write(&patch_file, &patch_content).expect("failed to write the patch");
     panic!(
-        "these are not written the way `maudfmt` writes them:\n{}\n\n{patch}\nto apply:\n    git apply {}",
+        "these are not written the way `maudfmt` writes them:\n{}\n\n{patch_content}\nto apply:\n    git apply {}",
         mismatches
             .iter()
             .map(|mismatch| mismatch.relative.display().to_string())
             .collect::<Vec<_>>()
             .join("\n"),
-        saved.display(),
+        patch_file.display(),
     );
 }
