@@ -12,6 +12,8 @@
 //! would be caught too, and the walk covers the whole repository rather
 //! than the one crate that happens to use maud.
 
+use core::str::FromStr;
+use proc_macro2::{Delimiter, LexError, TokenStream, TokenTree};
 use std::fs;
 use std::path::{Path, PathBuf};
 use text_block_macros::text_block;
@@ -32,8 +34,13 @@ const UNSCANNED: &[&str] = &[
     ".git",
 ];
 
-/// Where a block opened: its line number, and the indent to close at.
-type Opened = (usize, usize);
+/// Where a block's braces sit: the line the `{` is on, and the line and
+/// column of the `}` closing it.
+struct Braces {
+    opened_on: usize,
+    closed_on: usize,
+    closed_at: usize,
+}
 
 /// Collect every `.rs` file under `dir` that is not [`UNSCANNED`].
 fn sources(root: &Path, dir: &Path, found: &mut Vec<PathBuf>) {
@@ -55,38 +62,58 @@ fn sources(root: &Path, dir: &Path, found: &mut Vec<PathBuf>) {
     }
 }
 
-/// Pair each block-opening `{` with the `}` that closes it, and report
-/// the pairs whose indents disagree.
-///
-/// Only a line *ending* in `{` opens, and only a `}` *leading* a line
-/// closes, which is what keeps a brace pair written on one line out of
-/// it. A line doing both — `} else {` — is read in that order.
-fn misaligned(source: &str) -> Vec<String> {
-    let mut open: Vec<Opened> = Vec::new();
-    let mut found = Vec::new();
-    for (index, line) in source.lines().enumerate() {
-        let trimmed = line.trim_start();
-        if trimmed.is_empty() || trimmed.starts_with("//") {
-            continue;
-        }
-        let indent = line.len() - trimmed.len();
-        let closers = trimmed.len() - trimmed.trim_start_matches('}').len();
-        for _ in 0..closers {
-            if let Some((opened_on, opened_at)) = open.pop()
-                && opened_at != indent
-            {
-                found.push(format!(
-                    "line {opened_on} opens at column {opened_at}, \
-                     but line {} closes it at column {indent}",
-                    index + 1,
-                ));
+/// Collect the braces of every `{ ... }` group in `stream`, the groups
+/// nested inside one another included.
+fn braces(stream: TokenStream, found: &mut Vec<Braces>) {
+    for tree in stream {
+        if let TokenTree::Group(group) = tree {
+            if group.delimiter() == Delimiter::Brace {
+                let open = group.span_open().start();
+                let close = group.span_close().start();
+                found.push(Braces {
+                    opened_on: open.line,
+                    closed_on: close.line,
+                    closed_at: close.column,
+                });
             }
-        }
-        if trimmed.ends_with('{') {
-            open.push((index + 1, indent));
+            braces(group.stream(), found);
         }
     }
-    found
+}
+
+/// Report every block whose `}` sits at a different column from the
+/// indent of the line its `{` is on.
+///
+/// The pairing comes from a parse of `source` rather than from matching
+/// braces in its text, so a brace inside a string literal, a character
+/// literal or a comment is not a block, and a `{` carrying a trailing
+/// comment still pairs with the `}` that closes it. A block written
+/// wholly on one line has no indent to disagree with, so it is left
+/// alone.
+fn misaligned(source: &str) -> Result<Vec<String>, LexError> {
+    let mut found = Vec::new();
+    braces(TokenStream::from_str(source)?, &mut found);
+    let lines: Vec<&str> = source.lines().collect();
+    let mut report = Vec::new();
+    for block in found {
+        if block.opened_on == block.closed_on {
+            continue;
+        }
+        let opening = lines[block.opened_on - 1];
+        let indent = opening.chars().count() - opening.trim_start().chars().count();
+        if indent != block.closed_at {
+            report.push(format!(
+                "line {} opens at column {indent}, but line {} closes it at column {}",
+                block.opened_on, block.closed_on, block.closed_at,
+            ));
+        }
+    }
+    Ok(report)
+}
+
+/// Run [`misaligned`] over a fixture that is expected to tokenise.
+fn complaints(source: &str) -> Vec<String> {
+    misaligned(source).expect("a fixture should tokenise")
 }
 
 #[test]
@@ -105,9 +132,10 @@ fn every_block_closes_where_it_opened() {
     let mut report = Vec::new();
     for path in &paths {
         let source = fs::read_to_string(path).expect("a listed source should be readable");
-        let shown = path.strip_prefix(root).unwrap_or(path);
-        for complaint in misaligned(&source) {
-            report.push(format!("{}: {complaint}", shown.display()));
+        let shown = path.strip_prefix(root).unwrap_or(path).display();
+        match misaligned(&source) {
+            Ok(found) => report.extend(found.iter().map(|entry| format!("{shown}: {entry}"))),
+            Err(error) => report.push(format!("{shown}: does not tokenise: {error}")),
         }
     }
     assert!(report.is_empty(), "{}", report.join("\n"));
@@ -124,7 +152,7 @@ fn a_block_closing_where_it_opened_passes() {
         "    }"
         "}"
     };
-    assert!(misaligned(source).is_empty());
+    assert!(complaints(source).is_empty());
 }
 
 #[test]
@@ -137,10 +165,42 @@ fn a_block_closing_short_of_its_opening_is_reported() {
         r#"        "text""#
         "    }"
     };
-    let report = misaligned(source);
-    assert_eq!(report.len(), 1, "{report:?}");
-    assert!(report[0].contains("line 2"), "{report:?}");
-    assert!(report[0].contains("line 4"), "{report:?}");
+    assert_eq!(
+        complaints(source),
+        ["line 2 opens at column 8, but line 4 closes it at column 4",]
+    );
+}
+
+#[test]
+fn a_block_closing_past_its_opening_is_reported() {
+    // The opposite slip from the one that motivated the check: the `}`
+    // lands deeper than the line its `{` is on, not short of it.
+    let source = text_block! {
+        "p {"
+        r#"    "text""#
+        "    }"
+    };
+    assert_eq!(
+        complaints(source),
+        ["line 1 opens at column 0, but line 3 closes it at column 4",]
+    );
+}
+
+#[test]
+fn a_misaligned_block_inside_another_is_reported_on_its_own() {
+    // Only the inner block disagrees, and the pairing is per block, so
+    // the outer one is not blamed for it.
+    let source = text_block! {
+        "div {"
+        "    p {"
+        r#"        "text""#
+        "  }"
+        "}"
+    };
+    assert_eq!(
+        complaints(source),
+        ["line 2 opens at column 4, but line 4 closes it at column 2",]
+    );
 }
 
 #[test]
@@ -152,19 +212,37 @@ fn a_line_that_closes_then_opens_is_read_in_that_order() {
         "    b"
         "}"
     };
-    assert!(misaligned(source).is_empty());
+    assert!(complaints(source).is_empty());
 }
 
 #[test]
 fn a_pair_written_on_one_line_is_left_alone() {
     // `dt { code { "key" } }` opens and closes within the line, so it
-    // is neither pushed nor popped.
+    // has no indent of its own to disagree with.
     let source = text_block! {
         "dl {"
         r#"    dt { code { "key" } }"#
         "}"
     };
-    assert!(misaligned(source).is_empty());
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn closers_sharing_a_line_are_judged_at_their_own_columns() {
+    // Line 4 carries two `}`, four columns apart. The inner block
+    // closes where it opened; the outer one closes at column 5, which
+    // is what it is reported as -- a text scan has only the one indent
+    // the line starts at to compare either against.
+    let source = text_block! {
+        "div {"
+        "    p {"
+        r#"        "text""#
+        "    }}"
+    };
+    assert_eq!(
+        complaints(source),
+        ["line 1 opens at column 0, but line 4 closes it at column 5",]
+    );
 }
 
 #[test]
@@ -175,5 +253,108 @@ fn a_commented_brace_is_not_a_block() {
         r#"    "text""#
         "}"
     };
-    assert!(misaligned(source).is_empty());
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_brace_in_a_block_comment_is_not_a_block() {
+    let source = text_block! {
+        "fn f() {"
+        "    /* a trailing brace in prose {"
+        "     */"
+        "    let a = 1;"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_brace_in_a_string_literal_is_not_a_block() {
+    // The literal spans lines and holds a block whose own braces
+    // disagree. It is text, so none of it is a block.
+    let source = text_block! {
+        "fn f() {"
+        r#"    let template = "p {"#
+        r#"}";"#
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_brace_in_a_raw_string_is_not_a_block() {
+    let source = text_block! {
+        "fn f() {"
+        r#"    let template = r""#
+        r#"        p {"#
+        "    }"
+        r#"";"#
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_brace_in_a_character_literal_is_not_a_block() {
+    // `'a` is a lifetime rather than a literal opening at the `'`, and
+    // telling the two apart is what keeps the `{` ending line 1 in
+    // code. Read as a literal instead, it would swallow that `{` and
+    // the misaligned `}` would go unreported.
+    let source = text_block! {
+        "fn f<'a>(x: &'a str) {"
+        "    let open = '{';"
+        "    let close = '}';"
+        "    let _ = (open, close, x);"
+        "        }"
+    };
+    assert_eq!(
+        complaints(source),
+        ["line 1 opens at column 0, but line 5 closes it at column 8",]
+    );
+}
+
+#[test]
+fn an_open_brace_with_a_trailing_comment_still_pairs() {
+    // The `{` is not the last character on its line, so a text scan
+    // never records the block and blames an enclosing one for the `}`
+    // that closes it.
+    let source = text_block! {
+        "fn f() {"
+        "    if x { // note"
+        "        a"
+        "    }"
+        "}"
+    };
+    assert!(complaints(source).is_empty());
+}
+
+#[test]
+fn a_source_that_does_not_tokenise_is_reported() {
+    let source = text_block! {
+        "fn f() {"
+        r#"    let unterminated = "text;"#
+        "}"
+    };
+    assert!(misaligned(source).is_err());
+}
+
+#[test]
+fn every_misaligned_block_is_reported_in_source_order() {
+    let source = text_block! {
+        "div {"
+        "    p {"
+        r#"        "first""#
+        "  }"
+        "    p {"
+        r#"        "second""#
+        "      }"
+        "}"
+    };
+    assert_eq!(
+        complaints(source),
+        [
+            "line 2 opens at column 4, but line 4 closes it at column 2",
+            "line 5 opens at column 4, but line 7 closes it at column 6",
+        ]
+    );
 }
