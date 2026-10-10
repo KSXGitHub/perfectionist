@@ -33,6 +33,8 @@ mod fonts;
 mod model;
 mod render;
 mod render_md;
+#[cfg(test)]
+mod template_format;
 mod test_page;
 
 use crate::check_md::{CheckOutcome, check_rules_dir, write_rules_dir};
