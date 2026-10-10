@@ -196,7 +196,7 @@ fn a_block_closing_short_of_its_opening_is_reported() {
     };
     assert_eq!(
         complaints(source),
-        ["line 2 opens at column 8, but line 4 closes it at column 4",]
+        ["line 2 opens at column 8, but line 4 closes it at column 4"],
     );
 }
 
@@ -211,7 +211,7 @@ fn a_block_closing_past_its_opening_is_reported() {
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 3 closes it at column 4",]
+        ["line 1 opens at column 0, but line 3 closes it at column 4"],
     );
 }
 
@@ -228,7 +228,7 @@ fn a_misaligned_block_inside_another_is_reported_on_its_own() {
     };
     assert_eq!(
         complaints(source),
-        ["line 2 opens at column 4, but line 4 closes it at column 2",]
+        ["line 2 opens at column 4, but line 4 closes it at column 2"],
     );
 }
 
@@ -270,7 +270,7 @@ fn closers_sharing_a_line_are_judged_at_their_own_columns() {
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 4 closes it at column 5",]
+        ["line 1 opens at column 0, but line 4 closes it at column 5"],
     );
 }
 
@@ -338,7 +338,7 @@ fn a_brace_in_a_character_literal_is_not_a_block() {
     };
     assert_eq!(
         complaints(source),
-        ["line 1 opens at column 0, but line 5 closes it at column 8",]
+        ["line 1 opens at column 0, but line 5 closes it at column 8"],
     );
 }
 
@@ -384,7 +384,7 @@ fn every_misaligned_block_is_reported_in_source_order() {
         [
             "line 2 opens at column 4, but line 4 closes it at column 2",
             "line 5 opens at column 4, but line 7 closes it at column 6",
-        ]
+        ],
     );
 }
 
@@ -413,6 +413,6 @@ fn the_listing_holds_the_repository_s_own_rust_files_only() {
     // unjudged by choice; `notes.txt` is not Rust.
     assert_eq!(
         sources(root),
-        [root.join("tracked.rs"), root.join("untracked.rs"),]
+        [root.join("tracked.rs"), root.join("untracked.rs")],
     );
 }
