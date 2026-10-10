@@ -9,6 +9,7 @@
 //! theme loading. A hand-rolled scanner would have spent most of its
 //! length on attribute values that may contain `>`.
 
+use pipe_trait::Pipe;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
@@ -60,7 +61,10 @@ fn symbol(id: &str, source: &str) -> Result<String, String> {
                     .map_err(|error| format!("{id}: reading the root <svg>: {error}"))?
                     .ok_or_else(|| format!("{id}: the root <svg> has no viewBox"))?;
                 // The raw value: it goes straight back into an attribute.
-                break String::from_utf8(attribute.value.into_owned())
+                break attribute
+                    .value
+                    .into_owned()
+                    .pipe(String::from_utf8)
                     .map_err(|error| format!("{id}: the viewBox is not UTF-8: {error}"))?;
             }
             Ok(Event::Eof) => return Err(format!("{id}: no root <svg>")),
