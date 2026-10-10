@@ -4,6 +4,7 @@
 //! `maud::html!` body is beyond what `just fmt` settles.
 
 use command_extra::CommandExtra;
+use into_sorted::IntoSorted;
 use maudfmt::{FormatOptions, try_fmt_file};
 use pipe_trait::Pipe;
 use std::ffi::OsStr;
@@ -52,15 +53,14 @@ fn sources(root: &Path) -> Vec<PathBuf> {
     )
     .pipe(String::from_utf8)
     .expect("`git ls-files` produced non-UTF-8 output");
-    let mut found: Vec<PathBuf> = listing
+    listing
         .split('\0')
         .filter(|listed| !listed.is_empty())
         .map(Path::new)
         .filter(|listed| !UNSCANNED.iter().any(|skipped| listed.starts_with(skipped)))
         .map(Path::to_path_buf)
-        .collect();
-    found.sort();
-    found
+        .collect::<Vec<_>>()
+        .into_sorted()
 }
 
 /// The 1-based line number where `written` and `formatted` first differ.
