@@ -106,7 +106,7 @@ fn flagged_char_message(character: char, context_label: &str) -> String {
 /// for U+2026 (always maps cleanly to `...`), `MaybeIncorrect` for any
 /// user-configured `extra_flagged_chars` entry.
 fn flagged_char_applicability(character: char) -> Applicability {
-    if character == '\u{2026}' {
+    if character == '…' {
         Applicability::MachineApplicable
     } else {
         Applicability::MaybeIncorrect
