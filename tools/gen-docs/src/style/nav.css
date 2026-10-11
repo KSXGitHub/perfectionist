@@ -112,7 +112,6 @@
   padding: 0;
 }
 
-/* Smaller than `.nav-toggle::before`, which sits alone in a corner. */
 .nav-sidebar-close::before {
   content: "";
   width: 1rem;
