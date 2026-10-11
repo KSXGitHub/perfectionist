@@ -448,11 +448,9 @@ fn search_templates() -> Markup {
                     // in the search box, and so Tab reaches it after the
                     // results rather than before them.
                     button.search-close type="button" {
-                        // The cross is decoration beside the word;
-                        // hiding it from assistive tech keeps the
-                        // button's accessible name the word alone. It
-                        // is drawn by search.css, which masks
-                        // `close.svg` over this otherwise empty span.
+                        // Decoration beside the word, so the
+                        // button's accessible name stays the word
+                        // alone.
                         span.search-close-icon aria-hidden="true" {}
                         "Close"
                     }
