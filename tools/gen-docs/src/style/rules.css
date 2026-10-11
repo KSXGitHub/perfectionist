@@ -138,11 +138,8 @@ article.rule h2 .rule-jump-icon::before {
   mask: url("rule-jump.svg") no-repeat center / contain;
 }
 
-/* Unmasked, the colour would fill these boxes, so it is only given
-   where a mask can clip it, and the `↑` is only dropped where the icon
-   can stand in for it. An engine without `details` leaves its section
-   open, where a disclosure mark would misreport the state, so that one
-   just goes. */
+/* The fill needs a mask to clip it, and the `↑` needs the icon to
+   stand in for it. */
 @supports (mask-image: none) or (-webkit-mask-image: none) {
   article.rule h2 .rule-jump-icon {
     -webkit-text-fill-color: transparent;
