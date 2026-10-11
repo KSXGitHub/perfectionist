@@ -185,38 +185,16 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-/// `id` of the magnifier symbol, on the button that opens the search
-/// overlay.
+// Each names a symbol `crate::icons` builds. One that matches none of
+// them leaves a `<use>` pointing at nothing, which draws a gap.
 const SEARCH_ICON_ID: &str = "icon-search";
-
-/// `id` of the funnel symbol, on both filter toggles.
 const FILTER_ICON_ID: &str = "icon-filter";
-
-/// `id` of the chain-link symbol, on each rule heading's permalink.
 const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
-
-/// `id` of the up-arrow symbol, on each rule heading's link back to
-/// the catalogue.
 const RULE_JUMP_ICON_ID: &str = "icon-rule-jump";
-
-/// `id` of the three-bars symbol, on the button that opens the
-/// navigation drawer.
 const NAV_MENU_ICON_ID: &str = "icon-nav-menu";
-
-/// `id` of the gear symbol, on the button that opens the settings
-/// panel.
 const SETTINGS_ICON_ID: &str = "icon-settings";
-
-/// `id` of the cross symbol, on the buttons that close the navigation
-/// drawer and the search overlay.
 const CLOSE_ICON_ID: &str = "icon-close";
-
-/// `id` of the right-pointing triangle, marking a closed
-/// `Configuration` disclosure.
 pub(super) const DISCLOSURE_CLOSED_ICON_ID: &str = "icon-disclosure-closed";
-
-/// `id` of the down-pointing triangle, marking an open `Configuration`
-/// disclosure.
 pub(super) const DISCLOSURE_OPEN_ICON_ID: &str = "icon-disclosure-open";
 
 /// `id` of the search overlay itself, shared by the overlay markup in
@@ -242,27 +220,22 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// The sprite, at the foot of `<body>` and before [`PAGE_SCRIPTS`].
+/// Every [`icon`]'s symbol, hidden — which works only because they
+/// are `<symbol>`s, since `<use>` cannot instantiate a
+/// `display: none` target.
 ///
-/// Every [`icon`] above it therefore points at a symbol the parser has
-/// not reached, and draws nothing until it does. Each one is sized by
-/// the stylesheet rather than by what it draws, so the wait costs ink
-/// and never layout. The controls gated on a script are not waiting at
-/// all, staying `hidden` until a script below this point reveals them.
-///
-/// Hiding the sprite works only because the icons are `<symbol>`s —
-/// `<use>` cannot instantiate a `display: none` target.
+/// A `<use>` the parser meets first draws nothing until this arrives,
+/// costing ink and never layout: the stylesheet sizes it.
 fn icon_sprite() -> Markup {
     PreEscaped(crate::icons::sprite())
 }
 
-/// One icon, as a `<use>` of the sprite symbol named by `id`, under
-/// `class` for the stylesheets to size and colour.
+/// One `<use>` of the sprite symbol `id`.
 ///
 /// The reference is spelled twice: Safari did not read SVG 2's plain
 /// `href` until 12.1 (iOS 12.2), and SVG 1.1's `xlink:href` is
-/// deprecated but universal. No `xmlns:xlink` is needed, the HTML
-/// parser assigning that namespace itself.
+/// deprecated but universal. The HTML parser assigns that namespace
+/// itself, so no `xmlns:xlink`.
 ///
 /// `aria-hidden`, because the control around it carries the name.
 fn icon(id: &str, class: &str) -> Markup {
