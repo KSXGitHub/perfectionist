@@ -194,11 +194,12 @@
   //
   // See category A item 1 in the file header for the load-bearing role
   // of the scroll lock. The drawer is opened by tapping `.nav-toggle` and
-  // closed by tapping `.nav-sidebar-close` (the ✕ inside the overlay) or
-  // the page behind the drawer. Body scroll lock has the side benefit of
-  // stopping the page behind from scrolling when the user swipes within
-  // the overlay. We preserve the scroll position by snapping body to
-  // `top: -<y>px` while locked and restoring `scrollTo(0, y)` on unlock.
+  // closed by tapping `.nav-sidebar-close` (the close button inside the
+  // overlay) or the page behind the drawer. Body scroll lock has the
+  // side benefit of stopping the page behind from scrolling when the
+  // user swipes within the overlay. We preserve the scroll position by
+  // snapping body to `top: -<y>px` while locked and restoring
+  // `scrollTo(0, y)` on unlock.
   var savedScrollY = 0
   var bodyLocked = false
 
