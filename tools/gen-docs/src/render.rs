@@ -582,11 +582,10 @@ fn config_controls() -> Markup {
 /// chosen one. The label must therefore stay the input's immediate next
 /// sibling. The tile's icon is the sprite symbol named after `value`.
 fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
-    let option_class = format!("theme-option theme-option-{value}");
     let icon_id = format!("icon-theme-{value}");
     html! {
         input.theme-radio type="radio" name="color-scheme" id=(id) value=(value) checked[checked];
-        label class=(option_class) for=(id) {
+        label.theme-option for=(id) {
             (icon(&icon_id, "theme-icon"))
             span.theme-label { (label) }
         }
