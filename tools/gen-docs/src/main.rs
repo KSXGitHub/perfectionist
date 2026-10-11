@@ -216,10 +216,6 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
     let icon_path = out_dir.join(RULE_ANCHOR_ICON_FILENAME);
     fs::write(&icon_path, RULE_ANCHOR_ICON).expect("failed to write rule-anchor icon");
 
-    // Every icon the stylesheets reference as a CSS mask: the
-    // colour-scheme ones settings.css paints the Theme tiles with, and
-    // the control icons masked onto the page's buttons, links and
-    // disclosure summaries.
     for (name, content) in THEME_ICONS.iter().chain(CONTROL_ICONS) {
         let path = out_dir.join(name);
         fs::write(&path, content).unwrap_or_else(|error| panic!("failed to write {name}: {error}"));
