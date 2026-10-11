@@ -708,7 +708,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
                     // The up arrow is to act as a real character.
                     // This is intentional.
-                    span.rule-jump-icon aria-hidden="true" { "\u{2191}" }
+                    span.rule-jump-icon aria-hidden="true" { "↑" }
                     " top"
                 }
             }
