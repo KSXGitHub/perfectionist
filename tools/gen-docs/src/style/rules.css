@@ -128,33 +128,14 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
+/* Sized against the text beside it, and nudged onto that text's
+   centre: the box sits on the baseline otherwise, and `middle` aligns
+   it on the parent's x-height rather than on the words it labels. */
 article.rule h2 .rule-jump-icon {
-  position: relative;
-}
-
-/* Sized here, not by the font's advance for `↑`. The box overspills
-   the character; the icon's own margin keeps the ink underlined. */
-article.rule h2 .rule-jump-icon-drawing {
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: 0.9em;
   height: 0.9em;
-  transform: translate(-50%, -50%);
+  vertical-align: -0.06em;
   fill: currentColor;
-}
-
-/* The `↑` the drawing stands in for. It stays in the markup to be
-   selected and copied, and is painted out so the two do not overlap. */
-article.rule h2 .rule-jump-icon {
-  -webkit-text-fill-color: transparent;
-}
-
-/* A highlight repaints the text, restoring the fill; `color` is what
-   governs there. Naming one at all drops the browser's own. */
-article.rule h2 .rule-jump-icon::selection {
-  color: transparent;
-  background-color: Highlight;
 }
 
 article.rule .source {

@@ -711,12 +711,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
-                    // The up arrow is to act as a real character.
-                    // This is intentional.
-                    span.rule-jump-icon aria-hidden="true" {
-                        "↑"
-                        (icon(RULE_JUMP_ICON_ID, "rule-jump-icon-drawing"))
-                    }
+                    (icon(RULE_JUMP_ICON_ID, "rule-jump-icon"))
                     " top"
                 }
             }
