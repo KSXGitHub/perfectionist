@@ -1,4 +1,5 @@
 use super::{ICONS, sprite, symbol};
+use text_block_macros::text_block;
 
 #[test]
 fn every_icon_becomes_a_symbol() {
@@ -39,9 +40,11 @@ fn the_root_keeps_nothing_that_would_override_the_stylesheet() {
 
 #[test]
 fn a_prolog_and_comments_are_skipped() {
-    let source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-         <!-- a note from whoever drew it -->\n\
-         <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path d=\"M1 2h3Z\"/></svg>";
+    let source = text_block! {
+        r#"<?xml version="1.0" encoding="UTF-8"?>"#
+        "<!-- a note from whoever drew it -->"
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path d="M1 2h3Z"/></svg>"#
+    };
     assert_eq!(
         symbol("icon-demo", source).expect("should rewrite"),
         r#"<symbol id="icon-demo" viewBox="0 0 16 16"><path d="M1 2h3Z"/></symbol>"#,
