@@ -70,7 +70,7 @@ fn scan_source_file(
             .expect("source-file offset overflowed u32");
         // A suffix on a text literal is invalid but still lexes, and
         // `suffix_start` is where it begins, so cutting there leaves the
-        // literal proper — whose last byte is its closing delimiter.
+        // literal proper, whose last byte is its closing delimiter.
         if let TokenKind::Literal { kind, suffix_start } = token.kind
             && let Some(literal_end) = offset.checked_add(suffix_start)
             && let Some(literal) = source_text.get(offset as usize..literal_end as usize)

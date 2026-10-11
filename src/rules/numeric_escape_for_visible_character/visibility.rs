@@ -7,7 +7,7 @@
 //! combining mark and a zero-width or format character measure zero
 //! columns, and everything a reader can actually see measures one or
 //! two. Two families measure a column and still want their escape, so
-//! they are excluded by name — whitespace, where the escape is what
+//! they are excluded by name: whitespace, where the escape is what
 //! says which space it is, and the Private Use Areas, whose
 //! codepoints render as a replacement box outside the one font that
 //! assigns them a glyph.
@@ -46,8 +46,8 @@ fn is_visible(character: char) -> bool {
 /// Whether `character` falls in one of Unicode's three Private Use
 /// Areas: the Basic Multilingual Plane's, and the two supplementary
 /// planes that are nothing else. What a codepoint there looks like is
-/// a private agreement between producer and consumer — an icon font's
-/// glyph for one editor, a replacement box everywhere else — so the
+/// a private agreement between producer and consumer: an icon font's
+/// glyph for one editor, a replacement box everywhere else. So the
 /// escape is the only spelling that survives being read.
 fn is_private_use(character: char) -> bool {
     matches!(

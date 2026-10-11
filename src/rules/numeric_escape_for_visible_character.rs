@@ -17,9 +17,10 @@ use visibility::Scope;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Forbids a visible character written as a numeric escape —
-    /// `\xNN` or `\u{...}` — in a string, character, or C-string
-    /// literal, and suggests the character itself in its place.
+    /// Forbids a visible character written as a numeric escape in a
+    /// string, character, or C-string literal, and suggests the
+    /// character itself in its place. The escapes it reads are
+    /// `\xNN` and `\u{...}`.
     ///
     /// A character counts as visible when it occupies at least one
     /// terminal column, is not whitespace, and is not a Private Use
@@ -43,8 +44,9 @@ declare_tool_lint! {
     ///
     /// Every string, character, and C-string literal in the crate's
     /// own source is scanned, including one inside a macro invocation
-    /// and one a `#[cfg(...)]` excludes from the build. A file reached through `include_str!` or
-    /// `include_bytes!` is data rather than Rust, so it is skipped.
+    /// and one a `#[cfg(...)]` excludes from the build. A file
+    /// reached through `include_str!` or `include_bytes!` is data
+    /// rather than Rust, so it is skipped.
     ///
     /// The rewrite preserves the literal's value, the decoded
     /// character being the same either way. A `format!`-family
@@ -60,8 +62,9 @@ declare_tool_lint! {
     /// cannot tell the arrow from any other codepoint at a glance,
     /// and a search for the character itself finds nothing. Spelling
     /// the character makes the literal read as the text it is, and
-    /// keeps one spelling for a character wherever it appears —
-    /// source files are UTF-8, so the escape buys no portability.
+    /// keeps one spelling for a character wherever it appears. Source
+    /// files are UTF-8, so the escape buys no portability in
+    /// exchange.
     ///
     /// ### Interaction with sibling rules
     ///
@@ -76,14 +79,14 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::invisible_characters` (`correctness`, deny by
-    /// default) is this rule's mirror image: it reports a character
-    /// with no glyph — a zero-width space, a soft hyphen — written as
-    /// itself and asks for the escape, where this rule reports the
-    /// escape and asks for the character. An invisible character is
-    /// one this rule declines by definition, so the two never ask
-    /// opposite things about the same character, and together they
-    /// read as one policy: escape what has no glyph, spell out what
-    /// has one.
+    /// default) is this rule's mirror image. Where a character has no
+    /// glyph of its own, such as a zero-width space or a soft hyphen,
+    /// it reports the character and asks for the escape; this rule
+    /// reports the escape and asks for the character. An invisible
+    /// character is one this rule declines by definition, so the two
+    /// never ask opposite things about the same character, and
+    /// together they read as one policy: escape what has no glyph,
+    /// spell out what has one.
     ///
     /// `clippy::unicode_not_nfc` (`pedantic`, off by default) reports
     /// a decomposed sequence and asks for the precomposed form. It
@@ -99,8 +102,8 @@ declare_tool_lint! {
     /// written as itself and asks for the escape, which is the
     /// opposite request on the same literal. Running both is a matter
     /// of setting `flag_non_ascii = false`, which leaves this rule
-    /// the ASCII half the two agree on — `\x41` for `A` — and leaves
-    /// the non-ASCII escapes to Clippy.
+    /// the ASCII half the two agree on, such as `\x41` for `A`, and
+    /// leaves the non-ASCII escapes to Clippy.
     ///
     /// ### Example
     ///
@@ -132,11 +135,7 @@ const CONFIG_KEY: &str = "perfectionist::numeric_escape_for_visible_character";
 struct Config {
     /// Flag an escape whose character is outside ASCII, such as
     /// `\u{2192}` for `→`. Defaults to `true`. Set it to `false` to
-    /// keep only the ASCII half of the rule — `\x41` for `A` — which
-    /// is what a project whose source is deliberately ASCII-only
-    /// wants, since spelling a non-ASCII character out is the very
-    /// thing such a project forbids. The ASCII half agrees with that
-    /// policy, so it keeps working.
+    /// keep only the ASCII half of the rule, such as `\x41` for `A`.
     flag_non_ascii: bool,
 }
 
@@ -168,10 +167,10 @@ impl_lint_pass!(NumericEscapeForVisibleCharacter => [NUMERIC_ESCAPE_FOR_VISIBLE_
 impl Register for rule::NumericEscapeForVisibleCharacter {
     /// A lexical test with a value-preserving rewrite and no
     /// threshold to tune: whether the character has a glyph is what
-    /// decides, not a limit a project would want set differently. The
-    /// one policy that does vary — whether a non-ASCII character may
-    /// be spelled out at all — is a knob rather than a reason to ship
-    /// the rule off, since the ASCII half holds either way.
+    /// decides, not a limit a project would want set differently. One
+    /// policy does vary: whether a non-ASCII character may be spelled
+    /// out at all. That is a knob rather than a reason to ship the
+    /// rule off, since the ASCII half holds either way.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {

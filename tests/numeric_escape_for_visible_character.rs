@@ -17,10 +17,10 @@ fn run(src_base: &str, contents: &str) {
 }
 
 /// `flag_non_ascii = false` is what a project running
-/// `clippy::non_ascii_literal` sets, so that spelling a non-ASCII
-/// character out — the thing that policy forbids — is never
-/// suggested. The ASCII escapes in the fixture still fire; the
-/// non-ASCII ones are left alone.
+/// `clippy::non_ascii_literal` sets, so that this rule never
+/// suggests spelling a non-ASCII character out, which is the thing
+/// that policy forbids. The ASCII escapes in the fixture still fire;
+/// the non-ASCII ones are left alone.
 #[test]
 fn flag_non_ascii_disabled_keeps_only_the_ascii_half() {
     run(
