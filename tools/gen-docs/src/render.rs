@@ -185,8 +185,6 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-// Each names a symbol `crate::icons` builds. One that matches none of
-// them leaves a `<use>` pointing at nothing, which draws a gap.
 const SEARCH_ICON_ID: &str = "icon-search";
 const FILTER_ICON_ID: &str = "icon-filter";
 const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
