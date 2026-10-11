@@ -17,42 +17,31 @@ use visibility::Scope;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Forbids a visible character written as a numeric escape in a
-    /// string, character, or C-string literal, and suggests the
-    /// character itself in its place. The escapes it reads are
-    /// `\xNN` and `\u{...}`.
+    /// Forbids a visible character written as a numeric escape,
+    /// `\xNN` or `\u{...}`, in a string, character, or C-string
+    /// literal, and suggests the character itself.
     ///
-    /// A character counts as visible when it occupies at least one
-    /// terminal column, is not whitespace, and is not a Private Use
-    /// Area codepoint; the `flag_non_ascii` knob narrows that set to
-    /// the ASCII characters. So `\u{2192}` is flagged, while `\u{0}` (a
-    /// control character), `\u{9}` (a tab), `\u{A0}` (a no-break
-    /// space), `\u{200B}` (zero width), `\u{301}` (a combining mark)
-    /// and `\u{E0B0}` (private use) are not. Each of those either has
-    /// no glyph of its own or has none a reader could pick out from
-    /// its neighbours, which is where the escape is the clearer
-    /// spelling.
+    /// Visible means at least one terminal column wide, not
+    /// whitespace, and not a Private Use Area codepoint. So
+    /// `\u{2192}` is flagged, while a control character (`\u{0}`),
+    /// whitespace (`\u{9}`, `\u{A0}`), a zero-width or format
+    /// character (`\u{200B}`), a combining mark (`\u{301}`) and a
+    /// private-use codepoint (`\u{E0B0}`) are not: none of those has
+    /// a glyph a reader could pick out, which is where the escape is
+    /// the clearer spelling. The `flag_non_ascii` knob narrows the
+    /// set further, to ASCII.
     ///
-    /// An escape stays as it is where the literal cannot hold its
-    /// character verbatim: the closing delimiter (`\x22` in a string
-    /// or C-string literal, `\x27` in a character literal) and the
-    /// backslash (`\x5C`). Byte literals (`b"..."`, `b'...'`) are out
-    /// of scope, because a `\xNN` there denotes one byte rather than
-    /// one character and above `\x7F` no character spells that byte;
-    /// `\xNN` above `\x7F` in a C-string literal is left alone for
-    /// the same reason.
+    /// An escape also stays where the literal cannot hold its
+    /// character verbatim: its own closing delimiter, and the
+    /// backslash. Byte literals are out of scope, as is `\xNN` above
+    /// `\x7F`, which denotes one byte rather than one character.
     ///
-    /// Every string, character, and C-string literal in the crate's
-    /// own source is scanned, including one inside a macro invocation
-    /// and one a `#[cfg(...)]` excludes from the build. A file
-    /// reached through `include_str!` or `include_bytes!` is data
-    /// rather than Rust, so it is skipped.
-    ///
-    /// The rewrite preserves the literal's value, the decoded
-    /// character being the same either way. A `format!`-family
-    /// template keeps its meaning too: the placeholder grammar
-    /// applies to the decoded text, so `\u{7B}` already opens a
-    /// placeholder before the rewrite spells it `{`.
+    /// The rewrite preserves the literal's value, a `format!`
+    /// template included, since the placeholder grammar applies to
+    /// the decoded text. Every literal the rule covers is scanned,
+    /// including one inside a macro invocation and one a
+    /// `#[cfg(...)]` excludes from the build; a file reached through
+    /// `include_str!` is data rather than Rust, so it is skipped.
     ///
     /// ### Why restrict this?
     ///
