@@ -1,3 +1,6 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+
 // Macro invocations: each of the following should fire once
 // per U+2026 codepoint in the literal.
 
@@ -43,6 +46,12 @@ fn _expect() {
 // Should NOT fire: non-panic / non-expect contexts. Each line below
 // contains a real U+2026, so a regression that started flagging these
 // contexts would surface here.
+#[expect(
+    perfectionist::numeric_escape_for_visible_character,
+    reason = "this function's escaped U+2026 is kept on purpose, so the \
+              sibling rule that spells an escape out has nothing to say \
+              about it here"
+)]
 fn _quiet() {
     let _ = "string literal with …, not a panic";
     eprintln!("log line with …");
