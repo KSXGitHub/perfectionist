@@ -120,9 +120,6 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
-/* The `↑` stays as text so the link underlines, selects and copies as
-   one run; only its fill goes. Masking the span would clip the
-   underline crossing it, so the mask sits on `::before`. */
 article.rule h2 .rule-jump-icon {
   position: relative;
 }
