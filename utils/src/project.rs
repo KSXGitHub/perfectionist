@@ -4,8 +4,39 @@
 
 use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
+use std::sync::{LazyLock, Mutex};
+
+/// The package names already materialised by this process.
+///
+/// Every fixture compiles into one shared target dir, and cargo keys a
+/// unit's fingerprint on the package's name and version, not on where
+/// its sources are. The version is the same for all of them, so the
+/// name is the only thing holding two fixtures apart.
+static TAKEN: LazyLock<Mutex<BTreeSet<String>>> = LazyLock::new(|| Mutex::new(BTreeSet::new()));
+
+/// Claim `package_name` for one fixture, or panic because another
+/// already holds it.
+///
+/// Two fixtures sharing a name share a fingerprint. Whichever cargo
+/// reaches second is then told its unit is fresh — the check is on
+/// mtimes, not on content — and replays the first one's diagnostics,
+/// so a test asserts against another test's output. It passes or fails
+/// on which fixture was written first, which is why this is a panic
+/// rather than a comment: tests within one binary run concurrently,
+/// and the reuse is invisible until the race lands.
+fn claim(package_name: &str) {
+    let fresh = TAKEN
+        .lock()
+        .expect("the package-name registry is poisoned")
+        .insert(package_name.to_owned());
+    assert!(
+        fresh,
+        "the fixture package name {package_name:?} is already taken in this test binary; \
+         give this fixture its own name, since a shared one shares a build fingerprint",
+    );
+}
 
 /// Materialise a Cargo project at `project_dir` consisting of a
 /// `Cargo.toml` for a library package named `package_name`, a
@@ -34,6 +65,7 @@ pub fn build_project_with_config(
     sources: &[(&str, &str)],
     extra_dylint_toml: &str,
 ) {
+    claim(package_name);
     let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
     entries.insert(
         "Cargo.toml".to_owned(),
@@ -55,3 +87,6 @@ pub fn build_project_with_config(
     tree.build(project_dir)
         .expect("failed to materialise project tree");
 }
+
+#[cfg(test)]
+mod tests;
