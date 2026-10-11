@@ -15,7 +15,7 @@
 //! a Rust literal all the same. The sibling text-scanning rules share
 //! that filter for the same reason.
 
-use super::visibility::is_visible;
+use super::visibility::Scope;
 use crate::literal_scan::take_string_escape;
 use crate::module_reparse::crate_module_files;
 use rustc_lexer::{FrontmatterAllowed, LiteralKind, TokenKind, tokenize};
@@ -34,8 +34,11 @@ pub(super) struct Violation {
 }
 
 /// Walk every source file backing a module of the local crate and
-/// collect one entry per numeric escape of a visible character.
-pub(super) fn collect_violations(lint_context: &LateContext<'_>) -> Vec<(Span, Violation)> {
+/// collect one entry per numeric escape of a character `scope` covers.
+pub(super) fn collect_violations(
+    lint_context: &LateContext<'_>,
+    scope: Scope,
+) -> Vec<(Span, Violation)> {
     let module_files = crate_module_files(lint_context);
     let source_map = lint_context.sess().source_map();
     let mut violations: Vec<(Span, Violation)> = Vec::new();
@@ -49,12 +52,17 @@ pub(super) fn collect_violations(lint_context: &LateContext<'_>) -> Vec<(Span, V
         let Some(source_text) = source_file.src.as_deref() else {
             continue;
         };
-        scan_source_file(source_text, source_file, &mut violations);
+        scan_source_file(source_text, source_file, scope, &mut violations);
     }
     violations
 }
 
-fn scan_source_file(source_text: &str, source_file: &SourceFile, out: &mut Vec<(Span, Violation)>) {
+fn scan_source_file(
+    source_text: &str,
+    source_file: &SourceFile,
+    scope: Scope,
+    out: &mut Vec<(Span, Violation)>,
+) {
     let mut offset: u32 = 0;
     for token in tokenize(source_text, FrontmatterAllowed::Yes) {
         let end = offset
@@ -68,7 +76,7 @@ fn scan_source_file(source_text: &str, source_file: &SourceFile, out: &mut Vec<(
             && let Some(literal) = source_text.get(offset as usize..literal_end as usize)
             && let Some(text) = TextLiteral::parse(kind, literal)
         {
-            scan_literal_body(&text, offset, source_file, out);
+            scan_literal_body(&text, offset, source_file, scope, out);
         }
         offset = end;
     }
@@ -109,7 +117,7 @@ impl<'a> TextLiteral<'a> {
 }
 
 /// Scan one literal's body, pushing an entry per numeric escape whose
-/// character is visible and spellable in this literal.
+/// character `scope` covers and this literal can spell.
 ///
 /// `literal_offset` is the literal's start within the source file,
 /// which every escape's span is measured from.
@@ -117,6 +125,7 @@ fn scan_literal_body(
     text: &TextLiteral<'_>,
     literal_offset: u32,
     source_file: &SourceFile,
+    scope: Scope,
     out: &mut Vec<(Span, Violation)>,
 ) {
     let mut rest = text.body;
@@ -131,7 +140,7 @@ fn scan_literal_body(
             return;
         };
         if let Some(character) = decode_numeric_escape(escape)
-            && is_visible(character)
+            && scope.covers(character)
             // The delimiter and the backslash have no verbatim
             // spelling inside the literal, so there is nothing to
             // suggest in their place.

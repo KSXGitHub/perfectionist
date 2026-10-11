@@ -1,4 +1,16 @@
-use super::is_visible;
+use super::{Scope, is_visible};
+
+/// The scope the rule has when `dylint.toml` says nothing about it,
+/// where a character's own visibility is the whole test.
+const EVERY_VISIBLE_CHARACTER: Scope = Scope {
+    flag_non_ascii: true,
+};
+
+/// The scope a consumer running `clippy::non_ascii_literal` alongside
+/// this rule asks for.
+const ASCII_ONLY: Scope = Scope {
+    flag_non_ascii: false,
+};
 
 /// Every codepoint a diagnostic should fire on, paired with the name
 /// that says why it is visible. Spelled as codepoints so the test
@@ -56,6 +68,12 @@ fn character(codepoint: u32) -> char {
     char::from_u32(codepoint).expect("the table holds no surrogate")
 }
 
+/// Both tables at once, for a test whose claim covers every row of
+/// each.
+fn every_row() -> impl Iterator<Item = (u32, &'static str)> {
+    VISIBLE.iter().chain(INVISIBLE).copied()
+}
+
 #[test]
 fn visible_characters_are_spelled_out() {
     for &(codepoint, name) in VISIBLE {
@@ -72,6 +90,31 @@ fn invisible_characters_keep_their_escape() {
         assert!(
             !is_visible(character(codepoint)),
             "U+{codepoint:04X} {name} should not be flagged",
+        );
+    }
+}
+
+#[test]
+fn the_default_scope_asks_only_whether_the_character_is_visible() {
+    for (codepoint, name) in every_row() {
+        let character = character(codepoint);
+        assert_eq!(
+            EVERY_VISIBLE_CHARACTER.covers(character),
+            is_visible(character),
+            "U+{codepoint:04X} {name} is covered by default exactly when it is visible",
+        );
+    }
+}
+
+#[test]
+fn narrowing_to_ascii_drops_the_non_ascii_characters() {
+    for (codepoint, name) in every_row() {
+        let character = character(codepoint);
+        assert_eq!(
+            ASCII_ONLY.covers(character),
+            is_visible(character) && character.is_ascii(),
+            "U+{codepoint:04X} {name} is covered under `flag_non_ascii = false` \
+             exactly when it is both visible and ASCII",
         );
     }
 }

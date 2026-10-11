@@ -15,7 +15,8 @@ literal, and suggests the character itself in its place.
 
 A character counts as visible when it occupies at least one
 terminal column, is not whitespace, and is not a Private Use
-Area codepoint. So `\u{2192}` is flagged, while `\u{0}` (a
+Area codepoint; the `flag_non_ascii` knob narrows that set to
+the ASCII characters. So `\u{2192}` is flagged, while `\u{0}` (a
 control character), `\u{9}` (a tab), `\u{A0}` (a no-break
 space), `\u{200B}` (zero width), `\u{301}` (a combining mark)
 and `\u{E0B0}` (private use) are not. Each of those either has
@@ -68,10 +69,11 @@ wants.
 
 `clippy::non_ascii_literal` (`restriction`, off by default)
 forbids every non-ASCII character in a string or character
-literal, so it asks for exactly the escape this rule replaces.
-A project that wants an ASCII-only source policy should keep
-`non_ascii_literal` and disable this rule; a project that
-wants its literals to read as text should do the reverse.
+literal, so on such a character the two ask for opposite
+things: one for the escape, the other for the glyph. Running
+both is a matter of setting `flag_non_ascii = false`, which
+leaves this rule the ASCII half the two agree on — `\x41` for
+`A` — and leaves the non-ASCII escapes to Clippy.
 
 ## Example
 
@@ -93,4 +95,17 @@ let letter = 'A';
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::numeric_escape_for_visible_character"]`. Every field is optional; the per-field prose below states the default.
+
+### Field: `flag_non_ascii`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Flag an escape whose character is outside ASCII, such as
+`\u{2192}` for `→`. Defaults to `true`. Set it to `false` to
+keep only the ASCII half of the rule — `\x41` for `A` — which
+is what a project whose source is deliberately ASCII-only
+wants, since spelling a non-ASCII character out is the very
+thing such a project forbids. The ASCII half agrees with that
+policy, so it keeps working.

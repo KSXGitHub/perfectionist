@@ -12,6 +12,7 @@ mod scan;
 mod visibility;
 
 use scan::Violation;
+use visibility::Scope;
 
 declare_tool_lint! {
     /// ### What it does
@@ -22,7 +23,8 @@ declare_tool_lint! {
     ///
     /// A character counts as visible when it occupies at least one
     /// terminal column, is not whitespace, and is not a Private Use
-    /// Area codepoint. So `\u{2192}` is flagged, while `\u{0}` (a
+    /// Area codepoint; the `flag_non_ascii` knob narrows that set to
+    /// the ASCII characters. So `\u{2192}` is flagged, while `\u{0}` (a
     /// control character), `\u{9}` (a tab), `\u{A0}` (a no-break
     /// space), `\u{200B}` (zero width), `\u{301}` (a combining mark)
     /// and `\u{E0B0}` (private use) are not. Each of those either has
@@ -75,10 +77,11 @@ declare_tool_lint! {
     ///
     /// `clippy::non_ascii_literal` (`restriction`, off by default)
     /// forbids every non-ASCII character in a string or character
-    /// literal, so it asks for exactly the escape this rule replaces.
-    /// A project that wants an ASCII-only source policy should keep
-    /// `non_ascii_literal` and disable this rule; a project that
-    /// wants its literals to read as text should do the reverse.
+    /// literal, so on such a character the two ask for opposite
+    /// things: one for the escape, the other for the glyph. Running
+    /// both is a matter of setting `flag_non_ascii = false`, which
+    /// leaves this rule the ASCII half the two agree on — `\x41` for
+    /// `A` — and leaves the non-ASCII escapes to Clippy.
     ///
     /// ### Example
     ///
@@ -105,23 +108,51 @@ declare_tool_lint! {
 
 const CONFIG_KEY: &str = "perfectionist::numeric_escape_for_visible_character";
 
-/// The rule has no configuration knobs. Not dead code: the read
-/// below rejects a mistyped key in the rule's `dylint.toml` table,
-/// and gen-docs needs the struct for `Configuration: none.`
-#[derive(Debug, Default, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {}
+struct Config {
+    /// Flag an escape whose character is outside ASCII, such as
+    /// `\u{2192}` for `→`. Defaults to `true`. Set it to `false` to
+    /// keep only the ASCII half of the rule — `\x41` for `A` — which
+    /// is what a project whose source is deliberately ASCII-only
+    /// wants, since spelling a non-ASCII character out is the very
+    /// thing such a project forbids. The ASCII half agrees with that
+    /// policy, so it keeps working.
+    flag_non_ascii: bool,
+}
 
-pub struct NumericEscapeForVisibleCharacter;
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            flag_non_ascii: true,
+        }
+    }
+}
+
+pub struct NumericEscapeForVisibleCharacter {
+    scope: Scope,
+}
+
+impl NumericEscapeForVisibleCharacter {
+    fn new() -> Self {
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        Self {
+            scope: Scope {
+                flag_non_ascii: config.flag_non_ascii,
+            },
+        }
+    }
+}
 
 impl_lint_pass!(NumericEscapeForVisibleCharacter => [NUMERIC_ESCAPE_FOR_VISIBLE_CHARACTER]);
 
 impl Register for rule::NumericEscapeForVisibleCharacter {
     /// A lexical test with a value-preserving rewrite and no
     /// threshold to tune: whether the character has a glyph is what
-    /// decides, not a limit a project would want set differently. A
-    /// project that wants ASCII-only literals disables the rule
-    /// outright rather than configuring it.
+    /// decides, not a limit a project would want set differently. The
+    /// one policy that does vary — whether a non-ASCII character may
+    /// be spelled out at all — is a knob rather than a reason to ship
+    /// the rule off, since the ASCII half holds either way.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -129,9 +160,9 @@ impl Register for rule::NumericEscapeForVisibleCharacter {
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        lint_store
-            .register_late_lint_pass(Box::new(|_| Box::new(NumericEscapeForVisibleCharacter)));
+        lint_store.register_late_lint_pass(Box::new(|_| {
+            Box::new(NumericEscapeForVisibleCharacter::new())
+        }));
     }
 }
 
@@ -143,7 +174,7 @@ impl<'tcx> LateLintPass<'tcx> for NumericEscapeForVisibleCharacter {
     /// then anchored at the HIR node that lexically contains it, so a
     /// per-item `#[allow]` / `#[expect]` resolves.
     fn check_crate_post(&mut self, lint_context: &LateContext<'tcx>) {
-        let violations = scan::collect_violations(lint_context);
+        let violations = scan::collect_violations(lint_context, self.scope);
         emit_at_enclosing_hir(lint_context.tcx, violations, |hir_id, span, violation| {
             emit(lint_context, hir_id, span, violation);
         });
