@@ -57,9 +57,6 @@
   outline-offset: 2px;
 }
 
-/* The hamburger goes away while the drawer is open: the close button
-   lives inside the overlay in normal flow, so no fixed-position
-   element needs to act as both opener and closer. */
 .nav-toggle[aria-expanded="true"] {
   display: none;
 }
