@@ -74,7 +74,7 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* `right: 100%` parks the glyph left of the heading's <code>, so the
+/* `right: 100%` parks the icon left of the heading's <code>, so the
    rule name stays aligned with body paragraphs; spanning <code> with
    `top`/`bottom: 0` centres it on the text, not the taller line box.
    The ~0.95rem reach stays within the body's 1rem padding to avoid
@@ -128,6 +128,35 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
+article.rule h2 .rule-jump-icon {
+  position: relative;
+}
+
+/* Sized here, not by the font's advance for `↑`. The box overspills
+   the character; the icon's own margin keeps the ink underlined. */
+article.rule h2 .rule-jump-icon-drawing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.9em;
+  height: 0.9em;
+  transform: translate(-50%, -50%);
+  fill: currentColor;
+}
+
+/* The `↑` the drawing stands in for. It stays in the markup to be
+   selected and copied, and is painted out so the two do not overlap. */
+article.rule h2 .rule-jump-icon {
+  -webkit-text-fill-color: transparent;
+}
+
+/* A highlight repaints the text, restoring the fill; `color` is what
+   governs there. Naming one at all drops the browser's own. */
+article.rule h2 .rule-jump-icon::selection {
+  color: transparent;
+  background-color: Highlight;
+}
+
 article.rule .source {
   font-size: 0.85rem;
 }
@@ -159,14 +188,22 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
-details.config-details > summary::before {
-  content: "▸ ";
-  display: inline-block;
-  width: 1em;
+/* Wider than the text it marks: the icon draws a compact triangle in
+   the middle of its viewBox, and the box scales the whole viewBox. */
+details.config-details > summary .disclosure-closed,
+details.config-details > summary .disclosure-open {
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.1em;
+  vertical-align: -0.3em;
+  fill: currentColor;
 }
 
-details.config-details[open] > summary::before {
-  content: "▾ ";
+/* Both markers are in the summary, so the state picks one rather than
+   swapping an image on one element. */
+details.config-details:not([open]) > summary .disclosure-open,
+details.config-details[open] > summary .disclosure-closed {
+  display: none;
 }
 
 dl.config {

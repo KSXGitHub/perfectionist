@@ -46,6 +46,30 @@ const ICONS: &[Icon] = &[
         id: "icon-rule-anchor",
         source: include_str!("assets/rule-anchor.svg"),
     },
+    Icon {
+        id: "icon-rule-jump",
+        source: include_str!("assets/rule-jump.svg"),
+    },
+    Icon {
+        id: "icon-nav-menu",
+        source: include_str!("assets/nav-menu.svg"),
+    },
+    Icon {
+        id: "icon-settings",
+        source: include_str!("assets/settings.svg"),
+    },
+    Icon {
+        id: "icon-close",
+        source: include_str!("assets/close.svg"),
+    },
+    Icon {
+        id: "icon-disclosure-closed",
+        source: include_str!("assets/disclosure-closed.svg"),
+    },
+    Icon {
+        id: "icon-disclosure-open",
+        source: include_str!("assets/disclosure-open.svg"),
+    },
 ];
 
 /// Take the root `<svg>`'s `viewBox`, leaving `reader` just past that

@@ -209,9 +209,10 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-.search-close-glyph {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 0.85rem;
+.search-close-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  fill: currentColor;
 }
 
 .search-results {

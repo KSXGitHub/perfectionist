@@ -195,6 +195,30 @@ const FILTER_ICON_ID: &str = "icon-filter";
 /// `id` of the chain-link symbol, on each rule heading's permalink.
 const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
 
+/// `id` of the up-arrow symbol, on each rule heading's link back to
+/// the catalogue.
+const RULE_JUMP_ICON_ID: &str = "icon-rule-jump";
+
+/// `id` of the three-bars symbol, on the button that opens the
+/// navigation drawer.
+const NAV_MENU_ICON_ID: &str = "icon-nav-menu";
+
+/// `id` of the gear symbol, on the button that opens the settings
+/// panel.
+const SETTINGS_ICON_ID: &str = "icon-settings";
+
+/// `id` of the cross symbol, on the buttons that close the navigation
+/// drawer and the search overlay.
+const CLOSE_ICON_ID: &str = "icon-close";
+
+/// `id` of the right-pointing triangle, marking a closed
+/// `Configuration` disclosure.
+pub(super) const DISCLOSURE_CLOSED_ICON_ID: &str = "icon-disclosure-closed";
+
+/// `id` of the down-pointing triangle, marking an open `Configuration`
+/// disclosure.
+pub(super) const DISCLOSURE_OPEN_ICON_ID: &str = "icon-disclosure-open";
+
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
 /// `aria-controls`.
@@ -221,10 +245,10 @@ const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 /// The sprite, at the foot of `<body>` and before [`PAGE_SCRIPTS`].
 ///
 /// Every [`icon`] above it therefore points at a symbol the parser has
-/// not reached, drawing nothing until it does. Nothing here sees that
-/// window: the controls carrying icons stay `hidden` until scripts
-/// below this point reveal them, and the rule anchors are transparent
-/// until hovered.
+/// not reached, and draws nothing until it does. Each one is sized by
+/// the stylesheet rather than by what it draws, so the wait costs ink
+/// and never layout. The controls gated on a script are not waiting at
+/// all, staying `hidden` until a script below this point reveals them.
 ///
 /// Hiding the sprite works only because the icons are `<symbol>`s —
 /// `<use>` cannot instantiate a `display: none` target.
@@ -355,7 +379,8 @@ fn settings_panel() -> Markup {
             aria-controls="settings-panel"
             aria-expanded="false"
             aria-label="Settings"
-            title="Settings" {}
+            title="Settings"
+        { (icon(SETTINGS_ICON_ID, "settings-toggle-icon")) }
         div.settings-panel id="settings-panel" hidden aria-label="Settings" {
             p.settings-panel-title { "Settings" }
             fieldset.settings-section {
@@ -448,10 +473,10 @@ fn search_templates() -> Markup {
                     // in the search box, and so Tab reaches it after the
                     // results rather than before them.
                     button.search-close type="button" {
-                        // The ✕ is decoration beside the word; hiding it
-                        // from assistive tech keeps the button's
-                        // accessible name the word alone.
-                        span.search-close-glyph aria-hidden="true" { "\u{2715}" }
+                        // Decoration beside the word, so the
+                        // button's accessible name stays the word
+                        // alone.
+                        (icon(CLOSE_ICON_ID, "search-close-icon"))
                         "Close"
                     }
                 }
@@ -616,11 +641,11 @@ fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
 /// phone-landscape / tablet, full-screen at <=600px / phone-
 /// portrait). The JS also locks body scroll while it's open,
 /// which stops the mobile URL bar from collapsing under it and
-/// keeps every `position: fixed` element steady. The close (✕)
-/// button lives inside the overlay in normal flow rather than as
-/// a fixed-position sibling, so it's never affected by
-/// visual-viewport quirks even on browsers where `position: fixed`
-/// drifts with the URL bar.
+/// keeps every `position: fixed` element steady. The close button
+/// lives inside the overlay in normal flow rather than as a
+/// fixed-position sibling, so it's never affected by visual-viewport
+/// quirks even on browsers where `position: fixed` drifts with the
+/// URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button
@@ -630,7 +655,8 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             aria-controls="nav-sidebar"
             aria-expanded="false"
             aria-label="Toggle navigation"
-            title="Toggle navigation" {}
+            title="Toggle navigation"
+        { (icon(NAV_MENU_ICON_ID, "nav-toggle-icon")) }
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
                 button
@@ -638,7 +664,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                     type="button"
                     aria-label="Close navigation"
                     title="Close navigation"
-                { "\u{2715}" }
+                { (icon(CLOSE_ICON_ID, "nav-sidebar-close-icon")) }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -684,7 +710,15 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
-                a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" { "↑ top" }
+                a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
+                    // The up arrow is to act as a real character.
+                    // This is intentional.
+                    span.rule-jump-icon aria-hidden="true" {
+                        "↑"
+                        (icon(RULE_JUMP_ICON_ID, "rule-jump-icon-drawing"))
+                    }
+                    " top"
+                }
             }
             p {
                 (state_badge(rule.default_state))
