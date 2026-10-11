@@ -20,57 +20,37 @@ struct Icon {
     source: &'static str,
 }
 
-/// Every icon the page draws.
-const ICONS: &[Icon] = &[
-    Icon {
-        id: "icon-search",
-        source: include_str!("assets/search.svg"),
-    },
-    Icon {
-        id: "icon-filter",
-        source: include_str!("assets/filter.svg"),
-    },
-    Icon {
-        id: "icon-theme-light",
-        source: include_str!("assets/theme-light.svg"),
-    },
-    Icon {
-        id: "icon-theme-dark",
-        source: include_str!("assets/theme-dark.svg"),
-    },
-    Icon {
-        id: "icon-theme-system",
-        source: include_str!("assets/theme-system.svg"),
-    },
-    Icon {
-        id: "icon-rule-anchor",
-        source: include_str!("assets/rule-anchor.svg"),
-    },
-    Icon {
-        id: "icon-rule-jump",
-        source: include_str!("assets/rule-jump.svg"),
-    },
-    Icon {
-        id: "icon-nav-menu",
-        source: include_str!("assets/nav-menu.svg"),
-    },
-    Icon {
-        id: "icon-settings",
-        source: include_str!("assets/settings.svg"),
-    },
-    Icon {
-        id: "icon-close",
-        source: include_str!("assets/close.svg"),
-    },
-    Icon {
-        id: "icon-disclosure-closed",
-        source: include_str!("assets/disclosure-closed.svg"),
-    },
-    Icon {
-        id: "icon-disclosure-open",
-        source: include_str!("assets/disclosure-open.svg"),
-    },
-];
+/// Name every icon once, as the stem shared by its `id` and its file.
+///
+/// The `id` [`crate::render`] writes into a `<use>` and the file
+/// [`sprite`] reads are derived from the same token, so neither the
+/// two of them nor the list below can drift apart.
+macro_rules! icons {
+    ($($konst:ident = $stem:literal;)*) => {
+        $(pub(crate) const $konst: &str = concat!("icon-", $stem);)*
+
+        /// Every icon the page draws.
+        const ICONS: &[Icon] = &[$(Icon {
+            id: $konst,
+            source: include_str!(concat!("assets/", $stem, ".svg")),
+        }),*];
+    };
+}
+
+icons! {
+    SEARCH = "search";
+    FILTER = "filter";
+    THEME_LIGHT = "theme-light";
+    THEME_DARK = "theme-dark";
+    THEME_SYSTEM = "theme-system";
+    RULE_ANCHOR = "rule-anchor";
+    RULE_JUMP = "rule-jump";
+    NAV_MENU = "nav-menu";
+    SETTINGS = "settings";
+    CLOSE = "close";
+    DISCLOSURE_CLOSED = "disclosure-closed";
+    DISCLOSURE_OPEN = "disclosure-open";
+}
 
 /// Take the root `<svg>`'s `viewBox`, leaving `reader` just past that
 /// start tag.

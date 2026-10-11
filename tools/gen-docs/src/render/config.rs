@@ -2,11 +2,10 @@
 //! listing each TOML key, plus the per-type sub-blocks describing
 //! the shape of any project-local enums or structs the fields reach.
 
+use crate::icons::{DISCLOSURE_CLOSED, DISCLOSURE_OPEN};
 use crate::model::{ConfigDoc, TypeDoc, TypeKind};
 use crate::render::markdown::markdown_to_html;
-use crate::render::{
-    DISCLOSURE_CLOSED_ICON_ID, DISCLOSURE_OPEN_ICON_ID, breakable_lint_name, icon,
-};
+use crate::render::{breakable_lint_name, icon};
 use maud::{Markup, PreEscaped, html};
 
 /// Render the per-rule configuration block. Two shapes:
@@ -41,8 +40,8 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
             summary.config-summary {
                 // Both markers ship; rules.css shows the one that
                 // matches the panel's state.
-                (icon(DISCLOSURE_CLOSED_ICON_ID, "disclosure-closed"))
-                (icon(DISCLOSURE_OPEN_ICON_ID, "disclosure-open"))
+                (icon(DISCLOSURE_CLOSED, "disclosure-closed"))
+                (icon(DISCLOSURE_OPEN, "disclosure-open"))
                 "Configuration"
             }
             p {

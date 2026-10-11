@@ -11,6 +11,7 @@
 pub(crate) mod config;
 pub(crate) mod markdown;
 
+use crate::icons;
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
@@ -185,16 +186,6 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-const SEARCH_ICON_ID: &str = "icon-search";
-const FILTER_ICON_ID: &str = "icon-filter";
-const RULE_ANCHOR_ICON_ID: &str = "icon-rule-anchor";
-const RULE_JUMP_ICON_ID: &str = "icon-rule-jump";
-const NAV_MENU_ICON_ID: &str = "icon-nav-menu";
-const SETTINGS_ICON_ID: &str = "icon-settings";
-const CLOSE_ICON_ID: &str = "icon-close";
-pub(super) const DISCLOSURE_CLOSED_ICON_ID: &str = "icon-disclosure-closed";
-pub(super) const DISCLOSURE_OPEN_ICON_ID: &str = "icon-disclosure-open";
-
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
 /// `aria-controls`.
@@ -225,7 +216,7 @@ const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 /// A `<use>` the parser meets first draws nothing until this arrives,
 /// costing ink and never layout: the stylesheet sizes it.
 fn icon_sprite() -> Markup {
-    PreEscaped(crate::icons::sprite())
+    PreEscaped(icons::sprite())
 }
 
 /// One `<use>` of the sprite symbol `id`.
@@ -351,15 +342,15 @@ fn settings_panel() -> Markup {
             aria-expanded="false"
             aria-label="Settings"
             title="Settings"
-        { (icon(SETTINGS_ICON_ID, "settings-toggle-icon")) }
+        { (icon(icons::SETTINGS, "settings-toggle-icon")) }
         div.settings-panel id="settings-panel" hidden aria-label="Settings" {
             p.settings-panel-title { "Settings" }
             fieldset.settings-section {
                 legend { "Theme" }
                 div.theme-options {
-                    (theme_option("light", "color-scheme-light", "Light", false))
-                    (theme_option("dark", "color-scheme-dark", "Dark", false))
-                    (theme_option("system", "color-scheme-system", "System", true))
+                    (theme_option(icons::THEME_LIGHT, "light", "Light", false))
+                    (theme_option(icons::THEME_DARK, "dark", "Dark", false))
+                    (theme_option(icons::THEME_SYSTEM, "system", "System", true))
                 }
             }
             (config_controls())
@@ -392,7 +383,7 @@ fn search_toggle() -> Markup {
             aria-expanded="false"
             aria-label="Search lints"
             title="Search lints (press /)"
-        { (icon(SEARCH_ICON_ID, "search-toggle-icon")) }
+        { (icon(icons::SEARCH, "search-toggle-icon")) }
     }
 }
 
@@ -447,7 +438,7 @@ fn search_templates() -> Markup {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
                         // alone.
-                        (icon(CLOSE_ICON_ID, "search-close-icon"))
+                        (icon(icons::CLOSE, "search-close-icon"))
                         "Close"
                     }
                 }
@@ -513,7 +504,7 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-expanded="false"
             aria-label=(label)
             title=(label)
-        { (icon(FILTER_ICON_ID, "filter-toggle-icon")) }
+        { (icon(icons::FILTER, "filter-toggle-icon")) }
     }
 }
 
@@ -576,13 +567,13 @@ fn config_controls() -> Markup {
 /// `<label>` is the styled tile, so the pure-CSS
 /// `.theme-radio:checked + .theme-option` selector can highlight the
 /// chosen one. The label must therefore stay the input's immediate next
-/// sibling. The tile's icon is the sprite symbol named after `value`.
-fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
-    let icon_id = format!("icon-theme-{value}");
+/// sibling.
+fn theme_option(symbol: &str, value: &str, label: &str, checked: bool) -> Markup {
+    let id = format!("color-scheme-{value}");
     html! {
         input.theme-radio type="radio" name="color-scheme" id=(id) value=(value) checked[checked];
         label.theme-option for=(id) {
-            (icon(&icon_id, "theme-icon"))
+            (icon(symbol, "theme-icon"))
             span.theme-label { (label) }
         }
     }
@@ -627,7 +618,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             aria-expanded="false"
             aria-label="Toggle navigation"
             title="Toggle navigation"
-        { (icon(NAV_MENU_ICON_ID, "nav-toggle-icon")) }
+        { (icon(icons::NAV_MENU, "nav-toggle-icon")) }
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
                 button
@@ -635,7 +626,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                     type="button"
                     aria-label="Close navigation"
                     title="Close navigation"
-                { (icon(CLOSE_ICON_ID, "nav-sidebar-close-icon")) }
+                { (icon(icons::CLOSE, "nav-sidebar-close-icon")) }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -676,13 +667,13 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
                         aria-label="Permalink to this rule"
-                    { (icon(RULE_ANCHOR_ICON_ID, "rule-anchor-icon")) }
+                    { (icon(icons::RULE_ANCHOR, "rule-anchor-icon")) }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
-                    (icon(RULE_JUMP_ICON_ID, "rule-jump-icon"))
+                    (icon(icons::RULE_JUMP, "rule-jump-icon"))
                     " top"
                 }
             }
