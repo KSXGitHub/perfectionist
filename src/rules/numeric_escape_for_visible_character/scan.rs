@@ -43,9 +43,17 @@ pub(super) fn collect_violations(
     let source_map = lint_context.sess().source_map();
     let mut violations: Vec<(Span, Violation)> = Vec::new();
     for source_file in source_map.files().iter() {
+        // A foreign crate's files reach the source map too, and one of
+        // them can carry a name `module_files` holds: two crates in a
+        // workspace may point a `#[path]` module at the same file, in
+        // which case the name alone would admit the same text twice.
         if source_file.cnum != LOCAL_CRATE {
             continue;
         }
+        // Only a file the user wrote as a Rust module. A file pulled in
+        // with `include_str!` is data, and a quoted string inside it
+        // lexes as a Rust literal all the same. See
+        // <https://github.com/KSXGitHub/perfectionist/issues/179>.
         if !module_files.contains(&source_file.name) {
             continue;
         }
@@ -68,12 +76,8 @@ fn scan_source_file(
         let end = offset
             .checked_add(token.len)
             .expect("source-file offset overflowed u32");
-        // A suffix on a text literal is invalid but still lexes, and
-        // `suffix_start` is where it begins, so cutting there leaves the
-        // literal proper, whose last byte is its closing delimiter.
-        if let TokenKind::Literal { kind, suffix_start } = token.kind
-            && let Some(literal_end) = offset.checked_add(suffix_start)
-            && let Some(literal) = source_text.get(offset as usize..literal_end as usize)
+        if let TokenKind::Literal { kind, .. } = token.kind
+            && let Some(literal) = source_text.get(offset as usize..end as usize)
             && let Some(text) = TextLiteral::parse(kind, literal)
         {
             scan_literal_body(&text, offset, source_file, scope, out);
@@ -88,7 +92,10 @@ fn scan_source_file(
 ///
 /// A raw literal carries no escapes, an unterminated one is broken
 /// source, and a byte literal holds bytes rather than characters, so
-/// [`TextLiteral::parse`] answers `None` for each.
+/// [`TextLiteral::parse`] answers `None` for each. So does a literal
+/// carrying a suffix, since the suffix leaves the closing delimiter
+/// short of the end; a suffix on a text literal is invalid Rust, so
+/// such a literal is broken source too.
 struct TextLiteral<'a> {
     /// The literal's contents, between its delimiters.
     body: &'a str,
