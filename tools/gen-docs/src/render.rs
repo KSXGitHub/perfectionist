@@ -408,7 +408,7 @@ fn search_templates() -> Markup {
                         ({
                             search_text_input(
                                 "search-input",
-                                "Search lints\u{2026}",
+                                "Search lints…",
                                 "Search lints",
                             )
                         })
@@ -523,13 +523,7 @@ fn filter_container(kind: &str, label: &str) -> Markup {
         div class=(class) id=(id) {
             template {
                 div.filter-box hidden {
-                    ({
-                        search_text_input(
-                            "filter-input",
-                            "Filter by name\u{2026}",
-                            label,
-                        )
-                    })
+                    (search_text_input("filter-input", "Filter by name…", label))
                 }
             }
         }
