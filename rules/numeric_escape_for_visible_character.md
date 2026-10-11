@@ -67,13 +67,32 @@ wants.
 
 ## Interaction with Clippy
 
-`clippy::non_ascii_literal` (`restriction`, off by default)
-forbids every non-ASCII character in a string or character
-literal, so on such a character the two ask for opposite
-things: one for the escape, the other for the glyph. Running
-both is a matter of setting `flag_non_ascii = false`, which
-leaves this rule the ASCII half the two agree on — `\x41` for
-`A` — and leaves the non-ASCII escapes to Clippy.
+`clippy::invisible_characters` (`correctness`, deny by
+default) is this rule's mirror image: it reports a character
+with no glyph — a zero-width space, a soft hyphen — written as
+itself and asks for the escape, where this rule reports the
+escape and asks for the character. An invisible character is
+one this rule declines by definition, so the two never ask
+opposite things about the same character, and together they
+read as one policy: escape what has no glyph, spell out what
+has one.
+
+`clippy::unicode_not_nfc` (`pedantic`, off by default) reports
+a decomposed sequence and asks for the precomposed form. It
+reads the literal as written, so an escape anywhere in the
+sequence hides it: `"caf\u{65}"` followed by a combining acute
+goes unreported until the escape is spelled out, at which
+point Clippy sees `"cafe"` plus the mark and composes it. This
+rule never flags a combining mark, so it only ever hands that
+lint work it could not otherwise reach.
+
+`clippy::non_ascii_literal` (`restriction`, off by default) is
+the one that disagrees. It forbids a non-ASCII character
+written as itself and asks for the escape, which is the
+opposite request on the same literal. Running both is a matter
+of setting `flag_non_ascii = false`, which leaves this rule
+the ASCII half the two agree on — `\x41` for `A` — and leaves
+the non-ASCII escapes to Clippy.
 
 ## Example
 
