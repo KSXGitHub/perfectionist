@@ -6,26 +6,18 @@ use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
-use std::sync::{LazyLock, Mutex};
+use std::sync::Mutex;
 
-/// The package names already materialised by this process.
-///
-/// Every fixture compiles into one shared target dir, and cargo keys a
-/// unit's fingerprint on the package's name and version, not on where
-/// its sources are. The version is the same for all of them, so the
-/// name is the only thing holding two fixtures apart.
-static TAKEN: LazyLock<Mutex<BTreeSet<String>>> = LazyLock::new(|| Mutex::new(BTreeSet::new()));
+static TAKEN: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
-/// Claim `package_name` for one fixture, or panic because another
-/// already holds it.
+/// Hold each fixture to a package name of its own.
 ///
-/// Two fixtures sharing a name share a fingerprint. Whichever cargo
-/// reaches second is then told its unit is fresh — the check is on
-/// mtimes, not on content — and replays the first one's diagnostics,
-/// so a test asserts against another test's output. It passes or fails
-/// on which fixture was written first, which is why this is a panic
-/// rather than a comment: tests within one binary run concurrently,
-/// and the reuse is invisible until the race lands.
+/// Fixtures share one target dir, where cargo keys a fingerprint on a
+/// package's name and version rather than its path, and every fixture
+/// is `0.0.0`. Two of one name therefore share a fingerprint, and
+/// freshness goes by mtime, so the second cargo to run is told its unit
+/// is fresh and replays the first's diagnostics into another test's
+/// assertions.
 fn claim(package_name: &str) {
     let fresh = TAKEN
         .lock()
