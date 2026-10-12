@@ -156,6 +156,63 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Choosing a set or map: `BTree*` unless the size says otherwise
+
+Both spellings appear in this crate, and the choice is not a matter of
+taste. Default to `BTreeSet` / `BTreeMap`; reach for `HashSet` /
+`HashMap` only when the collection's size grows with the crate being
+linted.
+
+These things force the `BTree*` form, and no size argument overrides
+them:
+
+- **Iteration order that reaches the user.** `std`'s default hasher is
+  seeded per process, so a `Hash*` iterated into a diagnostic, a
+  suggestion, an error message or a generated file reorders itself
+  between runs — which a plugin whose `ui/` output is compared
+  byte-for-byte cannot afford. The import renderer grouping leaves by
+  module path and the `allowed_paths` validator formatting its
+  segment-name set into the message it returns are both of this kind.
+- **A `static` or `const` initialiser.** `BTreeSet::new` and
+  `BTreeMap::new` are `const` fns; the `Hash*` constructors are not,
+  because a `RandomState` has to be seeded at run time. A pass holding
+  cross-phase state in a `static Mutex<BTreeSet<_>>` compiles, and the
+  `HashSet` spelling of the same `static` does not.
+- **A dependency's own API naming the container.** The fixture builder
+  handing a directory tree to
+  [`build-fs-tree`](https://docs.rs/build-fs-tree) is this workspace's
+  case: that crate's directory variant holds a `BTreeMap`, so the
+  choice is its API's, not ours.
+
+Absent those, the deciding question is how large the collection gets,
+because `Hash*` is not uniformly faster. Hashing a key costs more than
+a few comparisons inside a cache-resident tree node, so at the sizes a
+lint actually builds, `BTree*` is the quicker container to look up in
+as well as the predictable one. Measured on this crate's toolchain
+against the default hasher, `BTreeSet` stays ahead of `HashSet` to
+roughly 64 entries for an integer-shaped key and roughly 48 for a
+`String`, and falls behind past those. So:
+
+- **Bounded by the rule's own configuration, or by a single item,
+  attribute list, or block of statements** — `BTree*`. The
+  `Config`-resolved sets under `src/rules/` are all this shape.
+- **Growing with the crate under lint** — an entry per module, per
+  method call, or per doc-comment line, or the whole registered lint
+  namespace — `Hash*`. Say why at the declaration: the surrounding
+  code gives a reader no way to tell a measured `Hash*` from a
+  careless one, and that ambiguity is what this convention exists to
+  remove.
+
+One trap is specific to rustc's types. `Symbol` is an interned index
+and its `Ord` compares that index rather than the string, so a
+`BTreeSet<Symbol>` is ordered by whatever sequence the compiler
+happened to intern its members in — reproducible for one input, but
+neither alphabetical nor stable across inputs. Choose `BTree*` for a
+`Symbol` key on the size of the collection, never to obtain a
+meaningful order from it, since interning order is not one. `Span` and
+`BytePos` do order by source position, so a `BTreeMap` keyed on either
+is deterministic *and* meaningful.
+
 ## Do not write documentation that restates the code
 
 Prose that duplicates a fact the code already states is unverified

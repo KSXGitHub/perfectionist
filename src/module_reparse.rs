@@ -54,6 +54,11 @@ pub(crate) type SpanRange = (BytePos, BytePos);
 /// struct because a struct field of type [`Vec<Crate>`] makes rustdoc's
 /// auto-trait synthesis overflow on the AST's recursive type graph.
 ///
+/// `live_module_spans` is a `HashSet` rather than a `BTreeSet`
+/// because it holds one entry per module in the compiled crate, so it
+/// grows with the crate being linted; callers only ever probe it with
+/// `contains`, and nothing iterates it, so its order is unobservable.
+///
 /// The throwaway [`ParseSess`] shares the real [`SourceMap`], so every
 /// span in the returned ASTs — and any suggestion built from them —
 /// points at the real files. Its [`DiagCtxt`] is wired to a
@@ -132,6 +137,10 @@ pub(crate) fn parse_crate_module_files(
 /// gets flagged (and, worse, autofix-rewritten) as if it were a Rust
 /// comment.
 /// See <https://github.com/KSXGitHub/perfectionist/issues/179>.
+///
+/// A `HashSet` rather than a `BTreeSet`: it holds one entry per
+/// module file, so it grows with the crate being linted, and the source
+/// map walk that consumes it only ever probes it with `contains`.
 pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<FileName> {
     let tcx = lint_context.tcx;
     let source_map = lint_context.sess().source_map();

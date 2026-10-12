@@ -136,6 +136,9 @@ pub struct OverlyLongMethodChain {
     config: Config,
     /// Calls already counted as part of an outer chain, so a chain is
     /// measured once, from its head.
+    ///
+    /// A `HashSet`: it accumulates one entry per method call in the
+    /// crate and is never iterated, only probed with `contains`.
     counted: HashSet<HirId>,
 }
 
