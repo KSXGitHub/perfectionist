@@ -36,10 +36,10 @@ fn an_empty_list_is_rejected() {
     assert!(error.contains(r#"["!*"]"#), "{error}");
 }
 
+/// Every one of these would rest on an unstated baseline for the
+/// names it does not mention.
 #[test]
 fn a_list_opening_with_a_prefix_is_rejected() {
-    // Every one of these would rest on an unstated baseline for the
-    // names it does not mention.
     for patterns in [
         &["get_*"][..],
         &["!clone_*"][..],
@@ -63,12 +63,12 @@ fn the_list_always_has_an_answer() {
     assert!(!patterns.says_getter("anything_at_all"));
 }
 
+/// The conversion clause tests the name's own prefix, so every one
+/// of these covers only names it has already answered for — whether
+/// the entry names the conversion prefix exactly, extends it, or
+/// negates either.
 #[test]
 fn a_prefix_under_a_conversion_prefix_is_rejected() {
-    // The conversion clause tests the name's own prefix, so every one
-    // of these covers only names it has already answered for — whether
-    // the entry names the conversion prefix exactly, extends it, or
-    // negates either.
     for entry in [
         "as_*",
         "to_*",
@@ -89,19 +89,19 @@ fn a_prefix_under_a_conversion_prefix_is_rejected() {
     }
 }
 
+/// The test is on the prefix, not on its first letters: `to_*` is
+/// rejected, `token_*` is not.
 #[test]
 fn a_prefix_merely_starting_like_a_conversion_prefix_is_accepted() {
-    // The test is on the prefix, not on its first letters: `to_*` is
-    // rejected, `token_*` is not.
     for entry in ["token_*", "assemble_*", "intolerant_*"] {
         assert!(parse(&["!*", entry]).is_ok(), "{entry:?} should parse");
     }
 }
 
+/// The grammar runs before the ban, so an entry that is both
+/// ill-formed and conversion-shaped is reported for its shape.
 #[test]
 fn a_malformed_entry_is_reported_as_malformed() {
-    // The grammar runs before the ban, so an entry that is both
-    // ill-formed and conversion-shaped is reported for its shape.
     let error = rejection(&["!*", "to_owned"]);
     assert!(error.contains("closed by `*`"), "{error}");
 }

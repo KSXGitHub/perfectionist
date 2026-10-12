@@ -390,6 +390,35 @@ attribute span (`#[serde(...)]`), a bare macro name (`quote!`), a code
 fence, the standard library, and the rustc / Clippy / rustdoc lint
 namespaces name something else and stay plain.
 
+## Test documentation goes above the test
+
+A comment describing a whole test is documentation, so it goes where
+documentation goes: a `///` block above the `#[test]` attribute. A `//`
+comment inside the body belongs to one line or one region of lines, and
+a leading one that covers every line in the body is documentation in
+disguise.
+
+The split follows what each reader needs. The `///` block says what the
+test pins and why the case is worth pinning, which is what someone
+scanning the module reads. A `//` comment says why the line under it is
+written that way, which only that line's reader needs. A test whose
+body carries a series of comments, one per case, keeps them where they
+are. Where a test has both a purpose and per-case notes, the purpose
+moves up and the notes stay put.
+
+A comment in disguise is already wrong where it sits, so leaving it is
+not one of the options. Which fix applies is decided by what it says,
+not by where it sits: a block that says what the test pins moves above
+the attribute, and a block that narrates the body goes, per
+[Do not write documentation that restates the code](#do-not-write-documentation-that-restates-the-code).
+Moving launders nothing. Text that would read as a poor doc above the
+attribute was a poor comment below it, and a test whose name already
+says what it pins needs no block at all.
+
+One fault follows the move itself. A later comment may have leaned on
+the one now above the attribute, so restate what it borrowed, per
+[Every passage must read on its own](#every-passage-must-read-on-its-own).
+
 ## Defaults live in field docs, not type or variant docs
 
 A config field's default value is documented on the **field**, never
