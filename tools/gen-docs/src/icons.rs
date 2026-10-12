@@ -15,25 +15,25 @@ use quick_xml::escape::escape;
 use quick_xml::events::Event;
 
 /// One icon: the `id` a `<use>` points at, and the file behind it.
-struct Icon {
-    id: &'static str,
+pub(crate) struct Icon {
+    pub(crate) id: &'static str,
     source: &'static str,
 }
 
 /// Name every icon once, as the stem shared by its `id` and its file.
 ///
-/// The `id` [`crate::render`] writes into a `<use>` and the file
-/// [`sprite`] reads are derived from the same token, so neither the
-/// two of them nor the list below can drift apart.
+/// Both are derived from that one token, and [`ICONS`] is the same
+/// list again, so an `id` cannot name one file while [`sprite`] reads
+/// another, and no icon can be left out of the sprite.
 macro_rules! icons {
-    ($($konst:ident = $stem:literal;)*) => {
-        $(pub(crate) const $konst: &str = concat!("icon-", $stem);)*
+    ($($name:ident = $stem:literal;)*) => {
+        $(pub(crate) const $name: Icon = Icon {
+            id: concat!("icon-", $stem),
+            source: include_str!(concat!("assets/", $stem, ".svg")),
+        };)*
 
         /// Every icon the page draws.
-        const ICONS: &[Icon] = &[$(Icon {
-            id: $konst,
-            source: include_str!(concat!("assets/", $stem, ".svg")),
-        }),*];
+        const ICONS: &[Icon] = &[$($name),*];
     };
 }
 

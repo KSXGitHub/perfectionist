@@ -40,8 +40,8 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
             summary.config-summary {
                 // Both markers ship; rules.css shows the one that
                 // matches the panel's state.
-                (icon(DISCLOSURE_CLOSED, "disclosure-closed"))
-                (icon(DISCLOSURE_OPEN, "disclosure-open"))
+                (icon(DISCLOSURE_CLOSED.id, "disclosure-closed"))
+                (icon(DISCLOSURE_OPEN.id, "disclosure-open"))
                 "Configuration"
             }
             p {

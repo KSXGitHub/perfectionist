@@ -342,15 +342,15 @@ fn settings_panel() -> Markup {
             aria-expanded="false"
             aria-label="Settings"
             title="Settings"
-        { (icon(icons::SETTINGS, "settings-toggle-icon")) }
+        { (icon(icons::SETTINGS.id, "settings-toggle-icon")) }
         div.settings-panel id="settings-panel" hidden aria-label="Settings" {
             p.settings-panel-title { "Settings" }
             fieldset.settings-section {
                 legend { "Theme" }
                 div.theme-options {
-                    (theme_option(icons::THEME_LIGHT, "light", "Light", false))
-                    (theme_option(icons::THEME_DARK, "dark", "Dark", false))
-                    (theme_option(icons::THEME_SYSTEM, "system", "System", true))
+                    (theme_option(icons::THEME_LIGHT.id, "light", "Light", false))
+                    (theme_option(icons::THEME_DARK.id, "dark", "Dark", false))
+                    (theme_option(icons::THEME_SYSTEM.id, "system", "System", true))
                 }
             }
             (config_controls())
@@ -383,7 +383,7 @@ fn search_toggle() -> Markup {
             aria-expanded="false"
             aria-label="Search lints"
             title="Search lints (press /)"
-        { (icon(icons::SEARCH, "search-toggle-icon")) }
+        { (icon(icons::SEARCH.id, "search-toggle-icon")) }
     }
 }
 
@@ -438,7 +438,7 @@ fn search_templates() -> Markup {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
                         // alone.
-                        (icon(icons::CLOSE, "search-close-icon"))
+                        (icon(icons::CLOSE.id, "search-close-icon"))
                         "Close"
                     }
                 }
@@ -504,7 +504,7 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-expanded="false"
             aria-label=(label)
             title=(label)
-        { (icon(icons::FILTER, "filter-toggle-icon")) }
+        { (icon(icons::FILTER.id, "filter-toggle-icon")) }
     }
 }
 
@@ -618,7 +618,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             aria-expanded="false"
             aria-label="Toggle navigation"
             title="Toggle navigation"
-        { (icon(icons::NAV_MENU, "nav-toggle-icon")) }
+        { (icon(icons::NAV_MENU.id, "nav-toggle-icon")) }
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
                 button
@@ -626,7 +626,7 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
                     type="button"
                     aria-label="Close navigation"
                     title="Close navigation"
-                { (icon(icons::CLOSE, "nav-sidebar-close-icon")) }
+                { (icon(icons::CLOSE.id, "nav-sidebar-close-icon")) }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -667,13 +667,13 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
                         aria-label="Permalink to this rule"
-                    { (icon(icons::RULE_ANCHOR, "rule-anchor-icon")) }
+                    { (icon(icons::RULE_ANCHOR.id, "rule-anchor-icon")) }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
-                    (icon(icons::RULE_JUMP, "rule-jump-icon"))
+                    (icon(icons::RULE_JUMP.id, "rule-jump-icon"))
                     " top"
                 }
             }
