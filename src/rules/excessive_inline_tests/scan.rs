@@ -57,9 +57,7 @@ pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     if crate_target(cx).is_separate_target() {
         return;
     }
-    // Iteration order is diagnostic order, and the key is the file's
-    // `SourceMap` start offset — so a `BTreeMap` warns in source order
-    // where a `HashMap` would vary per run.
+    // `BTreeMap` for diagnostic deterministic order.
     let mut files: BTreeMap<BytePos, FileAcc> = BTreeMap::new();
     walk(cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {
