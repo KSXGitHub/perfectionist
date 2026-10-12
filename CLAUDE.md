@@ -156,62 +156,64 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
-## Choosing a set or map: `BTree*` unless the size says otherwise
+## Is iteration order part of the collection's meaning?
 
-Both spellings appear in this crate, and the choice is not a matter of
-taste. Default to `BTreeSet` / `BTreeMap`; reach for `HashSet` /
-`HashMap` only when the collection's size grows with the crate being
-linted.
+Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear in this
+crate. What decides between them is neither how large the collection
+grows nor how fast it is to probe, but whether anything depends on the
+order its entries come back out in.
 
-These things force the `BTree*` form, and no size argument overrides
-them:
+**Where that order reaches the reader** — it sequences diagnostics,
+orders the lines of a suggestion, lands in a generated file, or is
+formatted into a message — the ordered container is necessary and is
+not on its own sufficient. What a `BTree*` gives you is the order of
+the key's `Ord`, so the key has to be something whose order a reader
+would recognise. A source position is: `Span` and `BytePos` compare by
+where they sit in the file, so sequencing on one of those yields the
+order the reader is already scanning in. An interned index is not:
+`Symbol` compares by its slot in the interner, which is the order the
+compiler happened to meet the strings in. An ordered container keyed on
+such a value satisfies the type checker and not the requirement, and it
+fails in the most expensive way available — stable enough to freeze
+into a `.stderr` fixture and pass review,
+while still arbitrary to whoever reads the diagnostic. Where what you
+hold is a `Symbol` and what you owe the reader is alphabetical, sort by
+`Symbol::as_str` as you emit and leave the collection's own order out
+of it.
 
-- **Iteration order that reaches the user.** `std`'s default hasher is
-  seeded per process, so a `Hash*` iterated into a diagnostic, a
-  suggestion, an error message or a generated file reorders itself
-  between runs — which a plugin whose `ui/` output is compared
-  byte-for-byte cannot afford. The import renderer grouping leaves by
-  module path and the `allowed_paths` validator formatting its
-  segment-name set into the message it returns are both of this kind.
-- **A `static` or `const` initialiser.** `BTreeSet::new` and
-  `BTreeMap::new` are `const` fns; the `Hash*` constructors are not,
-  because a `RandomState` has to be seeded at run time. A pass holding
-  cross-phase state in a `static Mutex<BTreeSet<_>>` compiles, and the
-  `HashSet` spelling of the same `static` does not.
-- **A dependency's own API naming the container.** The fixture builder
-  handing a directory tree to
-  [`build-fs-tree`](https://docs.rs/build-fs-tree) is this workspace's
-  case: that crate's directory variant holds a `BTreeMap`, so the
-  choice is its API's, not ours.
+**Where no order reaches the reader** the collection is a lookup table:
+built once, then asked `contains` or `get`, or inserted into only to
+discard duplicates. Order is not part of what such a value means, the
+container carries no semantic content, and either spelling is correct.
+Consequences worth stating, because getting these wrong is what this
+section exists to prevent:
 
-Absent those, the deciding question is how large the collection gets,
-because `Hash*` is not uniformly faster. Hashing a key costs more than
-a few comparisons inside a cache-resident tree node, so at the sizes a
-lint actually builds, `BTree*` is the quicker container to look up in
-as well as the predictable one. Measured on this crate's toolchain
-against the default hasher, `BTreeSet` stays ahead of `HashSet` to
-roughly 64 entries for an integer-shaped key and roughly 48 for a
-`String`, and falls behind past those. So:
+- Do not rewrite a working lookup table from one container to the
+  other. The swap changes nothing a caller or a user can observe, so it
+  is noise in the diff and in the history, and it buries whatever real
+  change it travelled with.
+- Do not reach for the ordered container as insurance against someone
+  later rendering the order. Where the key's `Ord` is arbitrary that
+  insurance is worthless: it buys a reproducible wrong answer in place
+  of a visible one.
 
-- **Bounded by the rule's own configuration, or by a single item,
-  attribute list, or block of statements** — `BTree*`. The
-  `Config`-resolved sets under `src/rules/` are all this shape.
-- **Growing with the crate under lint** — an entry per module, per
-  method call, or per doc-comment line, or the whole registered lint
-  namespace — `Hash*`. Say why at the declaration: the surrounding
-  code gives a reader no way to tell a measured `Hash*` from a
-  careless one, and that ambiguity is what this convention exists to
-  remove.
+What genuinely removes the choice is a trait bound or an API you have
+to meet. `BTree*` needs `Ord` where `Hash*` needs `Hash + Eq`, and a
+rustc key type often implements only one of the two: `HirId` has `Hash`
+and `Eq` and no `Ord` at all, so a set of them is hashed whether or not
+anyone weighed it. A dependency may also name the container in its own
+signature: the fixture builder in
+[`utils/src/project.rs`](utils/src/project.rs) hands a directory tree
+to [`build-fs-tree`](https://docs.rs/build-fs-tree), whose directory
+variant holds a `BTreeMap`, so that call site has nothing to decide.
 
-One trap is specific to rustc's types. `Symbol` is an interned index
-and its `Ord` compares that index rather than the string, so a
-`BTreeSet<Symbol>` is ordered by whatever sequence the compiler
-happened to intern its members in — reproducible for one input, but
-neither alphabetical nor stable across inputs. Choose `BTree*` for a
-`Symbol` key on the size of the collection, never to obtain a
-meaningful order from it, since interning order is not one. `Span` and
-`BytePos` do order by source position, so a `BTreeMap` keyed on either
-is deterministic *and* meaningful.
+Do not settle the question by benchmark. The crossover between the two
+moves with the key type, the hasher, the standard library and the
+processor, so a figure measured today is stale on the next toolchain
+and nothing fails when it goes. At the sizes a lint builds — a rule's
+own configuration, the derives on one item, the `use` statements in one
+block — the difference does not survive the surrounding HIR walk, and a
+collection reached once per item was never where the time went.
 
 ## Do not write documentation that restates the code
 
