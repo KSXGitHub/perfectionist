@@ -121,6 +121,7 @@ rule_index! {
     mutating_command_builder => MutatingCommandBuilder,
     named_prelude_imports => NamedPreludeImports,
     needless_borrowed_parameters => NeedlessBorrowedParameters,
+    numeric_escape_for_visible_character => NumericEscapeForVisibleCharacter,
     overly_complex_condition => OverlyComplexCondition,
     overly_long_file => OverlyLongFile,
     overly_long_function => OverlyLongFunction,

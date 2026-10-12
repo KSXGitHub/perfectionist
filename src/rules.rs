@@ -23,6 +23,7 @@ pub mod macro_trailing_comma;
 pub mod mutating_command_builder;
 pub mod named_prelude_imports;
 pub mod needless_borrowed_parameters;
+pub mod numeric_escape_for_visible_character;
 pub mod overly_complex_condition;
 pub mod overly_long_file;
 pub mod overly_long_function;

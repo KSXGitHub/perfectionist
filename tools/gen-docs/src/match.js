@@ -99,7 +99,7 @@ var perfectionistMatch = (function () {
     var start = Math.max(0, Math.min(anchor - Math.floor(limit / 4), text.length - limit))
     var end = start + limit
     var slice = text.slice(start, end)
-    var prefix = start > 0 ? '\u2026' : ''
+    var prefix = start > 0 ? '…' : ''
     // What the window cut from the front, less what the ellipsis puts back.
     var offset = prefix.length - start
     /** @type {Span[]} */
@@ -113,7 +113,7 @@ var perfectionistMatch = (function () {
       shifted.push([from + offset, to + offset])
     }
     return {
-      text: prefix + slice + (end < text.length ? '\u2026' : ''),
+      text: prefix + slice + (end < text.length ? '…' : ''),
       ranges: shifted,
     }
   }

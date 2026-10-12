@@ -40,7 +40,7 @@ fn extra_flagged_chars_extends_the_default_set() {
     run(
         "ui-toml/unicode_ellipsis_in_docs/extra_flagged_chars",
         &dylint_toml(RuleConfig {
-            extra_flagged_chars: Some(vec!['\u{22EF}']),
+            extra_flagged_chars: Some(vec!['⋯']),
             ..RuleConfig::default()
         }),
     );

@@ -106,6 +106,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   borrowed parameter is only used to produce its owned form
 
+- [`numeric_escape_for_visible_character`](./numeric_escape_for_visible_character.md) (default: `active`).
+
+  visible character written as a numeric escape; spell the character as itself
+
 - [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
 
   condition has more boolean operators than the configured maximum

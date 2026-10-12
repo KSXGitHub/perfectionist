@@ -156,6 +156,37 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Choose a collection by observable order
+
+Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear here. What
+decides between them is whether anything depends on the order entries
+come back out in. Size does not decide it, and at these sites neither
+does speed: built once and probed once per node, the two spellings
+differ by nanoseconds beneath a HIR walk that costs orders of magnitude
+more. A collection on a genuine hot path is a performance question, and
+measuring is how to settle one. These sites are not that.
+
+That order reaches the reader when it sequences diagnostics, orders a
+suggestion, or lands in a generated file. There the ordered container is
+necessary and not sufficient, because what it sorts by is the key's
+`Ord`, and that varies across `rustc_span`'s key types. `Span` and
+`BytePos` compare by position in the file, which is the order the reader
+is already scanning in. `Symbol` compares by its slot in the interner,
+which is worse than hashed: stable enough to freeze into a `.stderr`
+fixture and pass review, still arbitrary to whoever reads the
+diagnostic. Holding a `Symbol` and owing alphabetical order, sort by
+`Symbol::as_str` as you emit.
+
+Where no order reaches the reader the collection is a lookup table,
+either spelling is correct, and rewriting a working one from either
+container to the other is noise.
+
+Sometimes the choice is already made. A key may not implement the
+trait: rustc's `HirId` has `Hash` and `Eq` and no `Ord`. A dependency
+may name the container in its own signature, as
+[`build-fs-tree`](https://docs.rs/build-fs-tree)'s directory variant
+does.
+
 ## Do not write documentation that restates the code
 
 Prose that duplicates a fact the code already states is unverified
@@ -512,6 +543,15 @@ The JavaScript under `tools/gen-docs/` is formatted by
 `just check-js`. `just fix-js` applies what oxlint can fix and then
 reformats, in that order because a fix lands as valid code rather than
 as formatted code.
+
+## The maud templates
+
+rustfmt does not format the body of a `{`-delimited macro invocation,
+so `just fmt` leaves the layout inside a `maud::html!` body alone.
+[maudfmt](https://docs.rs/maudfmt) settles it, pinned as a
+dev-dependency in [`Cargo.toml`](Cargo.toml), and
+[`tests/maud_formatting.rs`](tests/maud_formatting.rs) holds every
+template to its output.
 
 ## Normalised `.stderr` fixtures
 

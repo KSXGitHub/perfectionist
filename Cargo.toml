@@ -57,6 +57,8 @@ unicode-width = "0.2.2"
 [dev-dependencies]
 _utils = { path = "utils" }
 command-extra = "1.2.0"
+into-sorted = "0.0.3"
+maudfmt = "0.1.9"
 pipe-trait = "0.4.0"
 text-block-macros = "0.2.0"
 
