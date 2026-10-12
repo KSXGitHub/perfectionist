@@ -9,7 +9,7 @@ use rustc_hir::HirId;
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::hygiene::ExpnKind;
 use rustc_span::{Span, Symbol, sym};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::OnceLock;
 use unicode_width::UnicodeWidthStr;
 
@@ -127,7 +127,7 @@ pub(crate) enum DefaultState {
 /// `[perfectionist]` table of `dylint.toml`. Rules absent from this
 /// map fall through to the per-rule `DEFAULT_STATE` constant each
 /// `register_pass` passes to [`resolved_state`].
-static GLOBAL_OVERRIDES: OnceLock<HashMap<String, DefaultState>> = OnceLock::new();
+static GLOBAL_OVERRIDES: OnceLock<BTreeMap<String, DefaultState>> = OnceLock::new();
 
 /// Parse the `[perfectionist]` table of `dylint.toml` and stash the
 /// resolved override map. Called from
@@ -147,7 +147,7 @@ static GLOBAL_OVERRIDES: OnceLock<HashMap<String, DefaultState>> = OnceLock::new
 /// purpose at a config-loading layer that has no diagnostic surface.
 pub(crate) fn init_global_config() {
     let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
-    let mut overrides: HashMap<String, DefaultState> = HashMap::new();
+    let mut overrides: BTreeMap<String, DefaultState> = BTreeMap::new();
     for (selectors, state) in [
         (&config.enable, DefaultState::Active),
         (&config.disable, DefaultState::Inactive),

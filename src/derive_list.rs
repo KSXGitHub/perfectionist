@@ -17,7 +17,7 @@ use crate::attr_tokens::attribute_calls_of;
 use rustc_ast::tokenstream::TokenStream;
 use rustc_ast::{Attribute, MetaItemKind};
 use rustc_span::{Span, Symbol, sym};
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 /// One entry of a `derive(...)` list.
 pub(crate) struct DeriveEntry {
@@ -29,8 +29,8 @@ pub(crate) struct DeriveEntry {
 
 /// Final path segment of every derive on the node, including
 /// `#[cfg_attr(<cfg>, derive(...))]`-gated ones.
-pub(crate) fn derive_names(attrs: &[Attribute]) -> HashSet<Symbol> {
-    let mut names = HashSet::new();
+pub(crate) fn derive_names(attrs: &[Attribute]) -> BTreeSet<Symbol> {
+    let mut names = BTreeSet::new();
     for call in attribute_calls_of(attrs) {
         if call.name == sym::derive {
             names.extend(

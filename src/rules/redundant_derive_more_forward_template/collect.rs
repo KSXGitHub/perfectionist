@@ -20,7 +20,7 @@ use rustc_ast::{
     VariantData,
 };
 use rustc_span::{Span, Symbol};
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 
 /// One removable formatting attribute.
 pub(super) struct Violation {
@@ -81,7 +81,7 @@ fn walk_items(
                     ident.span,
                     data,
                     &derives,
-                    &HashSet::new(),
+                    &BTreeSet::new(),
                     violations,
                 );
             }
@@ -173,7 +173,7 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     // The cost is a missed diagnostic on a variant under a wrapping
     // template; the enum-level attribute is still flagged on its own
     // terms, and deleting it re-exposes the variant.
-    let mut shadowed: HashSet<&'static str> = HashSet::new();
+    let mut shadowed: BTreeSet<&'static str> = BTreeSet::new();
     let calls = attribute_calls_of(&item.attrs);
     let configured = non_template_helpers(&calls);
     for call in &calls {
@@ -236,8 +236,8 @@ fn check_container(
     attrs: &[Attribute],
     anchor: Span,
     data: &VariantData,
-    derives: &HashSet<Symbol>,
-    shadowed: &HashSet<&'static str>,
+    derives: &BTreeSet<Symbol>,
+    shadowed: &BTreeSet<&'static str>,
     violations: &mut Vec<Violation>,
 ) {
     if derives.is_empty() {
@@ -292,7 +292,7 @@ fn check_container(
 /// where a format attribute is present, so deleting the template would
 /// silently drop the predicates the user wrote beside it — a change to
 /// the generated impl, not the no-op the fix promises.
-fn non_template_helpers(calls: &[AttributeCall<'_>]) -> HashSet<Symbol> {
+fn non_template_helpers(calls: &[AttributeCall<'_>]) -> BTreeSet<Symbol> {
     calls
         .iter()
         .filter(|call| template_literal(call.tokens).is_none())
@@ -323,7 +323,7 @@ fn violation(
 /// that declares it.
 fn derived_formatting_trait(
     call: &AttributeCall<'_>,
-    derives: &HashSet<Symbol>,
+    derives: &BTreeSet<Symbol>,
 ) -> Option<&'static FormattingTrait> {
     let formatting = formatting_trait(call.name)?;
     derives

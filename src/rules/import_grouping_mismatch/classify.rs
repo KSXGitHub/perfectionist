@@ -9,7 +9,7 @@
 use super::config::{CfgBlockHandling, Config, Group, ReexportGrouping, Style};
 use rustc_ast::{UseTree, UseTreeKind};
 use rustc_span::kw;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 /// The first path segment of a `use` tree's written prefix, skipping a
 /// leading path-root (`::`). `None` for a top-level brace
@@ -40,7 +40,7 @@ fn first_segment(tree: &UseTree) -> Option<String> {
 /// approximation of that resolution. The built-in std and internal
 /// segment names are matched first, so a sibling `mod` sharing one of
 /// those names keeps its built-in group.
-fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
+fn path_group(tree: &UseTree, local_modules: &BTreeSet<String>) -> Group {
     let Some(first) = first_segment(tree) else {
         return Group::Thirdparty;
     };
@@ -110,7 +110,7 @@ pub(super) fn rank(
     is_reexport: bool,
     is_cfg_gated: bool,
     config: &Config,
-    local_modules: &HashSet<String>,
+    local_modules: &BTreeSet<String>,
 ) -> usize {
     if is_reexport {
         match config.reexports {
