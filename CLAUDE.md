@@ -160,19 +160,22 @@ has these consequences for the implementer:
 
 Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear here. What
 decides between them is whether anything depends on the order entries
-come back out in — never how large the collection grows, and never a
-benchmark, whose crossover moves with the key type, the hasher and the
-processor.
+come back out in. Size does not decide it, and at these sites neither
+does speed: built once and probed once per node, the two spellings
+differ by nanoseconds beneath a HIR walk that costs orders of magnitude
+more. A collection on a genuine hot path is a performance question, and
+measuring is how to settle one — these sites are not that.
 
 Where that order reaches the reader — sequencing diagnostics, ordering a
 suggestion, landing in a generated file — the ordered container is
 necessary and not sufficient, because what it sorts by is the key's
-`Ord`. `Span` and `BytePos` compare by position in the file, which is
-the order the reader is already scanning in. `Symbol` compares by its
-slot in the interner, which is worse than hashed: stable enough to
-freeze into a `.stderr` fixture and pass review, still arbitrary to
-whoever reads the diagnostic. Holding a `Symbol` and owing alphabetical
-order, sort by `Symbol::as_str` as you emit.
+`Ord`, and that varies across `rustc_span`'s key types. `Span` and
+`BytePos` compare by position in the file, which is the order the reader
+is already scanning in. `Symbol` compares by its slot in the interner,
+which is worse than hashed: stable enough to freeze into a `.stderr`
+fixture and pass review, still arbitrary to whoever reads the
+diagnostic. Holding a `Symbol` and owing alphabetical order, sort by
+`Symbol::as_str` as you emit.
 
 Where no order reaches the reader the collection is a lookup table,
 either spelling is correct, and rewriting a working one from either
