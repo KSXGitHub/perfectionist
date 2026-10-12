@@ -37,6 +37,7 @@ dependencies = [
  "pipe-trait",
  "proc-macro2",
  "pulldown-cmark",
+ "quick-xml",
  "quote",
  "strum",
  "syn",

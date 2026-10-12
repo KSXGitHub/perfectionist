@@ -59,25 +59,19 @@
   outline-offset: 2px;
 }
 
-/* A mask rather than an `<img>`, so no light and dark copy of each icon
-   file has to ship. */
-.search-toggle::before,
-.filter-toggle::before {
-  content: "";
+.search-toggle-icon,
+.filter-toggle-icon {
+  fill: currentColor;
 }
 
-.search-toggle::before {
+.search-toggle-icon {
   width: 1.2rem;
   height: 1.2rem;
-  -webkit-mask: url("search.svg") no-repeat center / contain;
-  mask: url("search.svg") no-repeat center / contain;
 }
 
-.filter-toggle::before {
+.filter-toggle-icon {
   width: 1rem;
   height: 1rem;
-  -webkit-mask: url("filter.svg") no-repeat center / contain;
-  mask: url("filter.svg") no-repeat center / contain;
 }
 
 /* Not wrapped in a flex container of its own: that would change the
@@ -215,22 +209,10 @@ h2.index-heading {
   outline-offset: -2px;
 }
 
-/* An empty span: it needs a size, which applies as a flex item. */
 .search-close-icon {
   width: 0.85rem;
   height: 0.85rem;
-  -webkit-mask: url("close.svg") no-repeat center / contain;
-  mask: url("close.svg") no-repeat center / contain;
-}
-
-/* Unmasked, the colour would fill the whole box, so it is only given
-   where a mask can clip it. */
-@supports (mask-image: none) or (-webkit-mask-image: none) {
-  .search-toggle::before,
-  .filter-toggle::before,
-  .search-close-icon {
-    background-color: currentColor;
-  }
+  fill: currentColor;
 }
 
 .search-results {

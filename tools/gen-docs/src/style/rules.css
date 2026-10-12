@@ -90,9 +90,17 @@ article.rule h2 .rule-anchor {
   bottom: 0;
   width: 0.8rem;
   margin-right: 0.15rem;
-  background: url("rule-anchor.svg") no-repeat center / 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   transition: opacity 0.12s ease-in-out;
+}
+
+article.rule h2 .rule-anchor-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: currentColor;
 }
 
 article.rule h2:hover .rule-anchor,
@@ -120,42 +128,14 @@ article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
 }
 
+/* Sized against the text beside it, and nudged onto that text's
+   centre: the box sits on the baseline otherwise, and `middle` aligns
+   it on the parent's x-height rather than on the words it labels. */
 article.rule h2 .rule-jump-icon {
-  position: relative;
-}
-
-/* Sized here, not by the font's advance for `↑`. The box overspills
-   the character; the icon's own margin keeps the ink underlined. */
-article.rule h2 .rule-jump-icon::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
   width: 0.9em;
   height: 0.9em;
-  transform: translate(-50%, -50%);
-  -webkit-mask: url("rule-jump.svg") no-repeat center / contain;
-  mask: url("rule-jump.svg") no-repeat center / contain;
-}
-
-/* The fill needs a mask to clip it, and the `↑` needs the icon to
-   stand in for it. */
-@supports (mask-image: none) or (-webkit-mask-image: none) {
-  article.rule h2 .rule-jump-icon {
-    -webkit-text-fill-color: transparent;
-  }
-
-  /* A highlight repaints the text, restoring the fill; `color` is what
-     governs there. Naming one at all drops the browser's own. */
-  article.rule h2 .rule-jump-icon::selection {
-    color: transparent;
-    background-color: Highlight;
-  }
-
-  article.rule h2 .rule-jump-icon::before,
-  details.config-details > summary::before {
-    background-color: currentColor;
-  }
+  vertical-align: -0.06em;
+  fill: currentColor;
 }
 
 article.rule .source {
@@ -190,22 +170,21 @@ details.config-details > summary.config-summary {
 }
 
 /* Wider than the text it marks: the icon draws a compact triangle in
-   the middle of its viewBox, and `contain` scales the whole viewBox. */
-details.config-details > summary::before {
-  content: "";
-  display: inline-block;
+   the middle of its viewBox, and the box scales the whole viewBox. */
+details.config-details > summary .disclosure-closed,
+details.config-details > summary .disclosure-open {
   width: 1.4em;
   height: 1.4em;
   margin-right: 0.1em;
   vertical-align: -0.3em;
-  -webkit-mask: url("disclosure-closed.svg") no-repeat center / contain;
-  mask: url("disclosure-closed.svg") no-repeat center / contain;
+  fill: currentColor;
 }
 
-/* Longhands, so only the image swaps. */
-details.config-details[open] > summary::before {
-  -webkit-mask-image: url("disclosure-open.svg");
-  mask-image: url("disclosure-open.svg");
+/* Both markers are in the summary, so the state picks one rather than
+   swapping an image on one element. */
+details.config-details:not([open]) > summary .disclosure-open,
+details.config-details[open] > summary .disclosure-closed {
+  display: none;
 }
 
 dl.config {

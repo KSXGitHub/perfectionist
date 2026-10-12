@@ -11,6 +11,7 @@
 pub(crate) mod config;
 pub(crate) mod markdown;
 
+use crate::icons;
 use crate::model::{DefaultState, NAMESPACE, RenderContext, Rule};
 use crate::render::config::config_section;
 use crate::render::markdown::{markdown_inline_to_html, markdown_to_html};
@@ -185,36 +186,6 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
     SEARCH_OVERLAY_SCRIPT_FILENAME,
 ];
 
-/// The colour-scheme icons (Octicons, MIT), shipped beside `index.html`
-/// and referenced from settings.css. Each tuple is `(filename, contents)`.
-pub(crate) const THEME_ICONS: &[(&str, &str)] = &[
-    ("theme-light.svg", include_str!("assets/theme-light.svg")),
-    ("theme-dark.svg", include_str!("assets/theme-dark.svg")),
-    ("theme-system.svg", include_str!("assets/theme-system.svg")),
-];
-
-/// The icons the stylesheets mask onto the page's controls (Octicons,
-/// MIT), shipped beside `index.html`. Each tuple is
-/// `(filename, contents)`. No prefetch hint is shipped for these, as
-/// one is for [`THEME_ICONS`]: the page paints most of them as soon as
-/// it loads, which fetches them without help.
-pub(crate) const CONTROL_ICONS: &[(&str, &str)] = &[
-    ("search.svg", include_str!("assets/search.svg")),
-    ("filter.svg", include_str!("assets/filter.svg")),
-    ("nav-menu.svg", include_str!("assets/nav-menu.svg")),
-    ("close.svg", include_str!("assets/close.svg")),
-    ("settings.svg", include_str!("assets/settings.svg")),
-    (
-        "disclosure-closed.svg",
-        include_str!("assets/disclosure-closed.svg"),
-    ),
-    (
-        "disclosure-open.svg",
-        include_str!("assets/disclosure-open.svg"),
-    ),
-    ("rule-jump.svg", include_str!("assets/rule-jump.svg")),
-];
-
 /// `id` of the search overlay itself, shared by the overlay markup in
 /// [`search_templates`] and the [`search_toggle`] button's
 /// `aria-controls`.
@@ -238,18 +209,32 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// `id` shared by the inert prefetch `<template>`
-/// ([`theme_icon_prefetch_template`]) and the `theme_toggle.js` lookup that
-/// activates it; the two must agree.
-pub(crate) const THEME_ICON_PREFETCH_TEMPLATE_ID: &str = "theme-icon-prefetch";
+/// Every [`icon`]'s symbol, hidden — which works only because they
+/// are `<symbol>`s, since `<use>` cannot instantiate a
+/// `display: none` target.
+///
+/// A `<use>` the parser meets first draws nothing until this arrives,
+/// costing ink and never layout: the stylesheet sizes it.
+fn icon_sprite() -> Markup {
+    PreEscaped(icons::sprite())
+}
 
-/// The chain-link icon for the rule-name heading anchors, shipped as
-/// a standalone file beside `index.html` rather than inlined.
-pub(crate) const RULE_ANCHOR_ICON: &str = include_str!("assets/rule-anchor.svg");
-
-/// File name [`RULE_ANCHOR_ICON`] is written under. `rules.css`
-/// references the same name in a relative `url(...)`, so they must agree.
-pub(crate) const RULE_ANCHOR_ICON_FILENAME: &str = "rule-anchor.svg";
+/// One `<use>` of the sprite symbol `id`.
+///
+/// The reference is spelled twice: Safari did not read SVG 2's plain
+/// `href` until 12.1 (iOS 12.2), and SVG 1.1's `xlink:href` is
+/// deprecated but universal. The HTML parser assigns that namespace
+/// itself, so no `xmlns:xlink`.
+///
+/// `aria-hidden`, because the control around it carries the name.
+fn icon(id: &str, class: &str) -> Markup {
+    let href = format!("#{id}");
+    html! {
+        svg class=(class) aria-hidden="true" {
+            use href=(href) xlink:href=(href) {}
+        }
+    }
+}
 
 pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String {
     let RenderContext {
@@ -282,7 +267,6 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 (search_toggle())
                 (search_templates())
                 (settings_panel())
-                (theme_icon_prefetch_template())
                 div.banner {
                     "Showing docs for "
                     code { (git_ref) }
@@ -328,6 +312,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     code { (commit_sha) }
                     "."
                 }
+                (icon_sprite())
                 @for &src in PAGE_SCRIPTS {
                     script src=(src) {}
                 }
@@ -356,15 +341,16 @@ fn settings_panel() -> Markup {
             aria-controls="settings-panel"
             aria-expanded="false"
             aria-label="Settings"
-            title="Settings" {}
+            title="Settings"
+        { (icon(icons::SETTINGS.id, "settings-toggle-icon")) }
         div.settings-panel id="settings-panel" hidden aria-label="Settings" {
             p.settings-panel-title { "Settings" }
             fieldset.settings-section {
                 legend { "Theme" }
                 div.theme-options {
-                    (theme_option("light", "color-scheme-light", "Light", false))
-                    (theme_option("dark", "color-scheme-dark", "Dark", false))
-                    (theme_option("system", "color-scheme-system", "System", true))
+                    (theme_option(icons::THEME_LIGHT.id, "light", "Light", false))
+                    (theme_option(icons::THEME_DARK.id, "dark", "Dark", false))
+                    (theme_option(icons::THEME_SYSTEM.id, "system", "System", true))
                 }
             }
             (config_controls())
@@ -396,7 +382,8 @@ fn search_toggle() -> Markup {
             aria-controls=(SEARCH_OVERLAY_ID)
             aria-expanded="false"
             aria-label="Search lints"
-            title="Search lints (press /)" {}
+            title="Search lints (press /)"
+        { (icon(icons::SEARCH.id, "search-toggle-icon")) }
     }
 }
 
@@ -451,7 +438,7 @@ fn search_templates() -> Markup {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
                         // alone.
-                        span.search-close-icon aria-hidden="true" {}
+                        (icon(icons::CLOSE.id, "search-close-icon"))
                         "Close"
                     }
                 }
@@ -516,7 +503,8 @@ fn filter_toggle(kind: &str, label: &str) -> Markup {
             aria-controls=(controls)
             aria-expanded="false"
             aria-label=(label)
-            title=(label) {}
+            title=(label)
+        { (icon(icons::FILTER.id, "filter-toggle-icon")) }
     }
 }
 
@@ -573,35 +561,19 @@ fn config_controls() -> Markup {
     }
 }
 
-/// The inert `<template>` of `<link rel="prefetch" as="image">` hints, one
-/// per [`THEME_ICONS`] entry, warming the cache for the colour-scheme icons
-/// (reachable only through settings.css masks). The `<template>` keeps the
-/// links dormant until `theme_toggle.js` clones them into `<head>`, so they
-/// load only once the Settings panel is used.
-fn theme_icon_prefetch_template() -> Markup {
-    html! {
-        template id=(THEME_ICON_PREFETCH_TEMPLATE_ID) {
-            @for &(name, _) in THEME_ICONS {
-                link rel="prefetch" as="image" href=(name);
-            }
-        }
-    }
-}
-
 /// One theme radio plus its visible label. The radio keeps real
 /// `<input type="radio">` semantics (exclusive choice, keyboard arrows,
 /// form labelling) but is visually hidden by settings.css; the adjacent
 /// `<label>` is the styled tile, so the pure-CSS
 /// `.theme-radio:checked + .theme-option` selector can highlight the
 /// chosen one. The label must therefore stay the input's immediate next
-/// sibling. The icon is an empty span the stylesheet fills via a CSS
-/// mask referencing one of [`THEME_ICONS`].
-fn theme_option(value: &str, id: &str, label: &str, checked: bool) -> Markup {
-    let option_class = format!("theme-option theme-option-{value}");
+/// sibling.
+fn theme_option(symbol: &str, value: &str, label: &str, checked: bool) -> Markup {
+    let id = format!("color-scheme-{value}");
     html! {
         input.theme-radio type="radio" name="color-scheme" id=(id) value=(value) checked[checked];
-        label class=(option_class) for=(id) {
-            span.theme-icon aria-hidden="true" {}
+        label.theme-option for=(id) {
+            (icon(symbol, "theme-icon"))
             span.theme-label { (label) }
         }
     }
@@ -645,14 +617,16 @@ fn nav_drawer(rules: &[Rule]) -> Markup {
             aria-controls="nav-sidebar"
             aria-expanded="false"
             aria-label="Toggle navigation"
-            title="Toggle navigation" {}
+            title="Toggle navigation"
+        { (icon(icons::NAV_MENU.id, "nav-toggle-icon")) }
         nav.nav-sidebar id="nav-sidebar" aria-label="Lint rules" {
             div.nav-sidebar-header {
                 button
                     .nav-sidebar-close
                     type="button"
                     aria-label="Close navigation"
-                    title="Close navigation" {}
+                    title="Close navigation"
+                { (icon(icons::CLOSE.id, "nav-sidebar-close-icon")) }
                 a.nav-sidebar-title href="#catalogue" { "perfectionist lints" }
                 (filter_toggle("nav", NAV_FILTER_LABEL))
             }
@@ -692,15 +666,14 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
-                        aria-label="Permalink to this rule" {}
+                        aria-label="Permalink to this rule"
+                    { (icon(icons::RULE_ANCHOR.id, "rule-anchor-icon")) }
                     span.lint-prefix { (NAMESPACE) }
                     wbr;
                     span.lint-name { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                 }
                 a.rule-jump-link href="#catalogue" aria-label="Back to catalogue" {
-                    // The up arrow is to act as a real character.
-                    // This is intentional.
-                    span.rule-jump-icon aria-hidden="true" { "↑" }
+                    (icon(icons::RULE_JUMP.id, "rule-jump-icon"))
                     " top"
                 }
             }

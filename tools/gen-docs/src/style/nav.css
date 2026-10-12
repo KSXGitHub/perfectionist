@@ -44,12 +44,10 @@
   padding: 0;
 }
 
-.nav-toggle::before {
-  content: "";
+.nav-toggle-icon {
   width: 1.2rem;
   height: 1.2rem;
-  -webkit-mask: url("nav-menu.svg") no-repeat center / contain;
-  mask: url("nav-menu.svg") no-repeat center / contain;
+  fill: currentColor;
 }
 
 .nav-toggle:focus-visible {
@@ -109,21 +107,10 @@
   padding: 0;
 }
 
-.nav-sidebar-close::before {
-  content: "";
+.nav-sidebar-close-icon {
   width: 1rem;
   height: 1rem;
-  -webkit-mask: url("close.svg") no-repeat center / contain;
-  mask: url("close.svg") no-repeat center / contain;
-}
-
-/* Unmasked, the colour would fill the whole box, so it is only given
-   where a mask can clip it. */
-@supports (mask-image: none) or (-webkit-mask-image: none) {
-  .nav-toggle::before,
-  .nav-sidebar-close::before {
-    background-color: currentColor;
-  }
+  fill: currentColor;
 }
 
 .nav-sidebar-close:focus-visible {
