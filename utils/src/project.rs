@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 
+/// The package names this test binary's fixtures have claimed.
 static TAKEN: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Mutex::default);
 
 /// Hold each fixture to a package name of its own.
@@ -15,8 +16,8 @@ static TAKEN: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Mutex::default);
 /// Fixtures share one target dir, and two packages of one name share a
 /// fingerprint there: the second to build is taken for fresh, and
 /// replays the first's diagnostics into another test's assertions.
-fn claim(package_name: &str) {
-    let fresh = TAKEN
+fn claim(taken: &Mutex<HashSet<String>>, package_name: &str) {
+    let fresh = taken
         .lock()
         .expect("the package-name registry is poisoned")
         .insert(package_name.to_owned());
@@ -54,7 +55,7 @@ pub fn build_project_with_config(
     sources: &[(&str, &str)],
     extra_dylint_toml: &str,
 ) {
-    claim(package_name);
+    claim(&TAKEN, package_name);
     let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
     entries.insert(
         "Cargo.toml".to_owned(),
