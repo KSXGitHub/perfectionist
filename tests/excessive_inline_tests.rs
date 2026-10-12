@@ -557,15 +557,9 @@ fn inline_max_fraction_of_file_flags_a_short_but_test_heavy_file() {
     );
 }
 
-/// Diagnostic order must not vary between runs. The scan tallies one
-/// entry per source file and emits one diagnostic per entry, so the
-/// container holding those tallies decides the order the warnings reach
-/// the terminal. Keyed by each file's `SourceMap` start offset in a
-/// `BTreeMap`, the offending files report in source order on every run;
-/// keyed in a `HashMap` the order is whichever permutation the
-/// per-process random seed happens to pick, which is why this fixture
-/// carries several offending files rather than two — the more there
-/// are, the smaller the chance a hashed order passes by luck.
+/// Diagnostic order must not vary between runs. The fixture carries
+/// several offending files rather than two, so that a hash-ordered run
+/// is unlikely to pass by luck.
 #[test]
 fn reports_offending_files_in_source_order() {
     let big = big_inline_test_file();

@@ -57,14 +57,7 @@ pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     if crate_target(cx).is_separate_target() {
         return;
     }
-    // A `BTreeMap`, not a `HashMap`: the walk tallies one entry per source
-    // file and each entry becomes one diagnostic, so the map's iteration
-    // order is the order the warnings reach the terminal. The key is each
-    // file's `SourceMap` start offset, which a `BTreeMap` orders by
-    // position — so a crate with two offending files reports them in a
-    // fixed, source-order sequence instead of whatever order the hasher's
-    // per-process random seed happened to produce.
-    let mut files: BTreeMap<BytePos, FileAcc> = BTreeMap::new();
+    let mut files = BTreeMap::<BytePos, FileAcc>::new(); // `BTreeMap` for diagnostic deterministic order.
     walk(cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {
         emit_inline_style(state, cx, acc);
