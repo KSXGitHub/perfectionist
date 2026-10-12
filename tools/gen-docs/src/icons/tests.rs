@@ -53,8 +53,6 @@ fn a_prolog_and_comments_are_skipped() {
 
 #[test]
 fn nested_elements_are_kept_whole() {
-    // A `<g>` closes before the root does, so the scan has to tell the
-    // two `</>`s apart rather than stop at the first.
     let source = r#"<svg viewBox="0 0 16 16"><g opacity=".5"><path d="M1 2h3Z"/></g><path d="M4 5h6Z"/></svg>"#;
     assert_eq!(
         symbol("icon-demo", source).expect("should rewrite"),
@@ -62,10 +60,10 @@ fn nested_elements_are_kept_whole() {
     );
 }
 
+/// The case that makes this worth a parser: scanning for the first
+/// `>` would cut the root element in half.
 #[test]
 fn an_attribute_value_may_hold_the_tag_delimiter() {
-    // The case that makes this worth a parser: scanning for the first
-    // `>` would cut the root element in half.
     let source = r#"<svg viewBox="0 0 16 16" aria-label="a > b"><path d="M1 2h3Z"/></svg>"#;
     assert_eq!(
         symbol("icon-demo", source).expect("should rewrite"),
@@ -106,9 +104,6 @@ fn the_sprite_holds_every_icon() {
 
 #[test]
 fn a_single_quoted_attribute_cannot_end_the_one_it_is_written_into() {
-    // XML lets `'` delimit an attribute, and the value of one so
-    // written may hold a `"`. Reusing the source's spelling would close
-    // the `viewBox="..."` early and leave the symbol in pieces.
     let source = r#"<svg viewBox='0 0 16 "16"'><path d="M1 2h3Z"/></svg>"#;
     let symbol = symbol("icon-demo", source).expect("should rewrite");
     assert_eq!(
