@@ -11,9 +11,6 @@ fn library_crate(root: &str) -> CargoTarget {
     classify("some_package", Some(Path::new(root)))
 }
 
-/// Flat `<dir>/<name>.rs`, the `<dir>/main.rs` named-`main` case,
-/// the `<dir>/<name>/main.rs` subdirectory form, and an absolute
-/// integration-test root — for tests, benches, and examples alike.
 #[test]
 fn separate_targets_are_recognised() {
     for (path, expected) in [
@@ -34,9 +31,6 @@ fn separate_targets_are_recognised() {
     }
 }
 
-/// Library, default binary, extra binaries (flat and the
-/// `src/bin/<name>/main.rs` multi-file form), and a nested module
-/// file all classify as the package's own code.
 #[test]
 fn library_and_binary_roots_are_recognised() {
     for path in [

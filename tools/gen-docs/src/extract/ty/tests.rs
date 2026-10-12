@@ -61,7 +61,6 @@ fn toml_type_label_arrays_and_maps() {
     );
 }
 
-/// Option, Box, Rc, Arc unwrap to the inner type.
 #[test]
 fn toml_type_label_transparent_wrappers() {
     let shared = no_shared();

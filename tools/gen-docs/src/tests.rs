@@ -1,8 +1,6 @@
 use super::source_link_prefix_for;
 use std::path::Path;
 
-/// The canonical layout: `rules_dir` directly inside
-/// `root`. Every rule .md climbs one directory.
 #[test]
 fn source_link_prefix_for_typical_one_level() {
     let prefix = source_link_prefix_for(Path::new("/repo/rules"), Path::new("/repo"))
@@ -10,8 +8,8 @@ fn source_link_prefix_for_typical_one_level() {
     assert_eq!(prefix, "../");
 }
 
-/// Hypothetical multi-level layout. Three components →
-/// three `../` segments.
+/// A layout no repository here uses, pinned so the arithmetic is not
+/// fitted to the one depth that does.
 #[test]
 fn source_link_prefix_for_deeper_nesting() {
     let prefix = source_link_prefix_for(Path::new("/repo/docs/lints/rules"), Path::new("/repo"))

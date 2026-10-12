@@ -177,8 +177,8 @@ fn configured_config_rejects_the_knob_less_doc_comment_with_additions() {
     let _ = extract_config(Path::new("demo.rs"), &file, &SharedTypes::default());
 }
 
-/// The other direction: a rule gained a knob and the doc kept
-/// insisting it has none.
+/// A rule that gained a knob while its `Config` doc went on saying
+/// it has none.
 #[test]
 #[should_panic(expected = "still carries the knob-less")]
 fn configured_config_rejects_the_knob_less_doc_comment() {
