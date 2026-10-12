@@ -57,8 +57,7 @@ pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     if crate_target(cx).is_separate_target() {
         return;
     }
-    // `BTreeMap` for diagnostic deterministic order.
-    let mut files: BTreeMap<BytePos, FileAcc> = BTreeMap::new();
+    let mut files = BTreeMap::<BytePos, FileAcc>::new(); // `BTreeMap` for diagnostic deterministic order.
     walk(cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {
         emit_inline_style(state, cx, acc);
