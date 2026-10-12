@@ -156,64 +156,32 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
-## Is iteration order part of the collection's meaning?
+## Choose a collection by observable order, not size
 
-Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear in this
-crate. What decides between them is neither how large the collection
-grows nor how fast it is to probe, but whether anything depends on the
-order its entries come back out in.
+Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear here. What
+decides between them is whether anything depends on the order entries
+come back out in — never how large the collection grows, and never a
+benchmark, whose crossover moves with the key type, the hasher and the
+processor.
 
-**Where that order reaches the reader** — it sequences diagnostics,
-orders the lines of a suggestion, lands in a generated file, or is
-formatted into a message — the ordered container is necessary and is
-not on its own sufficient. What a `BTree*` gives you is the order of
-the key's `Ord`, so the key has to be something whose order a reader
-would recognise. A source position is: `Span` and `BytePos` compare by
-where they sit in the file, so sequencing on one of those yields the
-order the reader is already scanning in. An interned index is not:
-`Symbol` compares by its slot in the interner, which is the order the
-compiler happened to meet the strings in. An ordered container keyed on
-such a value satisfies the type checker and not the requirement, and it
-fails in the most expensive way available — stable enough to freeze
-into a `.stderr` fixture and pass review,
-while still arbitrary to whoever reads the diagnostic. Where what you
-hold is a `Symbol` and what you owe the reader is alphabetical, sort by
-`Symbol::as_str` as you emit and leave the collection's own order out
-of it.
+Where that order reaches the reader — sequencing diagnostics, ordering a
+suggestion, landing in a generated file — the ordered container is
+necessary and not sufficient, because what it sorts by is the key's
+`Ord`. `Span` and `BytePos` compare by position in the file, which is
+the order the reader is already scanning in. `Symbol` compares by its
+slot in the interner, which is worse than hashed: stable enough to
+freeze into a `.stderr` fixture and pass review, still arbitrary to
+whoever reads the diagnostic. Holding a `Symbol` and owing alphabetical
+order, sort by `Symbol::as_str` as you emit.
 
-**Where no order reaches the reader** the collection is a lookup table:
-built once, then asked `contains` or `get`, or inserted into only to
-discard duplicates. Order is not part of what such a value means, the
-container carries no semantic content, and either spelling is correct.
-Consequences worth stating, because getting these wrong is what this
-section exists to prevent:
+Where no order reaches the reader the collection is a lookup table,
+either spelling is correct, and rewriting a working one from either
+container to the other is noise.
 
-- Do not rewrite a working lookup table from one container to the
-  other. The swap changes nothing a caller or a user can observe, so it
-  is noise in the diff and in the history, and it buries whatever real
-  change it travelled with.
-- Do not reach for the ordered container as insurance against someone
-  later rendering the order. Where the key's `Ord` is arbitrary that
-  insurance is worthless: it buys a reproducible wrong answer in place
-  of a visible one.
-
-What genuinely removes the choice is a trait bound or an API you have
-to meet. `BTree*` needs `Ord` where `Hash*` needs `Hash + Eq`, and a
-rustc key type often implements only one of the two: `HirId` has `Hash`
-and `Eq` and no `Ord` at all, so a set of them is hashed whether or not
-anyone weighed it. A dependency may also name the container in its own
-signature: the fixture builder in
-[`utils/src/project.rs`](utils/src/project.rs) hands a directory tree
-to [`build-fs-tree`](https://docs.rs/build-fs-tree), whose directory
-variant holds a `BTreeMap`, so that call site has nothing to decide.
-
-Do not settle the question by benchmark. The crossover between the two
-moves with the key type, the hasher, the standard library and the
-processor, so a figure measured today is stale on the next toolchain
-and nothing fails when it goes. At the sizes a lint builds — a rule's
-own configuration, the derives on one item, the `use` statements in one
-block — the difference does not survive the surrounding HIR walk, and a
-collection reached once per item was never where the time went.
+What removes the choice is a missing trait impl — `HirId` has `Hash` and
+`Eq` and no `Ord` — or a dependency naming the container, as
+[`build-fs-tree`](https://docs.rs/build-fs-tree)'s directory variant
+does for [`utils/src/project.rs`](utils/src/project.rs).
 
 ## Do not write documentation that restates the code
 
