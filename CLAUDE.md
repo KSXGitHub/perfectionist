@@ -156,7 +156,7 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
-## Choose a collection by observable order, not size
+## Choose a collection by observable order
 
 Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear here. What
 decides between them is whether anything depends on the order entries
