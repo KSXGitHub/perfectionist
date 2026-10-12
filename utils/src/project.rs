@@ -78,4 +78,4 @@ pub fn build_project_with_config(
 }
 
 #[cfg(test)]
-mod tests;
+mod test_claim;
