@@ -156,8 +156,8 @@ enum SameLine {
     #[display("{_0}")] Text(String),
 }
 
-// Bad: only the second variant is reported. The expectation on the
-// first resolves to that variant alone, which is what a per-variant
+// Bad: only `Reported` is reported. The expectation on `Silenced`
+// resolves to that variant alone, which is what a per-variant
 // suppression has to do.
 #[derive(Display)]
 enum PerVariantExpect {
