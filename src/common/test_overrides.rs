@@ -1,10 +1,7 @@
 //! The `[perfectionist]` table's `enable` / `disable` arrays, from the
-//! TOML a user writes through to the state a rule registers under.
-//!
-//! Every case resolves a map of its own. Writing `GLOBAL_OVERRIDES`
-//! instead would hand the whole binary one of these fixtures: the lock
-//! takes a value once per process, and a rule that read it afterwards
-//! would register against whichever case got there first.
+//! TOML a user writes through to the state a rule registers under,
+//! exercised through [`resolve_overrides`](super::resolve_overrides)
+//! and [`resolved_state_from`](super::resolved_state_from).
 
 use super::{DefaultState, GlobalConfig, resolve_overrides, resolved_state_from};
 use std::collections::HashMap;

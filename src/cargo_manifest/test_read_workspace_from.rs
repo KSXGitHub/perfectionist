@@ -1,10 +1,6 @@
-//! The climb to the workspace root, exercised against fixture trees in
-//! a `TempDir`.
-//!
-//! Each case names the directory to start from, so none of them needs
-//! `CARGO_MANIFEST_DIR`. Setting that variable would steer every other
-//! reader in the test binary, and the cache the walk feeds answers its
-//! first caller for the rest of the process.
+//! The walk to the workspace root, exercised over fixture trees in a
+//! `TempDir` through
+//! [`read_workspace_from`](super::read_workspace_from).
 
 use super::read_workspace_from;
 use std::fs;
@@ -30,7 +26,7 @@ fn write_manifest(dir: &Path, contents: &str) {
     fs::write(dir.join("Cargo.toml"), contents).expect("failed to write a fixture manifest");
 }
 
-/// The `package.name` of the manifest a walk from `dir` settles on.
+/// The `package.name` of the manifest the walk from `dir` settles on.
 fn found_package(dir: &Path) -> Option<String> {
     let manifest = read_workspace_from(dir)?;
     let name = manifest.get("package")?.get("name")?.as_str()?;
@@ -50,8 +46,9 @@ fn a_member_reads_the_root_above_it() {
     assert_eq!(found_package(&member).as_deref(), Some("root"));
 }
 
-/// "At or above": a crate rooted at the workspace root reads that same
-/// manifest instead of climbing past it.
+/// A crate rooted at the workspace root reads that root's own
+/// manifest: the walk starts at the directory it is given before
+/// looking above it.
 #[test]
 fn the_root_is_read_from_its_own_directory() {
     let tree = tree();
@@ -59,7 +56,7 @@ fn the_root_is_read_from_its_own_directory() {
     assert_eq!(found_package(tree.path()).as_deref(), Some("root"));
 }
 
-/// Nested workspaces: the climb stops at the first `[workspace]` it
+/// Nested workspaces: the walk stops at the first `[workspace]` it
 /// meets, which is the one Cargo resolves a member of the inner
 /// workspace against.
 #[test]
@@ -86,7 +83,7 @@ fn an_unparsable_manifest_does_not_hide_the_root() {
 
 /// `workspace = true` is how a member inherits a key, not how a
 /// workspace is defined, so a manifest carrying it is not the root the
-/// climb is looking for.
+/// walk is looking for.
 #[test]
 fn a_workspace_key_that_is_not_a_table_is_stepped_over() {
     let tree = tree();
@@ -99,10 +96,10 @@ fn a_workspace_key_that_is_not_a_table_is_stepped_over() {
     assert_eq!(found_package(&member).as_deref(), Some("root"));
 }
 
-/// A directory holding no `Cargo.toml` at all is nothing to read, and
-/// the climb carries on above it.
+/// A directory holding no `Cargo.toml` at all is nothing to read, so
+/// the walk steps over it.
 #[test]
-fn a_directory_without_a_manifest_is_climbed_past() {
+fn a_directory_without_a_manifest_is_stepped_over() {
     let tree = tree();
     write_manifest(tree.path(), &workspace_root("root"));
     let nested = tree.path().join("bare").join("deeper");

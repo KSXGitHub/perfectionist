@@ -145,8 +145,7 @@ pub(crate) fn init_global_config() {
 /// The override map `config` describes, keyed by the rule name each
 /// selector carries. Takes the parsed table rather than reading it, so
 /// what it resolves can be checked without writing
-/// [`GLOBAL_OVERRIDES`], which is set once per process and read by
-/// every rule.
+/// [`GLOBAL_OVERRIDES`].
 ///
 /// Panics if any rule name appears under both `enable` and
 /// `disable` — that's a contradiction the runtime can't sensibly
