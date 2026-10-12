@@ -27,10 +27,10 @@ fn skip_paths_accepts_core_and_alloc_entries() {
     assert!(validate(&config).is_ok());
 }
 
+/// Without the leading `::` the entry is a relative path, which is not
+/// the shape the lint matches against.
 #[test]
 fn skip_paths_rejects_a_missing_leading_root() {
-    // Without the leading `::` the entry is a relative path, which is not
-    // the shape the lint matches against.
     let config: Config = toml::from_str(r#"skip_paths = ["core::mem::transmute"]"#).unwrap();
     assert!(validate(&config).is_err());
 }

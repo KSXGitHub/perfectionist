@@ -69,10 +69,10 @@ fn run_ui(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// No `max_calls` override: the fixture is measured against the
+/// rule's own default of 5.
 #[test]
 fn default_limit_flags_a_chain_above_five_calls() {
-    // No `max_calls` override: the fixture is measured against the
-    // rule's own default of 5.
     run_ui(
         "ui-toml/overly_long_method_chain/default",
         RuleConfig::default(),

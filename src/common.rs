@@ -135,18 +135,30 @@ static GLOBAL_OVERRIDES: OnceLock<HashMap<String, DefaultState>> = OnceLock::new
 /// [`dylint_linting::init_config`] so that every per-rule
 /// `register_pass` can consult [`resolved_state`] when deciding
 /// whether to install its pass.
+pub(crate) fn init_global_config() {
+    let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
+    GLOBAL_OVERRIDES
+        .set(resolve_overrides(&config))
+        .expect("init_global_config called twice");
+}
+
+/// The override map `config` describes, keyed by the rule name each
+/// selector carries. Takes the parsed table rather than reading it, so
+/// what it resolves can be checked without writing
+/// [`GLOBAL_OVERRIDES`].
 ///
 /// Panics if any rule name appears under both `enable` and
 /// `disable` — that's a contradiction the runtime can't sensibly
 /// resolve, and silently picking one direction would hide a
-/// user-side mistake. Unknown rule names are silently ignored: the
-/// override map keys that don't match any registered rule have no
-/// effect (the rule never registers, so there's nothing to toggle),
-/// and validating against the registered set here would duplicate
-/// the existing `perfectionist::unknown_perfectionist_lints` rule's
-/// purpose at a config-loading layer that has no diagnostic surface.
-pub(crate) fn init_global_config() {
-    let config: GlobalConfig = dylint_linting::config_or_default("perfectionist");
+/// user-side mistake. The same name twice under one of them agrees
+/// with itself and is accepted. Unknown rule names are silently
+/// ignored: the override map keys that don't match any registered rule
+/// have no effect (the rule never registers, so there's nothing to
+/// toggle), and validating against the registered set here would
+/// duplicate the existing
+/// `perfectionist::unknown_perfectionist_lints` rule's purpose at a
+/// config-loading layer that has no diagnostic surface.
+fn resolve_overrides(config: &GlobalConfig) -> HashMap<String, DefaultState> {
     let mut overrides: HashMap<String, DefaultState> = HashMap::new();
     for (selectors, state) in [
         (&config.enable, DefaultState::Active),
@@ -164,18 +176,17 @@ pub(crate) fn init_global_config() {
             }
         }
     }
-    GLOBAL_OVERRIDES
-        .set(overrides)
-        .expect("init_global_config called twice");
+    overrides
 }
 
 /// Effective [`DefaultState`] for the rule named `name` (unqualified
-/// — no `perfectionist::` prefix). Resolution order:
+/// — no `perfectionist::` prefix), one case per rule:
 ///
-/// 1. If `name` appears under `disable` in the `[perfectionist]`
-///    table, return [`DefaultState::Inactive`].
-/// 2. If it appears under `enable`, return [`DefaultState::Active`].
-/// 3. Otherwise return `default` — the per-rule baseline.
+/// - [`DefaultState::Inactive`] where the `[perfectionist]` table
+///   lists `name` under `disable`.
+/// - [`DefaultState::Active`] where it lists `name` under `enable`.
+/// - `default` — the per-rule baseline — where it lists `name` under
+///   neither.
 ///
 /// Each rule's `register_pass` passes its own baseline as
 /// `default`: most rules pass [`DefaultState::Active`]; rules
@@ -186,6 +197,16 @@ pub(crate) fn resolved_state(name: &str, default: DefaultState) -> DefaultState 
     let overrides = GLOBAL_OVERRIDES
         .get()
         .expect("resolved_state called before init_global_config");
+    resolved_state_from(overrides, name, default)
+}
+
+/// [`resolved_state`] against an override map handed over rather than
+/// read from [`GLOBAL_OVERRIDES`].
+fn resolved_state_from(
+    overrides: &HashMap<String, DefaultState>,
+    name: &str,
+    default: DefaultState,
+) -> DefaultState {
     overrides.get(name).copied().unwrap_or(default)
 }
 
@@ -442,3 +463,6 @@ pub(crate) fn is_author_written_match(source: hir::MatchSource) -> bool {
 pub(crate) fn plural(count: usize, singular: &'static str, plural: &'static str) -> &'static str {
     if count == 1 { singular } else { plural }
 }
+
+#[cfg(test)]
+mod test_overrides;

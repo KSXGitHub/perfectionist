@@ -6,11 +6,11 @@ use super::test_fixtures::{fake_context, fake_rule, sidebar_list};
 use super::{anchor_for, render_page};
 use crate::model::{ConfigDoc, ConfigField, Optionality};
 
+/// The `/rule/` prefix plus a kebab-cased name: a single
+/// word is unchanged, a multi-word name has every `_`
+/// turned into `-`. The namespace prefix is dropped.
 #[test]
 fn anchor_for_builds_a_kebab_cased_rule_route() {
-    // The `/rule/` prefix plus a kebab-cased name: a single
-    // word is unchanged, a multi-word name has every `_`
-    // turned into `-`. The namespace prefix is dropped.
     assert_eq!(anchor_for("perfectionist::alpha"), "/rule/alpha");
     assert_eq!(
         anchor_for("perfectionist::beta_gamma_delta"),
@@ -18,13 +18,13 @@ fn anchor_for_builds_a_kebab_cased_rule_route() {
     );
 }
 
+/// Nothing inside a lint identifier is a line-break opportunity,
+/// so a name too long for its column is cut mid-segment by the
+/// `overflow-wrap: anywhere` fallback. Every place the page
+/// prints a lint name marks the segment boundaries with `<wbr>`
+/// so the break lands after a `_` instead.
 #[test]
 fn lint_names_offer_a_line_break_after_every_underscore() {
-    // Nothing inside a lint identifier is a line-break opportunity,
-    // so a name too long for its column is cut mid-segment by the
-    // `overflow-wrap: anywhere` fallback. Every place the page
-    // prints a lint name marks the segment boundaries with `<wbr>`
-    // so the break lands after a `_` instead.
     let name = "redundant_derive_more_forward_template";
     let html = render_page(&[fake_rule(name)], &fake_context());
     let broken = "redundant_<wbr>derive_<wbr>more_<wbr>forward_<wbr>template";
@@ -53,12 +53,12 @@ fn lint_names_offer_a_line_break_after_every_underscore() {
     );
 }
 
+/// The `dylint.toml` table header names the same identifier the
+/// index table does, in a sentence just as liable to be squeezed
+/// on a narrow viewport, so it breaks on `_` boundaries too. The
+/// namespace stays whole: it carries no `_`.
 #[test]
 fn config_key_offers_a_line_break_after_every_underscore() {
-    // The `dylint.toml` table header names the same identifier the
-    // index table does, in a sentence just as liable to be squeezed
-    // on a narrow viewport, so it breaks on `_` boundaries too. The
-    // namespace stays whole: it carries no `_`.
     let config = ConfigDoc {
         key: "perfectionist::demo_rule".to_owned(),
         fields: vec![ConfigField {
