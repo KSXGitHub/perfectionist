@@ -124,7 +124,8 @@ impl Person {
     // has its own rule.
     #[expect(
         perfectionist::unconsumed_into_conversion,
-        reason = "an `into_*` that does not consume belongs to that rule; this one pins clause 1"
+        reason = "an `into_*` that does not consume belongs to that rule; this one pins the \
+                  conversion-prefix clause"
     )]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
@@ -133,7 +134,8 @@ impl Person {
     // Not flagged: `as_*` promises the opposite, and has its own rule.
     #[expect(
         perfectionist::owned_as_conversion,
-        reason = "an `as_*` that copies belongs to that rule; this one pins clause 1"
+        reason = "an `as_*` that copies belongs to that rule; this one pins the \
+                  conversion-prefix clause"
     )]
     fn as_first_name(&self) -> String {
         self.first_name.clone()
