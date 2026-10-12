@@ -408,14 +408,18 @@ moves up and the notes stay put, as
 `collect_rules_finds_config_in_submodule_file` has them in
 `tools/gen-docs/src/extract/tests.rs`.
 
-Two faults follow the move. A later comment may have leaned on the one
-now above the attribute, so restate what it borrowed, per
+A comment in disguise is already wrong where it sits, so leaving it is
+not one of the options. Which fix applies is decided by what it says,
+not by where it sits: a block that says what the test pins moves above
+the attribute, and a block that narrates the body goes, per
+[Do not write documentation that restates the code](#do-not-write-documentation-that-restates-the-code).
+Moving launders nothing. Text that would read as a poor doc above the
+attribute was a poor comment below it, and a test whose name already
+says what it pins needs no block at all.
+
+One fault follows the move itself. A later comment may have leaned on
+the one now above the attribute, so restate what it borrowed, per
 [Every passage must read on its own](#every-passage-must-read-on-its-own).
-And a block that narrates the body instead of saying what the test pins
-is the fault
-[Do not write documentation that restates the code](#do-not-write-documentation-that-restates-the-code)
-names: delete it rather than move it. A test whose name already says
-what it pins needs no block at all.
 
 ## Defaults live in field docs, not type or variant docs
 
