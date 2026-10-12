@@ -12,12 +12,9 @@ static TAKEN: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Mutex::default);
 
 /// Hold each fixture to a package name of its own.
 ///
-/// Fixtures share one target dir, where cargo keys a fingerprint on a
-/// package's name and version rather than its path, and every fixture
-/// is `0.0.0`. Two of one name therefore share a fingerprint, and
-/// freshness goes by mtime, so the second cargo to run is told its unit
-/// is fresh and replays the first's diagnostics into another test's
-/// assertions.
+/// Fixtures share one target dir, and two packages of one name share a
+/// fingerprint there: the second to build is taken for fresh, and
+/// replays the first's diagnostics into another test's assertions.
 fn claim(package_name: &str) {
     let fresh = TAKEN
         .lock()
