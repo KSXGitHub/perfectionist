@@ -404,9 +404,7 @@ scanning the module reads. A `//` comment says why the line under it is
 written that way, which only that line's reader needs. A test whose
 body carries a series of comments, one per case, keeps them where they
 are. Where a test has both a purpose and per-case notes, the purpose
-moves up and the notes stay put, as
-`collect_rules_finds_config_in_submodule_file` has them in
-`tools/gen-docs/src/extract/tests.rs`.
+moves up and the notes stay put.
 
 A comment in disguise is already wrong where it sits, so leaving it is
 not one of the options. Which fix applies is decided by what it says,
