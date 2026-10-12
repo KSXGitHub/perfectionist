@@ -6,13 +6,13 @@
 use super::{TEST_CASE_SCRIPTS, TEST_FIXTURE_SCRIPTS};
 use std::fs;
 
+/// A file added to the directory is picked up by the headless runner
+/// on its own, because that globs the directory. This page cannot
+/// glob anything, so without this the two runners would quietly
+/// disagree about what the suite is — and the browser, the one that
+/// covers the older engines, would be the side running less.
 #[test]
 fn every_case_and_fixture_file_is_on_the_page() {
-    // A file added to the directory is picked up by the headless runner
-    // on its own, because that globs the directory. This page cannot
-    // glob anything, so without this the two runners would quietly
-    // disagree about what the suite is — and the browser, the one that
-    // covers the older engines, would be the side running less.
     let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/tests");
     let names = |suffix: &str| {
         let mut found: Vec<String> = fs::read_dir(dir)

@@ -59,7 +59,9 @@ fn snippet_with_block_comment_containing_paren() {
     assert_eq!(run(input), expected);
 }
 
-/// Same but with a line comment after the close-paren.
+/// A line comment after the close-paren is not part of the argument
+/// list, so the insertion lands inside the parens and the comment
+/// stays where it was written.
 #[test]
 fn snippet_with_line_comment_after_args() {
     let input = "#[allow(foo) // trailing comment\n]";
@@ -67,7 +69,9 @@ fn snippet_with_line_comment_after_args() {
     assert_eq!(run(input), expected);
 }
 
-/// Block comment *between* arguments.
+/// A block comment ahead of the argument carries a `)` of its own,
+/// which the scan steps over rather than mistake for the end of the
+/// list.
 #[test]
 fn snippet_with_block_comment_between_args() {
     let input = "#[allow(/* ) */ foo)]";

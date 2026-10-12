@@ -48,11 +48,11 @@ fn extra_macros_enables_a_macro_by_bare_name() {
     );
 }
 
+/// Multi-segment entries tail-match the invocation path, so a
+/// third-party macro invoked as `inner::their_macro!` is matched
+/// by the qualified entry `inner::their_macro`.
 #[test]
 fn extra_macros_enables_a_macro_by_qualified_path() {
-    // Multi-segment entries tail-match the invocation path, so a
-    // third-party macro invoked as `inner::their_macro!` is matched
-    // by the qualified entry `inner::their_macro`.
     run(
         "ui-toml/macro_trailing_comma/extra_macros_qualified",
         RuleConfig {
@@ -84,13 +84,13 @@ fn ignore_wins_over_extra_macros_for_the_same_macro() {
     );
 }
 
+/// Two coverage gaps in one fixture: a multi-segment `ignore`
+/// entry (only `extra_macros`'s multi-segment branch was
+/// previously exercised), and `parse_path`'s per-segment
+/// whitespace trim — the literal `"  std::vec  "` should still
+/// match a `std::vec!(...)` invocation.
 #[test]
 fn ignore_supports_qualified_path_and_whitespace_padding() {
-    // Two coverage gaps in one fixture: a multi-segment `ignore`
-    // entry (only `extra_macros`'s multi-segment branch was
-    // previously exercised), and `parse_path`'s per-segment
-    // whitespace trim — the literal `"  std::vec  "` should still
-    // match a `std::vec!(...)` invocation.
     run(
         "ui-toml/macro_trailing_comma/ignore_qualified_with_whitespace",
         RuleConfig {
@@ -100,24 +100,24 @@ fn ignore_supports_qualified_path_and_whitespace_padding() {
     );
 }
 
+/// Companion to `crate_level_expect_...`: a function-scope
+/// `#[expect]` must also fulfil, because the late pass emits at
+/// the deepest enclosing HIR node rather than always at the
+/// crate root.
 #[test]
 fn fn_level_expect_fulfils_against_a_violation() {
-    // Companion to `crate_level_expect_...`: a function-scope
-    // `#[expect]` must also fulfil, because the late pass emits at
-    // the deepest enclosing HIR node rather than always at the
-    // crate root.
     run(
         "ui-toml/macro_trailing_comma/expect_at_fn_scope",
         RuleConfig::default(),
     );
 }
 
+/// Regression for
+/// <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
+/// a crate-level `#![expect(...)]` must mark the expectation
+/// fulfilled when a violation exists in the crate.
 #[test]
 fn crate_level_expect_fulfils_against_a_violation() {
-    // Regression for
-    // <https://github.com/KSXGitHub/parallel-disk-usage/issues/409>:
-    // a crate-level `#![expect(...)]` must mark the expectation
-    // fulfilled when a violation exists in the crate.
     run(
         "ui-toml/macro_trailing_comma/expect_at_crate_root",
         RuleConfig::default(),

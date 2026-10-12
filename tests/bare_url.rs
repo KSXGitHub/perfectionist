@@ -38,12 +38,12 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// A user-supplied `skip_hosts` replaces the built-in default
+/// (`localhost`). The fixture verifies the configured host is
+/// suppressed while another host, not in the custom list, still
+/// fires.
 #[test]
 fn custom_skip_hosts_replaces_the_default_list() {
-    // A user-supplied `skip_hosts` replaces the built-in default
-    // (`localhost`). The fixture verifies the configured host is
-    // suppressed while another host, not in the custom list, still
-    // fires.
     run(
         "ui-toml/bare_url/custom_skip_hosts",
         RuleConfig {

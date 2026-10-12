@@ -73,11 +73,11 @@ fn alphabetical_style_flags_out_of_order_derives() {
     );
 }
 
+/// No `prefix` override: the default prefix (`Debug`, `Default`,
+/// `Clone`, `Copy`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
+/// `Hash`) is used.
 #[test]
 fn prefix_then_alphabetical_uses_default_prefix() {
-    // No `prefix` override: the default prefix (`Debug`, `Default`,
-    // `Clone`, `Copy`, `PartialEq`, `Eq`, `PartialOrd`, `Ord`,
-    // `Hash`) is used.
     run(
         "ui-toml/unordered_derives/prefix_then_alphabetical_default",
         RuleConfig {
@@ -87,10 +87,10 @@ fn prefix_then_alphabetical_uses_default_prefix() {
     );
 }
 
+/// A two-trait custom prefix promotes only those two traits ahead
+/// of the alphabetised tail, exercising the configuration path.
 #[test]
 fn prefix_then_alphabetical_uses_custom_prefix() {
-    // A two-trait custom prefix promotes only those two traits ahead
-    // of the alphabetised tail, exercising the configuration path.
     run(
         "ui-toml/unordered_derives/prefix_then_alphabetical_custom",
         RuleConfig {

@@ -59,10 +59,10 @@ fn rule_md_renders_inactive_state_for_opt_in_rules() {
     assert!(md.contains("- _Default state:_ `inactive`"), "got:\n{md}");
 }
 
+/// The state and the source are the two entries of the rule's
+/// own metadata list, in that order, directly under the title.
 #[test]
 fn rule_md_header_metadata_is_a_list() {
-    // The state and the source are the two entries of the rule's
-    // own metadata list, in that order, directly under the title.
     let md = render_rule_md(&fake_rule(), "../");
     assert!(
         md.contains(
@@ -160,11 +160,11 @@ fn rule_md_with_config_lists_fields_and_types() {
     assert_no_trailing_whitespace("rule", &md);
 }
 
+/// The struct branch of the Types section follows the same
+/// heading convention as the enum branch: a kind word and the
+/// name in the heading, the TOML type in the metadata list.
 #[test]
 fn rule_md_struct_type_fields_carry_a_type_bullet() {
-    // The struct branch of the Types section follows the same
-    // heading convention as the enum branch: a kind word and the
-    // name in the heading, the TOML type in the metadata list.
     let mut rule = fake_rule();
     rule.config = ConfigDoc {
         key: "perfectionist::demo_rule".to_owned(),
@@ -212,12 +212,12 @@ fn index_md_renders_bullet_list() {
     assert_no_trailing_whitespace("index", &index);
 }
 
+/// The rule title is h1 and `## Configuration` is h2. A
+/// source-level `### What it does` should render as `## What
+/// it does` so prose sections sit parallel to Configuration
+/// instead of at the same depth as h3 config fields.
 #[test]
 fn doc_markdown_headings_are_promoted_one_level() {
-    // The rule title is h1 and `## Configuration` is h2. A
-    // source-level `### What it does` should render as `## What
-    // it does` so prose sections sit parallel to Configuration
-    // instead of at the same depth as h3 config fields.
     let mut rule = fake_rule();
     rule.doc_markdown =
         "### What it does\nDoes a demo.\n\n### Example\n```text\n### not a heading\n```".to_owned();
@@ -232,31 +232,31 @@ fn doc_markdown_headings_are_promoted_one_level() {
     assert_no_trailing_whitespace("rule", &md);
 }
 
+/// Demoting h1 would produce `# ` with no content. Source
+/// markdown shouldn't have h1 anyway (the rule title takes
+/// that slot), but if it appears, leave it intact rather
+/// than mangling it.
 #[test]
 fn promote_headings_leaves_h1_alone() {
-    // Demoting h1 would produce `# ` with no content. Source
-    // markdown shouldn't have h1 anyway (the rule title takes
-    // that slot), but if it appears, leave it intact rather
-    // than mangling it.
     let out = promote_headings("# Title\nBody.\n");
     assert_eq!(out, "# Title\nBody.\n");
 }
 
+/// h6 promoted would be h5; nothing past h6 to worry about.
+/// A line of seven `#` is not a heading per CommonMark.
 #[test]
 fn promote_headings_caps_at_h6() {
-    // h6 promoted would be h5; nothing past h6 to worry about.
-    // A line of seven `#` is not a heading per CommonMark.
     let out = promote_headings("####### not a heading\n");
     assert_eq!(out, "####### not a heading\n");
 }
 
+/// A triple-backtick fence stays open through a `~~~` line
+/// in its body — `~~~` is the wrong marker, so it's not a
+/// close — and any `## inside` between them must not be
+/// treated as a heading. Per CommonMark §4.5, fence char
+/// and length both matter for the close.
 #[test]
 fn promote_headings_distinguishes_fence_markers() {
-    // A triple-backtick fence stays open through a `~~~` line
-    // in its body — `~~~` is the wrong marker, so it's not a
-    // close — and any `## inside` between them must not be
-    // treated as a heading. Per CommonMark §4.5, fence char
-    // and length both matter for the close.
     let input = "```rust\n## inside backtick fence\n~~~\nstill inside\n```\n## outside\n";
     let out = promote_headings(input);
     // The body lines pass through verbatim.
@@ -273,14 +273,14 @@ fn promote_headings_distinguishes_fence_markers() {
     );
 }
 
+/// Per CommonMark §4.5, a fence opener may be indented at
+/// most 3 spaces; with 4+ spaces it's an indented code
+/// block, not a fence. The previous implementation
+/// trimmed *all* leading whitespace before checking for
+/// backticks, so a `    ```` line opened a phantom fence
+/// and any subsequent heading line was suppressed.
 #[test]
 fn promote_headings_treats_indented_fence_marker_as_indented_code() {
-    // Per CommonMark §4.5, a fence opener may be indented at
-    // most 3 spaces; with 4+ spaces it's an indented code
-    // block, not a fence. The previous implementation
-    // trimmed *all* leading whitespace before checking for
-    // backticks, so a `    ```` line opened a phantom fence
-    // and any subsequent heading line was suppressed.
     let input = "    ```\n    ## inside indented code\n    ```\n## outside\n";
     let out = promote_headings(input);
     // The indented `` ``` `` lines pass through verbatim.
@@ -301,11 +301,11 @@ fn promote_headings_treats_indented_fence_marker_as_indented_code() {
     );
 }
 
+/// Per CommonMark §4.5, the close fence cannot carry an
+/// info string. A nested `` ```rust `` line inside a wider
+/// outer fence is body, not a close.
 #[test]
 fn promote_headings_rejects_info_string_as_close_fence() {
-    // Per CommonMark §4.5, the close fence cannot carry an
-    // info string. A nested `` ```rust `` line inside a wider
-    // outer fence is body, not a close.
     let input = "````\n## inside\n```rust\n## still inside\n````\n## outside\n";
     let out = promote_headings(input);
     assert!(
@@ -323,11 +323,11 @@ fn promote_headings_rejects_info_string_as_close_fence() {
     );
 }
 
+/// Per CommonMark §4.5, a fence opened with 4 backticks
+/// closes only on ≥ 4 backticks. A 3-backtick line inside
+/// is body, not a close.
 #[test]
 fn promote_headings_requires_matching_close_length() {
-    // Per CommonMark §4.5, a fence opened with 4 backticks
-    // closes only on ≥ 4 backticks. A 3-backtick line inside
-    // is body, not a close.
     let input = "````\n```\n## inside long fence\n````\n## outside\n";
     let out = promote_headings(input);
     assert!(

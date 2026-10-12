@@ -86,21 +86,21 @@ mod tests {
         assert!(!resolved.exempt_reexports);
     }
 
+    /// Setting one toggle to `false` leaves the other at its default
+    /// `true`: the two exceptions are independent and each flips on its
+    /// own.
     #[test]
     fn one_exception_can_be_disabled_independently() {
-        // Setting one toggle to `false` leaves the other at its default
-        // `true`: the two exceptions are independent and each flips on its
-        // own.
         let config: Config = toml::from_str("exempt_reexports = false").unwrap();
         let resolved = Resolved::from_config(config);
         assert!(resolved.exempt_prelude);
         assert!(!resolved.exempt_reexports);
     }
 
+    /// A table that sets only `allowed_paths` keeps both exceptions
+    /// enabled and the default prelude names.
     #[test]
     fn omitted_fields_fall_back_to_defaults() {
-        // A table that sets only `allowed_paths` keeps both exceptions
-        // enabled and the default prelude names.
         let config: Config = toml::from_str(r#"allowed_paths = ["::foo::bar"]"#).unwrap();
         let resolved = Resolved::from_config(config);
         assert!(resolved.exempt_prelude);

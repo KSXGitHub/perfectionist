@@ -78,10 +78,10 @@ fn fenced_code_block_is_skip() {
     assert!(region.contains("https://example.com"));
 }
 
+/// A single leading tab is 4 columns (CommonMark §2.2), so the
+/// line is an indented code block and its content is skipped.
 #[test]
 fn tab_indented_code_block_is_skip() {
-    // A single leading tab is 4 columns (CommonMark §2.2), so the
-    // line is an indented code block and its content is skipped.
     let text = "intro\n\n\tcode #123 here\n";
     let skips = scan_skip_regions(text);
     assert_eq!(skips.len(), 1);
@@ -111,10 +111,10 @@ fn code_regions_always_mask_a_fenced_block() {
     }
 }
 
+/// Unlike Tier A's [`scan_skip_regions`], the code-region mask
+/// leaves links and autolinks open to the prose scan.
 #[test]
 fn code_regions_ignore_links_and_autolinks() {
-    // Unlike Tier A's `scan_skip_regions`, the code-region mask
-    // leaves links and autolinks open to the prose scan.
     let text = "see [click](https://example.com) and <https://example.org>";
     assert!(scan_code_regions(text, true).is_empty());
 }
@@ -179,10 +179,10 @@ fn classify_setext_underline_after_text_is_a_heading() {
     assert_eq!(got, vec![("===", ConstructKind::Heading)]);
 }
 
+/// A `---` not preceded by a paragraph line is a thematic break, not
+/// a Setext underline; it is left unclassified.
 #[test]
 fn classify_thematic_break_after_blank_line_is_not_a_heading() {
-    // A `---` not preceded by a paragraph line is a thematic break, not
-    // a Setext underline; it is left unclassified.
     let text = "\n---\n";
     assert!(classify_constructs(text, ClassifyOptions::default()).is_empty());
 }
@@ -229,10 +229,10 @@ fn intraword_underscore_is_not_emphasis() {
     assert!(classify_constructs("foo_bar_baz", opts).is_empty());
 }
 
+/// Regression: `***bold***` has a 3-marker closing run; the span must
+/// cover all of it, not just the 2 `open` markers committed to.
 #[test]
 fn emphasis_span_covers_the_whole_closing_run() {
-    // Regression: `***bold***` has a 3-marker closing run; the span must
-    // cover all of it, not just the 2 `open` markers committed to.
     let opts = ClassifyOptions {
         detect_emphasis: true,
         detect_lists: false,

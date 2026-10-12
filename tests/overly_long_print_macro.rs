@@ -33,11 +33,11 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// A line wider than 40 columns but well within the default 100
+/// fires only once `max_line_width` is narrowed; a genuinely short
+/// line stays untouched even then.
 #[test]
 fn narrow_width_flags_a_line_within_the_default_limit() {
-    // A line wider than 40 columns but well within the default 100
-    // fires only once `max_line_width` is narrowed; a genuinely short
-    // line stays untouched even then.
     run(
         "ui-toml/overly_long_print_macro/narrow_width",
         RuleConfig {
@@ -47,11 +47,11 @@ fn narrow_width_flags_a_line_within_the_default_limit() {
     );
 }
 
+/// Setting `target_macros` to a custom single-entry list makes that
+/// macro eligible and drops `println!` from the built-in set, so the
+/// `println!` call is no longer flagged.
 #[test]
 fn target_macros_replaces_the_built_in_list_wholesale() {
-    // Setting `target_macros` to a custom single-entry list makes that
-    // macro eligible and drops `println!` from the built-in set, so the
-    // `println!` call is no longer flagged.
     run(
         "ui-toml/overly_long_print_macro/custom_target_macros",
         RuleConfig {
