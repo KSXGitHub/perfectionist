@@ -26,8 +26,8 @@ pub(crate) struct Icon {
 /// list again, so an `id` cannot name one file while [`sprite`] reads
 /// another, and no icon can be left out of the sprite.
 macro_rules! icons {
-    ($($name:ident = $stem:literal;)*) => {
-        $(pub(crate) const $name: Icon = Icon {
+    ($($vis:vis $name:ident = $stem:literal;)*) => {
+        $($vis const $name: Icon = Icon {
             id: concat!("icon-", $stem),
             source: include_str!(concat!("assets/", $stem, ".svg")),
         };)*
@@ -38,18 +38,18 @@ macro_rules! icons {
 }
 
 icons! {
-    SEARCH = "search";
-    FILTER = "filter";
-    THEME_LIGHT = "theme-light";
-    THEME_DARK = "theme-dark";
-    THEME_SYSTEM = "theme-system";
-    RULE_ANCHOR = "rule-anchor";
-    RULE_JUMP = "rule-jump";
-    NAV_MENU = "nav-menu";
-    SETTINGS = "settings";
-    CLOSE = "close";
-    DISCLOSURE_CLOSED = "disclosure-closed";
-    DISCLOSURE_OPEN = "disclosure-open";
+    pub(crate) SEARCH = "search";
+    pub(crate) FILTER = "filter";
+    pub(crate) THEME_LIGHT = "theme-light";
+    pub(crate) THEME_DARK = "theme-dark";
+    pub(crate) THEME_SYSTEM = "theme-system";
+    pub(crate) RULE_ANCHOR = "rule-anchor";
+    pub(crate) RULE_JUMP = "rule-jump";
+    pub(crate) NAV_MENU = "nav-menu";
+    pub(crate) SETTINGS = "settings";
+    pub(crate) CLOSE = "close";
+    pub(crate) DISCLOSURE_CLOSED = "disclosure-closed";
+    pub(crate) DISCLOSURE_OPEN = "disclosure-open";
 }
 
 /// Take the root `<svg>`'s `viewBox`, leaving `reader` just past that
