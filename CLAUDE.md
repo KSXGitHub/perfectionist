@@ -164,10 +164,10 @@ come back out in. Size does not decide it, and at these sites neither
 does speed: built once and probed once per node, the two spellings
 differ by nanoseconds beneath a HIR walk that costs orders of magnitude
 more. A collection on a genuine hot path is a performance question, and
-measuring is how to settle one — these sites are not that.
+measuring is how to settle one. These sites are not that.
 
-Where that order reaches the reader — sequencing diagnostics, ordering a
-suggestion, landing in a generated file — the ordered container is
+That order reaches the reader when it sequences diagnostics, orders a
+suggestion, or lands in a generated file. There the ordered container is
 necessary and not sufficient, because what it sorts by is the key's
 `Ord`, and that varies across `rustc_span`'s key types. `Span` and
 `BytePos` compare by position in the file, which is the order the reader
@@ -181,9 +181,9 @@ Where no order reaches the reader the collection is a lookup table,
 either spelling is correct, and rewriting a working one from either
 container to the other is noise.
 
-What removes the choice is a missing trait impl — rustc's `HirId` has
-`Hash` and `Eq` and no `Ord` — or a dependency naming the container in
-its own signature, as
+Sometimes the choice is already made. A key may not implement the
+trait: rustc's `HirId` has `Hash` and `Eq` and no `Ord`. A dependency
+may name the container in its own signature, as
 [`build-fs-tree`](https://docs.rs/build-fs-tree)'s directory variant
 does.
 
