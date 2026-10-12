@@ -556,3 +556,55 @@ fn inline_max_fraction_of_file_flags_a_short_but_test_heavy_file() {
         "the absolute cap must not be what fired; stderr was:\n{stderr}",
     );
 }
+
+/// Diagnostic order must not vary between runs. The scan tallies one
+/// entry per source file and emits one diagnostic per entry, so the
+/// container holding those tallies decides the order the warnings reach
+/// the terminal. Keyed by each file's `SourceMap` start offset in a
+/// `BTreeMap`, the offending files report in source order on every run;
+/// keyed in a `HashMap` the order is whichever permutation the
+/// per-process random seed happens to pick, which is why this fixture
+/// carries several offending files rather than two — the more there
+/// are, the smaller the chance a hashed order passes by luck.
+#[test]
+fn reports_offending_files_in_source_order() {
+    let big = big_inline_test_file();
+    let names = ["alpha", "bravo", "charlie", "delta"];
+    let declarations: String = names
+        .iter()
+        .map(|name| format!("pub mod {name};\n"))
+        .collect();
+    let owned: Vec<(String, String)> = core::iter::once(("src/lib.rs".to_owned(), declarations))
+        .chain(
+            names
+                .iter()
+                .map(|name| (format!("src/{name}.rs"), big.clone())),
+        )
+        .collect();
+    let sources: Vec<(&str, &str)> = owned
+        .iter()
+        .map(|(path, contents)| (path.as_str(), contents.as_str()))
+        .collect();
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_itf_source_order",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        &sources,
+        "",
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    let offsets: Vec<usize> = names
+        .iter()
+        .map(|name| {
+            let needle = format!("src/{name}.rs");
+            stderr.find(&needle).unwrap_or_else(|| {
+                panic!("expected a warning naming `{needle}`; stderr was:\n{stderr}")
+            })
+        })
+        .collect();
+    assert!(
+        offsets.is_sorted(),
+        "expected the warnings in source order {names:?}, got offsets {offsets:?}; \
+         stderr was:\n{stderr}",
+    );
+}
