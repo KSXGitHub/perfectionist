@@ -13,7 +13,7 @@ use rustc_lint::{LateContext, LintContext};
 use rustc_span::hygiene::ExpnKind;
 use rustc_span::source_map::SourceMap;
 use rustc_span::{BytePos, SourceFile, Span, Symbol};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 /// One inline test item charged to a file's footprint.
@@ -57,20 +57,27 @@ pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     if crate_target(cx).is_separate_target() {
         return;
     }
-    let mut files: HashMap<BytePos, FileAcc> = HashMap::new();
+    // A `BTreeMap`, not a `HashMap`: the walk tallies one entry per source
+    // file and each entry becomes one diagnostic, so the map's iteration
+    // order is the order the warnings reach the terminal. The key is each
+    // file's `SourceMap` start offset, which a `BTreeMap` orders by
+    // position — so a crate with two offending files reports them in a
+    // fixed, source-order sequence instead of whatever order the hasher's
+    // per-process random seed happened to produce.
+    let mut files: BTreeMap<BytePos, FileAcc> = BTreeMap::new();
     walk(cx, cx.tcx.hir_root_module(), &mut files);
     for acc in files.values() {
         emit_inline_style(state, cx, acc);
     }
 }
 
-fn walk(cx: &LateContext<'_>, module: &Mod<'_>, files: &mut HashMap<BytePos, FileAcc>) {
+fn walk(cx: &LateContext<'_>, module: &Mod<'_>, files: &mut BTreeMap<BytePos, FileAcc>) {
     for item_id in module.item_ids {
         classify(cx, cx.tcx.hir_item(*item_id), files);
     }
 }
 
-fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut HashMap<BytePos, FileAcc>) {
+fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut BTreeMap<BytePos, FileAcc>) {
     // The rule runs in a `cfg(test)` build, so the AST it sees contains
     // items that are not the author's hand-written layout. Treat them by
     // origin rather than skipping every expansion wholesale:
@@ -147,7 +154,7 @@ fn is_external_module(cx: &LateContext<'_>, declaration: Span, module: &Mod<'_>)
             .start_pos
 }
 
-fn record_production(cx: &LateContext<'_>, span: Span, files: &mut HashMap<BytePos, FileAcc>) {
+fn record_production(cx: &LateContext<'_>, span: Span, files: &mut BTreeMap<BytePos, FileAcc>) {
     acc_for(cx.sess().source_map(), span, files).production_count += 1;
 }
 
@@ -155,7 +162,7 @@ fn record_test(
     cx: &LateContext<'_>,
     span: Span,
     module_name: Option<Symbol>,
-    files: &mut HashMap<BytePos, FileAcc>,
+    files: &mut BTreeMap<BytePos, FileAcc>,
 ) {
     let source_map = cx.sess().source_map();
     let lines = line_count(source_map, span);
@@ -167,7 +174,7 @@ fn record_test(
 fn acc_for<'a>(
     source_map: &SourceMap,
     span: Span,
-    files: &'a mut HashMap<BytePos, FileAcc>,
+    files: &'a mut BTreeMap<BytePos, FileAcc>,
 ) -> &'a mut FileAcc {
     let file = source_map.lookup_source_file(span.lo());
     let acc = files.entry(file.start_pos).or_default();
