@@ -181,10 +181,11 @@ Where no order reaches the reader the collection is a lookup table,
 either spelling is correct, and rewriting a working one from either
 container to the other is noise.
 
-What removes the choice is a missing trait impl — `HirId` has `Hash` and
-`Eq` and no `Ord` — or a dependency naming the container, as
+What removes the choice is a missing trait impl — rustc's `HirId` has
+`Hash` and `Eq` and no `Ord` — or a dependency naming the container in
+its own signature, as
 [`build-fs-tree`](https://docs.rs/build-fs-tree)'s directory variant
-does for [`utils/src/project.rs`](utils/src/project.rs).
+does.
 
 ## Do not write documentation that restates the code
 
