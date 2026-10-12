@@ -4,11 +4,11 @@
 
 use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
-static TAKEN: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+static TAKEN: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Mutex::default);
 
 /// Hold each fixture to a package name of its own.
 ///
