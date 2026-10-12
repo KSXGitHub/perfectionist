@@ -59,10 +59,10 @@ fn an_empty_body_has_no_lines() {
     );
 }
 
+/// A one-line body: `body_interior` leaves no newline at all, so the
+/// count comes entirely from the tail of `count_code_lines`.
 #[test]
 fn a_last_line_without_a_trailing_newline_still_counts() {
-    // A one-line body: `body_interior` leaves no newline at all, so the
-    // count comes entirely from the tail of `count_code_lines`.
     assert_eq!(count_code_lines(" work() "), 1);
     assert_eq!(
         count_code_lines(text_block! {
@@ -74,11 +74,11 @@ fn a_last_line_without_a_trailing_newline_still_counts() {
     );
 }
 
+/// A `macro_rules!` written inside a body is ordinary body source:
+/// its definition lines count, and the invocation costs only the
+/// line it is written on -- never the lines it expands to.
 #[test]
 fn a_local_macro_definition_counts_its_own_lines() {
-    // A `macro_rules!` written inside a body is ordinary body source:
-    // its definition lines count, and the invocation costs only the
-    // line it is written on -- never the lines it expands to.
     let source = text_block_fnl! {
         ""
         "    macro_rules! double {"

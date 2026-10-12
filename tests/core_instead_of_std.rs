@@ -42,17 +42,17 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// No knob set: `core::` and `alloc::` paths alike are flagged, in
+/// every position a path can appear, and nothing is exempt.
 #[test]
 fn default_config_covers_core_and_alloc() {
-    // No knob set: `core::` and `alloc::` paths alike are flagged, in
-    // every position a path can appear, and nothing is exempt.
     run("ui-toml/core_instead_of_std/default", RuleConfig::default());
 }
 
+/// `also_alloc = false` turns off the `alloc` half of the rule and
+/// leaves the `core` half exactly as it was.
 #[test]
 fn also_alloc_false_leaves_alloc_paths_alone() {
-    // `also_alloc = false` turns off the `alloc` half of the rule and
-    // leaves the `core` half exactly as it was.
     run(
         "ui-toml/core_instead_of_std/no_alloc",
         RuleConfig {
@@ -62,10 +62,10 @@ fn also_alloc_false_leaves_alloc_paths_alone() {
     );
 }
 
+/// A `skip_paths` entry is never flagged, and it withdraws the
+/// automatic rewrite from the names sharing its crate segment.
 #[test]
 fn skip_paths_exempts_a_listed_path() {
-    // A `skip_paths` entry is never flagged, and it withdraws the
-    // automatic rewrite from the names sharing its crate segment.
     run(
         "ui-toml/core_instead_of_std/skip_paths",
         RuleConfig {
@@ -75,19 +75,19 @@ fn skip_paths_exempts_a_listed_path() {
     );
 }
 
+/// A `#![no_std]` crate has no `std::` to name, even when `std` is
+/// linked into the same compilation.
 #[test]
 fn no_std_crate_is_left_alone() {
-    // A `#![no_std]` crate has no `std::` to name, even when `std` is
-    // linked into the same compilation.
     run("ui-toml/core_instead_of_std/no_std", RuleConfig::default());
 }
 
+/// Regression fixture for the `hir_in_external_macro` guard; see the
+/// fixture's own header. It belongs under `ui-toml/` rather than
+/// beside the other `ui/*_proc_macro.rs` fixtures because the rule
+/// needs a `dylint.toml` to be installed at all.
 #[test]
 fn proc_macro_synthesised_path_is_not_flagged() {
-    // Regression fixture for the `hir_in_external_macro` guard; see the
-    // fixture's own header. It belongs under `ui-toml/` rather than
-    // beside the other `ui/*_proc_macro.rs` fixtures because the rule
-    // needs a `dylint.toml` to be installed at all.
     run(
         "ui-toml/core_instead_of_std/proc_macro",
         RuleConfig::default(),

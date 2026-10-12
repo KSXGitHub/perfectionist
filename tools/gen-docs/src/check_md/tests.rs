@@ -107,12 +107,12 @@ fn non_md_files_are_ignored() {
     assert!(dir.join("notes.txt").exists());
 }
 
+/// `read_managed_filenames` returns an empty set on
+/// `NotFound`, so [`check_rules_dir`] should report each
+/// expected file as missing rather than panicking or
+/// silently passing.
 #[test]
 fn nonexistent_dir_drifts_with_every_file_missing() {
-    // `read_managed_filenames` returns an empty set on
-    // `NotFound`, so `check_rules_dir` should report each
-    // expected file as missing rather than panicking or
-    // silently passing.
     let base = tempdir("nonexistent");
     let dir = base.join("never-created");
     assert!(!dir.exists());
@@ -127,16 +127,16 @@ fn nonexistent_dir_drifts_with_every_file_missing() {
     }
 }
 
+/// The directory is fully managed: a hand-added `readme.md`
+/// (different case from the managed `README.md`) is treated
+/// as a stray and deleted, same as any other unmanaged
+/// `.md` file. On case-sensitive filesystems the two
+/// coexist as distinct inodes; on case-insensitive ones
+/// they're already the same file, and write-md's
+/// subsequent write step rebuilds the canonical-cased
+/// README from scratch either way.
 #[test]
 fn stray_md_with_collision_casing_is_deleted() {
-    // The directory is fully managed: a hand-added `readme.md`
-    // (different case from the managed `README.md`) is treated
-    // as a stray and deleted, same as any other unmanaged
-    // `.md` file. On case-sensitive filesystems the two
-    // coexist as distinct inodes; on case-insensitive ones
-    // they're already the same file, and write-md's
-    // subsequent write step rebuilds the canonical-cased
-    // README from scratch either way.
     let dir = tempdir("case-collision");
     let rules = vec![fake_rule("alpha")];
     write_rules_dir(&rules, &dir, "../");

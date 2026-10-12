@@ -57,10 +57,10 @@ fn forge_detection_is_host_case_insensitive() {
     );
 }
 
+/// Self-hosted instances conventionally sit under a subdomain
+/// named after the software; the leading label names the forge.
 #[test]
 fn forge_detects_self_hosted_subdomain_pattern() {
-    // Self-hosted instances conventionally sit under a subdomain
-    // named after the software; the leading label names the forge.
     assert_eq!(
         Forge::detect("https://gitlab.example.com/o/r"),
         Some(Forge::GitLab),
@@ -80,10 +80,10 @@ fn forge_detects_self_hosted_subdomain_pattern() {
     );
 }
 
+/// No preference for any service: a host that names no forge
+/// yields `None`, not a default forge.
 #[test]
 fn forge_detection_has_no_fallback_for_unknown_hosts() {
-    // No preference for any service: a host that names no forge
-    // yields `None`, not a default forge.
     assert_eq!(Forge::detect("https://code.example.com/o/r"), None);
     // `git.*` is the most common generic prefix but ambiguous
     // across Gitea / GitLab / cgit / gitweb, so it's not matched.
@@ -104,26 +104,26 @@ fn block_defines_reference_detects_existing_definition() {
     assert!(!block_defines_reference("Closes #99.", "99"));
 }
 
+/// A recognised `forge` deserialises; an unrecognised one is a
+/// hard deserialisation error. `dylint_linting::config_or_default`
+/// surfaces that error as a panic at launch — it only falls
+/// back to the default when the key is *absent*, not when it's
+/// present-but-invalid — so a typo'd forge fails loudly.
 #[test]
 fn unknown_forge_value_is_rejected() {
-    // A recognised `forge` deserialises; an unrecognised one is a
-    // hard deserialisation error. `dylint_linting::config_or_default`
-    // surfaces that error as a panic at launch — it only falls
-    // back to the default when the key is *absent*, not when it's
-    // present-but-invalid — so a typo'd forge fails loudly.
     assert!(toml::from_str::<Config>(r#"forge = "gitlab""#).is_ok());
     assert!(toml::from_str::<Config>(r#"forge = "bitbucket""#).is_err());
 }
 
+/// The headline scenario: `repository` is set, `forge` is left
+/// unset, and no path layout is configured. The forge is
+/// detected from the recognised host and both URLs resolve to a
+/// correct address — so the autofix works, not just help-only.
+/// The GitHub and GitLab pair also confirms the derived layout
+/// is forge-specific (`/pull/` vs `/-/merge_requests/`), not a
+/// single hard-coded shape.
 #[test]
 fn urls_are_derived_when_only_repository_is_set() {
-    // The headline scenario: `repository` is set, `forge` is left
-    // unset, and no path layout is configured. The forge is
-    // detected from the recognised host and both URLs resolve to a
-    // correct address — so the autofix works, not just help-only.
-    // The GitHub and GitLab pair also confirms the derived layout
-    // is forge-specific (`/pull/` vs `/-/merge_requests/`), not a
-    // single hard-coded shape.
     let lint = |web_base: &str| BareIssueReference {
         forge: None,
         repo_web_base: Some(web_base.to_owned()),
@@ -157,11 +157,11 @@ fn urls_are_derived_when_only_repository_is_set() {
     );
 }
 
+/// `#NNN` denotes a merge request on no forge — GitLab spells
+/// those `!NNN` — so the PR suggestion is suppressed there but
+/// offered on the others.
 #[test]
 fn hash_reference_is_issue_only_on_gitlab() {
-    // `#NNN` denotes a merge request on no forge — GitLab spells
-    // those `!NNN` — so the PR suggestion is suppressed there but
-    // offered on the others.
     let lint = |web_base: &str| BareIssueReference {
         forge: None,
         repo_web_base: Some(web_base.to_owned()),
@@ -185,26 +185,26 @@ fn resolve_repository_passes_valid_url() {
     );
 }
 
+/// Unset is legitimate — the lint runs help-only, no panic.
 #[test]
 fn resolve_repository_is_none_when_unset() {
-    // Unset is legitimate — the lint runs help-only, no panic.
     assert_eq!(resolve_repository(None), None);
 }
 
+/// A single-segment URL is a configuration mistake; fail loudly
+/// at launch rather than silently degrade to help-only.
 #[test]
 #[should_panic(expected = "is not a parseable git URL")]
 fn resolve_repository_panics_on_unparseable() {
-    // A single-segment URL is a configuration mistake; fail loudly
-    // at launch rather than silently degrade to help-only.
     resolve_repository(Some("https://github.com/owner"));
 }
 
+/// The deliberate non-case: `repository` is set but its host
+/// isn't a recognised service and `forge` is left unset. There
+/// is no fallback forge, so both URLs are `None` — the rule
+/// emits help-only output rather than guessing a layout.
 #[test]
 fn no_urls_when_repository_host_is_unrecognised() {
-    // The deliberate non-case: `repository` is set but its host
-    // isn't a recognised service and `forge` is left unset. There
-    // is no fallback forge, so both URLs are `None` — the rule
-    // emits help-only output rather than guessing a layout.
     let lint = BareIssueReference {
         forge: None,
         repo_web_base: Some("https://git.example.com/owner/repo".to_owned()),
@@ -235,9 +235,9 @@ fn renders_reference_doc_suggestion() {
     );
 }
 
+/// The URL forms drop the `#N` token and substitute the URL.
 #[test]
 fn renders_bare_url_doc_suggestion() {
-    // The URL forms drop the `#N` token and substitute the URL.
     assert_eq!(
         render_doc_suggestion(DocForm::BareUrl, "#42", "https://example.com/issues/42"),
         "https://example.com/issues/42",

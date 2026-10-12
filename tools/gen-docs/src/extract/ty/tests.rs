@@ -61,9 +61,9 @@ fn toml_type_label_arrays_and_maps() {
     );
 }
 
+/// Option, Box, Rc, Arc unwrap to the inner type.
 #[test]
 fn toml_type_label_transparent_wrappers() {
-    // Option, Box, Rc, Arc unwrap to the inner type.
     let shared = no_shared();
     assert_eq!(
         toml_type_label(&parse_type("Option<String>"), &shared),
@@ -92,10 +92,10 @@ fn toml_type_label_qualified_paths_use_last_segment() {
     );
 }
 
+/// Project-local enums/structs surface verbatim; readers
+/// follow them to the per-rule Types subsection.
 #[test]
 fn toml_type_label_custom_idents_pass_through() {
-    // Project-local enums/structs surface verbatim; readers
-    // follow them to the per-rule Types subsection.
     let shared = no_shared();
     assert_eq!(toml_type_label(&parse_type("Scope"), &shared), "Scope");
     assert_eq!(
@@ -142,10 +142,10 @@ fn collect_referenced_idents_skips_builtins_and_keeps_order() {
     assert_eq!(out, vec!["Scope".to_owned()]);
 }
 
+/// `std` and `vec` would have been picked up by the old
+/// every-segment walk; the current behaviour drops them.
 #[test]
 fn collect_referenced_idents_inspects_only_last_segment() {
-    // `std` and `vec` would have been picked up by the old
-    // every-segment walk; the current behaviour drops them.
     let ty = parse_type("std::vec::Vec<my_crate::Inner>");
     let mut out = Vec::new();
     let mut seen = BTreeSet::new();
@@ -181,21 +181,21 @@ fn collect_referenced_idents_skips_shared_newtypes() {
     let _ = std::fs::remove_dir_all(&tmp);
 }
 
+/// Coverage contract: every name in BUILTIN_TYPES must have
+/// a matching arm in [`toml_type_label`], otherwise the
+/// renderer would drop the name from the Types section
+/// (because `is_builtin_type` returns true) AND emit it
+/// verbatim as a Rust identifier in the field-type column.
+///
+/// The `Config` entry is exempt — it's on the builtin list
+/// purely to prevent self-referential lookup loops, and has
+/// no user-facing label form.
+///
+/// Generic types need a concrete instantiation to exercise
+/// the arm (a bare `Option` with no inner type would hit
+/// the `_ => ident` fallback). `bool` is harmless filler.
 #[test]
 fn builtin_types_all_map_to_toml_label() {
-    // Coverage contract: every name in BUILTIN_TYPES must have
-    // a matching arm in `toml_type_label`, otherwise the
-    // renderer would drop the name from the Types section
-    // (because `is_builtin_type` returns true) AND emit it
-    // verbatim as a Rust identifier in the field-type column.
-    //
-    // The `Config` entry is exempt — it's on the builtin list
-    // purely to prevent self-referential lookup loops, and has
-    // no user-facing label form.
-    //
-    // Generic types need a concrete instantiation to exercise
-    // the arm (a bare `Option` with no inner type would hit
-    // the `_ => ident` fallback). `bool` is harmless filler.
     let shared = no_shared();
     for &name in BUILTIN_TYPES {
         if name == "Config" {
