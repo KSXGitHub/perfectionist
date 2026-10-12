@@ -180,13 +180,13 @@ fn resolve_overrides(config: &GlobalConfig) -> HashMap<String, DefaultState> {
 }
 
 /// Effective [`DefaultState`] for the rule named `name` (unqualified
-/// — no `perfectionist::` prefix): [`DefaultState::Inactive`] where
-/// the `[perfectionist]` table lists it under `disable`,
-/// [`DefaultState::Active`] where it lists it under `enable`, and
-/// `default` — the per-rule baseline — where the table names it under
-/// neither. A rule listed under both never reaches here, so the two
-/// arrays need no precedence between them: [`resolve_overrides`]
-/// panics on that table.
+/// — no `perfectionist::` prefix), one case per rule:
+///
+/// - [`DefaultState::Inactive`] where the `[perfectionist]` table
+///   lists `name` under `disable`.
+/// - [`DefaultState::Active`] where it lists `name` under `enable`.
+/// - `default` — the per-rule baseline — where it lists `name` under
+///   neither.
 ///
 /// Each rule's `register_pass` passes its own baseline as
 /// `default`: most rules pass [`DefaultState::Active`]; rules
