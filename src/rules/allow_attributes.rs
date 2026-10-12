@@ -179,12 +179,6 @@ pub struct AllowAttributes {
     /// group fires if *any* member fires, the same non-deterministic
     /// shape the exempt list guards against, so groups are never
     /// rewritten.
-    ///
-    /// A `HashSet` rather than the `BTreeSet` that backs the
-    /// `exempt_lints` knob: this one holds every lint rustc and every
-    /// loaded plugin registers — upwards of a thousand names, where
-    /// hashing a `String` key costs less than the tree's string
-    /// comparisons.
     builtin_lints: HashSet<String>,
     /// Spans of attributes that sit on a `mod` item, collected from
     /// [`EarlyLintPass::check_item`] so [`EarlyLintPass::check_attribute`]
@@ -192,11 +186,6 @@ pub struct AllowAttributes {
     /// `apply_to_outer_scopes` is set. `check_item` for an item runs
     /// before that item's own attributes are visited, so the span is
     /// already recorded by the time `check_attribute` consults it.
-    ///
-    /// A `HashSet`: it accumulates one entry per attribute on a `mod`
-    /// item for the whole crate, so it grows with the crate being
-    /// linted, and `check_attribute` only ever probes it with
-    /// `contains`.
     module_attr_spans: HashSet<Span>,
 }
 

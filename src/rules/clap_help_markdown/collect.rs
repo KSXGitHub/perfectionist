@@ -46,21 +46,12 @@ pub(super) struct DocNodes {
     /// per consecutive run, each keyed by its own first line's offset —
     /// so recording only the first would leave a later run's markdown
     /// unscanned. The markdown scan looks each block up here.
-    ///
-    /// A `HashMap`: it holds an entry per doc-comment line in the
-    /// crate, so it grows with the crate being linted. The scan walks
-    /// the comment blocks in source order and looks each one up by
-    /// key, so the map's own order never reaches a diagnostic.
     pub(super) by_line: HashMap<u32, NodeState>,
     /// Byte offset of the *first* `///` line of each node — exactly one
     /// entry per node. The `require_help_override` check anchors its
     /// single per-node diagnostic here, so a node whose `///` run is
     /// split across several blocks is still flagged just once (at its
     /// first block).
-    ///
-    /// A `HashSet`: it holds one entry per doc-commented node in the
-    /// crate, so it grows with the crate being linted, and the scan
-    /// probes it with `contains` from a walk already in source order.
     pub(super) first_lines: HashSet<u32>,
 }
 
@@ -270,7 +261,7 @@ fn enum_container_doc_reaches_help(attrs: &[Attribute]) -> bool {
 /// Whether any of `names` — final path segments, as
 /// [`crate::derive_list::derive_names`] yields them — is among the
 /// node's derives.
-fn derives_any(derives: &BTreeSet<Symbol>, names: &[&str]) -> bool {
+fn derives_any(derives: &HashSet<Symbol>, names: &[&str]) -> bool {
     derives
         .iter()
         .any(|derive| names.contains(&derive.as_str()))

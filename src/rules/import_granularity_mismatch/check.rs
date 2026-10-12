@@ -6,7 +6,7 @@
 
 use super::config::{SelfMerge, Style};
 use super::model::{LeafItem, StmtInfo, TopKind, has_bare_item_dual, has_self_dual};
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 pub(super) fn is_compliant(
     style: Style,
@@ -43,7 +43,7 @@ fn module_compliant(stmts: &[&StmtInfo]) -> bool {
     if !stmts.iter().all(|stmt| is_module_shaped(stmt)) {
         return false;
     }
-    let mut seen: BTreeSet<&[String]> = BTreeSet::new();
+    let mut seen: HashSet<&[String]> = HashSet::new();
     for stmt in stmts {
         // Crate items (`use serde;`) all share the empty module but are
         // never merged, so they don't participate in this check.
@@ -110,12 +110,12 @@ fn crate_compliant(self_merge: Option<SelfMerge>, stmts: &[&StmtInfo]) -> bool {
     // statements rather than flagged — the same reasoning that keeps
     // `is_collapsed` from folding `{thing, thing::Opts}` inside a single
     // brace. See <https://github.com/KSXGitHub/perfectionist/issues/186>.
-    let bare_item_roots: BTreeSet<&str> = stmts
+    let bare_item_roots: HashSet<&str> = stmts
         .iter()
         .filter(|stmt| stmt.is_crate_item())
         .filter_map(|stmt| stmt.crate_root())
         .collect();
-    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    let mut seen: HashSet<&str> = HashSet::new();
     for stmt in stmts {
         // A top-level brace spanning several roots (`use {a::X, b::Y};`)
         // has no single root and is never crate-shaped.

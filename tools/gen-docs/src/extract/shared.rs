@@ -22,7 +22,7 @@
 //!   than one struct is skipped because there is no way to tell
 //!   which struct the label is for.
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use syn::{Expr, ExprLit, Item, Lit};
@@ -36,7 +36,7 @@ use syn::{Expr, ExprLit, Item, Lit};
 /// the user-visible shape).
 #[derive(Clone, Debug, Default)]
 pub(crate) struct SharedTypes {
-    labels: BTreeMap<String, String>,
+    labels: HashMap<String, String>,
 }
 
 impl SharedTypes {
@@ -50,7 +50,7 @@ impl SharedTypes {
     /// indistinguishable from "no shared newtype defined" — exactly
     /// what we want when no such type exists.
     pub(crate) fn discover(src_dir: &Path) -> Self {
-        let mut labels = BTreeMap::new();
+        let mut labels = HashMap::new();
         let Ok(entries) = fs::read_dir(src_dir) else {
             return Self { labels };
         };

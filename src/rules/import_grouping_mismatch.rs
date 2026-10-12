@@ -6,7 +6,7 @@ use rustc_errors::Applicability;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::{BytePos, Span};
-use std::collections::{BTreeSet, HashSet};
+use std::collections::HashSet;
 
 mod check;
 mod classify;
@@ -350,7 +350,7 @@ impl ImportGroupingMismatch {
         // is also named `foo` and an active `use foo::Bar` resolves to
         // that crate — a collision this syntactic approximation, which
         // does no name resolution, does not attempt to detect.
-        let local_modules: BTreeSet<String> = items
+        let local_modules: HashSet<String> = items
             .iter()
             .filter_map(|item| match &item.kind {
                 ItemKind::Mod(_, ident, _) => Some(ident.name.to_string()),
@@ -397,7 +397,7 @@ impl ImportGroupingMismatch {
         &self,
         lint_context: &LateContext<'_>,
         item: &'ast Item,
-        local_modules: &BTreeSet<String>,
+        local_modules: &HashSet<String>,
     ) -> Option<UseStmt<'ast>> {
         let ItemKind::Use(tree) = &item.kind else {
             return None;
