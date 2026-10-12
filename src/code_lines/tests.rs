@@ -60,7 +60,7 @@ fn an_empty_body_has_no_lines() {
 }
 
 /// A one-line body: `body_interior` leaves no newline at all, so the
-/// count comes entirely from the tail of `count_code_lines`.
+/// count comes entirely from the tail of [`count_code_lines`].
 #[test]
 fn a_last_line_without_a_trailing_newline_still_counts() {
     assert_eq!(count_code_lines(" work() "), 1);

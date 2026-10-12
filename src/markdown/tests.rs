@@ -111,7 +111,7 @@ fn code_regions_always_mask_a_fenced_block() {
     }
 }
 
-/// Unlike Tier A's `scan_skip_regions`, the code-region mask
+/// Unlike Tier A's [`scan_skip_regions`], the code-region mask
 /// leaves links and autolinks open to the prose scan.
 #[test]
 fn code_regions_ignore_links_and_autolinks() {

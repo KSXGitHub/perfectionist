@@ -93,7 +93,7 @@ fn ssh_url_is_parsed() {
     );
 }
 
-/// The negative counterpart to `gitlab_host_is_detected`:
+/// The negative counterpart to [`gitlab_host_is_detected`]:
 /// `repository` is set, but to a self-hosted host the lint can't
 /// classify, and `forge` is omitted. With no detectable forge and
 /// no fallback, the lint can't build a URL — so it degrades to
@@ -154,7 +154,7 @@ fn single_selection_is_still_maybe_incorrect() {
     );
 }
 
-/// The counterpart to `unrecognised_host_without_forge_is_help_only`
+/// The counterpart to [`unrecognised_host_without_forge_is_help_only`]
 /// on the other side of the `issue_url` split: the repository *is*
 /// resolvable, so the lint could build a link, but both suggestion
 /// knobs are off. It degrades to help-only and names the two knobs
@@ -224,7 +224,7 @@ fn bare_url_form_substitutes_the_url_on_both_surfaces() {
     );
 }
 
-/// The counterpart to `bare_url_form_substitutes_the_url_on_both_surfaces`:
+/// The counterpart to [`bare_url_form_substitutes_the_url_on_both_surfaces`]:
 /// `bracketed_url` substitutes the same URL but wraps it in `<...>`.
 #[test]
 fn bracketed_url_form_wraps_the_url_on_both_surfaces() {
