@@ -1,5 +1,5 @@
 // edition:2024
-#![feature(register_tool, stmt_expr_attributes, try_blocks)]
+#![feature(iter_intersperse, register_tool, stmt_expr_attributes, try_blocks)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
@@ -197,6 +197,24 @@ fn wrapped_block_bodies(values: Vec<i32>) -> Vec<Result<i32, ()>> {
             doubled
         })
         .collect()
+}
+
+fn parenthesised_bodies() {
+    let _ = [1, 2].into_iter().map(|value| ({
+        let doubled = value * 2;
+        doubled
+    }));
+    let _ = [1, 2].into_iter().map(|value| ((unsafe {
+        let doubled = value * 2;
+        doubled
+    })));
+}
+
+fn generator_callback(values: Vec<i32>) {
+    let _ = values.into_iter().intersperse_with(|| {
+        let separator = 0;
+        separator
+    });
 }
 
 fn sortedness_predicates(values: Vec<i32>) {

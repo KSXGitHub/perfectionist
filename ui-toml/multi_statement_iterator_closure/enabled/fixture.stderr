@@ -264,6 +264,48 @@ LL | |         })
    = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
    = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
 
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| ({
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     }));
+   | |______^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| ((unsafe {
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     })));
+   | |_______^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
+warning: `intersperse_with` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = values.into_iter().intersperse_with(|| {
+   |  _________________________________________________^
+LL | |         let separator = 0;
+LL | |         separator
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
 warning: `is_sorted_by` callback has 2 top-level statements, above the limit of 1
   --> $DIR/fixture.rs:LL:CC
    |

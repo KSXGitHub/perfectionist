@@ -55,9 +55,9 @@ fn closure_statements(expr: &Expr) -> Option<usize> {
     }
 }
 
-/// The block a closure body is, or that a coroutine, `try` or `const`
-/// wrapper around it holds; `None` for a body that is any other single
-/// expression.
+/// The block a closure body is, or that parentheses or a coroutine,
+/// `try` or `const` wrapper around it hold; `None` for a body that is
+/// any other single expression.
 ///
 /// A wrapped block is counted through, as a plain or `unsafe` one is:
 /// the statements are the steps the callback performs either way, and
@@ -68,6 +68,7 @@ fn closure_statements(expr: &Expr) -> Option<usize> {
 fn block_behind(body: &Expr) -> Option<&Block> {
     match &body.kind {
         ExprKind::Block(block, _) => Some(block),
+        ExprKind::Paren(inner) => block_behind(inner),
         ExprKind::Gen(_, block, _, _) => Some(block),
         ExprKind::TryBlock(block, _) => Some(block),
         ExprKind::ConstBlock(anonymous) => block_behind(&anonymous.value),

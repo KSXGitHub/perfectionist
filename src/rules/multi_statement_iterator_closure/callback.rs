@@ -53,6 +53,7 @@ fn has_callback(name: &str) -> bool {
             | "map_windows"
             | "scan"
             | "inspect"
+            | "intersperse_with"
             | "skip_while"
             | "take_while"
             | "for_each"
