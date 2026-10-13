@@ -20,7 +20,7 @@ use derive_more::Display;
 use pipe_trait::Pipe;
 use std::io;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 /// The dylint-specific environment variables `dylint_testing` sets in
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
@@ -135,10 +135,10 @@ pub enum DylintVersionError {
     Pin,
     #[display("Failed to spawn `cargo dylint`: {_0}; {REMEDY}")]
     Spawn(io::Error),
-    #[display("`cargo dylint --version` failed; {REMEDY}\n{_0}")]
-    Status(String),
-    #[display("`cargo dylint --version` printed `{_0}` rather than a version; {REMEDY}")]
-    Unparsable(String),
+    #[display("`cargo dylint --version` failed with {_0}; {REMEDY}\n{_1}")]
+    Status(ExitStatus, String),
+    #[display("`cargo dylint --version` printed nothing; {REMEDY}")]
+    NoOutput,
     #[display("cargo-dylint {_0} is not the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}")]
     Mismatch(String, String),
 }
@@ -178,18 +178,11 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersi
             .pipe_deref(String::from_utf8_lossy)
             .trim()
             .to_owned();
-        return Err(DylintVersionError::Status(match stderr.is_empty() {
-            true => output.status.to_string(),
-            false => stderr,
-        }));
+        return Err(DylintVersionError::Status(output.status, stderr));
     }
-    let reported = output
-        .stdout
-        .pipe_deref(String::from_utf8_lossy)
-        .trim()
-        .to_owned();
+    let reported = output.stdout.pipe_deref(String::from_utf8_lossy);
     let Some(installed) = reported.split_whitespace().next_back() else {
-        return Err(DylintVersionError::Unparsable(reported));
+        return Err(DylintVersionError::NoOutput);
     };
     match installed == pinned {
         true => Ok(pinned),
