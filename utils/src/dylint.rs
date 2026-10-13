@@ -22,6 +22,8 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitStatus};
 
+mod parser;
+
 /// The dylint-specific environment variables `dylint_testing` sets in
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
 ///
@@ -137,8 +139,8 @@ pub enum DylintVersionError {
     Spawn(io::Error),
     #[display("`cargo dylint --version` failed with {_0}; {REMEDY}\n{_1}")]
     Status(ExitStatus, String),
-    #[display("`cargo dylint --version` printed nothing; {REMEDY}")]
-    NoOutput,
+    #[display("`cargo dylint --version` printed {_0:?} rather than a version banner; {REMEDY}")]
+    Unreadable(String),
     #[display("cargo-dylint {_0} is not the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}")]
     Mismatch(String, String),
 }
@@ -181,8 +183,8 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersi
         return Err(DylintVersionError::Status(output.status, stderr));
     }
     let reported = output.stdout.pipe_deref(String::from_utf8_lossy);
-    let Some(installed) = reported.split_whitespace().next_back() else {
-        return Err(DylintVersionError::NoOutput);
+    let Some(installed) = parser::take_version(&reported) else {
+        return Err(DylintVersionError::Unreadable(reported.trim().to_owned()));
     };
     match installed == pinned {
         true => Ok(pinned),
