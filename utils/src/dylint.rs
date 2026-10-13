@@ -5,12 +5,21 @@
 //! from the rule standing down. `--fail-on-no-libraries` turns that
 //! into a test failure.
 //!
+//! A `cargo dylint` that predates a flag passed here rejects the
+//! whole invocation as an unknown argument, so every run fails for a
+//! reason that reads as a bad flag. [`check_dylint_version`] holds
+//! the binary on `PATH` to the version this workspace pins.
+//!
 //! Every command here clears the dylint-specific variables the
 //! in-process UI harness leaves set in this process, so a spawned
 //! `cargo dylint` never inherits them.
 
+use cargo_toml::Manifest;
 use command_extra::CommandExtra;
+use derive_more::Display;
 use pipe_trait::Pipe;
+use semver::{Version, VersionReq};
+use std::io;
 use std::path::Path;
 use std::process::Command;
 
@@ -108,6 +117,101 @@ fn run_dylint_inner(
         .expect("failed to run `cargo dylint`");
     let stderr = String::from_utf8(output.stderr).expect("dylint stderr is not UTF-8");
     (stderr, output.status.success())
+}
+
+/// The dependency whose version the `cargo dylint` on `PATH` has to
+/// match. `tools/dev-tools` reads the same field of the same manifest
+/// to install that version.
+const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
+
+/// What a developer does about a `cargo dylint` that does not match
+/// the pin. Installing it belongs to that recipe, never to a run
+/// reached from here.
+const REMEDY: &str = "run `just install-dev-tools`";
+
+/// What a check of the `cargo dylint` on `PATH` can come out short of.
+#[derive(Display)]
+pub enum DylintVersionError {
+    #[display("Failed to read Cargo.toml: {_0}")]
+    ReadManifest(cargo_toml::Error),
+    #[display("Cargo.toml pins {DYLINT_LIBRARY_CRATE} to no version requirement")]
+    Pin,
+    #[display("Failed to spawn `cargo dylint`: {_0}; {REMEDY}")]
+    Spawn(io::Error),
+    #[display("`cargo dylint --version` failed; {REMEDY}\n{_0}")]
+    Status(String),
+    #[display("`cargo dylint --version` printed `{_0}` rather than a version; {REMEDY}")]
+    Unparsable(String),
+    #[display(
+        "cargo-dylint {_0} does not satisfy the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}"
+    )]
+    Mismatch(Version, VersionReq),
+}
+
+/// Read a pin the way `cargo install --version` reads it: a bare
+/// version is an exact requirement, so `6.1.0` admits that release
+/// alone rather than the patch release above it. A pin carrying an
+/// operator of its own keeps that operator's range.
+fn pinned_requirement(pin: &str) -> Option<VersionReq> {
+    match Version::parse(pin) {
+        Ok(version) => VersionReq::parse(&format!("={version}")).ok(),
+        Err(_) => VersionReq::parse(pin).ok(),
+    }
+}
+
+/// The version requirement `perfectionist_dir`'s manifest pins
+/// [`DYLINT_LIBRARY_CRATE`] to.
+fn pinned_version(perfectionist_dir: &Path) -> Result<VersionReq, DylintVersionError> {
+    perfectionist_dir
+        .join("Cargo.toml")
+        .pipe(Manifest::from_path)
+        .map_err(DylintVersionError::ReadManifest)?
+        .dependencies
+        .get(DYLINT_LIBRARY_CRATE)
+        .and_then(|dependency| dependency.try_req().ok())
+        .and_then(pinned_requirement)
+        .ok_or(DylintVersionError::Pin)
+}
+
+/// Hold the `cargo dylint` that [`run_dylint`] would spawn to the
+/// version `perfectionist_dir`'s manifest pins, returning the version
+/// it reported.
+///
+/// A `.dev-tools/bin` that predates a move of the pin answers with an
+/// older `cargo dylint`, and one that was never installed into leaves
+/// a global copy to answer instead. Either rejects a flag this module
+/// passes, so the run fails over the flag rather than over the binary
+/// behind it.
+pub fn check_dylint_version(perfectionist_dir: &Path) -> Result<Version, DylintVersionError> {
+    let pinned = pinned_version(perfectionist_dir)?;
+    let output = "cargo"
+        .pipe(Command::new)
+        .with_current_dir(perfectionist_dir)
+        .with_arg("dylint")
+        .with_arg("--version")
+        .output()
+        .map_err(DylintVersionError::Spawn)?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        return Err(DylintVersionError::Status(match stderr.is_empty() {
+            // A failure that said nothing on stderr still has to
+            // report something, and the status is what is left.
+            true => output.status.to_string(),
+            false => stderr,
+        }));
+    }
+    let reported = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    let parsed = reported
+        .split_whitespace()
+        .next_back()
+        .and_then(|version| Version::parse(version).ok());
+    let Some(installed) = parsed else {
+        return Err(DylintVersionError::Unparsable(reported));
+    };
+    match pinned.matches(&installed) {
+        true => Ok(installed),
+        false => Err(DylintVersionError::Mismatch(installed, pinned)),
+    }
 }
 
 #[cfg(test)]

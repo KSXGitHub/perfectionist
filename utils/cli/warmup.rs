@@ -7,6 +7,11 @@
 //! the built perfectionist plugin instead of paying the cost from
 //! cold.
 //!
+//! The run shells out to whichever `cargo dylint` is first on `PATH`,
+//! so it starts by holding that binary to the version this workspace
+//! pins. Installing the pinned version stays with
+//! `just install-dev-tools`: a mismatch here is reported, not fixed.
+//!
 //! Invoked by the `warmup-integration-tests` recipe in the justfile.
 //! Takes the perfectionist crate directory as a single argument; the
 //! shared target dir is computed relative to it.
@@ -29,6 +34,18 @@ fn main() -> ExitCode {
     // `dylint.toml` resolves regardless of where the fixture sits.
     let root = std::fs::canonicalize(&root)
         .unwrap_or_else(|error| panic!("canonicalise {}: {error}", root.display()));
+    // Ahead of the fixture, because a mismatched `cargo dylint` fails
+    // the run below over a flag it does not know, and names the flag
+    // rather than the binary that answered.
+    let version = match _utils::check_dylint_version(&root) {
+        Ok(version) => version,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+    eprintln!("warmup: cargo-dylint {version}");
+
     let shared_target_dir = root.join("target").join("integration-fixtures");
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
