@@ -13,11 +13,6 @@ asked, of `owned_as_conversion`'s exemption for opaque return types:
 
 It is not valid, and it is another rule. This file is that rule.
 
-> [!NOTE]
-> The sibling this file reasons against, `owned_as_conversion`, is on
-> `master`; the rules for the other two prefixes are still in flight in
-> the PRs that were stacked on it.
-
 ## Statement
 
 `as_` promises a *free* conversion: a borrowed view of something the
