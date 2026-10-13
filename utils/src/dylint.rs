@@ -18,7 +18,6 @@ use cargo_toml::Manifest;
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
-use semver::{Version, VersionReq};
 use std::io;
 use std::path::Path;
 use std::process::Command;
@@ -140,26 +139,16 @@ pub enum DylintVersionError {
     Status(String),
     #[display("`cargo dylint --version` printed `{_0}` rather than a version; {REMEDY}")]
     Unparsable(String),
-    #[display(
-        "cargo-dylint {_0} does not satisfy the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}"
-    )]
-    Mismatch(Version, VersionReq),
+    #[display("cargo-dylint {_0} is not the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}")]
+    Mismatch(String, String),
 }
 
-/// Read a pin the way `cargo install --version` reads it: a bare
-/// version is an exact requirement, so `6.1.0` admits that release
-/// alone rather than the patch release above it. A pin carrying an
-/// operator of its own keeps that operator's range.
-fn pinned_requirement(pin: &str) -> Option<VersionReq> {
-    match Version::parse(pin) {
-        Ok(version) => VersionReq::parse(&format!("={version}")).ok(),
-        Err(_) => VersionReq::parse(pin).ok(),
-    }
-}
-
-/// The version requirement `repository_dir`'s manifest pins
-/// [`DYLINT_LIBRARY_CRATE`] to.
-fn pinned_version(repository_dir: &Path) -> Result<VersionReq, DylintVersionError> {
+/// The version `repository_dir`'s manifest pins
+/// [`DYLINT_LIBRARY_CRATE`] to. `cargo install --version` reads a
+/// requirement with no operator as that one release, so the string
+/// the installer is handed is the string the installed binary
+/// reports back.
+fn pinned_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
     repository_dir
         .join("Cargo.toml")
         .pipe(Manifest::from_path)
@@ -167,14 +156,14 @@ fn pinned_version(repository_dir: &Path) -> Result<VersionReq, DylintVersionErro
         .dependencies
         .get(DYLINT_LIBRARY_CRATE)
         .and_then(|dependency| dependency.try_req().ok())
-        .and_then(pinned_requirement)
+        .map(str::to_owned)
         .ok_or(DylintVersionError::Pin)
 }
 
 /// Check the `cargo dylint` that [`run_dylint`] would spawn against
-/// the version `repository_dir`'s manifest pins, returning the
-/// version it reported.
-pub fn check_dylint_version(repository_dir: &Path) -> Result<Version, DylintVersionError> {
+/// the version `repository_dir`'s manifest pins, returning that
+/// version.
+pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
     let pinned = pinned_version(repository_dir)?;
     let output = "cargo"
         .pipe(Command::new)
@@ -199,16 +188,12 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<Version, DylintVers
         .pipe_deref(String::from_utf8_lossy)
         .trim()
         .to_owned();
-    let parsed = reported
-        .split_whitespace()
-        .next_back()
-        .and_then(|version| Version::parse(version).ok());
-    let Some(installed) = parsed else {
+    let Some(installed) = reported.split_whitespace().next_back() else {
         return Err(DylintVersionError::Unparsable(reported));
     };
-    match pinned.matches(&installed) {
-        true => Ok(installed),
-        false => Err(DylintVersionError::Mismatch(installed, pinned)),
+    match installed == pinned {
+        true => Ok(pinned),
+        false => Err(DylintVersionError::Mismatch(installed.to_owned(), pinned)),
     }
 }
 

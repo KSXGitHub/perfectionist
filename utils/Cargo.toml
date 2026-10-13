@@ -23,7 +23,6 @@ command-extra = "1.2.0"
 derive_more = { version = "2.1.1", default-features = false, features = ["display"] }
 dylint_testing = "6.1.0"
 pipe-trait = "0.4.0"
-semver = "1.0.28"
 serde = { version = "1.0.228", features = ["derive"] }
 tempfile = "3.27.0"
 toml = "1.1.2"
