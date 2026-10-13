@@ -21,25 +21,23 @@ declare_tool_lint! {
     /// `to_vec`, `to_path_buf` or `to_os_string`, or whose return type
     /// borrows from that receiver.
     ///
-    /// A method that moves out of `self` taken by value is left alone —
-    /// it hands the caller something of their own, which is what the
-    /// prefix promises — and so is one with a second parameter, which is
-    /// converting more than `self`. A return type carrying a lifetime the
-    /// *type* already has — `&'a str` out of a `struct Person<'a>` — is
-    /// left alone too, since that borrow outlives the receiver and does
-    /// not come from it. So is a method of a trait impl, since the trait
-    /// fixes its signature, and one produced by a macro.
+    /// Left alone:
     ///
-    /// An `async fn`, or a method returning `impl Trait`, is left alone
-    /// as well. The signature names the opaque type, not the value the
-    /// caller ends up with, and that opaque carries the receiver's own
-    /// lifetime whether or not anything is borrowed.
-    ///
-    /// A `Copy` field is out of reach of the copying half, since copying
-    /// one out is not a cost a move would have saved. It is not an
-    /// exemption for the rule as a whole: a `Copy` return type that
-    /// borrows the receiver, `&str` among them, is still a borrow the
-    /// prefix said had been consumed.
+    /// - A method taking `self` by value. It hands back something of
+    ///   the caller's own, which is what the prefix promises.
+    /// - An `into_*` with another parameter, which is converting
+    ///   something more than `self`.
+    /// - A return type carrying a lifetime the *type* already has —
+    ///   `&'a str` out of a `struct Person<'a>`. That borrow outlives
+    ///   the receiver rather than coming from it.
+    /// - An `async fn`, or a method returning `impl Trait`. The
+    ///   signature names the opaque type, not the value the caller
+    ///   ends up with.
+    /// - A `Copy` field, for the copying half alone: copying one out
+    ///   is not a cost a move would have saved. A `Copy` *return type*
+    ///   borrowing the receiver, `&str` among them, is still reported.
+    /// - A trait impl's method. The trait fixes the signature.
+    /// - A method produced by a macro.
     ///
     /// ### Why restrict this?
     ///
@@ -50,10 +48,9 @@ declare_tool_lint! {
     /// hands back another the caller owns outright. A caller reads it as
     /// the end of the original's life, and as a conversion that moves
     /// rather than copies. An `into_*` that borrows `self` does neither.
-    /// It either pays for a copy the name says was a move, or returns
-    /// something still tied to a value the caller was told had been
-    /// consumed — so the original is still alive, and the result cannot
-    /// outlive it.
+    /// It either pays for a copy the name says was a move, or hands
+    /// back something still tied to a value the caller was told had
+    /// been consumed.
     ///
     /// ### Interaction with Clippy
     ///
@@ -66,8 +63,7 @@ declare_tool_lint! {
     ///
     /// `perfectionist::owned_as_conversion` and
     /// `perfectionist::costless_to_conversion` hold the other two
-    /// prefixes to their guideline meanings. Between the three, each
-    /// prefix keeps the cost and the ownership its name promises.
+    /// prefixes to their guideline meanings.
     ///
     /// ### Example
     ///
@@ -77,9 +73,6 @@ declare_tool_lint! {
     /// impl Person {
     ///     fn into_name(&self) -> String {
     ///         self.name.clone()
-    ///     }
-    ///     fn into_name_ref(&self) -> &str {
-    ///         &self.name
     ///     }
     /// }
     /// ```
