@@ -7,8 +7,8 @@
 //!
 //! A `cargo dylint` that predates a flag passed here rejects the
 //! whole invocation as an unknown argument, so every run fails for a
-//! reason that reads as a bad flag. [`check_dylint_version`] holds
-//! the binary on `PATH` to the version this workspace pins.
+//! reason that reads as a bad flag. [`check_dylint_version`] checks
+//! the binary on `PATH` against the version this workspace pins.
 //!
 //! Every command here clears the dylint-specific variables the
 //! in-process UI harness leaves set in this process, so a spawned
@@ -119,14 +119,12 @@ fn run_dylint_inner(
     (stderr, output.status.success())
 }
 
-/// The dependency whose version the `cargo dylint` on `PATH` has to
-/// match. `tools/dev-tools` reads the same field of the same manifest
-/// to install that version.
+/// The dependency whose version requirement the `cargo dylint` on
+/// `PATH` has to satisfy.
 const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
 
-/// What a developer does about a `cargo dylint` that does not match
-/// the pin. Installing it belongs to that recipe, never to a run
-/// reached from here.
+/// Installing the pinned version belongs to the recipe this names,
+/// never to a test run.
 const REMEDY: &str = "run `just install-dev-tools`";
 
 /// What a check of the `cargo dylint` on `PATH` can come out short of.
@@ -159,10 +157,10 @@ fn pinned_requirement(pin: &str) -> Option<VersionReq> {
     }
 }
 
-/// The version requirement `perfectionist_dir`'s manifest pins
+/// The version requirement `repository_dir`'s manifest pins
 /// [`DYLINT_LIBRARY_CRATE`] to.
-fn pinned_version(perfectionist_dir: &Path) -> Result<VersionReq, DylintVersionError> {
-    perfectionist_dir
+fn pinned_version(repository_dir: &Path) -> Result<VersionReq, DylintVersionError> {
+    repository_dir
         .join("Cargo.toml")
         .pipe(Manifest::from_path)
         .map_err(DylintVersionError::ReadManifest)?
@@ -173,20 +171,14 @@ fn pinned_version(perfectionist_dir: &Path) -> Result<VersionReq, DylintVersionE
         .ok_or(DylintVersionError::Pin)
 }
 
-/// Hold the `cargo dylint` that [`run_dylint`] would spawn to the
-/// version `perfectionist_dir`'s manifest pins, returning the version
-/// it reported.
-///
-/// A `.dev-tools/bin` that predates a move of the pin answers with an
-/// older `cargo dylint`, and one that was never installed into leaves
-/// a global copy to answer instead. Either rejects a flag this module
-/// passes, so the run fails over the flag rather than over the binary
-/// behind it.
-pub fn check_dylint_version(perfectionist_dir: &Path) -> Result<Version, DylintVersionError> {
-    let pinned = pinned_version(perfectionist_dir)?;
+/// Check the `cargo dylint` that [`run_dylint`] would spawn against
+/// the version `repository_dir`'s manifest pins, returning the
+/// version it reported.
+pub fn check_dylint_version(repository_dir: &Path) -> Result<Version, DylintVersionError> {
+    let pinned = pinned_version(repository_dir)?;
     let output = "cargo"
         .pipe(Command::new)
-        .with_current_dir(perfectionist_dir)
+        .with_current_dir(repository_dir)
         .with_arg("dylint")
         .with_arg("--version")
         .output()
@@ -194,8 +186,6 @@ pub fn check_dylint_version(perfectionist_dir: &Path) -> Result<Version, DylintV
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
         return Err(DylintVersionError::Status(match stderr.is_empty() {
-            // A failure that said nothing on stderr still has to
-            // report something, and the status is what is left.
             true => output.status.to_string(),
             false => stderr,
         }));
