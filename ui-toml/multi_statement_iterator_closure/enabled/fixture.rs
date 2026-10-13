@@ -1,5 +1,5 @@
 // edition:2024
-#![feature(register_tool, stmt_expr_attributes)]
+#![feature(register_tool, stmt_expr_attributes, try_blocks)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
@@ -153,6 +153,66 @@ fn closure_expectation_is_honored() {
         #[expect(perfectionist::multi_statement_iterator_closure, reason = "test closure scope")]
         |value| { let doubled = value * 2; doubled },
     );
+}
+
+fn parenthesised_callbacks() {
+    let _ = [1, 2].into_iter().map((|value| {
+        let doubled = value * 2;
+        doubled
+    }));
+    let _ = [1, 2].into_iter().map(((|value| {
+        let doubled = value * 2;
+        doubled
+    })));
+}
+
+fn wrapped_block_bodies(values: Vec<i32>) -> Vec<Result<i32, ()>> {
+    let _ = [1, 2].into_iter().map(|value| unsafe {
+        let doubled = value * 2;
+        doubled
+    });
+    let _ = [1, 2].into_iter().map(|value| 'doubling: {
+        let doubled = value * 2;
+        break 'doubling doubled;
+    });
+    let _ = [1, 2].into_iter().map(|value| async move {
+        let doubled = value * 2;
+        doubled
+    });
+    let _ = [1, 2].into_iter().map(|_| const {
+        let doubled = 2 * 2;
+        doubled
+    });
+    values
+        .into_iter()
+        .map(|value| try {
+            let doubled = value * 2;
+            doubled
+        })
+        .collect()
+}
+
+fn sortedness_predicates(values: Vec<i32>) {
+    let _ = values.iter().is_sorted_by(|left, right| {
+        let ordered = left <= right;
+        ordered
+    });
+    let _ = values.iter().is_sorted_by_key(|value| {
+        let key = *value;
+        key
+    });
+}
+
+fn item_and_cfg_statements() {
+    let _ = [1, 2].into_iter().map(|value| {
+        struct Marker;
+        value
+    });
+    let _ = [1, 2].into_iter().map(|value| {
+        #[cfg(any())]
+        let value = value + 1;
+        value
+    });
 }
 
 #[path = "auxiliary/callbacks.rs"]

@@ -19,7 +19,9 @@ declare_tool_lint! {
     /// contain more top-level statements than `max_statements` permits.
     /// A tail expression counts as a statement. Comments, line wrapping,
     /// and empty semicolons do not count. A single expression stays one even
-    /// when it contains a `match`, an `if`, or a nested block.
+    /// when it contains a `match`, an `if`, or a nested block. A body behind
+    /// an `async`, `gen`, `try` or `const` wrapper is counted through, as an
+    /// `unsafe` or labelled block is.
     ///
     /// The check covers transforming, filtering, visiting and reducing
     /// callbacks, in method calls and qualified calls such as `Iterator::map`.

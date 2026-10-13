@@ -77,6 +77,8 @@ fn has_callback(name: &str) -> bool {
             | "max_by_key"
             | "cmp_by"
             | "partial_cmp_by"
-            | "eq_by",
+            | "eq_by"
+            | "is_sorted_by"
+            | "is_sorted_by_key",
     )
 }
