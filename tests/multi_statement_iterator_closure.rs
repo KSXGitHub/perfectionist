@@ -1,37 +1,54 @@
-use std::sync::Mutex;
+//! Tests for `multi_statement_iterator_closure`.
+//!
+//! The rule is inactive by default, so `ui/multi_statement_iterator_
+//! closure.rs` holds an over-threshold callback against an empty
+//! `.stderr`, which is what proves the rule stays off until it is
+//! enabled. Every fixture here therefore travels with a `dylint.toml`
+//! that enables it: `enabled` pins the default threshold, `threshold`
+//! pins a raised one, and `zero` pins where a statement starts being
+//! counted.
 
-static SERIAL: Mutex<()> = Mutex::new(());
+/// `[perfectionist]` turns the rule on, since it ships inactive. The
+/// rule's own table is omitted, so `max_statements` is its default.
+const ENABLED: &str = "[perfectionist]\nenable = [\"multi_statement_iterator_closure\"]\n";
 
-fn run_fixtures(directory: &str, configuration: &str) {
-    let _guard = SERIAL.lock().unwrap();
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), directory);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
-        .dylint_toml(configuration)
+fn run_ui(src_base: &str, dylint_toml: &str) {
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
+        .dylint_toml(dylint_toml)
         .run();
 }
 
+/// No `max_statements` override: the fixture is measured against the
+/// rule's own default of 1.
 #[test]
 fn enabled_with_default_threshold() {
-    run_fixtures(
-        "ui-toml/multi_statement_iterator_closure/enabled",
-        "[perfectionist]\nenable = [\"multi_statement_iterator_closure\"]\n",
-    );
+    run_ui("ui-toml/multi_statement_iterator_closure/enabled", ENABLED);
 }
 
+/// A raised threshold, which leaves a two-statement callback alone.
 #[test]
 fn threshold_allows_two_statements() {
-    run_fixtures(
+    run_ui(
         "ui-toml/multi_statement_iterator_closure/threshold",
-        "[perfectionist]\nenable = [\"multi_statement_iterator_closure\"]\n\
-         [\"perfectionist::multi_statement_iterator_closure\"]\nmax_statements = 2\n",
+        &format!(
+            "{ENABLED}[\"perfectionist::multi_statement_iterator_closure\"]\n\
+             max_statements = 2\n",
+        ),
     );
 }
 
+/// A threshold of zero, where a single expression is already one
+/// statement and only an empty body is left alone.
 #[test]
 fn zero_threshold_counts_single_expression_and_allows_empty_body() {
-    run_fixtures(
+    run_ui(
         "ui-toml/multi_statement_iterator_closure/zero",
-        "[perfectionist]\nenable = [\"multi_statement_iterator_closure\"]\n\
-         [\"perfectionist::multi_statement_iterator_closure\"]\nmax_statements = 0\n",
+        &format!(
+            "{ENABLED}[\"perfectionist::multi_statement_iterator_closure\"]\n\
+             max_statements = 0\n",
+        ),
     );
 }
