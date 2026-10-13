@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, hir_in_external_macro, plural};
+use crate::common::{DefaultState, plural};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Expr, ExprKind, Node};
@@ -27,7 +27,9 @@ declare_tool_lint! {
     /// iterators, asynchronous streams, and macro-generated closures are
     /// left alone. Callbacks inside macro arguments are also left alone.
     /// A macro invocation inside a checked callback counts once, regardless
-    /// of its expansion. Test code follows the same policy as production code.
+    /// of its expansion. A callback the author wrote is still measured inside
+    /// a function whose signature an attribute macro rebuilt. Test code
+    /// follows the same policy as production code.
     ///
     /// Projects differ on whether several steps belong inline or in a
     /// named helper, so the rule is inactive by default — enable it per
@@ -147,9 +149,7 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         if callback.hir_id != expr.hir_id {
             return;
         }
-        if callback.span.from_expansion()
-            || hir_in_external_macro(cx, callback.hir_id, callback.span)
-        {
+        if callback.span.from_expansion() {
             return;
         }
         let Some(statements) = self

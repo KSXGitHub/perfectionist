@@ -21,7 +21,9 @@ Named callbacks, custom methods with the same names, parallel
 iterators, asynchronous streams, and macro-generated closures are
 left alone. Callbacks inside macro arguments are also left alone.
 A macro invocation inside a checked callback counts once, regardless
-of its expansion. Test code follows the same policy as production code.
+of its expansion. A callback the author wrote is still measured inside
+a function whose signature an attribute macro rebuilt. Test code
+follows the same policy as production code.
 
 Projects differ on whether several steps belong inline or in a
 named helper, so the rule is inactive by default — enable it per

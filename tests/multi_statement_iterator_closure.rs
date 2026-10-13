@@ -5,8 +5,9 @@
 //! callback against an empty `.stderr`, which is what proves the rule
 //! stays off until it is enabled. Every fixture here therefore travels
 //! with a `dylint.toml` that enables it: `enabled` pins the default
-//! threshold, `threshold` pins a raised one, and `zero` pins where a
-//! statement starts being counted.
+//! threshold, `threshold` pins a raised one, `zero` pins where a
+//! statement starts being counted, and `proc_macro` pins which
+//! callbacks a macro's involvement exempts.
 
 /// `[perfectionist]` turns the rule on, since it ships inactive. The
 /// rule's own table is omitted, so `max_statements` is its default.
@@ -50,5 +51,16 @@ fn zero_threshold_counts_single_expression_and_allows_empty_body() {
             "{ENABLED}[\"perfectionist::multi_statement_iterator_closure\"]\n\
              max_statements = 0\n",
         ),
+    );
+}
+
+/// A callback a derive synthesised is left alone even where its every
+/// token wears a user span. One the author wrote is reported even where
+/// an attribute macro rebuilt the signature around it.
+#[test]
+fn a_rebuilt_signature_does_not_hide_a_handwritten_callback() {
+    run_ui(
+        "ui-toml/multi_statement_iterator_closure/proc_macro",
+        ENABLED,
     );
 }
