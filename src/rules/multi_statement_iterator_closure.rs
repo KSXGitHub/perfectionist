@@ -156,16 +156,34 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
     }
 }
 
+const EXTRACTION_HELP: &str = "extract a named helper, or use an explicit loop for eager work \
+                               when it preserves the required behaviour and performance";
+
+/// How to tell the fix did not work. The two shapes this rule leaves
+/// alone — a closure bound to a `let` and passed by name, and a body
+/// wrapped in one more block — both pass it with the steps still where
+/// they were.
+const MOVED_HELP: &str = "binding the same body to a `let`, or wrapping it in one more block, \
+                          silences this warning without moving the steps anywhere; name the \
+                          helper for the value it produces, not for the steps it replaces";
+
+const REWRITE_NOTE: &str = "a helper can preserve a lazy chain; loop rewrites must preserve \
+                            evaluation order, ownership, allocation behaviour and short-circuit \
+                            results";
+
 fn emit(cx: &LateContext<'_>, callback: &Expr<'_>, method: Symbol, statements: usize, max: usize) {
     let noun = plural(statements, "statement", "statements");
+    let message =
+        format!("`{method}` callback has {statements} top-level {noun}, above the limit of {max}");
     span_lint_and_then(
         cx,
         MULTI_STATEMENT_ITERATOR_CLOSURE,
         callback.span,
-        format!("`{method}` callback has {statements} top-level {noun}, above the limit of {max}"),
+        message,
         |diag| {
-            diag.help("extract a named helper, or use an explicit loop for eager work when it preserves the required behavior and performance");
-            diag.note("a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behavior and short-circuit results");
+            diag.help(EXTRACTION_HELP);
+            diag.help(MOVED_HELP);
+            diag.note(REWRITE_NOTE);
         },
     );
 }
