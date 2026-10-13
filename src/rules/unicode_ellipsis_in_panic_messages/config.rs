@@ -77,7 +77,7 @@ pub(super) struct UnicodeEllipsisInPanicMessages {
 impl UnicodeEllipsisInPanicMessages {
     pub(super) fn new() -> Self {
         let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        let mut flagged_chars = vec!['\u{2026}'];
+        let mut flagged_chars = vec!['…'];
         for character in config.extra_flagged_chars {
             if !flagged_chars.contains(&character) {
                 flagged_chars.push(character);

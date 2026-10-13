@@ -11,7 +11,7 @@ LL | /// Bad: closes #55 — the `bare_url` form replaces the `#55` token
 warning: ambiguous `#56`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | // Bad: closes #56 — plain line comments are scanned too under
+LL | // Bad: closes #56 — plain line comments are scanned under
    |                ^^^ help: substitute the issue URL: `https://github.com/owner/repo/issues/56`
    |
    = help: if `#56` is not an issue or pull request, enclose it in backticks so it renders as code

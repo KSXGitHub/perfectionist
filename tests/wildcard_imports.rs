@@ -50,10 +50,10 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// Both exceptions off: the prelude glob and the `pub` root re-export
+/// glob lose their exemption and are flagged alongside the plain glob.
 #[test]
 fn exceptions_disabled_flags_every_glob() {
-    // Both exceptions off: the prelude glob and the `pub` root re-export
-    // glob lose their exemption and are flagged alongside the plain glob.
     run(
         "ui-toml/wildcard_imports/exceptions_disabled",
         RuleConfig {
@@ -64,13 +64,13 @@ fn exceptions_disabled_flags_every_glob() {
     );
 }
 
+/// With both exceptions off, a glob is normally flagged — except one
+/// whose absolute module path is named in `allowed_paths`. A crate-root
+/// entry is written `crate::...` (no leading `::`), while an extern entry
+/// carries a leading `::`, and `::std::collections` exempts both the
+/// plain and the `::`-rooted spelling of that glob.
 #[test]
 fn allowed_paths_exempts_listed_module() {
-    // With both exceptions off, a glob is normally flagged — except one
-    // whose absolute module path is named in `allowed_paths`. A crate-root
-    // entry is written `crate::...` (no leading `::`), while an extern entry
-    // carries a leading `::`, and `::std::collections` exempts both the
-    // plain and the `::`-rooted spelling of that glob.
     run(
         "ui-toml/wildcard_imports/allowed_paths",
         RuleConfig {
@@ -82,10 +82,10 @@ fn allowed_paths_exempts_listed_module() {
     );
 }
 
+/// `prelude_segment_names = ["api"]`: `use foo::api::*` becomes exempt
+/// while `use foo::prelude::*` loses its exemption and is flagged.
 #[test]
 fn custom_prelude_segment_name() {
-    // `prelude_segment_names = ["api"]`: `use foo::api::*` becomes exempt
-    // while `use foo::prelude::*` loses its exemption and is flagged.
     run(
         "ui-toml/wildcard_imports/custom_prelude_segment",
         RuleConfig {

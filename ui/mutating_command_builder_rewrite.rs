@@ -20,7 +20,7 @@ use command_extra::CommandExtra;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-// A borrowed receiver, which several shapes below hand their value to.
+// A borrowed receiver, which several shapes hand their value to.
 fn configure(command: &mut Command) {
     command.arg("-l");
 }
@@ -118,11 +118,11 @@ mod shadowed_trailing_call {
     }
 }
 
-// Bad, and no rewrite, for the same reason with a `&self` receiver.
-// The `&` autoref is tried before the `&mut` one, so this reaches the
-// owned command ahead of `Command::status` just as a `self` receiver
-// does -- and a blanket impl means nothing has to be written about
-// `Command` at all.
+// Bad, and no rewrite: the trailing call's receiver turns from a
+// `&mut Command` into a `Command`, and the `&` autoref step comes
+// before the `&mut` one, so `Logged::status` is found ahead of
+// `Command::status` -- and a blanket impl means nothing has to be
+// written about `Command` at all.
 mod shadowed_by_a_borrow {
     use command_extra::CommandExtra;
     use std::io;
@@ -143,9 +143,9 @@ mod shadowed_by_a_borrow {
     }
 }
 
-// Bad, and the same, for the everyday case of it: `Into::into` takes
-// `self` and is in the prelude, so which `From` impl runs is decided by
-// the receiver's type.
+// Bad, and no rewrite, for the everyday case of a trailing call that
+// re-resolves: `Into::into` takes `self` and is in the prelude, so
+// which `From` impl runs is decided by the receiver's type.
 mod conversion_tail {
     use command_extra::CommandExtra;
     use std::process::Command;
@@ -169,9 +169,9 @@ mod conversion_tail {
     }
 }
 
-// Bad, and no rewrite either, for the other reason there is: an
-// argument's own destructor is positioned to observe the reordering
-// `creates_an_ordered_drop` guards against.
+// Bad, and no rewrite, for the reason that is about drop order rather
+// than name resolution: an argument's own destructor is positioned to
+// observe the reordering `creates_an_ordered_drop` guards against.
 mod ordered_drop {
     use command_extra::CommandExtra;
     use std::ffi::OsStr;
@@ -205,18 +205,18 @@ mod ordered_drop {
         Command::new("ordered-drop").arg(&Noisy);
     }
 
-    // Bad, and no rewrite either: `name` is moved out and the rest of
-    // the temporary stays for the statement to drop. Reading a part of
-    // a value is not the same as handing the value over, so the
-    // argument leaves something behind even though nothing borrowed it.
+    // Bad, and no rewrite: `name` is moved out and the rest of the
+    // temporary stays for the statement to drop. Reading a part of a
+    // value is not the same as handing the value over, so the argument
+    // leaves something behind even though nothing borrowed it.
     fn field_of_a_temporary_argument() {
         Command::new("ordered-drop-field").arg(holder().name);
     }
 
-    // Bad, and no rewrite: a scrutinee is not handed over either. The
-    // pattern binds nothing, so the temporary is still there for the
-    // statement to drop. Every parent the walk does not recognise as a
-    // hand-over answers this way, which is the safe way round.
+    // Bad, and no rewrite: a scrutinee is not handed over. The pattern
+    // binds nothing, so the temporary is still there for the statement
+    // to drop. Every parent the walk does not recognise as a hand-over
+    // answers this way, which is the safe way round.
     fn scrutinee_argument() {
         Command::new("ordered-drop-match").arg(match Noisy {
             _ => "matched",
@@ -279,8 +279,8 @@ mod ordered_drop {
         }
     }
 
-    // Bad, and no rewrite: `inner` is not moved either, only `label` is
-    // read out of it, so the question has to be asked at every level a
+    // Bad, and no rewrite: `inner` is not moved, only `label` is read
+    // out of it, so the question has to be asked at every level a
     // projection goes through rather than at the first.
     fn a_projection_of_a_projection() {
         Command::new("ordered-drop-nested").arg(outer().inner.label);
@@ -310,8 +310,9 @@ mod ordered_drop {
 
 // Bad, and no rewrite: the command is a field of a temporary whose
 // other field has a destructor, which is the reordering
-// `leaves_a_sibling_behind` answers. `field_of_a_temporary` above is
-// the same shape with nothing else to drop.
+// `leaves_a_sibling_behind` answers. `field_of_a_temporary` in
+// `ui/mutating_command_builder.rs` is this shape with nothing else to
+// drop.
 mod sibling_of_a_drop {
     use command_extra::CommandExtra;
     use std::process::Command;
@@ -342,9 +343,11 @@ mod sibling_of_a_drop {
         (Noisy, Command::new("ls"))
     }
 
-    // Bad, and no rewrite, for the same shape spelled as a tuple. A
-    // tuple carries its field types directly rather than through an
-    // `AdtDef`, so asking only about structs answered no here.
+    // Bad, and no rewrite: the command is an element of a temporary
+    // whose other element has a destructor, spelled as a tuple rather
+    // than a struct. A tuple carries its field types directly rather
+    // than through an `AdtDef`, so asking only about structs answered
+    // no here.
     fn tuple_sibling() {
         pair().1.arg("tuple-sibling");
     }
@@ -364,7 +367,7 @@ mod sibling_of_a_drop {
 // Bad, and applied: the argument is moved into the call, so nothing is
 // left behind whose destructor the change could reorder. Only a value
 // something took a reference to outlives the call, which is what
-// `ordered_drop` above has and this does not.
+// `ordered_drop` has and this does not.
 fn moved_argument() {
     Command::new("ls").stdin(Stdio::null());
 }
@@ -395,10 +398,9 @@ mod partial_rename_would_move_a_call {
 }
 
 // Bad, over a binding, and the diagnostic has to say that `status`
-// would move as well. The rewrite is deferred for the receiver, so
-// nothing withholds a rename here -- but the reader following the
-// advice by hand walks into the same re-resolution, and only this line
-// warns them.
+// would move. The rewrite is deferred for the receiver, so nothing
+// withholds a rename here -- but the reader following the advice by
+// hand walks into that re-resolution, and only this line warns them.
 mod defers_and_moves {
     use command_extra::CommandExtra;
     use std::io;

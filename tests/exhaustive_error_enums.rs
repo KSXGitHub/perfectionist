@@ -64,11 +64,11 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// The rule is off by default; this is the equivalent of the
+/// `ui/<rule>.rs` sweep every other rule has, just hosted under
+/// `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
 #[test]
 fn baseline_sweep_with_rule_enabled() {
-    // The rule is off by default; this is the equivalent of the
-    // `ui/<rule>.rs` sweep every other rule has, just hosted under
-    // `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
     run(
         "ui-toml/exhaustive_error_enums/baseline",
         RuleConfig::default(),

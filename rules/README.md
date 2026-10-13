@@ -50,6 +50,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`costless_to_conversion`](./costless_to_conversion.md) (default: `active`).
+
+  `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum
@@ -101,6 +105,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`numeric_escape_for_visible_character`](./numeric_escape_for_visible_character.md) (default: `active`).
+
+  visible character written as a numeric escape; spell the character as itself
 
 - [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
 

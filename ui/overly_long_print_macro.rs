@@ -33,7 +33,7 @@ fn _positional_args() {
     println!("the first value is {} and there is plenty of padding here to clear the width limit\nthe second value is {}", first, second);
 }
 
-// Bad: `eprintln!` to stderr is in the target set too.
+// Bad: `eprintln!` to stderr is in the target set.
 fn _eprintln_basic() {
     eprintln!("warning: the request took an unusually long time to finish and may have stalled\ncheck the upstream service");
 }

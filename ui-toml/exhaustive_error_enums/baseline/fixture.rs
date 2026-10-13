@@ -93,7 +93,7 @@ pub struct BorrowedError(pub &'static ParseKind);
 
 // Good: boxed enum wrapper. `Box<ParseKind>`'s `Adt` is `Box`
 // (a struct), not an enum, so the predicate skips this struct for
-// the same reason as the borrowed case.
+// the same reason as `BorrowedError`.
 pub struct BoxedError(pub Box<ParseKind>);
 
 // Bad: type-aliased sum-like wrapper. The field's source-level type

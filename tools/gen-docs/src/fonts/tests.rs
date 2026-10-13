@@ -45,12 +45,12 @@ fn cache_dir_honours_a_configured_directory() {
     );
 }
 
+/// A cache that already holds the file must be left alone and trigger
+/// no download — the offline path. We prove "no download" by pointing
+/// the URL at an unroutable address: if ensure_cached tried to fetch,
+/// it would fail instead of returning Ok.
 #[test]
 fn ensure_cached_reuses_an_existing_file_without_downloading() {
-    // A cache that already holds the file must be left alone and trigger
-    // no download — the offline path. We prove "no download" by pointing
-    // the URL at an unroutable address: if ensure_cached tried to fetch,
-    // it would fail instead of returning Ok.
     let cache = TempDir::new("reuse");
     let downloads = [("demo.woff2", "https://127.0.0.1:1/never-fetched.woff2")];
     std::fs::write(cache.path().join("demo.woff2"), b"already here").unwrap();
@@ -62,11 +62,11 @@ fn ensure_cached_reuses_an_existing_file_without_downloading() {
     );
 }
 
+/// Cache and output share a filesystem (same temp root), so the
+/// install must hard-link rather than copy: the two paths end up as
+/// one inode, no bytes duplicated.
 #[test]
 fn install_into_hard_links_when_possible() {
-    // Cache and output share a filesystem (same temp root), so the
-    // install must hard-link rather than copy: the two paths end up as
-    // one inode, no bytes duplicated.
     let root = TempDir::new("install");
     let cache = root.path().join("cache");
     let out = root.path().join("out");
@@ -91,11 +91,11 @@ fn install_into_hard_links_when_possible() {
     }
 }
 
+/// A leftover file from a previous run must not make the hard-link
+/// fail (it errors if the destination exists) — install clears it
+/// first, so the output always reflects the current cache.
 #[test]
 fn install_into_replaces_a_stale_destination() {
-    // A leftover file from a previous run must not make the hard-link
-    // fail (it errors if the destination exists) — install clears it
-    // first, so the output always reflects the current cache.
     let root = TempDir::new("stale");
     let cache = root.path().join("cache");
     let out = root.path().join("out");

@@ -192,9 +192,9 @@ pattern.
 ### Why matcher-based is harder than name-based
 
 Name-based matching is a name-set lookup on the resolved macro
-`DefId`. The implementation is a `BTreeSet<&'static str>`
-initialised at plugin start, plus the user's `extra_macros`
-paths.
+`DefId`. The implementation is one `BTreeSet` of segment
+sequences, initialised at plugin start from the curated built-in
+list merged with the user's `extra_macros` paths.
 
 Matcher-based matching has to:
 

@@ -131,7 +131,7 @@
 
   // ---- Scraping the page ------------------------------------------------
 
-  /** @type {Entry[] | null} */
+  /** @type {readonly Entry[] | null} */
   var entries = null
 
   /**
@@ -172,7 +172,7 @@
 
   /**
    * Read every rule off the page. Called once, on the first open.
-   * @returns {Entry[]}
+   * @returns {readonly Entry[]}
    */
   function scrape() {
     /** @type {Entry[]} */
@@ -288,8 +288,8 @@
   // the overlay while it is open. A
   // child already inert is not recorded, so clearing undoes only what this
   // set. Browsers too old for `inert` ignore it and fall back to what the
-  // page gives for free: the overlay is still dismissible by its ✕ and by
-  // Escape.
+  // page gives for free: the overlay is still dismissible by its close
+  // button and by Escape.
   /** @type {HTMLElement[]} */
   var inerted = []
 
@@ -478,7 +478,7 @@
    * Everything in the overlay that can take focus, in the order Tab
    * reaches it. A rendered element has client rects and a hidden one has
    * none, so the test skips whatever the reader cannot see.
-   * @returns {HTMLElement[]}
+   * @returns {readonly HTMLElement[]}
    */
   function focusables() {
     var found = overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
