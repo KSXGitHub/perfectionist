@@ -184,13 +184,21 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<Version, DylintVers
         .output()
         .map_err(DylintVersionError::Spawn)?;
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        let stderr = output
+            .stderr
+            .pipe_deref(String::from_utf8_lossy)
+            .trim()
+            .to_owned();
         return Err(DylintVersionError::Status(match stderr.is_empty() {
             true => output.status.to_string(),
             false => stderr,
         }));
     }
-    let reported = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    let reported = output
+        .stdout
+        .pipe_deref(String::from_utf8_lossy)
+        .trim()
+        .to_owned();
     let parsed = reported
         .split_whitespace()
         .next_back()
