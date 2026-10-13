@@ -19,11 +19,11 @@ fn style_values_deserialize() {
     );
 }
 
+/// `style` and `reexports` are both required (bare fields, no
+/// `serde(default)`), so a table that omits either fails to deserialize
+/// rather than defaulting to a layout.
 #[test]
 fn missing_required_fields_are_an_error() {
-    // `style` and `reexports` are both required (bare fields, no
-    // `serde(default)`), so a table that omits either fails to deserialize
-    // rather than defaulting to a layout.
     assert!("".pipe(toml::from_str::<Config>).is_err());
     assert!(r#"order = ["std"]"#.pipe(toml::from_str::<Config>).is_err());
     // `style` set but `reexports` missing — still an error.
@@ -32,10 +32,10 @@ fn missing_required_fields_are_an_error() {
     assert!(r#"reexports = "grouped""#.pipe(toml::from_str::<Config>).is_err());
 }
 
+/// With `style` and `reexports` set, the remaining knobs fall back to
+/// their per-field defaults when absent.
 #[test]
 fn optional_fields_default_when_required_are_set() {
-    // With `style` and `reexports` set, the remaining knobs fall back to
-    // their per-field defaults when absent.
     let config = "style = \"multi_block\"\nreexports = \"grouped\""
         .pipe(toml::from_str::<Config>)
         .unwrap();
@@ -43,11 +43,11 @@ fn optional_fields_default_when_required_are_set() {
     assert_eq!(config.cfg_block_handling, CfgBlockHandling::Trailing);
 }
 
+/// There is no neutral `preserve` value; an unrecognised style is a
+/// hard deserialisation error rather than a silent no-op (the
+/// `reexports` field is valid here, so the style is the only fault).
 #[test]
 fn unknown_style_is_rejected() {
-    // There is no neutral `preserve` value; an unrecognised style is a
-    // hard deserialisation error rather than a silent no-op (the
-    // `reexports` field is valid here, so the style is the only fault).
     assert!(
         "style = \"preserve\"\nreexports = \"grouped\""
             .pipe(toml::from_str::<Config>)
@@ -55,10 +55,10 @@ fn unknown_style_is_rejected() {
     );
 }
 
+/// The three re-export grouping modes round-trip from their snake_case
+/// spellings, and an unrecognised one is rejected.
 #[test]
 fn reexports_values_deserialize() {
-    // The three re-export grouping modes round-trip from their snake_case
-    // spellings, and an unrecognised one is rejected.
     let parse = |value: &str| {
         format!("style = \"multi_block\"\nreexports = \"{value}\"")
             .pipe_deref(toml::from_str::<Config>)
@@ -70,11 +70,11 @@ fn reexports_values_deserialize() {
     assert!(parse("separate").is_err());
 }
 
+/// The private-import ranks shift down by the size of the leading
+/// re-export region: none for `by_path`, one `grouped` block, two
+/// `split` blocks.
 #[test]
 fn reexport_block_offset_tracks_grouping() {
-    // The private-import ranks shift down by the size of the leading
-    // re-export region: none for `by_path`, one `grouped` block, two
-    // `split` blocks.
     let with = |value: &str| {
         format!("style = \"multi_block\"\nreexports = \"{value}\"")
             .pipe_deref(toml::from_str::<Config>)

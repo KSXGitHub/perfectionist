@@ -33,10 +33,10 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// `crate::prelude` is intentionally cherry-picked, so it is exempt;
+/// a named import from a different prelude is still flagged.
 #[test]
 fn allowed_paths_exempts_listed_prelude() {
-    // `crate::prelude` is intentionally cherry-picked, so it is exempt;
-    // a named import from a different prelude is still flagged.
     run(
         "ui-toml/named_prelude_imports/allowed_paths",
         RuleConfig {
@@ -46,10 +46,10 @@ fn allowed_paths_exempts_listed_prelude() {
     );
 }
 
+/// `prelude_segment_names = ["api"]`: a named import from an `api`
+/// module is flagged, while one from a `prelude` module is not.
 #[test]
 fn custom_prelude_segment_name() {
-    // `prelude_segment_names = ["api"]`: a named import from an `api`
-    // module is flagged, while one from a `prelude` module is not.
     run(
         "ui-toml/named_prelude_imports/custom_prelude_segment",
         RuleConfig {

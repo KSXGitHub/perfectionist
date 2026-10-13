@@ -1,0 +1,21 @@
+warning: visible character `A` (U+0041) written as the escape `/x41`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let _ = "/x41BC";
+   |              ^^^^ help: spell the character as itself: `A`
+   |
+   = note: `#[warn(perfectionist::numeric_escape_for_visible_character)]` on by default
+
+warning: visible character `A` (U+0041) written as the escape `/u{41}`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let _ = "/u{41}BC";
+   |              ^^^^^^ help: spell the character as itself: `A`
+
+warning: visible character `~` (U+007E) written as the escape `/x7E`
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     let _ = '/x7E';
+   |              ^^^^ help: spell the character as itself: `~`
+
+warning: N warnings emitted

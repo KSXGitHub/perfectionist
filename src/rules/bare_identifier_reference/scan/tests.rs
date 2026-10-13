@@ -44,10 +44,10 @@ fn accepts_padded_double_backtick_span() {
     assert_eq!(take_backticked_ident("`` Foo ``").as_deref(), Some("Foo"));
 }
 
+/// A code span wrapping a soft line break is not a clean inline link
+/// candidate and its source span would not map back contiguously.
 #[test]
 fn rejects_multi_line_span() {
-    // A code span wrapping a soft line break is not a clean inline link
-    // candidate and its source span would not map back contiguously.
     assert_eq!(take_backticked_ident("`\nFoo\n`"), None);
 }
 

@@ -66,7 +66,7 @@ var perfectionistMatchAdmit = (function () {
    * an answer nobody can rely on: one more character could push a result
    * back over a bar it had fallen under, so it leaves the list and
    * returns.
-   * @param {Span[]} ranges  the match's runs, in order, at least one
+   * @param {readonly Span[]} ranges  the match's runs, in order, at least one
    * @param {string} haystack    folded target
    * @returns {boolean}
    */

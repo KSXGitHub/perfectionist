@@ -67,7 +67,7 @@ var perfectionistTests = (function () {
     groups[groups.length - 1].cases.push({ name: name, run: run })
   }
 
-  /** @returns {TestGroup[]} */
+  /** @returns {readonly TestGroup[]} */
   function all() {
     return groups
   }

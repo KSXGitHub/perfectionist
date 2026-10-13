@@ -48,10 +48,10 @@ fn a_prefix_covers_only_the_names_under_it() {
     assert_eq!(single("clone_*", "first_name"), None);
 }
 
+/// `cloned_id` starts with `clone` but not with `clone_`, which is
+/// the whole point of requiring the underscore.
 #[test]
 fn a_prefix_is_matched_to_its_underscore() {
-    // `cloned_id` starts with `clone` but not with `clone_`, which is
-    // the whole point of requiring the underscore.
     assert_eq!(single("clone_*", "cloned_id"), None);
     assert_eq!(single("cloned_*", "cloned_id"), Some(true));
 }
@@ -116,12 +116,12 @@ fn a_prefix_must_be_spelled_the_way_a_method_name_could_be() {
     }
 }
 
+/// A rule that has to forbid some entry does it in a newtype of its
+/// own; every well-formed pattern parses here, conversion prefixes
+/// included. `crate::getter_name_patterns` is where those are
+/// rejected.
 #[test]
 fn the_language_itself_carries_no_policy() {
-    // A rule that has to forbid some entry does it in a newtype of its
-    // own; every well-formed pattern parses here, conversion prefixes
-    // included. `crate::getter_name_patterns` is where those are
-    // rejected.
     for pattern in ["as_*", "to_*", "into_*", "!as_ref_*"] {
         assert!(parse(pattern).is_ok(), "{pattern:?} should parse");
     }
@@ -135,31 +135,31 @@ fn the_last_entry_covering_a_name_is_the_one_that_decides() {
     assert_eq!(list(&["!clone_*", "*"], "clone_id"), Some(true));
 }
 
+/// `None` is not `false`: the caller decides what an uncovered
+/// name means. `cloning_getter` reads it as "not a getter", having
+/// already answered for its field-named methods before consulting
+/// the list at all.
 #[test]
 fn a_name_no_entry_covers_is_left_undecided() {
-    // `None` is not `false`: the caller decides what an uncovered
-    // name means. `cloning_getter` reads it as "not a getter", having
-    // already answered for its field-named methods before consulting
-    // the list at all.
     assert_eq!(list(&["get_*"], "first_name"), None);
     assert_eq!(list(&[], "first_name"), None);
 }
 
+/// `!*` covers every name, so nothing is left undecided and the
+/// caller's fallthrough never runs; a later entry takes one shape
+/// back.
 #[test]
 fn a_leading_negation_clears_what_a_fallthrough_would_have_said() {
-    // `!*` covers every name, so nothing is left undecided and the
-    // caller's fallthrough never runs; a later entry takes one shape
-    // back.
     assert_eq!(list(&["!*", "get_*"], "get_first_name"), Some(true));
     assert_eq!(list(&["!*", "get_*"], "first_name"), Some(false));
 }
 
+/// `clone_*` and `!clone_*` cover exactly the same names, so they
+/// leave exactly the same names undecided and differ only in the
+/// answer they give for a name they cover. That is why both take
+/// their turn at the same point in the scan.
 #[test]
 fn a_leading_bang_flips_the_verdict_and_not_the_scope() {
-    // `clone_*` and `!clone_*` cover exactly the same names, so they
-    // leave exactly the same names undecided and differ only in the
-    // answer they give for a name they cover. That is why both take
-    // their turn at the same point in the scan.
     assert_eq!(single("clone_*", "clone_id"), Some(true));
     assert_eq!(single("!clone_*", "clone_id"), Some(false));
     for name in ["first_name", "get_thing", "cloned_id"] {
@@ -191,23 +191,23 @@ fn an_exception_nests_as_deep_as_the_list_does() {
     assert_eq!(list(&patterns, "foo_0_exception_x"), Some(true));
 }
 
+/// Two entries over the same names: the first can never be reached,
+/// so the pair means whatever the second one means. Nothing rejects
+/// such an entry today.
 #[test]
 fn an_entry_a_later_one_wholly_covers_can_never_decide() {
-    // Two entries over the same names: the first can never be reached,
-    // so the pair means whatever the second one means. Nothing rejects
-    // such an entry today.
     assert_eq!(list(&["foo_*", "!foo_*"], "foo_x"), Some(false));
     assert_eq!(list(&["!foo_*"], "foo_x"), Some(false));
     assert_eq!(list(&["!foo_*", "foo_*"], "foo_x"), Some(true));
     assert_eq!(list(&["foo_*"], "foo_x"), Some(true));
 }
 
+/// `[]` leaves every name to the caller's fallthrough, while
+/// `["!*"]` answers for every name and so never reaches it. A
+/// caller whose fallthrough is `false` cannot tell the two apart;
+/// one whose fallthrough is a predicate can.
 #[test]
 fn an_empty_list_is_not_the_same_as_a_list_that_covers_nothing() {
-    // `[]` leaves every name to the caller's fallthrough, while
-    // `["!*"]` answers for every name and so never reaches it. A
-    // caller whose fallthrough is `false` cannot tell the two apart;
-    // one whose fallthrough is a predicate can.
     assert_eq!(list(&[], "name"), None);
     assert_eq!(list(&["!*"], "name"), Some(false));
 }

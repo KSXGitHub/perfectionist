@@ -27,7 +27,7 @@ use crate::secret::internals::*;
 // writes the leading `::` — the leading `::` in the config is the
 // absolute marker and covers both written forms. (`::`-rooting only
 // applies to extern crates, so `std` carries this case, not the
-// crate-local `secret` above.)
+// crate-local `secret`.)
 use std::collections::*;
 use ::std::collections::*;
 

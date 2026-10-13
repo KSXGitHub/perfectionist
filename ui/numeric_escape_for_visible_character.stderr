@@ -1,0 +1,87 @@
+warning: visible character `→` (U+2192) written as the escape `/u{2192}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "/u{2192} next";
+   |              ^^^^^^^^ help: spell the character as itself: `→`
+   |
+   = note: `#[warn(perfectionist::numeric_escape_for_visible_character)]` on by default
+
+warning: visible character `A` (U+0041) written as the escape `/x41`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "/x41BC";
+   |              ^^^^ help: spell the character as itself: `A`
+
+warning: visible character `é` (U+00E9) written as the escape `/u{E9}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "R/u{E9}sum/u{E9}";
+   |               ^^^^^^ help: spell the character as itself: `é`
+
+warning: visible character `é` (U+00E9) written as the escape `/u{E9}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "R/u{E9}sum/u{E9}";
+   |                        ^^^^^^ help: spell the character as itself: `é`
+
+warning: visible character `✕` (U+2715) written as the escape `/u{2715}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = '/u{2715}';
+   |              ^^^^^^^^ help: spell the character as itself: `✕`
+
+warning: visible character `→` (U+2192) written as the escape `/u{2192}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = c"/u{2192}";
+   |               ^^^^^^^^ help: spell the character as itself: `→`
+
+warning: visible character `'` (U+0027) written as the escape `/x27`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "it/x27s here";
+   |                ^^^^ help: spell the character as itself: `'`
+
+warning: visible character `"` (U+0022) written as the escape `/x22`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = '/x22';
+   |              ^^^^ help: spell the character as itself: `"`
+
+warning: visible character `😀` (U+1F600) written as the escape `/u{1_F600}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     let _ = "/u{1_F600}";
+   |              ^^^^^^^^^^ help: spell the character as itself: `😀`
+
+warning: visible character `✔` (U+2714) written as the escape `/u{2714}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     println!("done /u{2714}");
+   |                    ^^^^^^^^ help: spell the character as itself: `✔`
+
+warning: visible character `✔` (U+2714) written as the escape `/u{2714}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     println!("{value} /u{2714}");
+   |                       ^^^^^^^^ help: spell the character as itself: `✔`
+
+warning: visible character `{` (U+007B) written as the escape `/u{7B}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     println!("/u{7B}/u{7B}");
+   |               ^^^^^^ help: spell the character as itself: `{`
+
+warning: visible character `{` (U+007B) written as the escape `/u{7B}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL |     println!("/u{7B}/u{7B}");
+   |                     ^^^^^^ help: spell the character as itself: `{`
+
+warning: visible character `→` (U+2192) written as the escape `/u{2192}`
+  --> $DIR/numeric_escape_for_visible_character.rs:LL:CC
+   |
+LL | #[doc = "arrow: /u{2192}"]
+   |                 ^^^^^^^^ help: spell the character as itself: `→`
+
+warning: N warnings emitted

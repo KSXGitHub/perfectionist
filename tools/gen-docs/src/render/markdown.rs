@@ -207,12 +207,12 @@ pub(crate) fn markdown_inline_to_html(markdown: &str) -> String {
 mod tests {
     use super::scope_highlight_css;
 
+    /// syntect emits comma-separated compound selectors on the rule's
+    /// opening line; every part must be prefixed individually, or a
+    /// bare `scope ` would bind only to the first selector. Comment
+    /// lines, declarations, and the closing brace pass through.
     #[test]
     fn scopes_each_selector_in_a_comma_list() {
-        // syntect emits comma-separated compound selectors on the rule's
-        // opening line; every part must be prefixed individually, or a
-        // bare `scope ` would bind only to the first selector. Comment
-        // lines, declarations, and the closing brace pass through.
         let input = "/* c */\n.a, .b .c {\n color: #fff;\n}\n";
         let scoped = scope_highlight_css(input, ":root[x]");
         assert_eq!(

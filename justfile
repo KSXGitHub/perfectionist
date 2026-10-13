@@ -150,7 +150,7 @@ fix-js:
 test-js:
   node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
 
-# Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
+# Minify a gen-docs output directory's CSS and JS in place.
 minify-docs site_dir="gh-pages":
   #!/usr/bin/env bash
   set -euo pipefail
@@ -167,8 +167,3 @@ minify-docs site_dir="gh-pages":
   for js in *.js; do
     pnpm exec terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
   done
-  # SVG: svgo minifies every file in place.
-  svg=(*.svg)
-  if [ "${#svg[@]}" -gt 0 ]; then
-    pnpm exec svgo --quiet --folder .
-  fi

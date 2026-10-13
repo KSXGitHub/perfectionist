@@ -41,7 +41,8 @@ use thiserror::*;
 // path's first segment, not on the local name.
 use thiserror::Error as RenamedErrorMacro;
 
-// Bad: re-export form. Same first segment, same diagnostic.
+// Bad: re-export form. The first segment is `thiserror` whatever the
+// item is re-exported as.
 pub use thiserror::Error as ReexportedError;
 
 // Bad: nested form.
@@ -61,7 +62,7 @@ use thiserror as te;
 use thiserror::{self as _nested_te};
 
 // Bad: chain re-export through a crate alias. `te` was recorded as
-// a crate alias for `thiserror` by `use thiserror as te;` above, so
+// a crate alias for `thiserror` by `use thiserror as te;`, so
 // `te::Error` here resolves to `thiserror::Error`. The two-pass
 // alias collector expands the first segment through `crate_aliases`
 // during the leaf pass, and `use_tree_references_thiserror`

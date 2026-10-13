@@ -1,11 +1,11 @@
 use super::config_section;
 use crate::model::{ConfigDoc, ConfigField, Optionality};
 
+/// A mandatory field renders the `mandatory` badge; an ordinary
+/// field keeps `optional`. Guards the HTML path the way
+/// `render_md`'s test guards the markdown path.
 #[test]
 fn config_section_badges_mandatory_and_optional_fields() {
-    // A mandatory field renders the `mandatory` badge; an ordinary
-    // field keeps `optional`. Guards the HTML path the way
-    // `render_md`'s test guards the markdown path.
     let config = ConfigDoc {
         key: "perfectionist::demo_rule".to_owned(),
         fields: vec![

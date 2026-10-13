@@ -32,7 +32,17 @@ pub(crate) fn workspace() -> Option<&'static toml::Table> {
     MANIFEST.as_ref()
 }
 
-/// The walk [`workspace`] caches.
+/// [`read_workspace_from`] from the directory Cargo names in
+/// `CARGO_MANIFEST_DIR`, which is what [`workspace`] caches.
+fn read_workspace() -> Option<toml::Table> {
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").ok()?;
+    read_workspace_from(Path::new(&manifest_dir))
+}
+
+/// The walk, from a directory handed over rather than read from the
+/// environment. Setting `CARGO_MANIFEST_DIR` to point it somewhere
+/// would reach every later reader in the process, and [`workspace`]'s
+/// cache would answer the first caller's tree for the rest of the run.
 ///
 /// It climbs to the first `Cargo.toml` carrying a `[workspace]` table,
 /// which is how Cargo finds the root. It does not read `members` or
@@ -42,9 +52,8 @@ pub(crate) fn workspace() -> Option<&'static toml::Table> {
 /// A file that cannot be read or parsed is stepped over rather than
 /// ending the walk, so one unreadable manifest between the crate and
 /// the root does not hide the root.
-fn read_workspace() -> Option<toml::Table> {
-    let manifest_dir = env::var("CARGO_MANIFEST_DIR").ok()?;
-    Path::new(&manifest_dir)
+fn read_workspace_from(manifest_dir: &Path) -> Option<toml::Table> {
+    manifest_dir
         .ancestors()
         .map(|ancestor| ancestor.join("Cargo.toml"))
         .map(fs::read_to_string)
@@ -53,3 +62,6 @@ fn read_workspace() -> Option<toml::Table> {
         .filter_map(Result::ok)
         .find(|manifest| manifest.get("workspace").is_some_and(toml::Value::is_table))
 }
+
+#[cfg(test)]
+mod test_read_workspace_from;

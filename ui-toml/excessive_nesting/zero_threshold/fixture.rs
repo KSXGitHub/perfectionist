@@ -213,7 +213,8 @@ fn async_closure(ready: bool) {
     };
 }
 
-// Bad: 1 level — an `async` block is not a level either.
+// Bad: 1 level — an `async` block is not a level, so only the `if`
+// counts.
 fn async_block(ready: bool) -> impl Future<Output = ()> {
     async move {
         if ready {
@@ -251,7 +252,7 @@ macro_rules! local_guard {
     };
 }
 
-// Not flagged: the `let ... else` comes from the expansion too, even
+// Not flagged: the `let ... else` comes from the expansion, even
 // though a `let` statement reaches the walk as a statement rather
 // than as an expression.
 fn let_else_from_a_local_macro(input: Option<u8>) {

@@ -34,11 +34,11 @@ fn run(src_base: &str, config: RuleConfig) {
         .run();
 }
 
+/// `skip_domains` compares case-insensitively (per DNS): an
+/// uppercase `EXAMPLE.COM` entry suppresses a lowercase
+/// `user@example.com`, while an address on another domain fires.
 #[test]
 fn skip_domains_matches_case_insensitively() {
-    // `skip_domains` compares case-insensitively (per DNS): an
-    // uppercase `EXAMPLE.COM` entry suppresses a lowercase
-    // `user@example.com`, while an address on another domain fires.
     run(
         "ui-toml/bare_email/skip_domains_case_insensitive",
         RuleConfig {
@@ -48,12 +48,12 @@ fn skip_domains_matches_case_insensitively() {
     );
 }
 
+/// `style = "mailto"` produces one `MachineApplicable` suggestion
+/// that prefixes the address with `mailto:`. Distinguished from
+/// the default `either` style, which emits two `MaybeIncorrect`
+/// suggestions.
 #[test]
 fn mailto_style_emits_single_mailto_suggestion() {
-    // `style = "mailto"` produces one `MachineApplicable` suggestion
-    // that prefixes the address with `mailto:`. Distinguished from
-    // the default `either` style, which emits two `MaybeIncorrect`
-    // suggestions.
     run(
         "ui-toml/bare_email/mailto_style",
         RuleConfig {
@@ -63,12 +63,12 @@ fn mailto_style_emits_single_mailto_suggestion() {
     );
 }
 
+/// `style = "both"` produces one `MachineApplicable` suggestion
+/// that applies the angle-bracket and `mailto:` forms together
+/// (`<mailto:...>`), rather than offering them as alternatives the
+/// way the default `either` style does.
 #[test]
 fn both_style_emits_single_combined_suggestion() {
-    // `style = "both"` produces one `MachineApplicable` suggestion
-    // that applies the angle-bracket and `mailto:` forms together
-    // (`<mailto:...>`), rather than offering them as alternatives the
-    // way the default `either` style does.
     run(
         "ui-toml/bare_email/both_style",
         RuleConfig {
@@ -78,13 +78,13 @@ fn both_style_emits_single_combined_suggestion() {
     );
 }
 
+/// `style = "forbid"` is the one style whose contract is *no*
+/// autofix: no address form is acceptable, so the diagnostic
+/// carries prose only. The fixture guards that contract — a future
+/// edit that attaches a suggestion to this arm changes the
+/// expected output.
 #[test]
 fn forbid_style_emits_no_suggestion() {
-    // `style = "forbid"` is the one style whose contract is *no*
-    // autofix: no address form is acceptable, so the diagnostic
-    // carries prose only. The fixture guards that contract — a future
-    // edit that attaches a suggestion to this arm changes the
-    // expected output.
     run(
         "ui-toml/bare_email/forbid_style",
         RuleConfig {

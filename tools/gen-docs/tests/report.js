@@ -33,9 +33,9 @@
   // on engines old enough that an emoji font is the thing most likely to
   // be missing, where every one of these would come out as a blank box.
   var MARKS = {
-    untested: '\u25CB',
-    passed: '\u2713',
-    failed: '\u2717',
+    untested: '○',
+    passed: '✓',
+    failed: '✗',
   }
 
   /**

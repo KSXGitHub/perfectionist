@@ -22,7 +22,7 @@ fn four_levels(entries: &[Option<u8>], limit: u8) {
     }
 }
 
-// Good: the same logic with a guard and a `match` guard is 2 levels.
+// Good: a `for` over a `let ... else` and a guarded `match` is 2 levels.
 fn two_levels(entries: &[Option<u8>], limit: u8) {
     for entry in entries {
         let Some(size) = entry else {

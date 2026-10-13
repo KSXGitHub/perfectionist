@@ -1,3 +1,6 @@
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+
 // Bad: escaped quotes — JSON snippet.
 fn _escaped_quotes() {
     let _ = "{\"name\":\"foo\"}";
@@ -48,8 +51,8 @@ fn _format_with_inline_placeholder() {
     let _ = format!("url(\"{name}\")");
 }
 
-// Bad: same split reached through `println!` with a positional
-// placeholder rather than an inline-captured one.
+// Bad: a positional placeholder in `println!` hides the split literal
+// from the late pass, and the pre-expansion pass rescues it.
 fn _println_with_positional_placeholder() {
     println!("path: \"{}\"", "x");
 }
@@ -128,11 +131,21 @@ fn _no_escapes() {
 }
 
 // Not flagged: `\x41` is a Unicode-style escape, not eliminable.
+#[expect(
+    perfectionist::numeric_escape_for_visible_character,
+    reason = "the escape is this case's subject; spelling it out would \
+              leave avoidable_string_escapes nothing to decline"
+)]
 fn _hex_escape() {
     let _ = "\x41BC";
 }
 
 // Not flagged: `\u{1F600}` is a Unicode escape.
+#[expect(
+    perfectionist::numeric_escape_for_visible_character,
+    reason = "the escape is this case's subject; spelling it out would \
+              leave avoidable_string_escapes nothing to decline"
+)]
 fn _unicode_escape() {
     let _ = "emoji: \u{1F600}";
 }
