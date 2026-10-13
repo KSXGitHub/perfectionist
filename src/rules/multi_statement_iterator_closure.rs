@@ -1,4 +1,4 @@
-use crate::common::{DefaultState, hir_in_external_macro};
+use crate::common::{DefaultState, hir_in_external_macro, plural};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_hir::{Expr, ExprKind, Node};
@@ -157,16 +157,12 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
 }
 
 fn emit(cx: &LateContext<'_>, callback: &Expr<'_>, method: Symbol, statements: usize, max: usize) {
-    let unit = if statements == 1 {
-        "statement"
-    } else {
-        "statements"
-    };
+    let noun = plural(statements, "statement", "statements");
     span_lint_and_then(
         cx,
         MULTI_STATEMENT_ITERATOR_CLOSURE,
         callback.span,
-        format!("`{method}` callback has {statements} top-level {unit}, above the limit of {max}"),
+        format!("`{method}` callback has {statements} top-level {noun}, above the limit of {max}"),
         |diag| {
             diag.help("extract a named helper, or use an explicit loop for eager work when it preserves the required behavior and performance");
             diag.note("a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behavior and short-circuit results");
