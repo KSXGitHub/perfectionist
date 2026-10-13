@@ -168,9 +168,9 @@ disable = ["loop_in_option_guard"]
   Comparing spans or names is not enough — a shadowing binding of the
   same name would match textually.
 - **Diagnostic span.** The whole `if let` expression. Emitting no
-  rewrite means no snippet to reuse, so neither the parenthesising
-  nor the `iter`-versus-`into_iter` question below arises in the
-  output — but the help text still names `.into_iter().flatten()`, so
+  rewrite means no snippet to reuse, so no parenthesising question
+  arises in the output — but the help text still names
+  `.into_iter().flatten()`, so
   say `iter()` instead where the loop borrows. Read that from the
   loop's own desugared iteratee (`IntoIterator::into_iter` receiver
   type) rather than from the scrutinee alone: the scrutinee is
@@ -190,7 +190,7 @@ disable = ["loop_in_option_guard"]
 
 **Easy**, and cheaper for carrying no rewrite: a closed HIR shape,
 one type check, no snippet reuse, no configuration. The only real
-care is the `iter` versus `into_iter` wording above, which is decided
+care is whether the help says `iter` or `into_iter`, which is decided
 by the loop's own desugaring rather than guessed.
 
 ## Default state
@@ -206,8 +206,8 @@ no threshold to tune.
   the two compose on the shape that nests both, each firing on its
   own level.
 - No Clippy lint covers this. With `clippy::all`, `clippy::pedantic`
-  and `clippy::nursery` enabled together, the shape above produces no
-  diagnostic.
+  and `clippy::nursery` enabled together, an `if let Some(..)` whose
+  only statement iterates the binding produces no diagnostic.
 - `perfectionist::excessive_nesting` counts depth without judging
   what produced it; this rule removes one specific cause. A body deep
   enough to trigger both triggers both.

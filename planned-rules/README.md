@@ -126,8 +126,8 @@ pattern that several rules call out by reference — live in
   Some(..)` on something derived from the loop binding, whose help
   asks for the selection to move into a `filter_map`. Skips the
   degenerate case where the element itself is the `Option`, which is
-  `clippy::manual_flatten`'s. Offers no rewrite either, the choice of
-  `for` or `for_each` over the result being the author's. Active by
+  `clippy::manual_flatten`'s. Offers no rewrite, the choice of `for`
+  or `for_each` over the result being the author's. Active by
   default, no configuration.
 
 ### Tests
