@@ -81,8 +81,8 @@ async fn through_await(loader: Loader) -> usize {
         .count()
 }
 
-// Bad: 6 calls — a `?` mid-chain is the same, so `trim` and `parse`
-// below it join the 4 above.
+// Bad: 6 calls — a `?` mid-chain neither counts nor breaks the chain,
+// so `trim` and `parse` below it join the 4 above.
 fn through_try(input: &str) -> Result<usize, std::num::ParseIntError> {
     let count = input
         .trim()

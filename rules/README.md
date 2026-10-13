@@ -50,6 +50,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`costless_to_conversion`](./costless_to_conversion.md) (default: `active`).
+
+  `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum
@@ -101,6 +105,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`numeric_escape_for_visible_character`](./numeric_escape_for_visible_character.md) (default: `active`).
+
+  visible character written as a numeric escape; spell the character as itself
 
 - [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
 
@@ -158,6 +166,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   static item has a single-letter name
 
+- [`some_bool_comparison`](./some_bool_comparison.md) (default: `active`).
+
+  `Option<bool>` compared against a `Some` of a boolean literal, which never says what `None` means
+
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
@@ -173,6 +185,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`
+
+- [`unconsumed_into_conversion`](./unconsumed_into_conversion.md) (default: `active`).
+
+  `into_*` method borrows or copies where its prefix promises to consume
 
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 

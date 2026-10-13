@@ -50,8 +50,8 @@ fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
     total
 }
 
-// Good: the same work split by kind, each function flat and well under
-// the limit.
+// Good: a `match` dispatching to flat helpers, each well under the
+// limit.
 fn under_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
     match kind {
         0 => count_listed(items, flag),

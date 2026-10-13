@@ -209,10 +209,10 @@ fn commit_msg_strips_default_hash_comment_lines() {
     );
 }
 
+/// What a `core.commentChar = ;` template looks like — the
+/// pre-fix code rejected this as `MessageHasExtraContent`.
 #[test]
 fn commit_msg_honours_a_configured_semicolon_comment_char() {
-    // What a `core.commentChar = ;` template looks like — the
-    // pre-fix code rejected this as `MessageHasExtraContent`.
     let content = text_block_fnl! {
         "0.0.0-rc.14"
         ""
@@ -225,13 +225,13 @@ fn commit_msg_honours_a_configured_semicolon_comment_char() {
     );
 }
 
+/// `git commit -v` appends the staged diff below the scissors
+/// line. Its lines aren't comment-prefixed, so the pre-fix code
+/// mistook them for a commit body and rejected the release commit
+/// with `MessageHasExtraContent`. The hook must cut at the
+/// scissors line just as Git does before committing.
 #[test]
 fn commit_msg_ignores_the_verbose_diff_below_the_scissors_line() {
-    // `git commit -v` appends the staged diff below the scissors
-    // line. Its lines aren't comment-prefixed, so the pre-fix code
-    // mistook them for a commit body and rejected the release commit
-    // with `MessageHasExtraContent`. The hook must cut at the
-    // scissors line just as Git does before committing.
     let content = text_block_fnl! {
         "0.0.0-rc.19"
         "# Please enter the commit message for your changes. Lines starting"
@@ -275,13 +275,13 @@ fn commit_msg_rejects_release_shaped_subject_with_body_content() {
     ));
 }
 
+/// `foo` and `perfectionist` both sit at `version = "1.0.0"`
+/// before the bump; only `perfectionist` moves to `"2.0.0"`.
+/// A byte-substring synthesise would target foo's identical line
+/// (the first occurrence) and falsely report `NonVersionByteDiff`;
+/// line-position synthesise targets exactly the differing line.
 #[test]
 fn version_only_diff_targets_the_right_line_when_another_package_shares_the_before_version() {
-    // `foo` and `perfectionist` both sit at `version = "1.0.0"`
-    // before the bump; only `perfectionist` moves to `"2.0.0"`.
-    // A byte-substring synthesise would target foo's identical line
-    // (the first occurrence) and falsely report `NonVersionByteDiff`;
-    // line-position synthesise targets exactly the differing line.
     let before = text_block_fnl! {
         "[[package]]"
         r#"name = "foo""#
@@ -303,11 +303,11 @@ fn version_only_diff_targets_the_right_line_when_another_package_shares_the_befo
     assert_version_only_diff("Cargo.lock", before, after, "1.0.0", "2.0.0").unwrap();
 }
 
+/// `lines()` discards the trailing newline at EOF, so a release
+/// commit that also strips it would pass the line-by-line check;
+/// the byte-level synthesise check catches it.
 #[test]
 fn version_only_diff_rejects_trailing_newline_change_alongside_version_bump() {
-    // `lines()` discards the trailing newline at EOF, so a release
-    // commit that also strips it would pass the line-by-line check;
-    // the byte-level synthesise check catches it.
     let before = "version = \"0.0.0-rc.6\"\n";
     let after = r#"version = "0.0.0-rc.7""#;
     assert!(matches!(
@@ -316,10 +316,10 @@ fn version_only_diff_rejects_trailing_newline_change_alongside_version_bump() {
     ));
 }
 
+/// `lines()` strips both `\n` and `\r\n`, so a CRLF flip on the
+/// version line is invisible to line-by-line comparison.
 #[test]
 fn version_only_diff_rejects_eol_style_change_on_the_version_line() {
-    // `lines()` strips both `\n` and `\r\n`, so a CRLF flip on the
-    // version line is invisible to line-by-line comparison.
     let before = "[package]\nversion = \"0.0.0-rc.6\"\n";
     let after = "[package]\nversion = \"0.0.0-rc.7\"\r\n";
     assert!(matches!(

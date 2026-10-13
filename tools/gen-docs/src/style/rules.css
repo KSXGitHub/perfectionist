@@ -74,7 +74,7 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* `right: 100%` parks the glyph left of the heading's <code>, so the
+/* `right: 100%` parks the icon left of the heading's <code>, so the
    rule name stays aligned with body paragraphs; spanning <code> with
    `top`/`bottom: 0` centres it on the text, not the taller line box.
    The ~0.95rem reach stays within the body's 1rem padding to avoid
@@ -90,9 +90,17 @@ article.rule h2 .rule-anchor {
   bottom: 0;
   width: 0.8rem;
   margin-right: 0.15rem;
-  background: url("rule-anchor.svg") no-repeat center / 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   transition: opacity 0.12s ease-in-out;
+}
+
+article.rule h2 .rule-anchor-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: currentColor;
 }
 
 article.rule h2:hover .rule-anchor,
@@ -118,6 +126,16 @@ article.rule h2 .rule-jump-link {
 
 article.rule h2 .rule-jump-link:hover {
   text-decoration: underline;
+}
+
+/* Sized against the text beside it, and nudged onto that text's
+   centre: the box sits on the baseline otherwise, and `middle` aligns
+   it on the parent's x-height rather than on the words it labels. */
+article.rule h2 .rule-jump-icon {
+  width: 0.9em;
+  height: 0.9em;
+  vertical-align: -0.06em;
+  fill: currentColor;
 }
 
 article.rule .source {
@@ -151,14 +169,22 @@ details.config-details > summary.config-summary {
   font-weight: 600;
 }
 
-details.config-details > summary::before {
-  content: "▸ ";
-  display: inline-block;
-  width: 1em;
+/* Wider than the text it marks: the icon draws a compact triangle in
+   the middle of its viewBox, and the box scales the whole viewBox. */
+details.config-details > summary .disclosure-closed,
+details.config-details > summary .disclosure-open {
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.1em;
+  vertical-align: -0.3em;
+  fill: currentColor;
 }
 
-details.config-details[open] > summary::before {
-  content: "▾ ";
+/* Both markers are in the summary, so the state picks one rather than
+   swapping an image on one element. */
+details.config-details:not([open]) > summary .disclosure-open,
+details.config-details[open] > summary .disclosure-closed {
+  display: none;
 }
 
 dl.config {

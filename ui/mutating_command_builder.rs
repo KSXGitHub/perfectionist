@@ -51,10 +51,10 @@ fn statement_position() {
     Command::new("ls").arg("statement-temporary");
 }
 
-// Bad: the receiver is a temporary too, but its value is a call
-// argument, and `configure` wants the `&mut Command` the std setter
-// returns. The rewrite puts that borrow back with a `&mut ` in front of
-// the chain, so the argument keeps the type it had.
+// Bad: a temporary receiver whose value is a call argument, where
+// `configure` wants the `&mut Command` the std setter returns. The
+// rewrite puts that borrow back with a `&mut ` in front of the chain,
+// so the argument keeps the type it had.
 fn argument_position(dir: &Path) {
     configure(Command::new("ls").current_dir(dir));
 }
@@ -92,8 +92,8 @@ fn empty_turbofish() {
 
 // Bad: `with_envs` happens to take the same three generic parameters,
 // so this turbofish would survive the rename; the guard, though, is one
-// predicate over the whole table, and the generic-arguments line below
-// has to avoid claiming the counterpart's set differs.
+// predicate over the whole table, and the generic-arguments line has to
+// avoid claiming the counterpart's set differs.
 fn turbofished_envs() {
     Command::new("ls").envs::<[(&str, &str); 1], &str, &str>([("LANG", "C")]);
 }
@@ -110,10 +110,9 @@ fn turbofished() {
 
 // The generic-arguments line, the receiver line and the position line
 // can each join the advice, and the combinations are what a reader
-// actually meets. Between these and the fixtures above, every
-// combination of them appears under each form of the advice, because a
-// line that re-opens what another has settled is only visible side by
-// side.
+// actually meets. Across this file's fixtures every combination of
+// them appears under each form of the advice, because a line that
+// re-opens what another has settled is only visible side by side.
 
 // Bad: an argument needing `.into()`, and a position that wanted the
 // borrow. Both belong to the one rewrite, which is where the `&mut `
@@ -122,8 +121,9 @@ fn conversion_and_position(file: std::fs::File) {
     configure(Command::new("ls").stdout(file));
 }
 
-// Bad: the same pair where the value lands in a `let`, which declines
-// the rewrite, so both arrive as prose instead.
+// Bad: an argument needing `.into()` and a position that wanted the
+// borrow, where the value lands in a `let`. That declines the rewrite,
+// so both arrive as prose instead.
 fn conversion_and_position_as_prose(file: std::fs::File) {
     let _command = Command::new("ls").stdout(file);
 }
@@ -188,7 +188,8 @@ fn lister(dir: &Path) -> Command {
     command
 }
 
-// Good: the same function as one expression.
+// Good: the by-value setters as one expression, with no binding to
+// reassign.
 fn lister_by_value(dir: &Path) -> Command {
     Command::new("ls")
         .with_current_dir(dir)
@@ -225,21 +226,21 @@ impl Builder {
     // Not flagged: the field sits behind `&mut self`, so the by-value
     // form cannot take it — `E0507`, cannot move out of a place behind
     // a mutable reference. The type alone does not separate this case
-    // from the one below.
+    // from `into_extended`.
     fn extend(&mut self) {
         self.command.arg("borrowed-field");
     }
 
-    // Bad: the same field, movable here because `self` is owned.
+    // Bad: a field of an owned `self`, which the by-value form can move.
     fn into_extended(mut self) -> Command {
         self.command.arg("owned-field");
         self.command
     }
 
-    // Good: the counterpart of the above. Taking the advice collapses
-    // the statements into one chained expression and drops the `mut`,
-    // since the field is moved rather than mutated. The signature returns
-    // `Command`, which is what `with_arg` hands back.
+    // Good: the counterpart of `into_extended`. Taking the advice
+    // collapses the statements into one chained expression and drops
+    // the `mut`, since the field is moved rather than mutated. The
+    // signature returns `Command`, which is what `with_arg` hands back.
     fn into_extended_by_value(self) -> Command {
         self.command.with_arg("-l")
     }
@@ -256,14 +257,15 @@ fn make_builder() -> Builder {
 //
 // The command is never run, which the rule neither notices nor needs
 // to: it reads the shape of the call. `field_of_a_temporary_that_runs`
-// below is the same shape spending its command.
+// is this shape spending its command.
 fn field_of_a_temporary() {
     make_builder().command.arg("field-of-a-temporary");
 }
 
-// Bad: that shape with the command actually spent. The chain is
-// rewritten whole, and `.status()` takes the owned command by autoref,
-// which is the form the author would have written by hand.
+// Bad: the receiver is a field of a value this expression produced,
+// with the command actually spent. The chain is rewritten whole, and
+// `.status()` takes the owned command by autoref, which is the form
+// the author would have written by hand.
 fn field_of_a_temporary_that_runs() {
     make_builder().command.arg("runs-it").status().ok();
 }
@@ -305,9 +307,8 @@ fn captured_upvar() {
 }
 
 // Not flagged: the parameter's type is `&mut Command`, so like
-// `configure` above this stops at the receiver-type check. The
-// captured-binding case, which does reach the place walk, is
-// `captured_upvar`.
+// `configure` this stops at the receiver-type check. The captured-
+// binding case, which does reach the place walk, is `captured_upvar`.
 fn through_closure(command: &mut Command) {
     let mut add = |pending: &mut Command| {
         pending.arg("-l");

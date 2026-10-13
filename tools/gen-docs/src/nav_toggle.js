@@ -58,10 +58,11 @@
 //
 //   3. Imperative open/close from arbitrary events. The CSS-only
 //      `<details>`/`<summary>` toggle can't be closed in response
-//      to a sidebar link tap or a separate close-button tap; CSS
-//      has no event-handler equivalent. (Eliminating `<details>`
-//      also avoids a separate Firefox-Mobile containing-block
-//      quirk that turned the supposedly-fixed `<summary>` into
+//      to a sidebar link tap, a separate close-button tap, or a
+//      tap on the page behind the drawer; CSS has no
+//      event-handler equivalent. (Eliminating `<details>` also
+//      avoids a separate Firefox-Mobile containing-block quirk
+//      that turned the supposedly-fixed `<summary>` into
 //      effective `position: absolute`, but that's a happy side
 //      effect of switching to a `<button>`, not the reason for
 //      the switch.)
@@ -127,18 +128,18 @@
 //    the toggle stays visible despite `hidden`.)
 // ============================================================================
 
-(function () {
+;(function () {
   // Cast to the non-null element type rather than `HTMLElement | null`: the
   // `if (!toggle || !sidebar) return;` guard below still catches a missing
   // element at runtime, but TypeScript does not carry guard-based narrowing of
   // a `var` into the closures further down (this file deliberately avoids
   // `const`, see the trailing-comma note in config_toggle.js), so every event
   // handler that reads `toggle`/`sidebar` would otherwise see them as nullable.
-  var toggle = /** @type {HTMLElement} */ (document.querySelector(".nav-toggle"));
-  var sidebar = /** @type {HTMLElement} */ (
-    document.querySelector(".nav-sidebar")
-  );
-  if (!toggle || !sidebar) return;
+  var toggle = /** @type {HTMLElement} */ (document.querySelector('.nav-toggle'))
+  var sidebar = /** @type {HTMLElement} */ (document.querySelector('.nav-sidebar'))
+  if (!toggle || !sidebar) {
+    return
+  }
 
   // ---- Hamburger fade ---------------------------------------------------
   //
@@ -153,13 +154,13 @@
   // the table is taller than the viewport and stayed partially
   // intersecting through the entire articles section, leaving the
   // hamburger hidden long after the reader had left the index.
-  var heading = document.querySelector("h1#catalogue");
-  if (heading && "IntersectionObserver" in window) {
+  var heading = document.querySelector('h1#catalogue')
+  if (heading && 'IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {
-      var entry = entries[entries.length - 1];
-      toggle.classList.toggle("nav-toggle-hidden", entry.isIntersecting);
-    });
-    observer.observe(heading);
+      var entry = entries[entries.length - 1]
+      toggle.classList.toggle('nav-toggle-hidden', entry.isIntersecting)
+    })
+    observer.observe(heading)
   }
 
   // ---- Visual Viewport API offset compensation --------------------------
@@ -177,48 +178,53 @@
   // the height explicitly too, since `100dvh` is unreliable on the
   // same browsers that mis-anchor `position: fixed`.
   if (window.visualViewport) {
-    var vv = window.visualViewport;
+    var vv = window.visualViewport
     var syncToViewport = function () {
-      var t = "translate(" + vv.offsetLeft + "px, " + vv.offsetTop + "px)";
-      toggle.style.transform = t;
-      sidebar.style.transform = t;
-      sidebar.style.height = vv.height + "px";
-    };
-    vv.addEventListener("scroll", syncToViewport);
-    vv.addEventListener("resize", syncToViewport);
-    syncToViewport();
+      var t = 'translate(' + vv.offsetLeft + 'px, ' + vv.offsetTop + 'px)'
+      toggle.style.transform = t
+      sidebar.style.transform = t
+      sidebar.style.height = vv.height + 'px'
+    }
+    vv.addEventListener('scroll', syncToViewport)
+    vv.addEventListener('resize', syncToViewport)
+    syncToViewport()
   }
 
   // ---- Open / close + body scroll lock ----------------------------------
   //
   // See category A item 1 in the file header for the load-bearing role
   // of the scroll lock. The drawer is opened by tapping `.nav-toggle` and
-  // closed by tapping `.nav-sidebar-close` (the ✕ inside the overlay).
-  // Body scroll lock has the side benefit of stopping the page behind
-  // from scrolling when the user swipes within the overlay. We preserve
-  // the scroll position by snapping body to `top: -<y>px` while locked
-  // and restoring `scrollTo(0, y)` on unlock.
-  var savedScrollY = 0;
-  var bodyLocked = false;
+  // closed by tapping `.nav-sidebar-close` (the close button inside the
+  // overlay) or the page behind the drawer. Body scroll lock has the
+  // side benefit of stopping the page behind from scrolling when the
+  // user swipes within the overlay. We preserve the scroll position by
+  // snapping body to `top: -<y>px` while locked and restoring
+  // `scrollTo(0, y)` on unlock.
+  var savedScrollY = 0
+  var bodyLocked = false
 
   function lockBodyScroll() {
-    if (bodyLocked) return;
-    savedScrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = "-" + savedScrollY + "px";
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    bodyLocked = true;
+    if (bodyLocked) {
+      return
+    }
+    savedScrollY = window.scrollY
+    document.body.style.position = 'fixed'
+    document.body.style.top = '-' + savedScrollY + 'px'
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    bodyLocked = true
   }
 
   function unlockBodyScroll() {
-    if (!bodyLocked) return;
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    window.scrollTo(0, savedScrollY);
-    bodyLocked = false;
+    if (!bodyLocked) {
+      return
+    }
+    document.body.style.position = ''
+    document.body.style.top = ''
+    document.body.style.left = ''
+    document.body.style.right = ''
+    window.scrollTo(0, savedScrollY)
+    bodyLocked = false
   }
 
   // ---- Background inertness ---------------------------------------------
@@ -233,20 +239,26 @@
   // close. `inert` removes focusability and AT exposure of the
   // subtree without needing a manual focus trap or aria-hidden dance.
   /** @type {HTMLElement[]} */
-  var inertedChildren = [];
+  var inertedChildren = []
   function setBackgroundInert() {
-    inertedChildren = [];
+    inertedChildren = []
     for (var i = 0; i < document.body.children.length; i++) {
-      var el = /** @type {HTMLElement} */ (document.body.children[i]);
-      if (el === toggle || el === sidebar) continue;
-      if (el.inert) continue;
-      el.inert = true;
-      inertedChildren.push(el);
+      var el = /** @type {HTMLElement} */ (document.body.children[i])
+      if (el === toggle || el === sidebar) {
+        continue
+      }
+      if (el.inert) {
+        continue
+      }
+      el.inert = true
+      inertedChildren.push(el)
     }
   }
   function clearBackgroundInert() {
-    for (var i = 0; i < inertedChildren.length; i++) inertedChildren[i].inert = false;
-    inertedChildren = [];
+    for (var i = 0; i < inertedChildren.length; i++) {
+      inertedChildren[i].inert = false
+    }
+    inertedChildren = []
   }
 
   // ---- Focus management on open / close ---------------------------------
@@ -257,31 +269,60 @@
   // the close button the same way. In both cases we explicitly move
   // focus to a sensible visible target so AT users keep their place.
   function openSidebar() {
-    toggle.setAttribute("aria-expanded", "true");
-    lockBodyScroll();
-    setBackgroundInert();
-    if (closeBtn) closeBtn.focus({ preventScroll: true });
+    toggle.setAttribute('aria-expanded', 'true')
+    lockBodyScroll()
+    setBackgroundInert()
+    if (closeBtn) {
+      closeBtn.focus({ preventScroll: true })
+    }
   }
 
   function closeSidebar() {
-    toggle.setAttribute("aria-expanded", "false");
-    unlockBodyScroll();
-    clearBackgroundInert();
-    toggle.focus({ preventScroll: true });
+    toggle.setAttribute('aria-expanded', 'false')
+    unlockBodyScroll()
+    clearBackgroundInert()
+    toggle.focus({ preventScroll: true })
   }
 
-  toggle.addEventListener("click", function () {
-    if (toggle.getAttribute("aria-expanded") === "true") {
-      closeSidebar();
+  toggle.addEventListener('click', function () {
+    if (toggle.getAttribute('aria-expanded') === 'true') {
+      closeSidebar()
     } else {
-      openSidebar();
+      openSidebar()
     }
-  });
+  })
 
-  var closeBtn = /** @type {HTMLElement | null} */ (
-    sidebar.querySelector(".nav-sidebar-close")
-  );
-  if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+  var closeBtn = /** @type {HTMLElement | null} */ (sidebar.querySelector('.nav-sidebar-close'))
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeSidebar)
+  }
+
+  // ---- Close on an outside click ----------------------------------------
+  //
+  // Dismissing the drawer by clicking the page behind it is the gesture
+  // the Settings panel and the search overlay already honour. The
+  // listener goes on the document because there is no backdrop element
+  // to put it on: the drawer is a bare `position: fixed` panel, not a
+  // dialog inside a full-viewport overlay. `setBackgroundInert` is no
+  // obstacle — the HTML standard has hit-testing in an inert subtree
+  // act as if `pointer-events: none` were set, so the click lands on
+  // <body> and bubbles from there.
+  //
+  // Excluding the toggle is load-bearing, not deference to its own
+  // handler: the click that opens the drawer bubbles on to this
+  // listener with `aria-expanded` already "true", and would close it
+  // again. The same guard covers the permanent >=1100px sidebar, which
+  // the media query shows with the attribute still "false".
+  document.addEventListener('click', function (event) {
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
+    var clickTarget = /** @type {Node | null} */ (event.target)
+    if (toggle.contains(clickTarget) || sidebar.contains(clickTarget)) {
+      return
+    }
+    closeSidebar()
+  })
 
   // ---- Focus trap fallback ----------------------------------------------
   //
@@ -297,28 +338,39 @@
   // support `inert` this is mostly a no-op (Tab from the last
   // focusable just lands on the same element again because nothing
   // else is reachable), so the cost of always-on is negligible.
-  document.addEventListener("keydown", function (event) {
-    if (event.key !== "Tab") return;
-    if (toggle.getAttribute("aria-expanded") !== "true") return;
+  //
+  // The selector has to name every kind of focusable the sidebar can
+  // hold, or the wrap computes its first and last from the wrong set:
+  // the header's filter funnel is a `<button>`, but the filter input
+  // below it is an `<input>`.
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Tab') {
+      return
+    }
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      return
+    }
     var focusable = /** @type {NodeListOf<HTMLElement>} */ (
-      sidebar.querySelectorAll("a[href], button:not([disabled])")
-    );
-    if (focusable.length === 0) return;
-    var first = focusable[0];
-    var last = focusable[focusable.length - 1];
+      sidebar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
+    )
+    if (focusable.length === 0) {
+      return
+    }
+    var first = focusable[0]
+    var last = focusable[focusable.length - 1]
     if (!sidebar.contains(document.activeElement)) {
-      event.preventDefault();
-      first.focus();
-      return;
+      event.preventDefault()
+      first.focus()
+      return
     }
     if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
+      event.preventDefault()
+      last.focus()
     } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
+      event.preventDefault()
+      first.focus()
     }
-  });
+  })
 
   // ---- Close on sidebar-link follow -------------------------------------
   //
@@ -331,14 +383,22 @@
   // sidebar and focus would otherwise drop to <body>. Rule articles and
   // the catalogue heading aren't focusable by default, so set
   // tabindex="-1" before .focus().
-  sidebar.addEventListener("click", function (event) {
-    var link = /** @type {Element} */ (event.target).closest("a");
-    if (!link) return;
-    if (event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-    closeSidebar();
-    var hash = link.hash;
-    if (!hash) return;
+  sidebar.addEventListener('click', function (event) {
+    var link = /** @type {Element} */ (event.target).closest('a')
+    if (!link) {
+      return
+    }
+    if (event.button !== 0) {
+      return
+    }
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
+    closeSidebar()
+    var hash = link.hash
+    if (!hash) {
+      return
+    }
     // Rule fragments are `#/rule/<name>`, whose `/` characters make
     // them invalid CSS id selectors — `querySelector("#/rule/...")`
     // would throw. Resolve the raw id with getElementById instead,
@@ -347,35 +407,36 @@
     // that propagate rather than swallow it — an uncaught throw inside
     // this click handler only aborts the handler, and surfacing the
     // error aids debugging.
-    var id = decodeURIComponent(hash.slice("#".length));
-    var target = document.getElementById(id);
-    if (!target) return;
-    target.setAttribute("tabindex", "-1");
-    target.focus({ preventScroll: true });
-  });
+    var id = decodeURIComponent(hash.slice('#'.length))
+    var target = document.getElementById(id)
+    if (!target) {
+      return
+    }
+    target.setAttribute('tabindex', '-1')
+    target.focus({ preventScroll: true })
+  })
 
   // ---- Force-close on cross-breakpoint resize ---------------------------
   //
   // If the user opens the drawer at a narrow viewport and then resizes
   // or rotates into the >=1100px band, the desktop CSS hides the close
   // button (`.nav-sidebar-close { display: none }`) while leaving the
-  // body still scroll-locked and the background still `inert`. With
-  // the close button gone and the page background dead, the only way
-  // out would be a sidebar-link click — and even then the reader is
-  // stranded if they didn't want to navigate. Watch the breakpoint
-  // with `matchMedia` and tear the open state down on crossing.
+  // body still scroll-locked and the background still `inert`. An
+  // outside click still gets the reader out, but nothing makes that
+  // obvious once the close button is gone. Watch the breakpoint with
+  // `matchMedia` and tear the open state down on crossing.
   if (window.matchMedia) {
-    var desktopMQ = window.matchMedia("(min-width: 1100px)");
+    var desktopMQ = window.matchMedia('(min-width: 1100px)')
     var handleBreakpoint = function () {
-      if (desktopMQ.matches && toggle.getAttribute("aria-expanded") === "true") {
-        closeSidebar();
+      if (desktopMQ.matches && toggle.getAttribute('aria-expanded') === 'true') {
+        closeSidebar()
       }
-    };
+    }
     if (desktopMQ.addEventListener) {
-      desktopMQ.addEventListener("change", handleBreakpoint);
+      desktopMQ.addEventListener('change', handleBreakpoint)
     } else if (desktopMQ.addListener) {
       // Safari < 14 / older WebKit: legacy MediaQueryList API.
-      desktopMQ.addListener(handleBreakpoint);
+      desktopMQ.addListener(handleBreakpoint)
     }
   }
 
@@ -389,5 +450,5 @@
   // when it's functional. If any of the above threw before reaching
   // this line, the toggle stays hidden and the reader falls back to
   // the index table near the top of the page.
-  toggle.hidden = false;
-})();
+  toggle.hidden = false
+})()

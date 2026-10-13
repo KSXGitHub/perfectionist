@@ -482,8 +482,92 @@ pub fn synth_owned_as_conversion(input: TokenStream) -> TokenStream {
     synth_field_copy(attr_span, "as_s")
 }
 
+/// `#[derive(SynthCostlessToConversion)]` +
+/// `#[synth_costless_to_conversion]` → a `to_`-prefixed method handing
+/// the field back as a borrow, under the same span shape.
+/// `costless_to_conversion` fires on this method when it is
+/// hand-written: the prefix, a `&self` receiver and nothing else, a
+/// borrow returned, and a body that hands the field straight over. The
+/// proc-macro guard is the only thing that does not report it.
+#[proc_macro_derive(SynthCostlessToConversion, attributes(synth_costless_to_conversion))]
+pub fn synth_costless_to_conversion(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_costless_to_conversion").expect(
+        "`#[derive(SynthCostlessToConversion)]` requires a `#[synth_costless_to_conversion]`",
+    );
+    synth_field_borrow(attr_span, "to_s")
+}
+
+/// `#[derive(SynthUnconsumedIntoConversion)]` +
+/// `#[synth_unconsumed_into_conversion]` → an `into_`-prefixed method
+/// handing the field back as a borrow, under the same span shape.
+/// `unconsumed_into_conversion` fires on it when hand-written: the
+/// prefix, a `&self` receiver and nothing else, and a return type that
+/// borrows from that receiver. The proc-macro guard is the only thing
+/// that does not report it.
+#[proc_macro_derive(
+    SynthUnconsumedIntoConversion,
+    attributes(synth_unconsumed_into_conversion)
+)]
+pub fn synth_unconsumed_into_conversion(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_unconsumed_into_conversion").expect(
+        "`#[derive(SynthUnconsumedIntoConversion)]` requires a \
+         `#[synth_unconsumed_into_conversion]`",
+    );
+    synth_field_borrow(attr_span, "into_s")
+}
+
+/// The copying form of [`synth_accessor`]: `-> String` from a body of
+/// `self.s.clone()`, which is the shape `cloning_getter` and
+/// `owned_as_conversion` read.
+fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
+    let at_sig = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let mut ret = TokenStream::new();
+    ret.extend([at_sig(TokenTree::Ident(Ident::new("String", attr_span)))]);
+    // `self.s.clone()` — stamped like the signature, the way
+    // `quote_spanned!(field.span() => ...)` stamps a whole accessor.
+    let mut fn_body = TokenStream::new();
+    fn_body.extend([
+        at_sig(TokenTree::Ident(Ident::new("self", attr_span))),
+        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
+        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("clone", attr_span))),
+        at_sig(TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            TokenStream::new(),
+        ))),
+    ]);
+    synth_accessor(attr_span, method_name, ret, fn_body)
+}
+
+/// The borrowing form of [`synth_accessor`]: `-> &str` from a body of
+/// `&self.s`, which is the shape `costless_to_conversion` reads.
+fn synth_field_borrow(attr_span: Span, method_name: &str) -> TokenStream {
+    let at_sig = |mut tree: TokenTree| {
+        tree.set_span(attr_span);
+        tree
+    };
+    let mut ret = TokenStream::new();
+    ret.extend([
+        at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("str", attr_span))),
+    ]);
+    // `&self.s` — stamped like the signature, as above.
+    let mut fn_body = TokenStream::new();
+    fn_body.extend([
+        at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("self", attr_span))),
+        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
+        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
+    ]);
+    synth_accessor(attr_span, method_name, ret, fn_body)
+}
+
 /// `const _: () = { struct _Synth { s: String } impl _Synth {
-/// fn <method_name>(&self) -> String { self.s.clone() } } };` where the
+/// fn <method_name>(&self) -> <ret> { <fn_body> } } };` where the
 /// generated `impl` and every token of the method inside it inherit
 /// `attr_span`, the way a `getset`-style derive spans an accessor over
 /// the field it accesses. The rules that read this shape report at the
@@ -491,7 +575,15 @@ pub fn synth_owned_as_conversion(input: TokenStream) -> TokenStream {
 /// and `report_in_external_macro: false`, and stamping the `impl` too
 /// leaves a parent-item span check nothing to find; this exercises
 /// their `is_from_proc_macro` guard.
-fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
+///
+/// `ret` and `fn_body` arrive stamped from the caller, because what the
+/// method hands back is what tells one rule's trigger from another's.
+fn synth_accessor(
+    attr_span: Span,
+    method_name: &str,
+    ret: TokenStream,
+    fn_body: TokenStream,
+) -> TokenStream {
     let call_site = Span::call_site();
     let at_sig = |mut tree: TokenTree| {
         tree.set_span(attr_span);
@@ -512,22 +604,7 @@ fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
         TokenTree::Group(Group::new(Delimiter::Brace, field)),
     ]);
 
-    // `self.s.clone()` — stamped like the signature, the way
-    // `quote_spanned!(field.span() => ...)` stamps a whole accessor.
-    let mut fn_body = TokenStream::new();
-    fn_body.extend([
-        at_sig(TokenTree::Ident(Ident::new("self", attr_span))),
-        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
-        at_sig(TokenTree::Ident(Ident::new("s", attr_span))),
-        at_sig(TokenTree::Punct(Punct::new('.', Spacing::Alone))),
-        at_sig(TokenTree::Ident(Ident::new("clone", attr_span))),
-        at_sig(TokenTree::Group(Group::new(
-            Delimiter::Parenthesis,
-            TokenStream::new(),
-        ))),
-    ]);
-
-    // `fn <method_name>(&self) -> String` — every signature token
+    // `fn <method_name>(&self) -> <ret>` — every signature token
     // user-spanned.
     let mut receiver = TokenStream::new();
     receiver.extend([
@@ -544,9 +621,12 @@ fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
         ))),
         at_sig(TokenTree::Punct(Punct::new('-', Spacing::Joint))),
         at_sig(TokenTree::Punct(Punct::new('>', Spacing::Alone))),
-        at_sig(TokenTree::Ident(Ident::new("String", attr_span))),
-        at_sig(TokenTree::Group(Group::new(Delimiter::Brace, fn_body))),
     ]);
+    method.extend(ret);
+    method.extend([at_sig(TokenTree::Group(Group::new(
+        Delimiter::Brace,
+        fn_body,
+    )))]);
 
     // `impl _Synth { ... }` — stamped as well, so that every span the
     // rule could consult, the method's and its parent item's alike, reads
@@ -687,6 +767,36 @@ pub fn synth_fold_owner(input: TokenStream) -> TokenStream {
     body.extend(fold);
     body.extend(";".parse::<TokenStream>().expect("valid tokens"));
     let mut out: TokenStream = "fn _synth_fold_owner()".parse().expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
+/// `#[derive(SynthSomeBoolComparison)]` +
+/// `#[synth_some_bool_comparison]` →
+/// `fn _synth_some_bool_comparison() { let _ = FLAG == Some(true); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_some_bool_comparison` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The comparison's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both let
+/// through. Only the enclosing item's `def_span` still says where the
+/// comparison lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthSomeBoolComparison, attributes(synth_some_bool_comparison))]
+pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_some_bool_comparison")
+        .expect("`#[derive(SynthSomeBoolComparison)]` requires a `#[synth_some_bool_comparison]`");
+    let body = respan(
+        "let _ = FLAG == Some(true);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    let mut out: TokenStream = "fn _synth_some_bool_comparison()"
+        .parse()
+        .expect("valid tokens");
     out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
     out
 }

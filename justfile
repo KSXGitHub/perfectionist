@@ -1,10 +1,5 @@
 export PATH := justfile_directory() + "/.dev-tools/bin:" + env_var("PATH")
 
-# Set PERFECTIONIST_CARGO_LOCKED=true to pass `--locked` to the cargo invocations the
-# gating CI recipes (`build`, `doc`, `lint`, `test`, `self-lint`) reach,
-# including the warmup / doc-generation recipes they delegate to. Empty,
-# `false`, and unset all leave the lockfile writable; any other value
-# is rejected.
 perfectionist_cargo_locked := env_var_or_default("PERFECTIONIST_CARGO_LOCKED", "")
 locked := if perfectionist_cargo_locked == "true" {
     "--locked"
@@ -16,9 +11,6 @@ locked := if perfectionist_cargo_locked == "true" {
     error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
   }
 
-# Where `test` points `TMPDIR`. `compiletest_rs` takes its output
-# directory from `std::env::temp_dir()` and offers no way to override
-# it, so without this every fixture litters the temp dir itself.
 test_tmp_dir := env_var_or_default("TMPDIR", "/tmp") + "/perfectionist-tests"
 
 _default:
@@ -69,15 +61,11 @@ warmup-integration-tests:
 install-dev-tools:
   cargo --config 'target."cfg(all())".linker="cc"' run --locked --target-dir target/dev-tools-cc --package _dev_tools -- "$(pwd)" install
 
-# Point this checkout's `core.hooksPath` at `.githooks/` so the
-# version-bump contract (see `tools/deploy-check/`) is enforced
-# locally for commit messages and tag pushes.
+# Set up git hooks
 install-git-hooks:
   git config core.hooksPath .githooks
 
-# Undo `install-git-hooks`. Idempotent: silently succeeds when
-# `core.hooksPath` is already unset, so it is safe to run from
-# any state.
+# Uninstall git hooks
 uninstall-git-hooks:
   git config --unset core.hooksPath 2>/dev/null || true
 
@@ -110,10 +98,30 @@ gen-rules-md rules_dir="rules":
 check-rules-md rules_dir="rules":
   cargo run {{locked}} --package _gen_docs --bin gen-docs -- --root "$(pwd)" check-md "{{rules_dir}}"
 
-# Type-check the docs-site JavaScript (tools/gen-docs/src/*.js) from its
-# JSDoc annotations with the TypeScript compiler. Emits nothing; tsconfig.json
-# drives the check. Not part of `just all` — it has no Rust toolchain
-# dependency and runs in its own CI (.github/workflows/check-js-types.yaml).
+# Check the docs-site JavaScript: formatting, types, lints, then unit tests
+check-js:
+  just fmt-js
+  just check-js-types
+  just lint-js
+  just test-js
+
+# Check the docs-site JavaScript's formatting
+fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --check '**/*.js' '**/*.mjs'
+
+# Format the docs-site JavaScript in place
+write-fmt-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxfmt --write '**/*.js' '**/*.mjs'
+
+# Type-check the docs-site JavaScript from its JSDoc annotations
 check-js-types:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -121,7 +129,28 @@ check-js-types:
   pnpm --dir "$root_dir" install --frozen-lockfile
   pnpm --dir "$root_dir" exec tsc --noEmit --project "$root_dir/tsconfig.json"
 
-# Minify a gen-docs output directory's CSS, JS, and SVG assets in place.
+# Lint the docs-site JavaScript, types included
+lint-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware
+
+# Apply what oxlint can fix to the docs-site JavaScript, then reformat
+fix-js:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  root_dir="{{justfile_directory()}}"
+  pnpm --dir "$root_dir" install --frozen-lockfile
+  pnpm --dir "$root_dir" exec oxlint --type-aware --fix
+  just write-fmt-js
+
+# Run the docs-site JavaScript unit tests
+test-js:
+  node "{{justfile_directory()}}/tools/gen-docs/tests/run.mjs"
+
+# Minify a gen-docs output directory's CSS and JS in place.
 minify-docs site_dir="gh-pages":
   #!/usr/bin/env bash
   set -euo pipefail
@@ -138,8 +167,3 @@ minify-docs site_dir="gh-pages":
   for js in *.js; do
     pnpm exec terser "$js" --compress --mangle --source-map "url='$js.map',includeSources=true" --output "$js"
   done
-  # SVG: svgo minifies every file in place.
-  svg=(*.svg)
-  if [ "${#svg[@]}" -gt 0 ]; then
-    pnpm exec svgo --quiet --folder .
-  fi

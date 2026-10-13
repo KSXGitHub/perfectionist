@@ -12,12 +12,14 @@ mod plain_core_path {
     use core::fmt::Display;
 }
 
-// Bad: the same through `alloc`, which the default config covers.
+// Bad: an item `std` reaches by the same suffix, written through
+// `alloc`, which the default config covers.
 mod plain_alloc_path {
     use alloc::sync::Arc;
 }
 
-// Bad: a `::`-rooted path names the same crate, so it is flagged too.
+// Bad: a `::`-rooted path names the same crate as the unrooted form, so
+// it is flagged.
 mod rooted_path {
     use ::core::hash::Hash;
 }

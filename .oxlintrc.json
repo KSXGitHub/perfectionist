@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // The page scripts are ES5. The categories left out are the ones that
+  // lint for a newer language; a rule out of one of them may still be
+  // named below.
+  "categories": {
+    "correctness": "deny",
+    "suspicious": "deny",
+    "perf": "deny"
+  },
+  "rules": {
+    "eslint/curly": ["error", "all"],
+
+    "eslint/eqeqeq": "error",
+    "eslint/no-fallthrough": "error",
+    "eslint/no-self-compare": "error",
+    "eslint/no-unreachable-loop": "error",
+    "eslint/array-callback-return": "error",
+    "eslint/radix": "error",
+    "eslint/no-loop-func": "error",
+    "eslint/no-template-curly-in-string": "error",
+
+    // `tsc` owns this, under `noUnusedLocals` / `noUnusedParameters`.
+    "eslint/no-unused-vars": "off",
+
+    // The remedy each asks for is newer than ES5, or JSDoc has no other
+    // way to say it.
+    "typescript/no-unsafe-type-assertion": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-new-array": "off",
+
+    // The shape each flags is deliberate: a nested function reuses an
+    // outer name for the same quantity, and the test runner loads its
+    // libraries in order because each publishes a global the next reads.
+    "eslint/no-shadow": "off",
+    "eslint/no-await-in-loop": "off"
+  },
+  "overrides": [
+    {
+      // `tsconfig.json` includes only `*.js`, so an `.mjs` is linted
+      // without types. That misreads `Number(bigint)` as a conversion
+      // changing nothing, where obeying it leaves a `bigint / 1e9` that
+      // throws.
+      "files": ["**/*.mjs"],
+      "rules": {
+        "typescript/no-unnecessary-type-conversion": "off"
+      }
+    }
+  ]
+}

@@ -1,23 +1,6 @@
 name: Test
 
 on:
-  # Branch pushes only — tag pushes are covered by the deploy workflow,
-  # which invokes this workflow via `workflow_call` before publishing.
-  #
-  # `paths-ignore` is a deny-list of pure-documentation files that never
-  # feed `just all` (fmt / build / doc / lint / test / self-lint). A push
-  # or PR that touches *only* these paths skips the suite; touching even
-  # one other file still runs it. A deny-list is the safe shape here: an
-  # unlisted source path merely runs CI needlessly, whereas an incomplete
-  # *allow*-list would silently skip CI on code that needs it. The two
-  # lists are kept identical by hand. `workflow_call` is left unfiltered
-  # — path filters don't apply to it, and deploy.yaml relies on the suite
-  # always running before publish.
-  #
-  # Note: if "Test" is a required status check in branch protection, a
-  # docs-only PR will never report it and can't merge until the rule is
-  # relaxed (e.g. drop the check from "required", or merge docs-only PRs
-  # via a path that doesn't demand it).
   push:
     branches: ['**']
     paths-ignore:
@@ -45,10 +28,6 @@ on:
       - '.github/dependabot.yml'
   workflow_call:
 
-# `actions/checkout` plus the cargo build / test commands only need
-# read access to the repo. Restrict the GITHUB_TOKEN accordingly so
-# a compromised step in this workflow cannot push back, open issues,
-# write packages, etc.
 permissions:
   contents: read
 
@@ -77,21 +56,6 @@ jobs:
         timeout-minutes: 1
         continue-on-error: true
         with:
-          # `target/integration-fixtures{,-warmup}/` hold the warmup's
-          # incremental-compilation state. rustc ICEs when any input to
-          # the lint-registration fingerprint (e.g. a rule's
-          # `default_level`) changes against a cache populated under the
-          # previous value, so the dirs are excluded; the expensive
-          # plugin build still lives in the main `target/` cache.
-          #
-          # Cache the WHOLE `~/.cargo`, including `registry/src`. It is
-          # tempting to drop `registry/src` (re-extractable from the
-          # `.crate` tarballs) to shrink the archive, but don't: dropping
-          # it makes cargo re-extract those sources with fresh mtimes
-          # that are newer than the cached `target/` artifacts, so every
-          # build-script crate (proc-macro2, quote, ...) reruns and
-          # cascades a full-graph recompile despite a cache hit. Keeping
-          # `registry/src` preserves the mtimes that match the artifacts.
           path: |
             ~/.cargo
             ~/.dylint_drivers
@@ -119,13 +83,6 @@ jobs:
         with:
           tool: just
 
-      # `.dev-tools/` only changes when `dylint_linting` is bumped, so
-      # cache it under a key tied to that version rather than to the
-      # whole `Cargo.lock`. Most lockfile churn (unrelated dep bumps)
-      # leaves this cache valid and skips the from-source rebuild of
-      # cargo-dylint and dylint-link. The version is read by the same
-      # workspace crate that performs the install, so there is one
-      # source of truth and no shell-side `Cargo.lock` parsing.
       - name: Read pinned dylint version
         id: dylint-version
         shell: bash

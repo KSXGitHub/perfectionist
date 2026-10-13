@@ -156,6 +156,37 @@ has these consequences for the implementer:
    docstring — a generic HIR walker, a per-character emit loop, a
    path-set parser — earns its own file.
 
+## Choose a collection by observable order
+
+Both `BTreeSet` / `BTreeMap` and `HashSet` / `HashMap` appear here. What
+decides between them is whether anything depends on the order entries
+come back out in. Size does not decide it, and at these sites neither
+does speed: built once and probed once per node, the two spellings
+differ by nanoseconds beneath a HIR walk that costs orders of magnitude
+more. A collection on a genuine hot path is a performance question, and
+measuring is how to settle one. These sites are not that.
+
+That order reaches the reader when it sequences diagnostics, orders a
+suggestion, or lands in a generated file. There the ordered container is
+necessary and not sufficient, because what it sorts by is the key's
+`Ord`, and that varies across `rustc_span`'s key types. `Span` and
+`BytePos` compare by position in the file, which is the order the reader
+is already scanning in. `Symbol` compares by its slot in the interner,
+which is worse than hashed: stable enough to freeze into a `.stderr`
+fixture and pass review, still arbitrary to whoever reads the
+diagnostic. Holding a `Symbol` and owing alphabetical order, sort by
+`Symbol::as_str` as you emit.
+
+Where no order reaches the reader the collection is a lookup table,
+either spelling is correct, and rewriting a working one from either
+container to the other is noise.
+
+Sometimes the choice is already made. A key may not implement the
+trait: rustc's `HirId` has `Hash` and `Eq` and no `Ord`. A dependency
+may name the container in its own signature, as
+[`build-fs-tree`](https://docs.rs/build-fs-tree)'s directory variant
+does.
+
 ## Do not write documentation that restates the code
 
 Prose that duplicates a fact the code already states is unverified
@@ -237,6 +268,72 @@ The
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
 is this one's complement: repeat words freely, never facts.
 
+## Every passage must read on its own
+
+A sentence that takes its meaning from a neighbouring one breaks when
+anything is inserted between them, and nothing fails when it does. The
+reader rarely arrives in writing order either: they land on one fixture
+case from a `grep` hit, one hunk of a diff, or one rule's file in the
+in-tree catalogue, where `rules/<rule_name>.md` carries that rule and
+nothing else.
+
+Two shapes carry the fault:
+
+- **A positional reference** — "the case below", "`configure` above",
+  "the fixtures above", "the same shape spelled as a tuple". Insert an
+  item and it points at the wrong one. A name is greppable and survives
+  reordering, so "the counterpart of `into_extended`" beats "the
+  counterpart of the above"; where the target is in another file, name
+  the file.
+- **A dangling comparative** — a bare "likewise", "the same", "too",
+  "either", "as well" or "ditto" whose antecedent sits in another item
+  rather than in the passage holding it. Restate what it borrowed;
+  a clause repeated costs less than the reference did.
+
+These are *not* the fault, and a sweep that rewrites them makes the
+prose worse:
+
+- **A back-reference inside the same passage.** "two bindings of the
+  same path", "not `Copy` either" — the antecedent is in the sentence
+  or the one before it, so the reader never leaves.
+- **A threshold.** "one above the default limit of 10", "exactly 15 is
+  not above the limit" — "above" is the number, not a position.
+- **Source order that is the subject.** "a `pub use` below a private
+  import" is the violation `arbitrary_source_item_ordering` reports.
+- **Prose introducing what immediately follows.**
+- **An idiom.** "all the same", "either way", "in the same boat".
+
+The `// Bad:` / `// Good:` / `// Not flagged:` labels under `ui/`,
+`ui-toml/` and `tests/fixtures/` are where this bites hardest: each is
+written beside its sibling and then read alone. Sweep them by searching
+those directories for a label line that also carries "the same", "too",
+"either", "as well", "likewise", "ditto", "above" or "below". Anchor the
+search on the label itself, or the output fills with the exceptions
+above — but anchor it on the label's word alone, since what follows it
+varies: a colon in most files, a comma or an em dash elsewhere, and
+sometimes nothing at all. An anchor that assumes one separator silently
+skips every file written with another. Then read each matching comment
+whole, because a label's
+continuation lines carry the fault as often as its first line does and a
+line-oriented search returns only the line it matched.
+
+Judge every hit; never count them. "Above" and "below" are the noisiest,
+most of their hits being a threshold or the source order a rule reports.
+"The same" and "too" are the offenders you will meet most, and are also
+often innocent, so weigh each one. "Likewise" and "ditto" are rare and
+nearly always the fault; "as well" is usually a back-reference inside
+its own comment.
+
+One trap is specific to a fixture: its comment may be the very text a
+rule lints (`bare_issue_reference` scans plain line comments), and the
+`.stderr` quotes the whole source line, so rewording the comment moves
+the fixture's expected output with it.
+
+This rule applies the
+[fact-duplication rule](#do-not-write-documentation-that-restates-the-code)'s
+test — ask what would make it go stale — to a reference rather than to
+a copied fact.
+
 ## Shipped docs address the consumer, not the contributor
 
 A doc is *shipped* if a consumer reads it without cloning: `README.md`,
@@ -271,6 +368,56 @@ audience by heading (its development section names `just` recipes, its
 rules section offers `planned-rules/` as the roadmap), and a generated
 file's do-not-edit banner names `just gen-rules-md` because it
 addresses whoever is about to hand-edit it.
+
+## A published crate is linked at its first shipped mention
+
+The first code span naming a published crate in a rule's shipped docs
+links to that crate's docs.rs root: `https://docs.rs/<crates.io name>`,
+never an item page, which a rename or a module move breaks. The
+crates.io spelling stands even where the link text is the underscored
+Rust path — `` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``.
+
+Later mentions of that crate on the same rendered page are plain, so a
+crate the `declare_tool_lint!` rustdoc links is plain in the
+`Configuration` section below it, and a crate only a `Config` field
+names is linked there. The lint's one-line description is plain
+wherever it falls: rustc prints it in a diagnostic, where a link is
+literal text.
+
+A code span names a crate when the crate is its leading path segment
+— `` `thiserror` ``, `` `clap::Parser` ``, `` `log::info!` ``. An
+attribute span (`#[serde(...)]`), a bare macro name (`quote!`), a code
+fence, the standard library, and the rustc / Clippy / rustdoc lint
+namespaces name something else and stay plain.
+
+## Test documentation goes above the test
+
+A comment describing a whole test is documentation, so it goes where
+documentation goes: a `///` block above the `#[test]` attribute. A `//`
+comment inside the body belongs to one line or one region of lines, and
+a leading one that covers every line in the body is documentation in
+disguise.
+
+The split follows what each reader needs. The `///` block says what the
+test pins and why the case is worth pinning, which is what someone
+scanning the module reads. A `//` comment says why the line under it is
+written that way, which only that line's reader needs. A test whose
+body carries a series of comments, one per case, keeps them where they
+are. Where a test has both a purpose and per-case notes, the purpose
+moves up and the notes stay put.
+
+A comment in disguise is already wrong where it sits, so leaving it is
+not one of the options. Which fix applies is decided by what it says,
+not by where it sits: a block that says what the test pins moves above
+the attribute, and a block that narrates the body goes, per
+[Do not write documentation that restates the code](#do-not-write-documentation-that-restates-the-code).
+Moving launders nothing. Text that would read as a poor doc above the
+attribute was a poor comment below it, and a test whose name already
+says what it pins needs no block at all.
+
+One fault follows the move itself. A later comment may have leaned on
+the one now above the attribute, so restate what it borrowed, per
+[Every passage must read on its own](#every-passage-must-read-on-its-own).
 
 ## Defaults live in field docs, not type or variant docs
 
@@ -413,6 +560,27 @@ is the human-readable spec for one lint; walk the diff against
 the relevant rules and fix violations by hand. Note this
 fallback explicitly in your summary so the user knows the
 automated self-lint did not run.
+
+## The docs-site JavaScript
+
+The JavaScript under `tools/gen-docs/` is formatted by
+[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) and linted by
+[oxlint](https://oxc.rs/docs/guide/usage/linter.html), both pinned in
+[`package.json`](package.json) and configured in
+[`.oxfmtrc.json`](.oxfmtrc.json) and
+[`.oxlintrc.json`](.oxlintrc.json). After touching any of it, run
+`just check-js`. `just fix-js` applies what oxlint can fix and then
+reformats, in that order because a fix lands as valid code rather than
+as formatted code.
+
+## The maud templates
+
+rustfmt does not format the body of a `{`-delimited macro invocation,
+so `just fmt` leaves the layout inside a `maud::html!` body alone.
+[maudfmt](https://docs.rs/maudfmt) settles it, pinned as a
+dev-dependency in [`Cargo.toml`](Cargo.toml), and
+[`tests/maud_formatting.rs`](tests/maud_formatting.rs) holds every
+template to its output.
 
 ## Normalised `.stderr` fixtures
 

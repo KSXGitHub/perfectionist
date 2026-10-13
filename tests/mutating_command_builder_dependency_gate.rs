@@ -82,8 +82,8 @@ const MIDDLE_SOURCE: &str =
 /// carry because it models no dependencies. Passing `Cargo.toml` as a
 /// source overwrites the generated copy, so this restates the package
 /// and lib stanzas that copy would have held.
-fn fixture_manifest(dependency: &str) -> String {
-    fixture_manifest_excluding(dependency, &[])
+fn fixture_manifest(package: &str, dependency: &str) -> String {
+    fixture_manifest_excluding(package, dependency, &[])
 }
 
 /// Like [`fixture_manifest`], but keeps `excluded` out of the
@@ -91,14 +91,14 @@ fn fixture_manifest(dependency: &str) -> String {
 /// the workspace directory as a member, and two members may not share
 /// a name, so a graph carrying two majors of one package has to
 /// exclude them or the workspace does not load at all.
-fn fixture_manifest_excluding(dependency: &str, excluded: &[&str]) -> String {
+fn fixture_manifest_excluding(package: &str, dependency: &str, excluded: &[&str]) -> String {
     // `[&str]`'s `Debug` is already the TOML array form.
     let exclude = match excluded {
         [] => String::new(),
         _ => format!("exclude = {excluded:?}\n"),
     };
     format!(
-        "[package]\nname = \"gate\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+        "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
          [lib]\npath = \"src/lib.rs\"\n\n\
          [workspace]\n{exclude}\n\
          [dependencies]\n{dependency}\n",
@@ -116,13 +116,16 @@ fn a_declared_dependency_fires_before_anything_names_it() {
         "}"
     };
     let (_temp, stderr, success) = run_project_with_config(
-        "gate",
+        "declared-not-named",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
             (
                 "Cargo.toml",
-                &fixture_manifest(r#"command-extra = { path = "command-extra" }"#),
+                &fixture_manifest(
+                    "declared-not-named",
+                    r#"command-extra = { path = "command-extra" }"#,
+                ),
             ),
             ("src/lib.rs", source),
             ("command-extra/Cargo.toml", STUB_MANIFEST),
@@ -150,13 +153,13 @@ fn a_transitively_reached_crate_stays_silent() {
         "}"
     };
     let (_temp, stderr, success) = run_project_with_config(
-        "gate",
+        "transitively-reached",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
             (
                 "Cargo.toml",
-                &fixture_manifest(r#"middle = { path = "middle" }"#),
+                &fixture_manifest("transitively-reached", r#"middle = { path = "middle" }"#),
             ),
             ("src/lib.rs", source),
             ("middle/Cargo.toml", MIDDLE_MANIFEST),
@@ -191,13 +194,16 @@ fn a_renamed_dependency_fires_through_its_import() {
         "}"
     };
     let (_temp, stderr, success) = run_project_with_config(
-        "gate",
+        "renamed-dependency",
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
             (
                 "Cargo.toml",
-                &fixture_manifest(r#"ce = { package = "command-extra", path = "command-extra" }"#),
+                &fixture_manifest(
+                    "renamed-dependency",
+                    r#"ce = { package = "command-extra", path = "command-extra" }"#,
+                ),
             ),
             ("src/lib.rs", source),
             ("command-extra/Cargo.toml", STUB_MANIFEST),
@@ -218,7 +224,7 @@ fn a_renamed_dependency_fires_through_its_import() {
 /// inheriting it and one that has not. Returns the `cargo dylint`
 /// stderr, which is where the fixture's own argument strings come back
 /// to be matched on.
-fn run_the_workspace(dylint_config: &str) -> String {
+fn run_the_workspace(package: &str, dylint_config: &str) -> String {
     let member = |name: &str| {
         format!(
             "use std::process::Command;\n\npub fn build() {{\n    let mut command = \
@@ -255,7 +261,7 @@ fn run_the_workspace(dylint_config: &str) -> String {
         r#"path = "src/lib.rs""#
     };
     let (_temp, stderr, success) = run_project_with_config(
-        "workspace",
+        package,
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
@@ -283,7 +289,7 @@ fn flagged_line(member: &str) -> String {
 /// that has not written `command-extra.workspace = true`.
 #[test]
 fn the_default_reaches_the_workspace_table() {
-    let stderr = run_the_workspace("");
+    let stderr = run_the_workspace("workspace-default", "");
     for member in ["inherits", "abstains"] {
         assert!(
             stderr.contains(&flagged_line(member)),
@@ -297,9 +303,10 @@ fn the_default_reaches_the_workspace_table() {
 /// flagged.
 #[test]
 fn narrowing_to_the_crate_leaves_the_abstaining_member_alone() {
-    let stderr = run_the_workspace(&format!(
-        "[\"{LINT}\"]\ncommand_extra_dependency = \"crate\"\n",
-    ));
+    let stderr = run_the_workspace(
+        "workspace-narrowed",
+        &format!("[\"{LINT}\"]\ncommand_extra_dependency = \"crate\"\n"),
+    );
     assert!(
         stderr.contains(&flagged_line("inherits")),
         "expected the member that inherits the dependency to be flagged; \
@@ -376,9 +383,9 @@ const MIDDLE_NEW_MANIFEST: &str = text_block_fnl! {
 
 /// `.envs` against a graph carrying one `CommandExtra` that declares
 /// `with_envs` and one that does not.
-fn run_two_majors(sources: &[(&str, &str)]) -> String {
+fn run_two_majors(package: &str, sources: &[(&str, &str)]) -> String {
     let (_temp, stderr, success) = run_project_with_config(
-        "gate",
+        package,
         cargo_manifest_dir(),
         &shared_target_dir(),
         sources,
@@ -404,17 +411,21 @@ fn one_major_declaring_the_counterpart_fires() {
         r#"    command.envs([("LANG", "C")]);"#
         "}"
     };
-    let stderr = run_two_majors(&[
-        (
-            "Cargo.toml",
-            &fixture_manifest(
-                r#"command-extra = { path = "command-extra-new", version = "2.0.0" }"#,
+    let stderr = run_two_majors(
+        "two-majors-declaring",
+        &[
+            (
+                "Cargo.toml",
+                &fixture_manifest(
+                    "two-majors-declaring",
+                    r#"command-extra = { path = "command-extra-new", version = "2.0.0" }"#,
+                ),
             ),
-        ),
-        ("src/lib.rs", source),
-        ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
-        ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
-    ]);
+            ("src/lib.rs", source),
+            ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
+            ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
+        ],
+    );
     assert!(
         stderr.contains(LINT),
         "expected `.envs` to be flagged where the one loaded \
@@ -428,25 +439,29 @@ fn one_major_declaring_the_counterpart_fires() {
 /// the safe side.
 #[test]
 fn two_majors_stand_down_on_a_counterpart_only_one_declares() {
-    let stderr = run_two_majors(&[
-        (
-            "Cargo.toml",
-            &fixture_manifest_excluding(
-                text_block_fnl! {
-                    r#"command-extra = { path = "command-extra-old", version = "1.0.0" }"#
-                    r#"middle = { path = "middle" }"#
-                },
-                &["command-extra-old", "command-extra-new"],
+    let stderr = run_two_majors(
+        "two-majors-standing-down",
+        &[
+            (
+                "Cargo.toml",
+                &fixture_manifest_excluding(
+                    "two-majors-standing-down",
+                    text_block_fnl! {
+                        r#"command-extra = { path = "command-extra-old", version = "1.0.0" }"#
+                        r#"middle = { path = "middle" }"#
+                    },
+                    &["command-extra-old", "command-extra-new"],
+                ),
             ),
-        ),
-        ("src/lib.rs", TWO_MAJORS_SOURCE),
-        ("command-extra-old/Cargo.toml", OLD_STUB_MANIFEST),
-        ("command-extra-old/src/lib.rs", STUB_SOURCE),
-        ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
-        ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
-        ("middle/Cargo.toml", MIDDLE_NEW_MANIFEST),
-        ("middle/src/lib.rs", MIDDLE_SOURCE),
-    ]);
+            ("src/lib.rs", TWO_MAJORS_SOURCE),
+            ("command-extra-old/Cargo.toml", OLD_STUB_MANIFEST),
+            ("command-extra-old/src/lib.rs", STUB_SOURCE),
+            ("command-extra-new/Cargo.toml", NEW_STUB_MANIFEST),
+            ("command-extra-new/src/lib.rs", NEW_STUB_SOURCE),
+            ("middle/Cargo.toml", MIDDLE_NEW_MANIFEST),
+            ("middle/src/lib.rs", MIDDLE_SOURCE),
+        ],
+    );
     assert!(
         !stderr.contains(LINT),
         "expected silence where the `CommandExtra` the crate under lint \
@@ -545,16 +560,16 @@ const TWO_BUILD_LIB: &str =
 const TWO_BUILD_INTEGRATION: &str =
     include_str!("fixtures/mutating_command_builder_dependency_gate/two_builds_integration.rs");
 
-fn run_two_builds(dependency_table: &str) -> String {
+fn run_two_builds(package: &str, dependency_table: &str) -> String {
     let (_temp, stderr, success) = run_project_with_config(
-        "two-builds",
+        package,
         cargo_manifest_dir(),
         &shared_target_dir(),
         &[
             (
                 "Cargo.toml",
                 &format!(
-                    "[package]\nname = \"probe\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+                    "[package]\nname = \"{package}\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
                      [lib]\npath = \"src/lib.rs\"\n\n[workspace]\n\n{dependency_table}\n",
                 ),
             ),
@@ -575,10 +590,13 @@ fn run_two_builds(dependency_table: &str) -> String {
 /// `command_extra` there.
 #[test]
 fn a_test_only_dependency_leaves_the_library_alone() {
-    let stderr = run_two_builds(text_block_fnl! {
-        "[dev-dependencies]"
-        r#"command-extra = { path = "command-extra" }"#
-    });
+    let stderr = run_two_builds(
+        "two-builds-dev-only",
+        text_block_fnl! {
+            "[dev-dependencies]"
+            r#"command-extra = { path = "command-extra" }"#
+        },
+    );
     assert!(
         !stderr.contains(&flagged_line("production-code")),
         "expected the library's own code to be left to its shipping build; \
@@ -600,10 +618,13 @@ fn a_test_only_dependency_leaves_the_library_alone() {
 /// nothing where the dependency reaches both.
 #[test]
 fn an_ordinary_dependency_still_flags_the_library() {
-    let stderr = run_two_builds(text_block_fnl! {
-        "[dependencies]"
-        r#"command-extra = { path = "command-extra" }"#
-    });
+    let stderr = run_two_builds(
+        "two-builds-ordinary",
+        text_block_fnl! {
+            "[dependencies]"
+            r#"command-extra = { path = "command-extra" }"#
+        },
+    );
     for call in ["production-code", "inline-test-code", "integration-helper"] {
         assert!(
             stderr.contains(&flagged_line(call)),
@@ -632,7 +653,7 @@ fn a_test_fn_in_a_production_module_is_told_where_the_dependency_must_live() {
             (
                 "Cargo.toml",
                 &format!(
-                    "[package]\nname = \"probe\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
+                    "[package]\nname = \"test-fn\"\nversion = \"0.0.0\"\nedition = \"2024\"\n\n\
                      [lib]\npath = \"src/lib.rs\"\n\n[workspace]\n\n\
                      [dev-dependencies]\n{}\n",
                     r#"command-extra = { path = "command-extra" }"#,
