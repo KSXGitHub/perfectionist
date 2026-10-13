@@ -44,6 +44,7 @@ impl Person {
     fn intonation(&self) -> String {
         self.name.clone()
     }
+
     // Not flagged: `&mut self` is not the receiver this measures.
     fn into_mut_name(&mut self) -> String {
         self.name.clone()
