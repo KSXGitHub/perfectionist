@@ -153,6 +153,17 @@ fn initial_accumulator_is_not_callback() {
             kept
         },
     );
+    let _ = std::iter::empty::<i32>().fold(
+        || { dbg!(5); dbg!(6); },
+        #[expect(
+            perfectionist::multi_statement_iterator_closure,
+            reason = "the expectation belongs to the callback, not to the closure beside it"
+        )]
+        |accumulator, _| {
+            let kept = accumulator;
+            kept
+        },
+    );
 }
 
 fn closure_expectation_is_honored() {
