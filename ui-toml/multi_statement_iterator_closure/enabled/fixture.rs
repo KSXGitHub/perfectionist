@@ -146,6 +146,13 @@ fn initial_accumulator_is_not_callback() {
         || { dbg!(1); dbg!(2); },
         |accumulator, _| accumulator,
     );
+    let _ = std::iter::empty::<i32>().fold(
+        || { dbg!(3); dbg!(4); },
+        |accumulator, _| {
+            let kept = accumulator;
+            kept
+        },
+    );
 }
 
 fn closure_expectation_is_honored() {
