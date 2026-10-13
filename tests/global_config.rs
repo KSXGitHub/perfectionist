@@ -3,22 +3,14 @@
 //! exercised by each rule's own `tests/<rule>.rs`; these tests live
 //! here because they're about the global table, which isn't tied to
 //! any one rule.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so
-//! the `#[test]`s in this binary serialise themselves on a shared
-//! [`Mutex`] to avoid clobbering each other under the default
-//! parallel test harness.
 
-use std::sync::{Mutex, PoisonError};
 use text_block_macros::text_block_fnl;
 
-static SERIAL: Mutex<()> = Mutex::new(());
-
 fn run(src_base: &str, dylint_toml_contents: &str) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml_contents)
         .run();
 }

@@ -34,11 +34,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 
 #[test]
 fn zero_threshold_reports_the_file_count() {
-    let fixtures = _utils::copy_fixtures_with_directives(
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/zero_threshold",
-    );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/zero_threshold")
         .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(0),
             ..RuleConfig::default()
@@ -52,11 +51,10 @@ fn zero_threshold_reports_the_file_count() {
 /// is a whole one-line file.
 #[test]
 fn a_file_of_one_line_reads_as_one_line() {
-    let fixtures = _utils::copy_fixtures_with_directives(
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/one_line",
-    );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/one_line")
         .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(0),
             ..RuleConfig::default()
@@ -66,11 +64,10 @@ fn a_file_of_one_line_reads_as_one_line() {
 
 #[test]
 fn a_file_at_the_limit_is_not_flagged() {
-    let fixtures = _utils::copy_fixtures_with_directives(
-        env!("CARGO_MANIFEST_DIR"),
-        "ui-toml/overly_long_file/at_the_limit",
-    );
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base("ui-toml/overly_long_file/at_the_limit")
         .dylint_toml(dylint_toml(RuleConfig {
             max_lines: Some(5),
             ..RuleConfig::default()

@@ -17,11 +17,8 @@ Only bare single identifiers whose name resolves to an item in
 the enclosing module's scope are flagged; a backticked word that
 names nothing in scope is left alone.
 
-A publicly-reachable item that mentions a *private* (not
-publicly-reachable) item is also left alone: turning that mention
-into a link would make rustdoc's `rustdoc::private_intra_doc_links`
-fire under a plain `cargo doc`, and a public item leaning on a
-private one is a separate concern from this rule's.
+A publicly-reachable item that mentions a *private* one is
+reported too, with no link offered.
 
 ## Why restrict this?
 
@@ -33,6 +30,11 @@ rustdoc's `rustdoc::broken_intra_doc_links` lint catch the day a
 rename leaves the prose pointing at a type that no longer
 exists. Spelling every in-scope mention as a link keeps the
 documentation navigable and the references checked.
+
+The preference is sharper where a publicly-reachable item names
+a *private* one: the name is one its reader cannot look up, and
+it can be renamed at will, being no part of the API it appears
+in. A link does not answer either objection.
 
 ## Example
 

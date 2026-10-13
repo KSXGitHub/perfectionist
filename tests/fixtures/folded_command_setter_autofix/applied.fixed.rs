@@ -1,0 +1,243 @@
+// Shapes `folded_command_setter` hands the fixer, for
+// `tests/folded_command_setter_autofix.rs`. The test compares the
+// fixer's output against `applied.fixed.rs` byte for byte, so the two
+// files have to differ by exactly the rewrite and by nothing else, this
+// header included.
+//
+// Each fold is one line, so the rewrite the fixer performs is a
+// line-for-line swap and the pair stays legible side by side.
+
+#![allow(dead_code, unused_imports, reason = "fixture")]
+
+use command_extra::CommandExtra;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::process::Command;
+use std::sync::Arc;
+
+const VARS: &[&str] = &["A", "B"];
+
+// A bare place expression: nothing to erase, and nothing to evaluate
+// that the initial value could observe out of order.
+pub fn bare_receiver(names: std::slice::Iter<'_, &'static str>) -> Command {
+    let start = Command::new("ls");
+    start.without_envs(names)
+}
+
+// `iter` from the standard library. The call survives the rewrite: no
+// `iter` is erased, because a `Deref` can hand `iter` to std while the
+// type keeps an `IntoIterator` of its own.
+pub fn kept_iter_on_a_slice() -> Command {
+    let start = Command::new("ls");
+    start.without_envs(VARS.iter())
+}
+
+// `into_iter` on the place's own type is the one call that is erased:
+// the plural calls that very function on that very value.
+pub fn erased_into_iter(names: Vec<String>) -> Command {
+    let start = Command::new("ls");
+    start.without_envs(names)
+}
+
+// `iter` over an owned collection, read again afterwards to prove the
+// borrow ends where it did.
+pub fn kept_iter_on_a_vec(names: Vec<String>) -> (Command, usize) {
+    let start = Command::new("ls");
+    let command = start.without_envs(names.iter());
+    (command, names.len())
+}
+
+// A closure forwarding to `with_arg`, whose plural is `with_args`.
+pub fn forwarding_closure(flags: &[String]) -> Command {
+    let start = Command::new("ls");
+    start.with_args(flags.iter())
+}
+
+// The `with_env` pair, whose item is an owned pair.
+pub fn pair_item(pairs: Vec<(String, String)>) -> Command {
+    let start = Command::new("ls");
+    start.with_envs(pairs)
+}
+
+// The `with_env` pair over a map reference.
+pub fn pair_item_borrowed(pairs: &HashMap<String, String>) -> Command {
+    let start = Command::new("ls");
+    start.with_envs(pairs.iter())
+}
+
+// A place the call did not run on: `iter` is `[T]`'s, reached through
+// `&&Vec<String>`. Erasing it would hand the plural a non-iterator.
+pub fn double_reference(names: &&Vec<String>) -> Command {
+    let start = Command::new("ls");
+    start.without_envs(names.iter())
+}
+
+// An initial value that binds looser than a method call, which the
+// suggestion has to bracket.
+pub fn looser_initial(command: Box<Command>) -> Command {
+    (*command).without_envs(VARS.iter())
+}
+
+// `into_iter` reached by an autoref, because the only `IntoIterator` is
+// on the reference. Erasing would leave `PathBuf`, which is not an
+// iterator.
+pub fn autoref_into_iter(path: PathBuf) -> Command {
+    let start = Command::new("ls");
+    start.with_args(path.into_iter())
+}
+
+// A field reached through an `Arc`, whose `deref` only projects a
+// pointer.
+pub struct Shared {
+    vars: Vec<String>,
+}
+
+pub fn through_an_arc(shared: Arc<Shared>) -> Command {
+    let start = Command::new("ls");
+    start.without_envs(shared.vars.iter())
+}
+
+// A receiver method resolution reborrowed for the fold, which the
+// plural would otherwise move.
+pub fn reborrowed(names: &mut std::vec::IntoIter<String>) -> (Command, usize) {
+    let start = Command::new("ls");
+    let command = start.without_envs(&mut *names);
+    (command, names.len())
+}
+
+#[derive(Clone, Copy)]
+pub struct Countdown(u8);
+
+impl Iterator for Countdown {
+    type Item = &'static str;
+
+    fn next(&mut self) -> Option<&'static str> {
+        let remaining = self.0.checked_sub(1)?;
+        self.0 = remaining;
+        Some("A")
+    }
+}
+
+// A `Copy` iterator behind a reference, which method resolution copies
+// out for the fold, and which the plural would otherwise take as the
+// reference.
+pub fn copied_out(countdown: &Countdown) -> Command {
+    let start = Command::new("ls");
+    start.without_envs(*countdown)
+}
+
+pub struct Wrap {
+    name: &'static str,
+}
+
+impl Wrap {
+    fn build(self) -> Command {
+        Command::new(self.name)
+    }
+}
+
+// A struct literal at the head of a scrutinee, which the suggestion
+// brackets so that it does not read as the start of the match's block.
+pub fn literal_head() -> usize {
+    match (Wrap { name: "ls" }.build()).without_envs(VARS.iter()) {
+        command => command.get_envs().count(),
+    }
+}
+
+// A range, which HIR spells as a struct literal, and which needs no
+// brackets.
+pub fn range_initial() -> Command {
+    Command::new(VARS[0..1][0]).without_envs(VARS.iter())
+}
+
+pub struct Build {
+    program: String,
+    args: Vec<String>,
+}
+
+// An initial value that moves a field the receiver does not read, which
+// leaves the receiver readable in either order.
+pub fn disjoint_move(build: Build) -> Command {
+    Command::new(build.program).with_args(build.args.iter())
+}
+
+fn base() -> Result<Command, std::io::Error> {
+    Ok(Command::new("ls"))
+}
+
+// An initial value behind `?`, which takes its type from its operand.
+pub fn try_initial() -> Result<Command, std::io::Error> {
+    Ok(base()?.without_envs(VARS.iter()))
+}
+
+// Branches that fix their own type, which fixes the type of the whole.
+pub fn branching_initial(flag: bool) -> Command {
+    (if flag { Command::new("a") } else { Command::new("b") }).without_envs(VARS.iter())
+}
+
+pub fn matching_initial(flag: bool) -> Command {
+    (match flag { true => Command::new("a"), false => base().unwrap() }).without_envs(VARS.iter())
+}
+
+async fn command() -> Command {
+    Command::new("ls")
+}
+
+// An initial value behind `.await`, which takes its type from the
+// future.
+pub async fn awaited_initial() -> Command {
+    command().await.without_envs(VARS.iter())
+}
+
+// A reference the body took of a local, against an initial value that
+// moves, borrows and writes no local, so nothing it does can reach what
+// the reference reads.
+pub fn read_through_a_binding(names: Vec<String>) -> Command {
+    let view = &names;
+    Command::new("ls").without_envs(view.iter())
+}
+
+// A binding the body owns, which method resolution only borrows, so no
+// pointer is read through.
+pub fn owned_binding() -> Command {
+    let names = vec![String::from("A")];
+    let start = Command::new("ls");
+    start.without_envs(names.iter())
+}
+
+impl Build {
+    fn base(&self) -> Command {
+        Command::new(&self.program)
+    }
+}
+
+// A method whose declared return type names no parameter, called on a
+// pattern binding.
+pub fn concrete_return(pairs: Vec<(Build, u8)>) -> Vec<Command> {
+    let mut commands = Vec::new();
+    for (build, _) in pairs {
+        commands.push(build.base().without_envs(VARS.iter()));
+    }
+    commands
+}
+
+// A comment inside the initial value, which the suggestion carries over.
+pub fn kept_comment() -> Command {
+    Command::new(/* the program */ "ls").without_envs(VARS.iter())
+}
+
+// A renamed import, in a module of its own so the alias is the only
+// `CommandExtra` in scope. The fixer rewriting this fold is the proof
+// that the trait counts as imported by what the `use` resolves to rather
+// than by the name it binds; were it the name, the suggestion would be
+// advice and this file would come back unchanged.
+pub mod renamed_import {
+    use super::VARS;
+    use command_extra::CommandExtra as Ext;
+    use std::process::Command;
+
+    pub fn spelling() -> Command {
+        let start = Command::new("ls");
+        start.without_envs(VARS.iter())
+    }
+}

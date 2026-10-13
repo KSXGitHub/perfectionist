@@ -4,8 +4,29 @@
 
 use crate::manifest::{fixture_cargo_toml, fixture_dylint_toml};
 use build_fs_tree::{Build, FileSystemTree, MergeableFileSystemTree};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
+use std::sync::{LazyLock, Mutex};
+
+/// The package names this test binary's fixtures have claimed.
+static TAKEN: LazyLock<Mutex<HashSet<String>>> = LazyLock::new(Mutex::default);
+
+/// Hold each fixture to a package name of its own.
+///
+/// Fixtures share one target dir, and two packages of one name share a
+/// fingerprint there: the second to build is taken for fresh, and
+/// replays the first's diagnostics into another test's assertions.
+fn claim(taken: &Mutex<HashSet<String>>, package_name: &str) {
+    let fresh = taken
+        .lock()
+        .expect("the package-name registry is poisoned")
+        .insert(package_name.to_owned());
+    assert!(
+        fresh,
+        "the fixture package name {package_name:?} is already taken in this test binary; \
+         give this fixture its own name, since a shared one shares a build fingerprint",
+    );
+}
 
 /// Materialise a Cargo project at `project_dir` consisting of a
 /// `Cargo.toml` for a library package named `package_name`, a
@@ -34,6 +55,7 @@ pub fn build_project_with_config(
     sources: &[(&str, &str)],
     extra_dylint_toml: &str,
 ) {
+    claim(&TAKEN, package_name);
     let mut entries: BTreeMap<String, FileSystemTree<String, String>> = BTreeMap::new();
     entries.insert(
         "Cargo.toml".to_owned(),
@@ -55,3 +77,6 @@ pub fn build_project_with_config(
     tree.build(project_dir)
         .expect("failed to materialise project tree");
 }
+
+#[cfg(test)]
+mod test_claim;

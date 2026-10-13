@@ -30,10 +30,10 @@ fn allowed_paths_must_end_with_a_prelude_segment() {
     assert!(validate(&bad).is_err());
 }
 
+/// With a custom prelude name, a `crate::...::api` entry is accepted and
+/// a `crate::...::prelude` entry (no longer a prelude) is rejected.
 #[test]
 fn allowed_paths_validation_follows_prelude_segment_names() {
-    // With a custom prelude name, a `crate::...::api` entry is accepted and
-    // a `crate::...::prelude` entry (no longer a prelude) is rejected.
     let cfg: Config =
         toml::from_str("prelude_segment_names = [\"api\"]\nallowed_paths = [\"crate::api\"]")
             .unwrap();
@@ -55,9 +55,9 @@ fn non_absolute_allowed_path_is_rejected() {
     assert!(validate(&relative).is_err());
 }
 
+/// No nameable segment — rejected rather than silently matching nothing.
 #[test]
 fn empty_or_root_only_allowed_path_is_rejected() {
-    // No nameable segment — rejected rather than silently matching nothing.
     let bad: Config = toml::from_str(r#"allowed_paths = ["::"]"#).unwrap();
     assert!(validate(&bad).is_err());
 }

@@ -27,8 +27,10 @@ declare_tool_lint! {
     ///
     /// Eligibility is name-based — a curated list of `core` / `std` and
     /// well-known third-party macros (`vec!`, `format!`, `println!`,
-    /// `assert_eq!`, `dbg!`, `log::info!`, `tracing::debug!`,
-    /// `anyhow::bail!`, `maplit::hashmap!`, ...), extended via
+    /// `assert_eq!`, `dbg!`, [`log::info!`](https://docs.rs/log),
+    /// [`tracing::debug!`](https://docs.rs/tracing),
+    /// [`anyhow::bail!`](https://docs.rs/anyhow),
+    /// [`maplit::hashmap!`](https://docs.rs/maplit), ...), extended via
     /// `extra_macros` and overridden via `ignore`.
     ///
     /// Attribute-style invocations (`#[derive(...)]`, `#[serde(...)]`,

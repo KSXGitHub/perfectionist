@@ -1,7 +1,7 @@
 //! UI sweep for `bare_identifier_reference` under the default configuration.
 //!
 //! The crate-level mention of `Helper` resolves at the crate root, so
-//! this very line is flagged too.
+//! this very line is flagged.
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(
@@ -54,9 +54,10 @@ pub fn overlap() {}
 
 struct PrivateHelper;
 
-/// A `pub` function that mentions the private `PrivateHelper` is left
-/// alone: linking a public item to a private one would trip rustdoc's
-/// own `private_intra_doc_links`.
+/// A `pub` function that mentions the private `PrivateHelper` is
+/// reported, with no link offered: linking a public item to a private
+/// one would trip rustdoc's own `private_intra_doc_links`, so the
+/// reference itself is what has to go.
 pub fn public_refers_private() {}
 
 /// A private function, by contrast, may link the private

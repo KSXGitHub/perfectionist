@@ -3,20 +3,11 @@
 //! `ui/import_granularity_mismatch.rs` and is picked up by `tests/ui.rs`; these
 //! tests each point at their own one-fixture directory under
 //! `ui-toml/import_granularity_mismatch/` and pass a per-rule `dylint.toml` to
-//! [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
+//! `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::import_granularity_mismatch";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -55,11 +46,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    // A poisoned mutex from a previous panic doesn't make this lock
-    // unsafe — recover the inner guard and proceed.
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
@@ -86,11 +76,11 @@ fn item_style_splits_per_leaf() {
     );
 }
 
+/// `crate` style with `self_merge = "fold"`: a name that is both an
+/// item and a module is always written `crate::thing::{self, T}`. The
+/// sibling-split single statement is flagged and rewritten to it.
 #[test]
 fn self_merge_fold_enforces_self() {
-    // `crate` style with `self_merge = "fold"`: a name that is both an
-    // item and a module is always written `crate::thing::{self, T}`. The
-    // sibling-split single statement is flagged and rewritten to it.
     run(
         "ui-toml/import_granularity_mismatch/self_merge_fold",
         RuleConfig {
@@ -101,11 +91,11 @@ fn self_merge_fold_enforces_self() {
     );
 }
 
+/// `crate` style with `self_merge = "split"`: the same name is always
+/// written `crate::{thing, thing::T}`. The `self`-fold single
+/// statement is flagged and rewritten to it.
 #[test]
 fn self_merge_split_enforces_siblings() {
-    // `crate` style with `self_merge = "split"`: the same name is always
-    // written `crate::{thing, thing::T}`. The `self`-fold single
-    // statement is flagged and rewritten to it.
     run(
         "ui-toml/import_granularity_mismatch/self_merge_split",
         RuleConfig {
@@ -116,10 +106,10 @@ fn self_merge_split_enforces_siblings() {
     );
 }
 
+/// Default `module` style, but the doc-commented `use` is now
+/// allowed to merge with its plain same-module neighbour.
 #[test]
 fn respect_doc_comments_false_allows_merge() {
-    // Default `module` style, but the doc-commented `use` is now
-    // allowed to merge with its plain same-module neighbour.
     run(
         "ui-toml/import_granularity_mismatch/respect_doc_comments",
         RuleConfig {
@@ -129,11 +119,11 @@ fn respect_doc_comments_false_allows_merge() {
     );
 }
 
+/// With visibility ignored for grouping, a `pub use` and a private
+/// `use` from the same module are flagged together — but the fix is
+/// withheld because merging can't preserve both visibilities.
 #[test]
 fn respect_visibility_false_flags_without_fixing() {
-    // With visibility ignored for grouping, a `pub use` and a private
-    // `use` from the same module are flagged together — but the fix is
-    // withheld because merging can't preserve both visibilities.
     run(
         "ui-toml/import_granularity_mismatch/respect_visibility",
         RuleConfig {
@@ -143,11 +133,11 @@ fn respect_visibility_false_flags_without_fixing() {
     );
 }
 
+/// With cfg gates ignored for grouping, a platform-gated `use` and an
+/// unconditional one from the same module are flagged together — but
+/// the fix is withheld because merging would drop the `#[cfg]` gate.
 #[test]
 fn respect_cfg_blocks_false_flags_without_fixing() {
-    // With cfg gates ignored for grouping, a platform-gated `use` and an
-    // unconditional one from the same module are flagged together — but
-    // the fix is withheld because merging would drop the `#[cfg]` gate.
     run(
         "ui-toml/import_granularity_mismatch/respect_cfg_blocks",
         RuleConfig {

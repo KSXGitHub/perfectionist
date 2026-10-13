@@ -35,6 +35,15 @@ pattern that several rules call out by reference — live in
   default; opt in and pick `unqualified` or `qualified`.
 
 ### Trait bounds and signatures
+- [`async-as-conversion.md`](./async-as-conversion.md) — flag an
+  inherent `async fn` whose name begins with `as_`. The prefix
+  promises a free borrowed view; `async` says the operation may
+  suspend, which nothing free does, so the name is a claim the reader
+  must learn to disregard. Scoped to `as_`: `to_` promises cost, which
+  suspension is a kind of, and `into_` promises consumption, which is
+  orthogonal. The fix is a rename to a verb, so there is no autofix.
+  Nothing about the receiver, the body or the return type is read.
+  Active by default.
 - [`excessive-inline-bounds.md`](./excessive-inline-bounds.md) — prefer `where` clauses
   over inline bounds when there are multiple constraints.
 - [`needless-borrowed-parameters.md`](./needless-borrowed-parameters.md) — when a
@@ -83,6 +92,26 @@ pattern that several rules call out by reference — live in
   borrow of one (suggests `chain.pipe_ref(f)` /
   `chain.pipe_mut(f)`), and flags a unary call heading a chain that
   pipes (suggests `x.pipe(g)`). All four checks default to enforce.
+
+### Iterator adapters
+- [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
+  — flag a closure passed to an iterator adapter that chains two or
+  more steps onto its item, so one adapter does all of them; suggest
+  one adapter per step, lifting each into a leading `map`. A predicate
+  built from separable tests splits the same way into successive
+  filtering adapters, `filter(foo).filter(bar)` for
+  `filter(|x| foo(x) && bar(x))`. Covers the
+  adapters that take the item by value and never
+  hand it back (`map`, `filter_map`, `flat_map`,
+  `map_while`, `find_map`, `for_each`, `try_for_each`, `any`, `all`,
+  `position`, `rposition`, and the item side of `fold`, `try_fold`,
+  `scan`, `rfold` and `try_rfold`), rayon's parallel counterparts,
+  itertools' additions, `Option`, `Result`, `Poll` and `ControlFlow`
+  on every channel each has, and `pipe-trait`'s piping methods;
+  excludes `all`, `position` and the rest, where a
+  leading adapter changes the answer. Narrows what also satisfies
+  `perfectionist::overly_long_method_chain` without contradicting it.
+  Active by default.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer

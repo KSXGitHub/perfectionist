@@ -72,8 +72,8 @@ fn _motivating_bug(map: &mut Map) {
     debug_assert_eq!(map.insert(0, 0), None, "duplicate key");
 }
 
-// Bare `debug_assert!` likewise: the condition is a method call, the
-// argument is impure, the rule flags it.
+// Bare `debug_assert!`: the condition is a method call, the argument
+// is impure, the rule flags it.
 fn _debug_assert_method_call() {
     debug_assert!(value().is_some());
 }
@@ -186,8 +186,8 @@ fn _brace_argument_with_attributed_let_flagged() {
 // cast, rooted path — accepted under every mode. The outer
 // `debug_assert_eq!` is in the deny set, so any impure argument
 // here would otherwise be flagged. The grammar is open-ended
-// (array literals / repeats are exercised in a dedicated fixture
-// below; binary chains and pure-getter postfixes likewise); this
+// (array literals / repeats, binary chains and pure-getter
+// postfixes are each exercised in a dedicated fixture); this
 // function only covers the atom shapes.
 fn _all_pure_shapes_accepted() {
     let pair: (u32, u32) = (0, 0);
@@ -207,7 +207,7 @@ fn _all_pure_shapes_accepted() {
     debug_assert_eq!(::std::u32::MAX, std::u32::MAX, "rooted path");
     // The cast *target* is a rooted path too, which the type-position
     // parser reaches through a separate arm from the expression one
-    // exercised by `rooted path` above.
+    // exercised by the `rooted path` assertion.
     debug_assert_eq!(0u32 as ::std::primitive::u64, 0, "rooted cast target");
     let flag: bool = true;
     let mask: u32 = 0;
@@ -368,7 +368,7 @@ fn _binary_chain_of_pure_operands_accepted(left: u32, right: u32, point: (u32, u
 // `as_deref`, `as_slice` are the built-in pure-getter set; projects
 // extend it via `dylint.toml`'s `extra_pure_methods` knob (see
 // `tests/impure_macro_arguments.rs`). Combined with the binary-chain
-// rule above, `debug_assert!(vec.len() <= cap)` no longer drags the
+// rule, `debug_assert!(vec.len() <= cap)` no longer drags the
 // comparison out of its `cfg(debug_assertions)` guard.
 //
 // `text: &String` (rather than `&str`) is deliberate: `str::as_str`

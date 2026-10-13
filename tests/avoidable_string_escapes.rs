@@ -2,22 +2,13 @@
 //! default-config sweep lives in `ui/avoidable_string_escapes.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/avoidable_string_escapes/` and
-//! pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared
-//! [`Mutex`] to avoid clobbering each other under the default
-//! parallel test harness.
+//! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use core::num::NonZeroUsize;
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::avoidable_string_escapes";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -36,18 +27,19 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// A `\\`-only literal (one eliminable escape) stays untouched
+/// under `min_escapes_to_trigger = 2`; the multi-`\\` literal
+/// still fires.
 #[test]
 fn min_escapes_to_trigger_skips_single_escape_literals() {
-    // A `\\`-only literal (one eliminable escape) stays untouched
-    // under `min_escapes_to_trigger = 2`; the multi-`\\` literal
-    // still fires.
     run(
         "ui-toml/avoidable_string_escapes/min_escapes_to_trigger",
         RuleConfig {
@@ -57,13 +49,13 @@ fn min_escapes_to_trigger_skips_single_escape_literals() {
     );
 }
 
+/// Restricting `eligible_escapes` to just `\"` means `\\` is
+/// no longer considered eliminable. A literal whose only
+/// escapes are `\\` therefore looks like it has non-raw
+/// escapes and stays untouched; a `\"`-only literal still
+/// fires.
 #[test]
 fn eligible_escapes_subset_narrows_what_counts_as_eliminable() {
-    // Restricting `eligible_escapes` to just `\"` means `\\` is
-    // no longer considered eliminable. A literal whose only
-    // escapes are `\\` therefore looks like it has non-raw
-    // escapes and stays untouched; a `\"`-only literal still
-    // fires.
     run(
         "ui-toml/avoidable_string_escapes/eligible_escapes_subset",
         RuleConfig {
@@ -73,14 +65,14 @@ fn eligible_escapes_subset_narrows_what_counts_as_eliminable() {
     );
 }
 
+/// Misconfigured `eligible_escapes = ["\\n"]`: `\n` decodes to
+/// a newline, not the letter `n`, so accepting it as eliminable
+/// would let the autofix corrupt newline-containing literals.
+/// The filter at config load must drop the entry; the resulting
+/// empty eligible set silently disables the rule for this
+/// fixture.
 #[test]
 fn eligible_escapes_rejects_non_self_decoding_entries() {
-    // Misconfigured `eligible_escapes = ["\\n"]`: `\n` decodes to
-    // a newline, not the letter `n`, so accepting it as eliminable
-    // would let the autofix corrupt newline-containing literals.
-    // The filter at config load must drop the entry; the resulting
-    // empty eligible set silently disables the rule for this
-    // fixture.
     run(
         "ui-toml/avoidable_string_escapes/eligible_escapes_rejects_non_self_decoding",
         RuleConfig {

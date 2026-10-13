@@ -1,0 +1,9 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_unrecognised_bound.rs:LL:CC
+   |
+LL |     keys.into_iter().fold(Command::new("ls"), CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `Command::new("ls").without_envs(keys)`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: N warnings emitted

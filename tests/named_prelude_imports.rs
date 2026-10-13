@@ -2,18 +2,11 @@
 //! default-config sweep lives in `ui/named_prelude_imports.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/named_prelude_imports/` and pass a
-//! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` sets the process-global `DYLINT_TOML` env var for
-//! the duration of `run_tests`, so the `#[test]`s serialise on a shared
-//! [`Mutex`] to avoid clobbering each other under the parallel harness.
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::named_prelude_imports";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -32,17 +25,18 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// `crate::prelude` is intentionally cherry-picked, so it is exempt;
+/// a named import from a different prelude is still flagged.
 #[test]
 fn allowed_paths_exempts_listed_prelude() {
-    // `crate::prelude` is intentionally cherry-picked, so it is exempt;
-    // a named import from a different prelude is still flagged.
     run(
         "ui-toml/named_prelude_imports/allowed_paths",
         RuleConfig {
@@ -52,10 +46,10 @@ fn allowed_paths_exempts_listed_prelude() {
     );
 }
 
+/// `prelude_segment_names = ["api"]`: a named import from an `api`
+/// module is flagged, while one from a `prelude` module is not.
 #[test]
 fn custom_prelude_segment_name() {
-    // `prelude_segment_names = ["api"]`: a named import from an `api`
-    // module is flagged, while one from a `prelude` module is not.
     run(
         "ui-toml/named_prelude_imports/custom_prelude_segment",
         RuleConfig {

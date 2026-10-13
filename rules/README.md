@@ -50,6 +50,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   item named through `core` or `alloc` instead of `std`
 
+- [`costless_to_conversion`](./costless_to_conversion.md) (default: `active`).
+
+  `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum
@@ -65,6 +69,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`exhaustive_error_enums`](./exhaustive_error_enums.md) (default: `inactive`).
 
   error-shaped type is missing `#[non_exhaustive]`
+
+- [`folded_command_setter`](./folded_command_setter.md) (default: `active`).
+
+  fold over a singular `CommandExtra` setter re-implements the plural
 
 - [`import_granularity_mismatch`](./import_granularity_mismatch.md) (default: `active`).
 
@@ -90,6 +98,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   iterator callback has too many top-level statements
 
+- [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
+
+  a command setter taking `&mut self` where `command-extra`'s by-value form exists
+
 - [`named_prelude_imports`](./named_prelude_imports.md) (default: `active`).
 
   named item cherry-picked from a prelude module instead of glob-imported
@@ -97,6 +109,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`needless_borrowed_parameters`](./needless_borrowed_parameters.md) (default: `active`).
 
   borrowed parameter is only used to produce its owned form
+
+- [`numeric_escape_for_visible_character`](./numeric_escape_for_visible_character.md) (default: `active`).
+
+  visible character written as a numeric escape; spell the character as itself
 
 - [`overly_complex_condition`](./overly_complex_condition.md) (default: `active`).
 
@@ -117,6 +133,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`overly_long_print_macro`](./overly_long_print_macro.md) (default: `active`).
 
   splittable print macro with an embedded-newline template exceeds the configured line width
+
+- [`owned_as_conversion`](./owned_as_conversion.md) (default: `active`).
+
+  `as_*` method hands back an owned value where its prefix promises a free borrow
 
 - [`redundant_derive_more_forward_template`](./redundant_derive_more_forward_template.md) (default: `active`).
 
@@ -150,6 +170,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   static item has a single-letter name
 
+- [`some_bool_comparison`](./some_bool_comparison.md) (default: `active`).
+
+  `Option<bool>` compared against a `Some` of a boolean literal, which never says what `None` means
+
 - [`thiserror_usage`](./thiserror_usage.md) (default: `active`).
 
   `thiserror` import, derive, or attribute; this catalogue prefers `derive_more::{Display, Error}`
@@ -165,6 +189,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`uncombined_self_import`](./uncombined_self_import.md) (default: `inactive`).
 
   a module import and an adjacent item import from it can be combined through `self`
+
+- [`unconsumed_into_conversion`](./unconsumed_into_conversion.md) (default: `active`).
+
+  `into_*` method borrows or copies where its prefix promises to consume
 
 - [`unicode_ellipsis_in_comments`](./unicode_ellipsis_in_comments.md) (default: `active`).
 

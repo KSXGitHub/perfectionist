@@ -35,8 +35,8 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Not flagged: the conversion clause decides the name above the
-    // list, so no entry reaches it.
+    // Not flagged: the conversion clause decides the name before the
+    // list is consulted, so no entry reaches it.
     fn to_first_name(&self) -> String {
         self.first_name.clone()
     }

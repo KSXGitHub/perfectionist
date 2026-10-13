@@ -2,9 +2,10 @@
 //! listing each TOML key, plus the per-type sub-blocks describing
 //! the shape of any project-local enums or structs the fields reach.
 
+use crate::icons::{DISCLOSURE_CLOSED, DISCLOSURE_OPEN};
 use crate::model::{ConfigDoc, TypeDoc, TypeKind};
-use crate::render::breakable_lint_name;
 use crate::render::markdown::markdown_to_html;
+use crate::render::{breakable_lint_name, icon};
 use maud::{Markup, PreEscaped, html};
 
 /// Render the per-rule configuration block. Two shapes:
@@ -29,16 +30,26 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
     if config.fields.is_empty() {
         return html! {
             p.config-none {
-                strong { "Configuration:" } " none."
+                strong { "Configuration:" }
+                " none."
             }
         };
     }
     html! {
         details.config-details {
-            summary.config-summary { "Configuration" }
+            summary.config-summary {
+                // Both markers ship; rules.css shows the one that
+                // matches the panel's state.
+                (icon(DISCLOSURE_CLOSED.id, "disclosure-closed"))
+                (icon(DISCLOSURE_OPEN.id, "disclosure-open"))
+                "Configuration"
+            }
             p {
-                "Configure via " code { "dylint.toml" } " under "
-                code { r#"[""# (breakable_lint_name(&config.key)) r#""]"# } "."
+                "Configure via "
+                code { "dylint.toml" }
+                " under "
+                code { r#"[""# (breakable_lint_name(&config.key)) r#""]"# }
+                "."
             }
             dl.config {
                 @for field in &config.fields {
@@ -53,18 +64,16 @@ pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
                     }
                     dd {
                         @if field.doc_markdown.is_empty() {
-                            p { em { "Undocumented." } }
-                        } @else {
-                            (PreEscaped(markdown_to_html(&field.doc_markdown)))
-                        }
+                            p {
+                                em { "Undocumented." }
+                            }
+                        } @else { (PreEscaped(markdown_to_html(&field.doc_markdown))) }
                     }
                 }
             }
             @if !config.custom_types.is_empty() {
                 h4.config-types { "Types" }
-                @for ty in &config.custom_types {
-                    (custom_type_block(ty))
-                }
+                @for ty in &config.custom_types { (custom_type_block(ty)) }
             }
         }
     }
@@ -86,9 +95,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
                 " "
                 span.custom-type-kind { (kind_label) }
             }
-            @if !ty.doc_markdown.is_empty() {
-                (PreEscaped(markdown_to_html(&ty.doc_markdown)))
-            }
+            @if !ty.doc_markdown.is_empty() { (PreEscaped(markdown_to_html(&ty.doc_markdown))) }
             @match &ty.kind {
                 TypeKind::Enum { variants } => {
                     @if !variants.is_empty() {
@@ -99,16 +106,18 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
                                     @if variant.rust_name != variant.serialized {
                                         " "
                                         span.config-default {
-                                            "(Rust: " code { (variant.rust_name) } ")"
+                                            "(Rust: "
+                                            code { (variant.rust_name) }
+                                            ")"
                                         }
                                     }
                                 }
                                 dd {
                                     @if variant.doc_markdown.is_empty() {
-                                        p { em { "Undocumented." } }
-                                    } @else {
-                                        (PreEscaped(markdown_to_html(&variant.doc_markdown)))
-                                    }
+                                        p {
+                                            em { "Undocumented." }
+                                        }
+                                    } @else { (PreEscaped(markdown_to_html(&variant.doc_markdown))) }
                                 }
                             }
                         }
@@ -125,10 +134,10 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
                                 }
                                 dd {
                                     @if field.doc_markdown.is_empty() {
-                                        p { em { "Undocumented." } }
-                                    } @else {
-                                        (PreEscaped(markdown_to_html(&field.doc_markdown)))
-                                    }
+                                        p {
+                                            em { "Undocumented." }
+                                        }
+                                    } @else { (PreEscaped(markdown_to_html(&field.doc_markdown))) }
                                 }
                             }
                         }
@@ -140,47 +149,4 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::config_section;
-    use crate::model::{ConfigDoc, ConfigField, Optionality};
-
-    #[test]
-    fn config_section_badges_mandatory_and_optional_fields() {
-        // A mandatory field renders the `mandatory` badge; an ordinary
-        // field keeps `optional`. Guards the HTML path the way
-        // `render_md`'s test guards the markdown path.
-        let config = ConfigDoc {
-            key: "perfectionist::demo_rule".to_owned(),
-            fields: vec![
-                ConfigField {
-                    name: "style".to_owned(),
-                    type_label: "Style".to_owned(),
-                    doc_markdown: "Pick a style.".to_owned(),
-                    optionality: Optionality::Mandatory,
-                },
-                ConfigField {
-                    name: "extras".to_owned(),
-                    type_label: "[string]".to_owned(),
-                    doc_markdown: "Extra entries.".to_owned(),
-                    optionality: Optionality::Optional,
-                },
-            ],
-            custom_types: Vec::new(),
-        };
-        let html = config_section(&config).into_string();
-        // Tie each badge to its field so a mis-mapping (mandatory <->
-        // optional) is caught, not just badge presence.
-        assert!(
-            html.contains(
-                r#"<code class="config-key">style</code> : <code class="config-type">Style</code> <span class="badge badge-mandatory">mandatory</span>"#
-            ),
-            "the required field `style` should render the mandatory badge: {html}",
-        );
-        assert!(
-            html.contains(
-                r#"<code class="config-key">extras</code> : <code class="config-type">[string]</code> <span class="badge badge-optional">optional</span>"#
-            ),
-            "the optional field `extras` should render the optional badge: {html}",
-        );
-    }
-}
+mod tests;

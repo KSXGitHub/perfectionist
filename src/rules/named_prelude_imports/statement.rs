@@ -203,13 +203,10 @@ fn render_tree(entries: &[(&str, &str)]) -> String {
         .iter()
         .map(|(path, _)| path.split("::").collect())
         .collect();
+    let shortest = paths.iter().map(Vec::len).min().unwrap_or(0);
     // Every entry has to keep at least its own last segment, so the
     // shared prefix can never swallow a whole path.
-    let limit = paths
-        .iter()
-        .map(|segments| segments.len().saturating_sub(1))
-        .min()
-        .unwrap_or(0);
+    let limit = shortest.saturating_sub(1);
     let mut shared = 0;
     while shared < limit
         && paths

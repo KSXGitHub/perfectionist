@@ -38,8 +38,9 @@ declare_tool_lint! {
     ///
     /// Eligibility is name-based — a curated list of the macros whose
     /// output is unchanged by the fold (`println!`, `eprintln!`,
-    /// `print!`, `eprint!`, `writeln!`, `write!`, and the `log` family
-    /// `log!` / `error!` / `warn!` / `info!` / `debug!` / `trace!`),
+    /// `print!`, `eprint!`, `writeln!`, `write!`, and the
+    /// [`log`](https://docs.rs/log) family `log!` / `error!` /
+    /// `warn!` / `info!` / `debug!` / `trace!`),
     /// replaced wholesale via `target_macros`. Macros that *return a
     /// value* (`format!`, `format_args!`) or *terminate* (`panic!`,
     /// `assert!`, the `debug_assert*` family, ...) are deliberately

@@ -3,20 +3,11 @@
 //! `ui/wildcard_imports.rs` and is picked up by `tests/ui.rs`; these tests
 //! each point at their own one-fixture directory under
 //! `ui-toml/wildcard_imports/` and pass a per-rule `dylint.toml` to
-//! [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for the
-//! duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
+//! `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::wildcard_imports";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -51,17 +42,18 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// Both exceptions off: the prelude glob and the `pub` root re-export
+/// glob lose their exemption and are flagged alongside the plain glob.
 #[test]
 fn exceptions_disabled_flags_every_glob() {
-    // Both exceptions off: the prelude glob and the `pub` root re-export
-    // glob lose their exemption and are flagged alongside the plain glob.
     run(
         "ui-toml/wildcard_imports/exceptions_disabled",
         RuleConfig {
@@ -72,13 +64,13 @@ fn exceptions_disabled_flags_every_glob() {
     );
 }
 
+/// With both exceptions off, a glob is normally flagged — except one
+/// whose absolute module path is named in `allowed_paths`. A crate-root
+/// entry is written `crate::...` (no leading `::`), while an extern entry
+/// carries a leading `::`, and `::std::collections` exempts both the
+/// plain and the `::`-rooted spelling of that glob.
 #[test]
 fn allowed_paths_exempts_listed_module() {
-    // With both exceptions off, a glob is normally flagged — except one
-    // whose absolute module path is named in `allowed_paths`. A crate-root
-    // entry is written `crate::...` (no leading `::`), while an extern entry
-    // carries a leading `::`, and `::std::collections` exempts both the
-    // plain and the `::`-rooted spelling of that glob.
     run(
         "ui-toml/wildcard_imports/allowed_paths",
         RuleConfig {
@@ -90,10 +82,10 @@ fn allowed_paths_exempts_listed_module() {
     );
 }
 
+/// `prelude_segment_names = ["api"]`: `use foo::api::*` becomes exempt
+/// while `use foo::prelude::*` loses its exemption and is flagged.
 #[test]
 fn custom_prelude_segment_name() {
-    // `prelude_segment_names = ["api"]`: `use foo::api::*` becomes exempt
-    // while `use foo::prelude::*` loses its exemption and is flagged.
     run(
         "ui-toml/wildcard_imports/custom_prelude_segment",
         RuleConfig {

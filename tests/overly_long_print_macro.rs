@@ -2,20 +2,11 @@
 //! default-config sweep lives in `ui/overly_long_print_macro.rs` and is
 //! picked up by `tests/ui.rs`; these tests each point at their own
 //! one-fixture directory under `ui-toml/overly_long_print_macro/` and pass a
-//! per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::overly_long_print_macro";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -34,18 +25,19 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// A line wider than 40 columns but well within the default 100
+/// fires only once `max_line_width` is narrowed; a genuinely short
+/// line stays untouched even then.
 #[test]
 fn narrow_width_flags_a_line_within_the_default_limit() {
-    // A line wider than 40 columns but well within the default 100
-    // fires only once `max_line_width` is narrowed; a genuinely short
-    // line stays untouched even then.
     run(
         "ui-toml/overly_long_print_macro/narrow_width",
         RuleConfig {
@@ -55,11 +47,11 @@ fn narrow_width_flags_a_line_within_the_default_limit() {
     );
 }
 
+/// Setting `target_macros` to a custom single-entry list makes that
+/// macro eligible and drops `println!` from the built-in set, so the
+/// `println!` call is no longer flagged.
 #[test]
 fn target_macros_replaces_the_built_in_list_wholesale() {
-    // Setting `target_macros` to a custom single-entry list makes that
-    // macro eligible and drops `println!` from the built-in set, so the
-    // `println!` call is no longer flagged.
     run(
         "ui-toml/overly_long_print_macro/custom_target_macros",
         RuleConfig {

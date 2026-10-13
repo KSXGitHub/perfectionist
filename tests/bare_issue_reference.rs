@@ -2,11 +2,8 @@
 //! the module docs on `tests/bare_url.rs` for the shared pattern.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::bare_issue_reference";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 #[derive(Default, serde::Serialize)]
 struct RuleConfig {
@@ -39,9 +36,10 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
@@ -55,22 +53,22 @@ fn github_repo(config: RuleConfig) -> RuleConfig {
     }
 }
 
+/// `forge` is omitted and detected from the `github.com` host;
+/// `suggest_issue_url` / `suggest_pr_url` both default to `true`,
+/// so a bare `#NNN` (ambiguous between issue and PR) yields two
+/// `MaybeIncorrect` suggestions (`/issues/` and `/pull/`).
 #[test]
 fn both_suggestions_are_maybe_incorrect_by_default() {
-    // `forge` is omitted and detected from the `github.com` host;
-    // `suggest_issue_url` / `suggest_pr_url` both default to `true`,
-    // so a bare `#NNN` (ambiguous between issue and PR) yields two
-    // `MaybeIncorrect` suggestions (`/issues/` and `/pull/`).
     run(
         "ui-toml/bare_issue_reference/both",
         github_repo(RuleConfig::default()),
     );
 }
 
+/// `forge` omitted: detected as GitLab from the `gitlab.com`
+/// host, yielding `/-/issues/` and `/-/merge_requests/`.
 #[test]
 fn gitlab_host_is_detected() {
-    // `forge` omitted: detected as GitLab from the `gitlab.com`
-    // host, yielding `/-/issues/` and `/-/merge_requests/`.
     run(
         "ui-toml/bare_issue_reference/gitlab",
         RuleConfig {
@@ -80,12 +78,12 @@ fn gitlab_host_is_detected() {
     );
 }
 
+/// An scp-like SSH clone URL (`git@host:owner/repo.git`) is parsed
+/// into the canonical `https://github.com/owner/repo` web base, so
+/// the GitHub forge is detected and the issue / PR links resolve —
+/// the `git@` userinfo and `.git` suffix are dropped.
 #[test]
 fn ssh_url_is_parsed() {
-    // An scp-like SSH clone URL (`git@host:owner/repo.git`) is parsed
-    // into the canonical `https://github.com/owner/repo` web base, so
-    // the GitHub forge is detected and the issue / PR links resolve —
-    // the `git@` userinfo and `.git` suffix are dropped.
     run(
         "ui-toml/bare_issue_reference/ssh_url",
         RuleConfig {
@@ -95,13 +93,13 @@ fn ssh_url_is_parsed() {
     );
 }
 
+/// The negative counterpart to [`gitlab_host_is_detected`]:
+/// `repository` is set, but to a self-hosted host the lint can't
+/// classify, and `forge` is omitted. With no detectable forge and
+/// no fallback, the lint can't build a URL — so it degrades to
+/// help-only, telling the author to set `forge`.
 #[test]
 fn unrecognised_host_without_forge_is_help_only() {
-    // The negative counterpart to `gitlab_host_is_detected`:
-    // `repository` is set, but to a self-hosted host the lint can't
-    // classify, and `forge` is omitted. With no detectable forge and
-    // no fallback, the lint can't build a URL — so it degrades to
-    // help-only, telling the author to set `forge`.
     run(
         "ui-toml/bare_issue_reference/unrecognised_host",
         RuleConfig {
@@ -111,11 +109,11 @@ fn unrecognised_host_without_forge_is_help_only() {
     );
 }
 
+/// A self-hosted GitLab under the conventional `gitlab.` subdomain
+/// is recognised without an explicit `forge`, yielding GitLab's
+/// `/-/issues/` and `/-/merge_requests/` paths on the custom host.
 #[test]
 fn self_hosted_subdomain_is_detected() {
-    // A self-hosted GitLab under the conventional `gitlab.` subdomain
-    // is recognised without an explicit `forge`, yielding GitLab's
-    // `/-/issues/` and `/-/merge_requests/` paths on the custom host.
     run(
         "ui-toml/bare_issue_reference/subdomain",
         RuleConfig {
@@ -125,11 +123,11 @@ fn self_hosted_subdomain_is_detected() {
     );
 }
 
+/// A self-hosted instance on a host that names no forge
+/// (`git.example.com`) can't be detected, so the forge is given
+/// explicitly. `gitlab` paths are then used on the custom host.
 #[test]
 fn self_hosted_needs_explicit_forge() {
-    // A self-hosted instance on a host that names no forge
-    // (`git.example.com`) can't be detected, so the forge is given
-    // explicitly. `gitlab` paths are then used on the custom host.
     run(
         "ui-toml/bare_issue_reference/self_hosted",
         RuleConfig {
@@ -140,12 +138,12 @@ fn self_hosted_needs_explicit_forge() {
     );
 }
 
+/// Even with exactly one knob enabled (here `suggest_issue_url`)
+/// the lone suggestion stays `MaybeIncorrect`: a bare `#NNN` is
+/// ambiguous about whether it names a reference at all, so the
+/// lint is never confident enough for a machine-applicable fix.
 #[test]
 fn single_selection_is_still_maybe_incorrect() {
-    // Even with exactly one knob enabled (here `suggest_issue_url`)
-    // the lone suggestion stays `MaybeIncorrect`: a bare `#NNN` is
-    // ambiguous about whether it names a reference at all, so the
-    // lint is never confident enough for a machine-applicable fix.
     run(
         "ui-toml/bare_issue_reference/issue_only",
         github_repo(RuleConfig {
@@ -156,13 +154,13 @@ fn single_selection_is_still_maybe_incorrect() {
     );
 }
 
+/// The counterpart to [`unrecognised_host_without_forge_is_help_only`]
+/// on the other side of the `issue_url` split: the repository *is*
+/// resolvable, so the lint could build a link, but both suggestion
+/// knobs are off. It degrades to help-only and names the two knobs
+/// that would turn the suggestions back on.
 #[test]
 fn no_suggestion_knobs_names_both_knobs() {
-    // The counterpart to `unrecognised_host_without_forge_is_help_only`
-    // on the other side of the `issue_url` split: the repository *is*
-    // resolvable, so the lint could build a link, but both suggestion
-    // knobs are off. It degrades to help-only and names the two knobs
-    // that would turn the suggestions back on.
     run(
         "ui-toml/bare_issue_reference/no_suggestion_knobs",
         github_repo(RuleConfig {
@@ -173,14 +171,14 @@ fn no_suggestion_knobs_names_both_knobs() {
     );
 }
 
+/// On GitLab `suggest_pr_url` can never produce a suggestion — a
+/// bare `#NNN` is always an issue there — so with
+/// `suggest_issue_url` off the lint reaches the same help-only arm
+/// even though `suggest_pr_url` is on. The help must name only
+/// `suggest_issue_url`: telling the author to enable a knob that
+/// is already `true` would leave the diagnostic unchanged.
 #[test]
 fn gitlab_no_suggestion_knobs_names_only_the_issue_knob() {
-    // On GitLab `suggest_pr_url` can never produce a suggestion — a
-    // bare `#NNN` is always an issue there — so with
-    // `suggest_issue_url` off the lint reaches the same help-only arm
-    // even though `suggest_pr_url` is on. The help must name only
-    // `suggest_issue_url`: telling the author to enable a knob that
-    // is already `true` would leave the diagnostic unchanged.
     run(
         "ui-toml/bare_issue_reference/gitlab_pr_only",
         RuleConfig {
@@ -192,11 +190,11 @@ fn gitlab_no_suggestion_knobs_names_only_the_issue_knob() {
     );
 }
 
+/// The `doc_comment_form = "reference"` fix is a multipart edit:
+/// it rewrites `#99` to `[#99]` and appends the matching `[#99]: URL`
+/// definition (after a blank `///` line) at the end of the block.
 #[test]
 fn reference_form_appends_definition() {
-    // The `doc_comment_form = "reference"` fix is a multipart edit:
-    // it rewrites `#99` to `[#99]` and appends the matching `[#99]: URL`
-    // definition (after a blank `///` line) at the end of the block.
     run(
         "ui-toml/bare_issue_reference/reference_form",
         github_repo(RuleConfig {
@@ -208,12 +206,12 @@ fn reference_form_appends_definition() {
     );
 }
 
+/// The `bare_url` form drops the `#NNN` token and puts the URL in
+/// its place, in doc comments and — with `include_plain_comments`
+/// on — in plain line comments, whose shape comes from
+/// `plain_comment_form` (`bare_url` by default).
 #[test]
 fn bare_url_form_substitutes_the_url_on_both_surfaces() {
-    // The `bare_url` form drops the `#NNN` token and puts the URL in
-    // its place, in doc comments and — with `include_plain_comments`
-    // on — in plain line comments, whose shape comes from
-    // `plain_comment_form` (`bare_url` by default).
     run(
         "ui-toml/bare_issue_reference/bare_url_form",
         github_repo(RuleConfig {
@@ -226,10 +224,10 @@ fn bare_url_form_substitutes_the_url_on_both_surfaces() {
     );
 }
 
+/// The counterpart to [`bare_url_form_substitutes_the_url_on_both_surfaces`]:
+/// `bracketed_url` substitutes the same URL but wraps it in `<...>`.
 #[test]
 fn bracketed_url_form_wraps_the_url_on_both_surfaces() {
-    // The counterpart to `bare_url_form_substitutes_the_url_on_both_surfaces`:
-    // `bracketed_url` substitutes the same URL but wraps it in `<...>`.
     run(
         "ui-toml/bare_issue_reference/bracketed_url_form",
         github_repo(RuleConfig {
@@ -243,11 +241,11 @@ fn bracketed_url_form_wraps_the_url_on_both_surfaces() {
     );
 }
 
+/// A reference on an indented continuation line (a doc block inside
+/// an `impl`) is scanned, and the reference-form fix appends the
+/// definition with the same indented `///` prefix.
 #[test]
 fn indented_continuation_line_is_scanned() {
-    // A reference on an indented continuation line (a doc block inside
-    // an `impl`) is scanned, and the reference-form fix appends the
-    // definition with the same indented `///` prefix.
     run(
         "ui-toml/bare_issue_reference/indented",
         github_repo(RuleConfig {
@@ -259,10 +257,10 @@ fn indented_continuation_line_is_scanned() {
     );
 }
 
+/// When the block already defines `[#99]: URL`, the fix rewrites
+/// only the `#99` token and does not append a duplicate definition.
 #[test]
 fn reference_form_skips_existing_definition() {
-    // When the block already defines `[#99]: URL`, the fix rewrites
-    // only the `#99` token and does not append a duplicate definition.
     run(
         "ui-toml/bare_issue_reference/reference_defined",
         github_repo(RuleConfig {

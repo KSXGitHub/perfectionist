@@ -13,9 +13,6 @@ fn library_crate(root: &str) -> CargoTarget {
 
 #[test]
 fn separate_targets_are_recognised() {
-    // Flat `<dir>/<name>.rs`, the `<dir>/main.rs` named-`main` case,
-    // the `<dir>/<name>/main.rs` subdirectory form, and an absolute
-    // integration-test root — for tests, benches, and examples alike.
     for (path, expected) in [
         ("tests/integration.rs", CargoTarget::IntegrationTest),
         ("tests/main.rs", CargoTarget::IntegrationTest),
@@ -36,9 +33,6 @@ fn separate_targets_are_recognised() {
 
 #[test]
 fn library_and_binary_roots_are_recognised() {
-    // Library, default binary, extra binaries (flat and the
-    // `src/bin/<name>/main.rs` multi-file form), and a nested module
-    // file all classify as the package's own code.
     for path in [
         "src/lib.rs",
         "src/main.rs",
@@ -55,11 +49,11 @@ fn library_and_binary_roots_are_recognised() {
     }
 }
 
+/// The default `build.rs` and a `build = "mk.rs"` rename, plus
+/// the absence of a crate root — a build script is recognised by
+/// Cargo's crate-name prefix, not by where its root sits.
 #[test]
 fn build_scripts_are_recognised_by_crate_name() {
-    // The default `build.rs` and a `build = "mk.rs"` rename, plus
-    // the absence of a crate root — a build script is recognised by
-    // Cargo's crate-name prefix, not by where its root sits.
     for (crate_name, root) in [
         ("build_script_build", Some("build.rs")),
         ("build_script_mk", Some("mk.rs")),
@@ -73,12 +67,12 @@ fn build_scripts_are_recognised_by_crate_name() {
     }
 }
 
+/// Anything under `src/` is the package's own code, however its
+/// directories are named. rustc is handed a member's crate root
+/// relative to the workspace root, so a member directory named like
+/// a target directory would otherwise swallow the whole crate.
 #[test]
 fn a_package_root_is_never_read_as_a_target_directory() {
-    // Anything under `src/` is the package's own code, however its
-    // directories are named. rustc is handed a member's crate root
-    // relative to the workspace root, so a member directory named like
-    // a target directory would otherwise swallow the whole crate.
     for path in [
         "examples/src/main.rs",
         "tests/src/main.rs",
@@ -101,11 +95,11 @@ fn a_package_root_is_never_read_as_a_target_directory() {
     }
 }
 
+/// Nothing stops a `[[test]] path = ...` entry from pointing under
+/// `src/`; only Cargo's own `lib.rs` / `main.rs` / `bin` layouts
+/// there belong to the package itself.
 #[test]
 fn a_target_declared_under_src_is_still_a_separate_target() {
-    // Nothing stops a `[[test]] path = ...` entry from pointing under
-    // `src/`; only Cargo's own `lib.rs` / `main.rs` / `bin` layouts
-    // there belong to the package itself.
     for (path, expected) in [
         ("src/tests/it.rs", CargoTarget::IntegrationTest),
         ("src/benches/bench.rs", CargoTarget::Benchmark),
@@ -123,10 +117,10 @@ fn a_target_declared_under_src_is_still_a_separate_target() {
     }
 }
 
+/// Both components name a target directory, so only their order
+/// says which is Cargo's and which is the target's own name.
 #[test]
 fn a_target_named_after_another_target_directory_uses_the_right_one() {
-    // Both components name a target directory, so only their order
-    // says which is Cargo's and which is the target's own name.
     for (path, expected) in [
         ("examples/tests/main.rs", CargoTarget::Example),
         ("tests/examples/main.rs", CargoTarget::IntegrationTest),
@@ -140,11 +134,29 @@ fn a_target_named_after_another_target_directory_uses_the_right_one() {
     }
 }
 
+/// `build-script-cfg` and `build_script_file_gen` are published
+/// packages, so the prefix is not reserved. Their own roots say
+/// what they are, and a build script has none of these.
+#[test]
+fn a_library_named_like_a_build_script_stays_a_library() {
+    for path in [
+        "src/lib.rs",
+        "src/main.rs",
+        "src/bin/build_script_helper.rs",
+    ] {
+        assert_eq!(
+            classify("build_script_cfg", Some(Path::new(path))),
+            CargoTarget::LibOrBin,
+            "`{path}` should classify as a library or binary",
+        );
+    }
+}
+
+/// Cargo names an integration test after its file, so this crate
+/// name carries the build-script prefix without being one. The
+/// path is what tells them apart.
 #[test]
 fn a_test_crate_named_like_a_build_script_stays_an_integration_test() {
-    // Cargo names an integration test after its file, so this crate
-    // name carries the build-script prefix without being one. The
-    // path is what tells them apart.
     assert_eq!(
         classify(
             "build_script_env",
@@ -154,11 +166,11 @@ fn a_test_crate_named_like_a_build_script_stays_an_integration_test() {
     );
 }
 
+/// `local_crate_source_file` is `None` when the crate came from
+/// stdin or a virtual file; treat that as ordinary code rather
+/// than exempting it.
 #[test]
 fn a_missing_crate_root_is_not_a_separate_target() {
-    // `local_crate_source_file` is `None` when the crate came from
-    // stdin or a virtual file; treat that as ordinary code rather
-    // than exempting it.
     assert_eq!(classify("some_package", None), CargoTarget::LibOrBin);
 }
 

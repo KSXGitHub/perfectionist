@@ -7,22 +7,14 @@
 //! `unicode_ellipsis_in_docs` rule via the `[perfectionist]` global
 //! table, so the doc-comment lines in that fixture isolate the claim
 //! that the comment rule does not intrude into doc comments.
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared [`Mutex`]
-//! to avoid clobbering each other under the default parallel test
-//! harness.
 
-use std::sync::{Mutex, PoisonError};
 use text_block_macros::text_block_fnl;
 
-static SERIAL: Mutex<()> = Mutex::new(());
-
 fn run(src_base: &str, contents: &str) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(contents)
         .run();
 }

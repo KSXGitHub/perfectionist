@@ -119,12 +119,24 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Good: `into_*` likewise announces that it costs something.
+    // Not flagged: `into_*` announces a costly conversion, so the copy
+    // is what the name already promises. An `into_*` taking `&self`
+    // has its own rule.
+    #[expect(
+        perfectionist::unconsumed_into_conversion,
+        reason = "an `into_*` that does not consume belongs to that rule; this one pins the \
+                  conversion-prefix clause"
+    )]
     fn into_first_name(&self) -> String {
         self.first_name.clone()
     }
 
-    // Good: `as_*` promises the opposite, and has its own rule.
+    // Not flagged: `as_*` promises the opposite, and has its own rule.
+    #[expect(
+        perfectionist::owned_as_conversion,
+        reason = "an `as_*` that copies belongs to that rule; this one pins the \
+                  conversion-prefix clause"
+    )]
     fn as_first_name(&self) -> String {
         self.first_name.clone()
     }
@@ -213,7 +225,8 @@ impl Holder {
         self.handle.clone()
     }
 
-    // Good: an `Rc` for the same reason.
+    // Good: an `Rc` clone bumps a refcount rather than copying what it
+    // points at, and a caller that keeps the handle needs to own one.
     fn counted(&self) -> Rc<Config> {
         self.counted.clone()
     }

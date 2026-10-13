@@ -14,12 +14,12 @@
 //! that clones a refcounted handle are none of them a copy a borrow
 //! could have replaced, so none is recognised here.
 
-use crate::common::hir_in_external_macro;
+use crate::common::{hir_in_external_macro, unwrap_block};
 use clippy_utils::ty::is_copy;
 use rustc_hir as hir;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::intravisit::FnKind;
-use rustc_hir::{Expr, ExprKind, ImplicitSelfKind, QPath};
+use rustc_hir::{ExprKind, ImplicitSelfKind, QPath};
 use rustc_lint::LateContext;
 use rustc_middle::ty::print::ForceTrimmedGuard;
 use rustc_middle::ty::{self, AssocContainer, Ty};
@@ -107,7 +107,23 @@ pub(crate) fn field_copy<'tcx>(
     def_id: LocalDefId,
     copying_methods: &[Symbol],
 ) -> Option<FieldCopy<'tcx>> {
-    let Eligible { method, def_span } = eligible_method(cx, kind, decl, body, def_id)?;
+    let eligible = eligible_method(cx, kind, decl, body, def_id)?;
+    field_copy_of(cx, &eligible, body, def_id, copying_methods)
+}
+
+/// The same recognition, for a caller that has already established
+/// eligibility and would otherwise pay for it twice. Deciding that
+/// costs a source re-lex to rule out a proc macro, so a rule reading
+/// both a method's body and its signature asks once and passes the
+/// answer here.
+pub(crate) fn field_copy_of<'tcx>(
+    cx: &LateContext<'tcx>,
+    eligible: &Eligible,
+    body: &'tcx hir::Body<'tcx>,
+    def_id: LocalDefId,
+    copying_methods: &[Symbol],
+) -> Option<FieldCopy<'tcx>> {
+    let &Eligible { method, def_span } = eligible;
     let typeck = cx.tcx.typeck(def_id);
     let expr = unwrap_block(body.value);
     let ExprKind::MethodCall(segment, receiver, [], _) = expr.kind else {
@@ -235,16 +251,4 @@ pub(crate) fn borrowed_form<'tcx>(cx: &LateContext<'tcx>, ty: Ty<'tcx>) -> Strin
         return borrowed_form(cx, inner);
     }
     format!("&{ty}")
-}
-
-/// The expression a body of nested `{ }` blocks with no statements
-/// comes down to.
-fn unwrap_block<'a>(mut expr: &'a Expr<'a>) -> &'a Expr<'a> {
-    while let ExprKind::Block(block, None) = expr.kind
-        && block.stmts.is_empty()
-        && let Some(inner) = block.expr
-    {
-        expr = inner;
-    }
-    expr
 }

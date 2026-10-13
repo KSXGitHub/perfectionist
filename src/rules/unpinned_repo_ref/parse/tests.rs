@@ -61,11 +61,11 @@ fn github_accepts_every_verb() {
     }
 }
 
+/// `/commit/<sha>` and `/compare/...` are `commit-id-length-mismatch`'s
+/// concern, not this rule's; they don't match the file-reference
+/// shape.
 #[test]
 fn github_commit_and_compare_urls_are_not_file_references() {
-    // `/commit/<sha>` and `/compare/...` are `commit-id-length-mismatch`'s
-    // concern, not this rule's; they don't match the file-reference
-    // shape.
     assert!(locate_ref("https://github.com/o/r/commit/abc123", ForgeKind::Github).is_none());
     assert!(locate_ref("https://github.com/o/r/compare/a...b", ForgeKind::Github).is_none());
 }
@@ -263,10 +263,10 @@ fn ref_problem_rejects_version_patterns_by_default() {
     }
 }
 
+/// A gitea `/branch/` URL whose ref happens to be hex is still a
+/// branch — the path, not the text, decides.
 #[test]
 fn ref_problem_reports_gitea_branch_and_non_version_pattern_tag() {
-    // A gitea `/branch/` URL whose ref happens to be hex is still a
-    // branch — the path, not the text, decides.
     assert_eq!(
         ref_problem(
             "dead",

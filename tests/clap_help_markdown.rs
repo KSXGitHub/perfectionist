@@ -3,17 +3,10 @@
 //! picked up by `tests/ui.rs`; the tests here point at fixture
 //! directories under `ui-toml/clap_help_markdown/` and pass a
 //! per-rule `dylint.toml` table.
-//!
-//! `Test::dylint_toml` sets the process-global `DYLINT_TOML` env var
-//! for the duration of `run_tests`, so the `#[test]`s serialise on a
-//! shared [`Mutex`] to avoid clobbering each other.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::clap_help_markdown";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -34,18 +27,19 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// The opt-in extras are off by default; enabling all three flags
+/// `**bold**`, `*italic*`, and list markers that the default set
+/// leaves alone.
 #[test]
 fn extra_constructs_flags_bold_italic_and_lists() {
-    // The opt-in extras are off by default; enabling all three flags
-    // `**bold**`, `*italic*`, and list markers that the default set
-    // leaves alone.
     run(
         "ui-toml/clap_help_markdown/extra_constructs",
         RuleConfig {
@@ -55,11 +49,11 @@ fn extra_constructs_flags_bold_italic_and_lists() {
     );
 }
 
+/// `ignore_constructs = ["inline_link"]` permits inline links in help
+/// text while the rest of the default set — here, the code span —
+/// still fires.
 #[test]
 fn ignore_constructs_drops_a_construct_from_the_default_set() {
-    // `ignore_constructs = ["inline_link"]` permits inline links in help
-    // text while the rest of the default set — here, the code span —
-    // still fires.
     run(
         "ui-toml/clap_help_markdown/ignore_constructs",
         RuleConfig {
@@ -69,13 +63,13 @@ fn ignore_constructs_drops_a_construct_from_the_default_set() {
     );
 }
 
+/// `require_help_override = true` flags every clap-derived doc comment
+/// that feeds `--help` without an explicit override (container and
+/// field docs alike), tolerates a missing override wherever there is
+/// no doc comment, and supersedes the markdown scan — a code span in
+/// an unoverridden doc is reported once as a missing override.
 #[test]
 fn require_help_override_flags_unoverridden_doc_comments() {
-    // `require_help_override = true` flags every clap-derived doc comment
-    // that feeds `--help` without an explicit override (container and
-    // field docs alike), tolerates a missing override wherever there is
-    // no doc comment, and supersedes the markdown scan — a code span in
-    // an unoverridden doc is reported once as a missing override.
     run(
         "ui-toml/clap_help_markdown/require_help_override",
         RuleConfig {

@@ -1,0 +1,36 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_boxed.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: this fold over `with_arg` re-implements `with_args`
+  --> $DIR/folded_command_setter_boxed.rs:LL:CC
+   |
+LL | /     VARS.iter()
+LL | |         .fold(command, |command, var| command.with_arg(var))
+   | |____________________________________________________________^ help: use `with_args`: `command.with_args(VARS.iter())`
+
+warning: this fold over `with_env` re-implements `with_envs`
+  --> $DIR/folded_command_setter_boxed.rs:LL:CC
+   |
+LL | /     PAIRS
+LL | |         .iter()
+LL | |         .fold(command, |command, (key, value)| command.with_env(key, value))
+   | |____________________________________________________________________________^
+   |
+help: use `with_envs`
+   |
+LL ~     command.with_envs(PAIRS
+LL +         .iter())
+   |
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_boxed.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+
+warning: N warnings emitted

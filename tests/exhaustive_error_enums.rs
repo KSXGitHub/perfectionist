@@ -2,20 +2,11 @@
 //! rule is off by default, so it has no default-config sweep under
 //! `ui/` for `tests/ui.rs` to pick up; these tests each point at their
 //! own one-fixture directory under `ui-toml/exhaustive_error_enums/`
-//! and pass a per-rule `dylint.toml` to [`dylint_testing::ui::Test`].
-//!
-//! `Test::dylint_toml` works by setting the `DYLINT_TOML` env var for
-//! the duration of `run_tests`. The env var is process-global, so the
-//! `#[test]`s in this binary serialise themselves on a shared
-//! [`Mutex`] to avoid clobbering each other under the default
-//! parallel test harness.
+//! and pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, PoisonError};
 
 const LINT_NAME: &str = "perfectionist::exhaustive_error_enums";
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 /// Serialisation shim for the rule's `dylint.toml` configuration,
 /// which the test crate cannot build from the lint's own private
@@ -65,18 +56,19 @@ fn dylint_toml(config: RuleConfig) -> String {
 }
 
 fn run(src_base: &str, config: RuleConfig) {
-    let _serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
-    let fixtures = _utils::copy_fixtures_with_directives(env!("CARGO_MANIFEST_DIR"), src_base);
-    dylint_testing::ui::Test::src_base(env!("CARGO_PKG_NAME"), fixtures.path())
+    _utils::ConfiguredUiTest::builder()
+        .library_name(env!("CARGO_PKG_NAME"))
+        .manifest_dir(env!("CARGO_MANIFEST_DIR"))
+        .src_base(src_base)
         .dylint_toml(dylint_toml(config))
         .run();
 }
 
+/// The rule is off by default; this is the equivalent of the
+/// `ui/<rule>.rs` sweep every other rule has, just hosted under
+/// `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
 #[test]
 fn baseline_sweep_with_rule_enabled() {
-    // The rule is off by default; this is the equivalent of the
-    // `ui/<rule>.rs` sweep every other rule has, just hosted under
-    // `ui-toml/` because it needs a `dylint.toml` to opt the rule in.
     run(
         "ui-toml/exhaustive_error_enums/baseline",
         RuleConfig::default(),

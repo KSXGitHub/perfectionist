@@ -1,0 +1,169 @@
+//! Which setter the folder is, however the folder is written.
+//!
+//! Resolution is the trigger rather than spelling. `CommandExtra::with_arg`,
+//! `Command::with_arg`, `<Command as CommandExtra>::with_arg` and any of
+//! those reached through a renamed import are one method, so comparing
+//! the resolved item makes every spelling fall out at once where an
+//! enumeration would miss the ones nobody thought of.
+//!
+//! A closure needs its body walked first, because a closure that
+//! forwards its parameters to the setter folds identically to the bare
+//! path. What it must not do is compute on the way: the point of the
+//! plural is that the closure disappears, and one that transforms its
+//! item survives the rewrite as a `map` that was not there before.
+
+use rustc_hir::def::{DefKind, Res};
+use rustc_hir::def_id::DefId;
+use rustc_hir::{
+    BindingMode, BlockCheckMode, ByRef, Closure, Expr, ExprKind, HirId, Pat, PatKind, QPath, TyKind,
+};
+use rustc_lint::LateContext;
+
+/// The method a folder resolves to, or `None` where the folder is
+/// neither a path to one nor a closure forwarding to one.
+///
+/// A local bound to a path, as in `let f = CommandExtra::without_env;`,
+/// folds like the bare path but answers `None`: a known gap, not an
+/// exclusion.
+pub(super) fn resolves_to<'tcx>(cx: &LateContext<'tcx>, folder: &'tcx Expr<'tcx>) -> Option<DefId> {
+    match folder.kind {
+        ExprKind::Path(ref qpath) => assoc_fn(cx.qpath_res(qpath, folder.hir_id)),
+        ExprKind::Closure(closure) => forwarded_by(cx, closure),
+        _ => None,
+    }
+}
+
+/// Whether `folder` is a closure that writes a type on its item
+/// parameter.
+///
+/// The suggestion drops the closure, and with it the annotation, which
+/// may be all that fixes the iterator's item type: a `Vec::new()` the
+/// fold only ever reads takes its element type from
+/// `|command, name: &&str|`, and the plural over it is `E0282`. Measured.
+pub(super) fn annotates_the_item(folder: &Expr<'_>) -> bool {
+    let ExprKind::Closure(closure) = folder.kind else {
+        return false;
+    };
+    closure
+        .fn_decl
+        .inputs
+        .get(1)
+        .is_some_and(|item| !matches!(item.kind, TyKind::Infer(())))
+}
+
+/// The associated function a resolution names, if any.
+fn assoc_fn(res: Res) -> Option<DefId> {
+    match res {
+        Res::Def(DefKind::AssocFn, def_id) => Some(def_id),
+        _ => None,
+    }
+}
+
+/// The method a closure forwards to, or `None` where it does anything
+/// besides forward.
+fn forwarded_by<'tcx>(cx: &LateContext<'tcx>, closure: &'tcx Closure<'tcx>) -> Option<DefId> {
+    let body = cx.tcx.hir_body(closure.body);
+    let [accumulator, item] = body.params else {
+        return None;
+    };
+    let mut bound = vec![binding(accumulator.pat)?];
+    let destructured = match item.pat.kind {
+        // The `with_env` pair's item is a pair, so the closure
+        // destructures it, and the halves are what the setter is passed.
+        PatKind::Tuple(elements, _) => {
+            for element in elements {
+                bound.push(binding(element)?);
+            }
+            true
+        }
+        _ => {
+            bound.push(binding(item.pat)?);
+            false
+        }
+    };
+    let (callee, arguments) = as_call(cx, unwrapped(body.value))?;
+    // The item is destructured exactly where the setter takes it in
+    // pieces: `|c, (arg,)| c.with_arg(arg)` would hand the plural a tuple.
+    if arguments.len() != bound.len() || destructured != (arguments.len() > 2) {
+        return None;
+    }
+    if !arguments
+        .iter()
+        .zip(&bound)
+        .all(|(argument, binding)| uses(argument, *binding))
+    {
+        return None;
+    }
+    Some(callee)
+}
+
+/// The binding a parameter pattern introduces, or `None` for a pattern
+/// that is not one by-value binding.
+///
+/// A `ref` binding hands the setter a reference to the item where a
+/// by-value one hands it the item, so what the fold proves of the item
+/// is not what the plural asks of it: `|c, ref k| c.without_env(k)`
+/// establishes `&K: AsRef<OsStr>` and `without_envs` wants
+/// `K: AsRef<OsStr>`. Measured as a machine-applicable `E0277` on every
+/// release. A nested pattern is no better: the plural gets the item
+/// whole.
+fn binding(pat: &Pat<'_>) -> Option<HirId> {
+    match pat.kind {
+        PatKind::Binding(BindingMode(ByRef::No, _), hir_id, _, None) => Some(hir_id),
+        _ => None,
+    }
+}
+
+/// `expr` with a block that only wraps one expression peeled off.
+///
+/// `|command, key| { command.without_env(key) }` forwards exactly as the
+/// brace-less form does, and rustfmt leaves either as written, so the
+/// two have to read alike. A block holding a statement is a different
+/// matter: it is where a closure computes, which is what the plural
+/// cannot absorb.
+fn unwrapped<'tcx>(expr: &'tcx Expr<'tcx>) -> &'tcx Expr<'tcx> {
+    let ExprKind::Block(block, None) = expr.kind else {
+        return expr;
+    };
+    if block.rules != BlockCheckMode::DefaultBlock || !block.stmts.is_empty() {
+        return expr;
+    }
+    match block.expr {
+        Some(only) => unwrapped(only),
+        None => expr,
+    }
+}
+
+/// A call's callee and its arguments, with a method call's receiver put
+/// first, where an associated-function call already has it.
+fn as_call<'tcx>(
+    cx: &LateContext<'tcx>,
+    expr: &'tcx Expr<'tcx>,
+) -> Option<(DefId, Vec<&'tcx Expr<'tcx>>)> {
+    match expr.kind {
+        ExprKind::MethodCall(_, receiver, arguments, _) => {
+            let callee = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
+            let mut all = Vec::with_capacity(arguments.len() + 1);
+            all.push(receiver);
+            all.extend(arguments);
+            Some((callee, all))
+        }
+        ExprKind::Call(callee, arguments) => {
+            let ExprKind::Path(ref qpath) = callee.kind else {
+                return None;
+            };
+            let def_id = assoc_fn(cx.qpath_res(qpath, callee.hir_id))?;
+            Some((def_id, arguments.iter().collect()))
+        }
+        _ => None,
+    }
+}
+
+/// Whether `expr` is a bare use of the binding `hir_id`, and so passes
+/// it along untouched.
+fn uses(expr: &Expr<'_>, hir_id: HirId) -> bool {
+    let ExprKind::Path(QPath::Resolved(None, path)) = expr.kind else {
+        return false;
+    };
+    matches!(path.res, Res::Local(local) if local == hir_id)
+}

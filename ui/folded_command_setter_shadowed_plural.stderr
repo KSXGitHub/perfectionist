@@ -1,0 +1,21 @@
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_shadowed_plural.rs:LL:CC
+   |
+LL |     VARS.iter().fold(command, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `command.without_envs(VARS.iter())`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_shadowed_plural.rs:LL:CC
+   |
+LL |     VARS.iter().fold(wrapped, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `wrapped.without_envs(VARS.iter())`
+
+warning: this fold over `without_env` re-implements `without_envs`
+  --> $DIR/folded_command_setter_shadowed_plural.rs:LL:CC
+   |
+LL |     VARS.iter().fold(cyclic, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `cyclic.without_envs(VARS.iter())`
+
+warning: N warnings emitted

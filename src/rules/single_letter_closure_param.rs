@@ -35,8 +35,9 @@ declare_tool_lint! {
     ///   (`sort_by`, `sort_by_key`, `min_by`, `max_by`,
     ///   `binary_search_by`, `cmp_by`, `partial_cmp_by`,
     ///   `fold`, `try_fold`, ...). The set also covers the
-    ///   matching adaptors from `itertools` (`sorted_by`,
-    ///   `k_smallest_by`, `minmax_by_key`, ...) and `into-sorted`
+    ///   matching adaptors from [`itertools`](https://docs.rs/itertools)
+    ///   (`sorted_by`, `k_smallest_by`, `minmax_by_key`, ...) and
+    ///   [`into-sorted`](https://docs.rs/into-sorted)
     ///   (`into_sorted_by`, `into_sorted_by_key`, ...);
     /// - the body is a trivial wrapper around the parameter —
     ///   a field access (`|x| x.field`), a method call

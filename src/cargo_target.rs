@@ -19,11 +19,11 @@ use std::path::{Component, Path};
 /// package. Keying off the prefix rather than the file name is what
 /// covers the renamed case.
 ///
-/// This is a convention, not a stability guarantee: Cargo could in
-/// principle name build-script crates something else, and a package
-/// could in principle publish a library actually called
-/// `build_script_*`. Both are remote enough that the prefix is the
-/// signal every tool in the ecosystem uses.
+/// This is a convention, not a stability guarantee, and it is the
+/// weaker of [`classify`]'s two signals: Cargo could name build-script
+/// crates something else, and a library may carry the prefix itself —
+/// `build-script-cfg` and `build_script_file_gen` are published. The
+/// crate root decides where it can; the prefix answers what is left.
 const BUILD_SCRIPT_CRATE_NAME_PREFIX: &str = "build_script_";
 
 /// Which Cargo target the crate under compilation is.
@@ -84,11 +84,13 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
     // integration test after its file, so `tests/build_script_env.rs`
     // reaches rustc under a crate name a build script's prefix also
     // matches; the path is the stronger signal, and a build script
-    // never roots in one of these directories.
+    // roots neither in one of these directories nor at the package's
+    // own `src`.
     match root.and_then(target_directory) {
         Some("tests") => CargoTarget::IntegrationTest,
         Some("benches") => CargoTarget::Benchmark,
         Some("examples") => CargoTarget::Example,
+        _ if root.is_some_and(is_package_source) => CargoTarget::LibOrBin,
         _ if crate_name.starts_with(BUILD_SCRIPT_CRATE_NAME_PREFIX) => CargoTarget::BuildScript,
         _ => CargoTarget::LibOrBin,
     }

@@ -67,7 +67,10 @@ pub(super) fn validate(config: &Config) -> Result<(), String> {
         if !rooted
             || !matches!(crate_name, Some("core" | "alloc"))
             || under_crate.is_empty()
-            || under_crate.iter().any(|segment| segment.trim().is_empty())
+            || under_crate
+                .iter()
+                .map(|segment| segment.trim())
+                .any(str::is_empty)
         {
             return Err(format!(
                 "`skip_paths` entry {entry:?} is not a path this rule could flag: \
