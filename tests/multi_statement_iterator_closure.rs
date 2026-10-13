@@ -1,12 +1,12 @@
 //! Tests for `multi_statement_iterator_closure`.
 //!
-//! The rule is inactive by default, so `ui/multi_statement_iterator_
-//! closure.rs` holds an over-threshold callback against an empty
-//! `.stderr`, which is what proves the rule stays off until it is
-//! enabled. Every fixture here therefore travels with a `dylint.toml`
-//! that enables it: `enabled` pins the default threshold, `threshold`
-//! pins a raised one, and `zero` pins where a statement starts being
-//! counted.
+//! The rule is inactive by default, so the fixture at
+//! `ui/multi_statement_iterator_closure.rs` holds an over-threshold
+//! callback against an empty `.stderr`, which is what proves the rule
+//! stays off until it is enabled. Every fixture here therefore travels
+//! with a `dylint.toml` that enables it: `enabled` pins the default
+//! threshold, `threshold` pins a raised one, and `zero` pins where a
+//! statement starts being counted.
 
 /// `[perfectionist]` turns the rule on, since it ships inactive. The
 /// rule's own table is omitted, so `max_statements` is its default.

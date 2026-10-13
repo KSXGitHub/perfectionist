@@ -29,16 +29,25 @@ declare_tool_lint! {
     /// A macro invocation inside a checked callback counts once, regardless
     /// of its expansion. Test code follows the same policy as production code.
     ///
+    /// Projects differ on whether several steps belong inline or in a
+    /// named helper, so the rule is inactive by default — enable it per
+    /// crate by adding to `dylint.toml`:
+    ///
+    /// ```toml
+    /// [perfectionist]
+    /// enable = ["multi_statement_iterator_closure"]
+    /// ```
+    ///
     /// ### Why restrict this?
     ///
-    /// A short callback keeps the transformation visible in the chain.
-    /// A callback that performs several steps can be easier to follow as
-    /// a named helper, or as a loop body when the operation is eager.
-    /// This is an opt-in readability preference, not a correctness check.
+    /// This is a stylistic preference, not a correctness issue. A short
+    /// callback keeps the transformation visible in the chain. A callback
+    /// that performs several steps can be easier to follow as a named
+    /// helper, or as a loop body when the operation is eager.
     ///
     /// Extracting a helper preserves a chain's structure. A loop rewrite
     /// needs more care: preserve laziness, evaluation order, ownership,
-    /// allocation behavior, and short-circuit results. A closure-local
+    /// allocation behaviour, and short-circuit results. A closure-local
     /// `return` must not become a return from the enclosing function.
     /// The lint does not establish equivalent performance and provides no
     /// automatic fix. Benchmark performance-sensitive rewrites.
