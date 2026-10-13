@@ -155,6 +155,15 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         if callback.span.from_expansion() {
             return;
         }
+        // A call's span starts at its receiver or its path, so it begins
+        // strictly before any argument of that call. An expansion that
+        // stamps every token it emits with one span of the caller's own
+        // breaks that, and is the one way synthesised code can land on a
+        // byte range the re-parse keyed -- which is what the lookup
+        // below treats as the author's source.
+        if call.span.lo() >= callback.span.lo() {
+            return;
+        }
         let Some(statements) = self
             .counts
             .get(&(callback.span.lo(), callback.span.hi()))

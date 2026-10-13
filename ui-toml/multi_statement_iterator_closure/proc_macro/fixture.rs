@@ -22,10 +22,20 @@
 // down to the byte. That callback is reported. `#[verbatim]` is the
 // control, and the swap between the two is what shows the signature
 // token is the only difference.
+//
+// `#[respan_onto_paren]` is the remaining way past a byte-range
+// lookup: it stamps synthesised code onto the span of a parenthesis
+// group the caller wrote, so the synthesised callback lands on the key
+// a parenthesised callback is written under. What rejects it is that
+// every token it emits carries that one span, leaving the call
+// starting no earlier than its own argument, which no call the author
+// wrote ever does. Nothing is reported for it, and the diagnostic it
+// would otherwise carry names a `let`-bound closure in a function
+// holding no iterator call at all.
 
 extern crate callback_macros;
 
-use callback_macros::{SynthCallback, rebuilt_signature, verbatim};
+use callback_macros::{SynthCallback, rebuilt_signature, respan_onto_paren, verbatim};
 
 #[derive(SynthCallback)]
 #[synth_callback]
@@ -42,6 +52,14 @@ fn signature_came_from_the_macro() {
 #[verbatim]
 fn nothing_came_from_the_macro() {
     let _ = [1, 2].into_iter().map(|value| {
+        let doubled = value * 2;
+        doubled
+    });
+}
+
+#[respan_onto_paren]
+fn the_caller_wrote_a_parenthesised_closure() {
+    let identity = (|value: i32| {
         let doubled = value * 2;
         doubled
     });
