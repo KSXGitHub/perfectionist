@@ -22,12 +22,10 @@ higher-order function that builds a parser out of parsers. Where
 productions compose by calling one another with `?`, the call graph
 is the grammar.
 
-Failure is `None`, or an `Err`, and the caller may then try another
-alternative from the same input. That makes the style a backtracking
-parser, and a cheap one: the input is an immutable slice, so every
-attempt starts from its own copy of it and there is no cursor to
-rewind. Ordered choice, greedy repetition, unbounded lookahead and no
-left recursion are what a PEG formalises, and this is that by hand.
+Failure lets the caller try the next alternative from the same input
+at no cost, the input being an immutable slice with nothing to
+rewind. Ordered choice with backtracking and no left recursion is
+what a PEG formalises; this is that by hand.
 
 ### Prefix parsers and the parse that owns the input
 
