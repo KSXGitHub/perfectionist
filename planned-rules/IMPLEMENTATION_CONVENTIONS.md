@@ -47,12 +47,7 @@ with a tail is rejected rather than half-read.
 > input always does.
 
 That parse has three valid forms: a `parse_*` function, a `FromStr`
-implementation, or a `TryFrom` over a string-like input. The result
-picks between them: `FromStr` has no lifetime parameter, so it cannot
-yield a type that borrows from the input where `TryFrom<&str>` can,
-and a `parse_*` function serves where there is no type of its own to
-build. The trait forms have nowhere to report a remainder; a
-`parse_*` function asserts the end itself.
+implementation, or a `TryFrom` over a string-like input.
 
 Leave the assertion out and the entry point is a prefix parser
 wearing the name of a parse, which accepts every input that merely
