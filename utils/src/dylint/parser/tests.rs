@@ -13,8 +13,8 @@ fn padding_around_a_banner_is_not_part_of_the_version() {
 }
 
 #[test]
-fn a_suffix_after_the_version_is_left_unread() {
-    assert_eq!(take_version("cargo-dylint 6.1.0 (abcdef0)"), Some("6.1.0"));
+fn a_suffix_after_the_version_is_rejected() {
+    assert_eq!(take_version("cargo-dylint 6.1.0 (abcdef0)"), None);
 }
 
 /// The input ends in a word, so reading the output's last word would
