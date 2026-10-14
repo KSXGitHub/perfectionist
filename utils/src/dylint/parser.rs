@@ -5,10 +5,12 @@
 //! output that is not a banner from reaching the comparison as a
 //! version.
 //!
-//! The scanner is written as parser-combinator-style `take_*`
-//! functions per the catalogue's parser-style convention (see
-//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`), each consuming a
-//! prefix of its input and returning the remainder.
+//! The scanner is hand-written recursive descent per the catalogue's
+//! parser-style convention (see
+//! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`): one `take_*` per
+//! part, each consuming a prefix of its input and returning the
+//! remainder, under a [`parse_version`] that requires the whole of
+//! it.
 
 /// The name clap prints ahead of the version, which it takes from the
 /// binary's own name.
