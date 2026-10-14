@@ -177,12 +177,16 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersi
     if !output.status.success() {
         let stderr = output
             .stderr
-            .pipe_deref(String::from_utf8_lossy)
+            .pipe(String::from_utf8)
+            .expect("dylint stderr is not UTF-8")
             .trim()
             .to_owned();
         return Err(DylintVersionError::Status(output.status, stderr));
     }
-    let reported = output.stdout.pipe_deref(String::from_utf8_lossy);
+    let reported = output
+        .stdout
+        .pipe(String::from_utf8)
+        .expect("dylint stdout is not UTF-8");
     let Some(installed) = parser::take_version(&reported) else {
         return Err(DylintVersionError::Unreadable(reported.trim().to_owned()));
     };
