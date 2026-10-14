@@ -40,21 +40,20 @@ nothing at all follows it.
 
 An **all-consuming parse** is the entry point. It runs the prefix
 parsers and then requires the input to be exhausted, so an input
-with a tail is rejected rather than half-read. Name it `parse_*`.
+with a tail is rejected rather than half-read.
 
 > [!IMPORTANT]
-> A `take_*` never asserts end of input. The `parse_*` entry point
-> always does.
+> A `take_*` never asserts end of input. The parse that owns the
+> input always does.
 
-The standard library draws the same line. `FromStr`, and so
-`str::parse`, is an all-consuming parse: `"12 ".parse::<u32>()` is an
-`Err` rather than `Ok(12)` with a space left over, and `TryFrom<&str>`
-is read the same way. `str::strip_prefix` is the prefix form. The
-parser libraries name the pair too — `winnow`'s `Parser::parse`
-requires the whole input where `Parser::parse_next` advances a
-stream, and `nom` spells the assertion `all_consuming`.
+That parse need not be a `parse_*` function. Where it yields a type
+of its own, its home is `FromStr`, which `str::parse` dispatches to,
+or `TryFrom<&str>`: each is handed the whole string and has nowhere
+to report a remainder, so an implementation either consumes all of it
+or drops part of it unsaid. A `parse_*` function is for where there
+is no such type to hang the parse on.
 
-Leave that assertion out and the entry point is a prefix parser
+Leave the assertion out and the entry point is a prefix parser
 wearing the name of a parse, which accepts every input that merely
 *starts* with something valid.
 
