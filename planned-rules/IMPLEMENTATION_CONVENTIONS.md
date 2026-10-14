@@ -14,13 +14,13 @@ functions, one per production, each consuming a prefix of its input
 and returning the remainder.
 
 The shape is the one `nom`, `chumsky`, `combine` and `winnow` expose,
-and borrowing it is deliberate. Their combinators are not borrowed
-so far: in those libraries a combinator is a higher-order function
-over parsers — `alt`, `many0`, `opt`, `map` — and no grammar here has
-called for one yet, so the productions compose by calling one another
-with `?` and the call graph is the grammar. That describes where the
-style stands rather than ruling anything out; a grammar that earns a
-higher-order function should have one.
+and borrowing it is deliberate; the libraries themselves are not
+borrowed, so that no parser crate loads into the Dylint pass. A
+`take_*` written to that shape is a parser rather than a combinator:
+it consumes input, where a combinator in those libraries is a
+higher-order function that builds a parser out of parsers. Where
+productions compose by calling one another with `?`, the call graph
+is the grammar.
 
 Failure is `None`, or an `Err`, and the caller may then try another
 alternative from the same input. That makes the style a backtracking
@@ -38,7 +38,7 @@ way.
 A **prefix parser** consumes what it recognises and hands back the
 rest, making no claim about that rest. A `take_*` that stops at the
 end of a version has no opinion on whether `/rest`, whitespace or
-nothing at all follows it. Every `take_*` here is one.
+nothing at all follows it.
 
 An **all-consuming parse** is the entry point. It runs the prefix
 parsers and then requires the input to be exhausted, so an input
