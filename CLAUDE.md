@@ -33,8 +33,11 @@ Read these first, in this order:
    to every rule. Among the cross-cutting conventions it covers:
    - **Parser style.** Non-trivial string scanners (URLs,
      emails, format templates, markdown spans, serde-attribute
-     type literals) are written as parser-combinator-style
-     `take_*` functions, not regex.
+     type literals) are hand-written recursive-descent parsers
+     built from `take_*` functions, not regex. A `take_*` takes a
+     prefix and hands back the remainder; the `parse_*` entry
+     point requires the input to be exhausted, which is the
+     distinction the conventions file spells out.
    - **Naming a lint after the anti-pattern.** A lint is named for
      the violation it fires on — never the fix, the remedy, or the
      preference — so it reads correctly under `#[deny(...)]` and

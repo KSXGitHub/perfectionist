@@ -8,10 +8,56 @@ guidance lives in exactly one place.
 
 When a rule needs to parse a non-trivial string — a URL, an email
 address, a markdown span, a serde-attribute type literal, a
-`#[derive(...)]` list — **prefer parser combinators over regex-style
-matching**. Implement the scanner as a collection of small `take_*`
-functions, each one consuming a prefix of its input and returning the
-remainder.
+`#[derive(...)]` list — **write a recursive-descent parser by hand
+rather than a regex**. Implement it as a collection of small `take_*`
+functions, one per production, each consuming a prefix of its input
+and returning the remainder.
+
+The shape is the one `nom`, `chumsky`, `combine` and `winnow` expose,
+and borrowing it is deliberate. What is not borrowed is the
+combinators: in those libraries a combinator is a higher-order
+function over parsers — `alt`, `many0`, `opt`, `map` — and this
+catalogue has none. The productions compose by calling one another
+with `?` rather than by being passed to anything, so the call graph
+is the grammar.
+
+Failure is `None`, or an `Err`, and the caller may then try another
+alternative from the same input. That makes the style a backtracking
+parser, and a cheap one: the input is an immutable slice, so every
+attempt starts from its own copy of it and there is no cursor to
+rewind. Ordered choice, greedy repetition, unbounded lookahead and no
+left recursion are what a PEG formalises, and this is that by hand.
+
+### Prefix parsers and the parse that owns the input
+
+Two jobs. Conflating them is the mistake this section exists to
+prevent, because the code compiles and the names look right either
+way.
+
+A **prefix parser** consumes what it recognises and hands back the
+rest, making no claim about that rest. A `take_*` that stops at the
+end of a version has no opinion on whether `/rest`, whitespace or
+nothing at all follows it. Every `take_*` here is one.
+
+An **all-consuming parse** is the entry point. It runs the prefix
+parsers and then requires the input to be exhausted, so an input
+with a tail is rejected rather than half-read. Name it `parse_*`.
+
+> [!IMPORTANT]
+> A `take_*` never asserts end of input. The `parse_*` entry point
+> always does.
+
+The standard library draws the same line. `FromStr`, and so
+`str::parse`, is an all-consuming parse: `"12 ".parse::<u32>()` is an
+`Err` rather than `Ok(12)` with a space left over, and `TryFrom<&str>`
+is read the same way. `str::strip_prefix` is the prefix form. The
+parser libraries name the pair too — `winnow`'s `Parser::parse`
+requires the whole input where `Parser::parse_next` advances a
+stream, and `nom` spells the assertion `all_consuming`.
+
+Leave that assertion out and the entry point is a prefix parser
+wearing the name of a parse, which accepts every input that merely
+*starts* with something valid.
 
 The canonical shapes are:
 
@@ -29,7 +75,18 @@ fn take_url_scheme(input: &str) -> Option<(UrlScheme, &str)>;
 // input but the input may be malformed. The `Error` carries enough
 // context for a useful diagnostic.
 fn take_email_local_part(input: &str) -> Result<(Cow<'_, str>, &str), EmailParseError>;
+
+// The entry point. Runs the prefix parsers, then requires the input
+// to be exhausted, so a tail is a parse failure rather than
+// something every caller has to remember to check.
+fn parse_url(input: &str) -> Option<Url>;
 ```
+
+A prefix parser with nothing to report still returns the remainder in
+a tuple — `Option<((), &str)>` — rather than the remainder alone. The
+bare `Option<&str>` is the shape of a parser that returns a *value*,
+so a parser that returns the rest under that signature reads as its
+own opposite.
 
 The pattern is well-trodden — `nom`, `chumsky`, `combine`, and
 `winnow` all expose the same essential shape. Within `perfectionist`
@@ -52,7 +109,7 @@ inspectable, and free of regex backtracking surprises.
 - **Trailing-punctuation handling falls out naturally.** The
   caller's choice of when to commit to a match is visible in the
   call graph rather than buried in a non-greedy quantifier.
-- **Span construction stays accurate.** Each combinator knows
+- **Span construction stays accurate.** Each parser knows
   exactly how many bytes it consumed; converting that into a `Span`
   on the source map is a one-liner per call site.
 
@@ -64,16 +121,16 @@ inspectable, and free of regex backtracking surprises.
 - Cramming a multi-step parser into a single `chars().filter().fold()`
   chain. The fold loses intermediate state and obscures where the
   failure points are.
-- Returning byte offsets without the slice. The combinator return
-  type bundles `(Parsed, &str)` so the caller cannot accidentally
+- Returning byte offsets without the slice. The return type
+  bundles `(Parsed, &str)` so the caller cannot accidentally
   forget to advance.
 
 ### Where to draw the line
 
 Trivial scans — locating one Unicode codepoint, counting lines,
 matching a literal three-byte UTF-8 sequence — do not need a
-combinator scaffold. Reach for `&[u8]::iter()` or
-`memchr::memchr` directly. The combinator style is for rules whose
+parser scaffold. Reach for `&[u8]::iter()` or
+`memchr::memchr` directly. The style is for rules whose
 grammar has more than one alternative, more than one position-
 dependent decision, or any kind of optional / repeated structure.
 
@@ -85,7 +142,7 @@ fixed-size byte sequence do not.
 
 Several rules scan a slice of markdown: every rule that imports
 `crate::markdown`. They share that one crate-internal scanner, built
-from `take_*` combinators per [Parser style](#parser-style). The
+from `take_*` parsers per [Parser style](#parser-style). The
 helper is hand-written. **Do not pull in `pulldown_cmark`, `comrak`,
 `markdown-rs`, or `markdown-it`** for any of them without first
 revisiting the rationale below.
@@ -124,7 +181,7 @@ One `take_*` per CommonMark construct the catalogue recognises:
 
 The full Tier A classifier `classify_constructs` stitches these into
 one walk that returns each construct's byte range and kind. Each
-combinator returns the matched substring and the remainder per the
+parser returns the matched substring and the remainder per the
 canonical shapes in [Parser style](#parser-style). Rust-specific
 extraction layered on top — pulling an identifier out of a
 `take_code_span` result, pulling a scheme out of `take_autolink`
@@ -156,7 +213,7 @@ whole comment. No library hits that target without overshooting:
 - **`markdown-it`** — JS port. Pluggable. Less battle-tested in
   Rust than `pulldown_cmark`.
 
-The combinator approach also keeps span construction precise
+The hand-written approach also keeps span construction precise
 without a mapping layer: each `take_*` knows exactly how many
 bytes it consumed, which is how the lints' diagnostics anchor
 into the source map.
@@ -189,7 +246,7 @@ still be custom code in this repo.
 The decision is per-helper, not per-codebase.
 `perfectionist::clap_help_markdown` — the most demanding consumer —
 has since been implemented on the hand-rolled scanner: its HTML-tag,
-heading, emphasis, and list combinators were added to `src/markdown.rs`
+heading, emphasis, and list parsers were added to `src/markdown.rs`
 (see `classify_constructs`) without dominating the helper's complexity
 or forcing a library, so no switch was needed. Should a future
 construct tip that balance for one rule, that rule may switch to a
