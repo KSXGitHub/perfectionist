@@ -14,10 +14,10 @@
 /// binary's own name.
 const PROGRAM_NAME: &str = "cargo-dylint";
 
-/// Take the version out of a whole banner. Returns `None` where
-/// anything but whitespace follows it, which is what keeps output
-/// this grammar does not cover from passing as a version.
-pub(super) fn take_version(input: &str) -> Option<&str> {
+/// Parse a whole banner into its version. Returns `None` where
+/// anything but whitespace follows the version, so output this
+/// grammar does not cover cannot pass as one.
+pub(super) fn parse_version(input: &str) -> Option<&str> {
     let ((), input) = take_whitespace(input);
     let ((), input) = take_program_name(input)?;
     let ((), input) = take_separator(input)?;
