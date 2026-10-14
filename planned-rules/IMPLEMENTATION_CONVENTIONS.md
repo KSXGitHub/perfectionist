@@ -24,9 +24,8 @@ what a PEG formalises; this is that by hand.
 
 ### Prefix parsers and the parse that owns the input
 
-Two jobs. Conflating them is the mistake this section exists to
-prevent, because the code compiles and the names look right either
-way.
+Conflating these jobs is the mistake this section exists to prevent,
+because the code compiles and the names look right either way.
 
 A **prefix parser** consumes what it recognises and hands back the
 rest, making no claim about that rest. A `take_*` that stops at the
@@ -41,8 +40,8 @@ with a tail is rejected rather than half-read.
 > A `take_*` never asserts end of input. The parse that owns the
 > input always does.
 
-That parse has three valid forms: a `parse_*` function, a `FromStr`
-implementation, or a `TryFrom` over a string-like input.
+That parse may be a `parse_*` function, a `FromStr` implementation,
+or a `TryFrom` over a string-like input.
 
 Leave the assertion out and the entry point is a prefix parser
 wearing the name of a parse, which accepts every input that merely

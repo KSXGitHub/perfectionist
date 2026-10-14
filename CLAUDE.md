@@ -35,9 +35,9 @@ Read these first, in this order:
      emails, format templates, markdown spans, serde-attribute
      type literals) are hand-written recursive-descent parsers
      built from `take_*` functions, not regex. A `take_*` takes a
-     prefix and hands back the remainder; the `parse_*` entry
-     point requires the input to be exhausted, which is the
-     distinction the conventions file spells out.
+     prefix and hands back the remainder; the parse that owns the
+     input requires it to be exhausted, which is the distinction
+     the conventions file spells out.
    - **Naming a lint after the anti-pattern.** A lint is named for
      the violation it fires on — never the fix, the remedy, or the
      preference — so it reads correctly under `#[deny(...)]` and
