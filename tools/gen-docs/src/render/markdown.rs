@@ -23,11 +23,11 @@ pub(crate) fn markdown_to_html(markdown: &str) -> String {
 }
 
 /// Walk pulldown-cmark events, replacing fenced code blocks with
-/// pre-highlighted HTML produced by `syntect`. The first comma-
-/// separated token of the fence's info string is the language tag
-/// (so `rust,ignore` is treated as Rust). Untagged fences pass
-/// through to pulldown-cmark's default rendering; unknown tags are
-/// highlighted as plain text.
+/// pre-highlighted HTML produced by `syntect`. The first
+/// comma-separated token of the fence's info string is the
+/// language tag (so `rust,ignore` is treated as Rust). Untagged
+/// fences pass through to pulldown-cmark's default rendering;
+/// unknown tags are highlighted as plain text.
 fn highlight_code_blocks<'a>(parser: impl Iterator<Item = Event<'a>>) -> Vec<Event<'a>> {
     let mut out = Vec::new();
     let mut current_lang: Option<String> = None;

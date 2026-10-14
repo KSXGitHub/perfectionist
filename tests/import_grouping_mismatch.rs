@@ -156,8 +156,8 @@ fn bare_path_local_submodule_is_internal() {
 }
 
 /// Under `multi_block` with the default `reexports = "grouped"`, every
-/// `pub` re-export is pulled into one leading block above the path-
-/// partitioned private imports. Visibility outranks path and cfg
+/// `pub` re-export is pulled into one leading block above the
+/// path-partitioned private imports. Visibility outranks path and cfg
 /// gating, so a `pub use std::...` and a cfg-gated `pub use` both join
 /// the leading block rather than their natural std / trailing cfg
 /// group. The knob is set explicitly to document the intent even
