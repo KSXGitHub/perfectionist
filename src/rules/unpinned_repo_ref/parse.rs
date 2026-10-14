@@ -2,7 +2,7 @@
 //! URL and decide whether the URL shape already proves the ref is
 //! mutable.
 //!
-//! The matcher is parser-combinator-style per
+//! The matcher is a hand-written recursive-descent parser per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. A URL is split into
 //! its path segments once ([`segments`]); each per-kind matcher then
 //! threads the segment slice through [`take_capture`] (consume one
@@ -146,10 +146,10 @@ fn is_commit_sha(text: &str, sha_recognition_length: usize) -> bool {
 /// Whether `text` looks like a version pattern (`1.2.3`, `v1.2.3`, or
 /// either form with a non-empty `-suffix` of version-suffix characters,
 /// per [`is_version_suffix_byte`]). The grammar is built from the
-/// `take_*` version combinators below ([`take_version_pattern`] is the
-/// entry point); the ref is only a version pattern when the combinator
-/// consumes it entirely. This intentionally avoids a regex dependency
-/// because the lint is compiled from source by users.
+/// `take_*` version parsers below, rooted at [`take_version_pattern`];
+/// the ref is only a version pattern when that parser consumes it
+/// entirely. This intentionally avoids a regex dependency because the
+/// lint is compiled from source by users.
 fn is_version_pattern_ref(text: &str) -> bool {
     take_version_pattern(text).is_some_and(|((), rest)| rest.is_empty())
 }

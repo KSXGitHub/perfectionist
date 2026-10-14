@@ -3,7 +3,7 @@
 //! backslash-newline-continued form.
 //!
 //! The fold is escape-aware: it walks the literal body with the shared
-//! [`crate::literal_scan::take_string_escape`] combinator so a `\\n`
+//! [`crate::literal_scan::take_string_escape`] parser so a `\\n`
 //! (escaped backslash, then the letter `n`) is never mistaken for the
 //! `\n` newline escape it folds. The rewrite is byte-for-byte
 //! output-preserving — every folded `\n` keeps its newline and the
