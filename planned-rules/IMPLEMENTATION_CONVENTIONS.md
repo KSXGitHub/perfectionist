@@ -14,12 +14,13 @@ functions, one per production, each consuming a prefix of its input
 and returning the remainder.
 
 The shape is the one `nom`, `chumsky`, `combine` and `winnow` expose,
-and borrowing it is deliberate. What is not borrowed is the
-combinators: in those libraries a combinator is a higher-order
-function over parsers — `alt`, `many0`, `opt`, `map` — and this
-catalogue has none. The productions compose by calling one another
-with `?` rather than by being passed to anything, so the call graph
-is the grammar.
+and borrowing it is deliberate. Their combinators are not borrowed
+so far: in those libraries a combinator is a higher-order function
+over parsers — `alt`, `many0`, `opt`, `map` — and no grammar here has
+called for one yet, so the productions compose by calling one another
+with `?` and the call graph is the grammar. That describes where the
+style stands rather than ruling anything out; a grammar that earns a
+higher-order function should have one.
 
 Failure is `None`, or an `Err`, and the caller may then try another
 alternative from the same input. That makes the style a backtracking
