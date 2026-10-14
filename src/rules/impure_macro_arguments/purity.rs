@@ -83,22 +83,22 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
 ///    skips the argument.
 /// 2. A top-level token that signals a DSL pattern — `=>` (match-arm
 ///    separator inside `matches!`, `impl_lint_pass!`-style
-///    `Type => [LINT_NAMES]` DSLs); `=`, `+=`, `-=`, ... (assignment-
-///    shaped matchers like `make_const!(NAME = '█')` or
-///    `bump!(items += 1)`); a top-level `:` (`name: type` ascription-
-///    shaped matchers); `->` (`link!("src" -> "dst")`-style arrow
-///    matchers); the `in` keyword (`for_each!(x in iter, ...)`-style
-///    matchers) — fails the check. `name = value` is technically a
-///    valid Rust assignment expression of unit type, but in macro-
-///    argument position the macro author overwhelmingly chose the `=`
-///    as a structural marker; the let-bind rewrite the rule would
-///    propose is meaningless for the macro's matcher arm. The same
-///    reasoning extends to `->`, `in`, and the compound-assignment
-///    family — in the shapes the rule observes, none of these tokens
-///    form a single Rust expression standalone. `==`, by contrast,
-///    is a real Rust binary operator (`debug_assert!(a == b)` is the
-///    motivating pure shape) and is intentionally absent from this
-///    list.
+///    `Type => [LINT_NAMES]` DSLs); `=`, `+=`, `-=`, ...
+///    (assignment-shaped matchers like `make_const!(NAME = '█')` or
+///    `bump!(items += 1)`); a top-level `:` (`name: type`
+///    ascription-shaped matchers); `->` (`link!("src" -> "dst")`-style
+///    arrow matchers); the `in` keyword
+///    (`for_each!(x in iter, ...)`-style matchers) — fails the check.
+///    `name = value` is technically a valid Rust assignment expression
+///    of unit type, but in macro-argument position the macro author
+///    overwhelmingly chose the `=` as a structural marker; the let-bind
+///    rewrite the rule would propose is meaningless for the macro's
+///    matcher arm. The same reasoning extends to `->`, `in`, and the
+///    compound-assignment family — in the shapes the rule observes,
+///    none of these tokens form a single Rust expression standalone.
+///    `==`, by contrast, is a real Rust binary operator
+///    (`debug_assert!(a == b)` is the motivating pure shape) and is
+///    intentionally absent from this list.
 ///
 ///    The trade-off is asymmetric. `->` and `in` *can* legitimately
 ///    appear inside a real Rust expression — `->` in a closure return
@@ -658,15 +658,15 @@ fn is_pure_method_call(
     inner.is_empty() && pure_methods.contains(method_name)
 }
 
-/// Consume a tail of `OP pure` pairs where `OP` is a side-effect-
-/// free binary operator (arithmetic, bitwise, comparison, logical).
-/// The spec's "impure" boundary explicitly couples binary
-/// expression purity to operand purity: `a <= b` and
-/// `count + offset` are side-effect-free over pure operands and
-/// should themselves be pure. Without this tail, simple comparisons
-/// in `debug_assert!(a <= b)` would be flagged and the suggested `let`
-/// binding would force the comparison to evaluate in release builds —
-/// the opposite of the user's intent.
+/// Consume a tail of `OP pure` pairs where `OP` is a side-effect-free
+/// binary operator (arithmetic, bitwise, comparison, logical). The
+/// spec's "impure" boundary explicitly couples binary expression
+/// purity to operand purity: `a <= b` and `count + offset` are
+/// side-effect-free over pure operands and should themselves be pure.
+/// Without this tail, simple comparisons in `debug_assert!(a <= b)`
+/// would be flagged and the suggested `let` binding would force the
+/// comparison to evaluate in release builds — the opposite of the
+/// user's intent.
 ///
 /// The walker does not honour Rust's binary-operator precedence
 /// (`a + b * c` is consumed left-to-right rather than as `a + (b * c)`),

@@ -254,8 +254,8 @@ is therefore impure under this rule unless its shape is
 recognised — the lint cannot prove side-effect-freedom in
 general, only spot it.
 
-The set is intentionally narrower than the functional-
-programming notion of purity (which would accept any
+The set is intentionally narrower than the
+functional-programming notion of purity (which would accept any
 deterministic, observable-state-free expression) and keyed to
 what a function-like or array-like macro can actually do with
 its captures: drop them (`debug_assert*` in release) or
@@ -431,9 +431,10 @@ tree once, emits one runtime evaluation per captured Rust
 expression, and contains no `cfg` gate or repetition that
 could drop or duplicate a capture. Tail-segment matching
 means the entry covers fully-qualified and bare call sites
-alike. `bail!` / `ensure!` share the same conditional-
-arguments shape as the already-allowed `assert!` — the
-trade-off is identical and accepted on the same terms.
+alike. `bail!` / `ensure!` share the same
+conditional-arguments shape as the already-allowed
+`assert!` — the trade-off is identical and accepted on
+the same terms.
 
 The second part adds `core` / `std` macros whose top-level
 argument simply isn't a runtime expression — `stringify!`
@@ -511,8 +512,8 @@ Procedural macros are not walkable; the lint falls back to the
 mode-2 verdict (flag, by default).
 
 The most expensive mode to implement. Ship modes 0-2 first; mode
-3 can share matcher-walking infrastructure with the matcher-
-based eligibility check planned for
+3 can share matcher-walking infrastructure with the
+matcher-based eligibility check planned for
 [`macro-trailing-comma`](./macro-trailing-comma.md).
 
 ## What to lint
