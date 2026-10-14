@@ -46,12 +46,13 @@ with a tail is rejected rather than half-read.
 > A `take_*` never asserts end of input. The parse that owns the
 > input always does.
 
-That parse need not be a `parse_*` function. Where it yields a type
-of its own, its home is `FromStr`, which `str::parse` dispatches to,
-or `TryFrom<&str>`: each is handed the whole string and has nowhere
-to report a remainder, so an implementation either consumes all of it
-or drops part of it unsaid. A `parse_*` function is for where there
-is no such type to hang the parse on.
+That parse has three valid forms: a `parse_*` function, a `FromStr`
+implementation, or a `TryFrom` over a string-like input. The result
+picks between them: `FromStr` has no lifetime parameter, so it cannot
+yield a type that borrows from the input where `TryFrom<&str>` can,
+and a `parse_*` function serves where there is no type of its own to
+build. The trait forms have nowhere to report a remainder; a
+`parse_*` function asserts the end itself.
 
 Leave the assertion out and the entry point is a prefix parser
 wearing the name of a parse, which accepts every input that merely
