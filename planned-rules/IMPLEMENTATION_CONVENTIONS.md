@@ -13,14 +13,9 @@ rather than a regex**. Implement it as a collection of small `take_*`
 functions, one per production, each consuming a prefix of its input
 and returning the remainder.
 
-The shape is the one `nom`, `chumsky`, `combine` and `winnow` expose,
-and borrowing it is deliberate; the libraries themselves are not
-borrowed, so that no parser crate loads into the Dylint pass. A
-`take_*` written to that shape is a parser rather than a combinator:
-it consumes input, where a combinator in those libraries is a
-higher-order function that builds a parser out of parsers. Where
-productions compose by calling one another with `?`, the call graph
-is the grammar.
+The shape is the one `nom`, `chumsky`, `combine` and `winnow` expose;
+the libraries themselves are not used, so that no parser crate loads
+into the Dylint pass.
 
 Failure lets the caller try the next alternative from the same input
 at no cost, the input being an immutable slice with nothing to
