@@ -150,7 +150,7 @@ Consumers divide by how much structure they need.
   `scan_code_regions` — `take_code_span` plus `take_code_block` in
   a loop over the input, not a separate Tier-A-style classifier.
 
-### Combinator surface
+### Parser surface
 
 One `take_*` per CommonMark construct the catalogue recognises:
 
