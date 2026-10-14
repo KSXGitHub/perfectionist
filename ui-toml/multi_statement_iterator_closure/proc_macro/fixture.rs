@@ -23,10 +23,10 @@
 // control, and the swap between the two is what shows the signature
 // token is the only difference.
 //
-// `#[respan_onto_paren]` is the remaining way past a byte-range
-// lookup: it stamps synthesised code onto the span of a parenthesis
-// group the caller wrote, so the synthesised callback lands on the key
-// a parenthesised callback is written under. What rejects it is that
+// `#[respan_onto_paren]` is one way past a byte-range lookup: it
+// stamps synthesised code onto the span of a parenthesis group the
+// caller wrote, so the synthesised callback lands on the key a
+// parenthesised callback is written under. What rejects it is that
 // every token it emits carries that one span, leaving the call
 // starting no earlier than its own argument, which no call the author
 // wrote ever does. Nothing is reported for it, and the diagnostic it

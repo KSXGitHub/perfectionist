@@ -155,12 +155,15 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         if callback.span.from_expansion() {
             return;
         }
-        // A call's span starts at its receiver or its path, so it begins
-        // strictly before any argument of that call. An expansion that
-        // stamps every token it emits with one span of the caller's own
-        // breaks that, and is the one way synthesised code can land on a
-        // byte range the re-parse keyed -- which is what the lookup
-        // below treats as the author's source.
+        // A call's span is built by the parser from the tokens the
+        // author wrote, before any `MacCall` inside it is expanded, so
+        // it begins at the receiver or the path and strictly before any
+        // argument -- holding even where a macro produced the receiver,
+        // or where the macro is defined in a file loaded after this
+        // one. An expansion that instead stamps one span of the
+        // caller's own on every token it emits breaks that, and so
+        // lands on a byte range the re-parse keyed, which is what the
+        // lookup below treats as the author's source.
         if call.span.lo() >= callback.span.lo() {
             return;
         }
