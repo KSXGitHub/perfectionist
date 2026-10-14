@@ -1,0 +1,75 @@
+warning: this closure chains 2 steps onto the item, so `map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |     items.map_ok(|text| text.trim().len()).collect()
+   |           ^^^^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.map_ok(|text| text.trim().len()).collect()
+LL +     items.map_ok(str::trim).map_ok(str::len).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold_ok` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |     items.fold_ok(0, |total, text| total + text.trim().len())
+   |           ^^^^^^^
+   |
+help: lift every step into a leading `map_ok` of its own, leaving the closure the accumulation
+   |
+LL -     items.fold_ok(0, |total, text| total + text.trim().len())
+LL +     items.map_ok(str::trim).map_ok(str::len).fold_ok(0, |total, /* name */| total + /* name */)
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold_while` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |         .fold_while(0, |total, text| {
+   |          ^^^^^^^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL ~         .map(str::trim).map(str::len).fold_while(0, |total, /* name */| {
+LL +             itertools::FoldWhile::Continue(total + /* name */)
+LL +         })
+   |
+
+warning: this closure chains 3 steps onto the item, so `filter_map_ok` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |         .filter_map_ok(|text| text.trim().parse().ok())
+   |          ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map_ok` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map_ok(|text| text.trim().parse().ok())
+LL +         .map_ok(str::trim).map_ok(str::parse).filter_map_ok(Result::ok)
+   |
+
+warning: this closure chains 2 steps onto the item, so `counts_by` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |     lines.counts_by(|text| text.trim().len())
+   |           ^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.counts_by(|text| text.trim().len())
+LL +     lines.map(str::trim).counts_by(str::len)
+   |
+
+warning: this closure chains 2 steps onto the item, so `partition_map` does all of them
+  --> $DIR/splittable_adapter_closure_itertools.rs:LL:CC
+   |
+LL |     lines.partition_map(|text| classify(text.trim()))
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.partition_map(|text| classify(text.trim()))
+LL +     lines.map(str::trim).partition_map(classify)
+   |
+
+warning: N warnings emitted
