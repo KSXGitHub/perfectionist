@@ -146,10 +146,8 @@ pub enum DylintVersionError {
 }
 
 /// The version `repository_dir`'s manifest pins
-/// [`DYLINT_LIBRARY_CRATE`] to. `cargo install --version` reads a
-/// requirement with no operator as that one release, so the string
-/// the installer is handed is the string the installed binary
-/// reports back.
+/// [`DYLINT_LIBRARY_CRATE`] to, which `cargo install --version` reads
+/// as that one release rather than as a range.
 fn pinned_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
     repository_dir
         .join("Cargo.toml")
