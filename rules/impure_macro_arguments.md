@@ -73,8 +73,8 @@ side-effect-free operators, zero-arg method calls whose name
 is in the curated pure-getter set (`len`, `is_empty`,
 `as_str`, `as_bytes`, `as_ref`, `as_mut`, `as_deref`,
 `as_slice`, plus anything in `extra_pure_methods`), and
-calls to `core` / `std` macros whose expansion is a compile-
-time constant (`concat!`, `env!`, `option_env!`,
+calls to `core` / `std` macros whose expansion is a
+compile-time constant (`concat!`, `env!`, `option_env!`,
 `include_str!`, `include_bytes!`, `stringify!`, `cfg!`,
 `line!`, `column!`, `file!`, `module_path!`, plus anything in
 `extra_pure_macros`). A comparison like `vec.len() <= cap`

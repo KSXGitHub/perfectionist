@@ -117,10 +117,10 @@ inspectable, and free of regex backtracking surprises.
 
 Trivial scans — locating one Unicode codepoint, counting lines,
 matching a literal three-byte UTF-8 sequence — do not need a
-parser scaffold. Reach for `&[u8]::iter()` or
-`memchr::memchr` directly. The style is for rules whose
-grammar has more than one alternative, more than one position-
-dependent decision, or any kind of optional / repeated structure.
+parser scaffold. Reach for `&[u8]::iter()` or `memchr::memchr`
+directly. The style is for rules whose grammar has more than one
+alternative, more than one position-dependent decision, or any
+kind of optional / repeated structure.
 
 The rules that explicitly call this convention out in their
 implementation notes are the candidates; rules that just walk a

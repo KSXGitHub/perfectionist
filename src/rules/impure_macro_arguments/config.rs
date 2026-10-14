@@ -42,8 +42,8 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 /// 3. Third-party macros whose matchers are known to evaluate every
 ///    top-level argument exactly once before forwarding it, so the
 ///    once-vs.-zero hazard does not surface at the call site. New
-///    entries land here as they're identified; the group is open-
-///    ended and not tied to any single crate.
+///    entries land here as they're identified; the group is
+///    open-ended and not tied to any single crate.
 ///
 /// `macro_trailing_comma`'s own built-in list is intentionally
 /// narrower than this one (it has no reason to care about
