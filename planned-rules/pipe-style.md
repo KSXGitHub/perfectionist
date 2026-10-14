@@ -550,8 +550,8 @@ violation outright.
 
 The rule deliberately doesn't recurse: if `g(f(x.m()))` is
 rewritten to `f(x.m()).pipe(g)`, the next lint pass reaches
-`f(x.m())` and rewrites it to `x.m().pipe(f).pipe(g)`. Fixed-
-point convergence in two passes.
+`f(x.m())` and rewrites it to `x.m().pipe(f).pipe(g)`.
+Fixed-point convergence in two passes.
 
 ## Implementation notes
 
