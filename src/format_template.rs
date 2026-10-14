@@ -6,7 +6,7 @@
 //! [`parse_template`] hands back exactly that sequence so a rule can
 //! reason about the parts rather than about the raw text.
 //!
-//! The scanner is written as parser-combinator-style `take_*` functions
+//! The scanner is written as recursive-descent `take_*` functions
 //! per the catalogue's parser-style convention (see
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`), each consuming a
 //! prefix of its input and returning the remainder.

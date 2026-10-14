@@ -210,8 +210,8 @@ Hand-written `impl From for ...` blocks are the most common
 AI-generated alternative to a one-line derive. They sneak past code
 review because they look "more explicit" — the model produced four
 lines of code where one attribute would do. The lint catches them
-mechanically and pushes the codebase toward the smaller, derive-
-based form.
+mechanically and pushes the codebase toward the smaller,
+derive-based form.
 
 The `Display` and `Error` sub-lints sit behind opt-in flags because
 the cost of a false positive is high: rewriting a hand-rolled error

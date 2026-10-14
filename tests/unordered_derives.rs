@@ -1,8 +1,8 @@
-//! UI tests for `unordered_derives`'s configuration knobs. The default-
-//! config sweep lives in `ui/unordered_derives.rs` and is picked up by
-//! `tests/ui.rs`; these tests each point at their own one-fixture
-//! directory under `ui-toml/unordered_derives/` and pass a per-rule
-//! `dylint.toml` to `_utils::ConfiguredUiTest`.
+//! UI tests for `unordered_derives`'s configuration knobs. The
+//! default-config sweep lives in `ui/unordered_derives.rs` and is
+//! picked up by `tests/ui.rs`; these tests each point at their own
+//! one-fixture directory under `ui-toml/unordered_derives/` and pass a
+//! per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 
 use std::collections::BTreeMap;
 
