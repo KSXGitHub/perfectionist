@@ -140,7 +140,7 @@ has these consequences for the implementer:
    - `emit` — diagnostic-emission helpers, one per violation shape.
    - `queue` — the `PendingViolation` payload for rules that split
      across pre-expansion and late passes.
-   - `scan` / `parser` — source-text walkers and parser combinators.
+   - `scan` / `parser` — source-text walkers and `take_*` parsers.
    - `ordering` / `triviality` — rule-specific algorithms.
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
