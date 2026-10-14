@@ -497,6 +497,25 @@ pub fn synth_costless_to_conversion(input: TokenStream) -> TokenStream {
     synth_field_borrow(attr_span, "to_s")
 }
 
+/// `#[derive(SynthUnconsumedIntoConversion)]` +
+/// `#[synth_unconsumed_into_conversion]` → an `into_`-prefixed method
+/// handing the field back as a borrow, under the same span shape.
+/// `unconsumed_into_conversion` fires on it when hand-written: the
+/// prefix, a `&self` receiver and nothing else, and a return type that
+/// borrows from that receiver. The proc-macro guard is the only thing
+/// that does not report it.
+#[proc_macro_derive(
+    SynthUnconsumedIntoConversion,
+    attributes(synth_unconsumed_into_conversion)
+)]
+pub fn synth_unconsumed_into_conversion(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_unconsumed_into_conversion").expect(
+        "`#[derive(SynthUnconsumedIntoConversion)]` requires a \
+         `#[synth_unconsumed_into_conversion]`",
+    );
+    synth_field_borrow(attr_span, "into_s")
+}
+
 /// The copying form of [`synth_accessor`]: `-> String` from a body of
 /// `self.s.clone()`, which is the shape `cloning_getter` and
 /// `owned_as_conversion` read.

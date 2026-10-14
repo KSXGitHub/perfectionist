@@ -1,4 +1,4 @@
-//! Parser-combinator-style scanner for a cooked Rust string literal's
+//! Recursive-descent scanner for a cooked Rust string literal's
 //! body. Each `take_*` function follows the convention in
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`: consume a recognised
 //! prefix from the input and return the rest, or `None` if the input
@@ -82,7 +82,7 @@ fn eliminable_decoded(escape: &str) -> &str {
 /// Take a single non-backslash UTF-8 character from the front of
 /// `input`. Returns `None` only when `input` is empty or starts with
 /// `\`, in which case the caller should run one of the escape
-/// combinators first.
+/// parsers first.
 fn take_literal_char(input: &str) -> Option<(&str, &str)> {
     let first = input.chars().next()?;
     if first == '\\' {
