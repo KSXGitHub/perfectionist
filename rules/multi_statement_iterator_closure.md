@@ -26,9 +26,9 @@ Test code follows the same policy as production code.
 Macro-generated closures are left alone, as are callbacks inside
 macro arguments. A macro invocation inside a checked callback
 counts once, regardless of its expansion. A callback the author
-wrote is still measured inside a function whose signature an
-attribute macro rebuilt, and left alone where a macro emitted the
-call around it.
+wrote is still measured wherever a macro rewrote the code around
+it, and a call a macro assembled is left alone even where the
+closure inside it is the author's.
 
 Projects differ on whether several steps belong inline or in a
 named helper, so the rule is inactive by default — enable it per

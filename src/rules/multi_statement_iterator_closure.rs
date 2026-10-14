@@ -32,9 +32,9 @@ declare_tool_lint! {
     /// Macro-generated closures are left alone, as are callbacks inside
     /// macro arguments. A macro invocation inside a checked callback
     /// counts once, regardless of its expansion. A callback the author
-    /// wrote is still measured inside a function whose signature an
-    /// attribute macro rebuilt, and left alone where a macro emitted the
-    /// call around it.
+    /// wrote is still measured wherever a macro rewrote the code around
+    /// it, and a call a macro assembled is left alone even where the
+    /// closure inside it is the author's.
     ///
     /// Projects differ on whether several steps belong inline or in a
     /// named helper, so the rule is inactive by default — enable it per
@@ -154,29 +154,16 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         if callback.hir_id != expr.hir_id {
             return;
         }
-        // Neither the callback nor the call may come from an expansion.
-        // The callback's own span is the usual question. The call's
-        // catches a macro that emits an iterator call around a closure
-        // the author wrote, where the callback's span is the author's
-        // and so answers nothing: synthesised tokens carry the
-        // expansion's context by default. A macro in the *receiver*
-        // leaves the call's span the author's, so
-        // `vec![1, 2].into_iter().map(..)` is still measured.
-        if callback.span.from_expansion() || call.span.from_expansion() {
+        if callback.span.from_expansion() {
             return;
         }
-        // A call's span is built by the parser from the tokens the
-        // author wrote, before any `MacCall` inside it is expanded, so
-        // it begins at the receiver or the path and strictly before any
-        // argument -- holding even where a macro produced the receiver,
-        // or where the macro is defined in a file loaded after this
-        // one. An expansion that instead stamps one span of the
-        // caller's own on every token it emits breaks that, and so
-        // lands on a byte range the re-parse keyed, which is what the
-        // lookup below treats as the author's source.
-        if call.span.lo() >= callback.span.lo() {
-            return;
-        }
+        // The lookup is what establishes that the author wrote this
+        // callback, and writes it to one of the methods the rule
+        // covers: `count_source_statements` records a range only for a
+        // closure the source shows in that position. So a call a macro
+        // assembled around the author's closure finds nothing here,
+        // and no question about where either span came from has to
+        // stand in for reading the source.
         let Some(statements) = self
             .counts
             .get(&(callback.span.lo(), callback.span.hi()))

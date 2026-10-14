@@ -4,13 +4,13 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// What keeps this rule off proc-macro output is mostly the span-keyed
-// lookup in `src/rules/multi_statement_iterator_closure/statements.rs`:
-// a callback is measured only where its byte range matches a closure in
-// a re-parsed module file, which synthesised code does not occupy. Where
-// a macro can put synthesised code on a range the caller wrote, the two
-// questions in `check_expr` decide it instead. The cases below pin that
-// from both sides.
+// What keeps this rule off proc-macro output is the keyed lookup in
+// `src/rules/multi_statement_iterator_closure/statements.rs`: a range
+// is recorded only where the source shows a closure passed as the final
+// argument of a call to one of the methods the rule covers, so a
+// callback is measured only where the author wrote one. Borrowing a
+// span is not enough, because the span borrowed has to cover a callback
+// the author already wrote. The cases below pin that from both sides.
 //
 // `#[derive(SynthCallback)]` emits a two-statement callback whose every
 // token wears the user span of `#[synth_callback]`, so a guard that
@@ -44,17 +44,34 @@
 // and asking that of the call's span is what rejects it. Nothing is
 // reported for it either.
 //
-// One shape is left over. A macro that re-spans a synthesised call
-// onto a token the caller wrote, earlier than the callback, answers
-// both questions the way author-written code does. It takes two
-// deliberate re-span targets, no `quote!` produces it, and pinning it
-// here would mean committing the wrong answer as the expected one, so
-// it is named rather than fixtured.
+// `#[respan_two_targets]` is the same trick with two targets: the
+// synthesised call takes one span the caller wrote and the synthesised
+// callback another, so no comparison between the two spans separates it
+// from real code. Reading the source does, since neither span covers a
+// callback the author passed to anything. Nothing is reported for it.
+//
+// `#[synthesise_receiver]` and `#[rebuild_argument_group]` come at it
+// from the other side, and are why asking where the *call* came from
+// does not work. A call's span runs from its receiver to its closing
+// parenthesis, and combining spans of differing syntax context yields
+// the macro's, so substituting the receiver -- or merely rebuilding the
+// argument list's parentheses, leaving every token the caller's -- is
+// enough to make an author-written call look macro-made. Both callbacks
+// are the caller's own, and both are reported.
+//
+// `#[substitute_callee]` is why the name recorded is the one in the
+// source. The caller wrote `helper(..)` with a closure as its final
+// argument, which a record keyed on shape alone would accept once the
+// macro makes the call resolve to `Iterator::map`; keyed on the written
+// name it is not accepted, because `helper` is not a method the rule
+// covers. Nothing is reported for it.
 
 extern crate callback_macros;
 
 use callback_macros::{
-    SynthCallback, rebuilt_signature, respan_onto_paren, verbatim, wrap_in_iterator_call,
+    SynthCallback, rebuild_argument_group, rebuilt_signature, respan_onto_paren,
+    respan_two_targets, substitute_callee, synthesise_receiver, verbatim,
+    wrap_in_iterator_call,
 };
 
 #[derive(SynthCallback)]
@@ -91,6 +108,38 @@ fn the_caller_wrote_a_plain_closure() {
         let doubled = value * 2;
         doubled
     };
+}
+
+#[respan_two_targets]
+fn the_caller_wrote_a_parenthesised_closure_twice() {
+    let identity = (|value: i32| {
+        let doubled = value * 2;
+        doubled
+    });
+}
+
+#[synthesise_receiver]
+fn the_receiver_came_from_the_macro() {
+    let _ = ITEMS.map(|value| {
+        let doubled = value * 2;
+        doubled
+    });
+}
+
+#[rebuild_argument_group]
+fn the_argument_parentheses_lost_their_span() {
+    let _ = [1, 2].into_iter().map(|value| {
+        let doubled = value * 2;
+        doubled
+    });
+}
+
+#[substitute_callee]
+fn the_caller_wrote_a_call_to_something_else() {
+    let _ = helper(|value| {
+        let doubled = value * 2;
+        doubled
+    });
 }
 
 fn main() {}

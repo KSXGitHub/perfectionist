@@ -44,7 +44,7 @@ pub(super) fn iterator_callback<'tcx>(
 
 /// Every method on the standard `Iterator` trait that takes a
 /// callback, grouped by what the callback does.
-const CALLBACK_METHODS: &[&str] = &[
+pub(super) const CALLBACK_METHODS: &[&str] = &[
     // Transforming.
     "map",
     "filter_map",
