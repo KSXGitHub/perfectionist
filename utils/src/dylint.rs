@@ -22,7 +22,7 @@ use std::io;
 use std::path::Path;
 use std::process::{Command, ExitStatus};
 
-mod parser;
+mod banner;
 
 /// The dylint-specific environment variables `dylint_testing` sets in
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
@@ -185,7 +185,7 @@ pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersi
         .stdout
         .pipe(String::from_utf8)
         .expect("dylint stdout is not UTF-8");
-    let Some(installed) = parser::parse_version(&reported) else {
+    let Some(installed) = banner::parse_version(&reported) else {
         return Err(DylintVersionError::Unreadable(reported.trim().to_owned()));
     };
     match installed == pinned {
