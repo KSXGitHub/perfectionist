@@ -25,15 +25,16 @@ declare_tool_lint! {
     ///
     /// The check covers transforming, filtering, visiting, generating and
     /// reducing callbacks, in method calls and qualified calls such as
-    /// `Iterator::map`.
-    /// Named callbacks, custom methods with the same names, parallel
-    /// iterators, asynchronous streams, and macro-generated closures are
-    /// left alone. Callbacks inside macro arguments are also left alone.
-    /// A macro invocation inside a checked callback counts once, regardless
-    /// of its expansion. A callback the author wrote is still measured inside
-    /// a function whose signature an attribute macro rebuilt, and left alone
-    /// where a macro emitted the call around it. Test code
-    /// follows the same policy as production code.
+    /// `Iterator::map`. Named callbacks, custom methods with the same
+    /// names, parallel iterators and asynchronous streams are left alone.
+    /// Test code follows the same policy as production code.
+    ///
+    /// Macro-generated closures are left alone, as are callbacks inside
+    /// macro arguments. A macro invocation inside a checked callback
+    /// counts once, regardless of its expansion. A callback the author
+    /// wrote is still measured inside a function whose signature an
+    /// attribute macro rebuilt, and left alone where a macro emitted the
+    /// call around it.
     ///
     /// Projects differ on whether several steps belong inline or in a
     /// named helper, so the rule is inactive by default — enable it per
