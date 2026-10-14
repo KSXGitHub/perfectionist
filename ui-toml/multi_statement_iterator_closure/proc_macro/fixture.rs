@@ -4,11 +4,13 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// What keeps this rule off proc-macro output is the span-keyed lookup
-// in `src/rules/multi_statement_iterator_closure/statements.rs`: a
-// callback is measured only where its byte range matches a closure in
-// a re-parsed module file, which synthesised code does not occupy. The
-// two halves of this fixture pin that from both sides.
+// What keeps this rule off proc-macro output is mostly the span-keyed
+// lookup in `src/rules/multi_statement_iterator_closure/statements.rs`:
+// a callback is measured only where its byte range matches a closure in
+// a re-parsed module file, which synthesised code does not occupy. Where
+// a macro can put synthesised code on a range the caller wrote, the two
+// questions in `check_expr` decide it instead. The cases below pin that
+// from both sides.
 //
 // `#[derive(SynthCallback)]` emits a two-statement callback whose every
 // token wears the user span of `#[synth_callback]`, so a guard that
@@ -32,10 +34,28 @@
 // wrote ever does. Nothing is reported for it, and the diagnostic it
 // would otherwise carry names a `let`-bound closure in a function
 // holding no iterator call at all.
+//
+// `#[wrap_in_iterator_call]` needs no span trickery whatever, which is
+// what makes it the one to care about: it wraps a closure the caller
+// wrote in a synthesised iterator call and leaves the synthesised
+// tokens on the `Span::call_site()` that `quote!` hands them. The
+// callback's byte range is the caller's, so it is keyed and its own
+// span answers nothing -- the call is what came from the expansion,
+// and asking that of the call's span is what rejects it. Nothing is
+// reported for it either.
+//
+// One shape is left over. A macro that re-spans a synthesised call
+// onto a token the caller wrote, earlier than the callback, answers
+// both questions the way author-written code does. It takes two
+// deliberate re-span targets, no `quote!` produces it, and pinning it
+// here would mean committing the wrong answer as the expected one, so
+// it is named rather than fixtured.
 
 extern crate callback_macros;
 
-use callback_macros::{SynthCallback, rebuilt_signature, respan_onto_paren, verbatim};
+use callback_macros::{
+    SynthCallback, rebuilt_signature, respan_onto_paren, verbatim, wrap_in_iterator_call,
+};
 
 #[derive(SynthCallback)]
 #[synth_callback]
@@ -63,6 +83,14 @@ fn the_caller_wrote_a_parenthesised_closure() {
         let doubled = value * 2;
         doubled
     });
+}
+
+#[wrap_in_iterator_call]
+fn the_caller_wrote_a_plain_closure() {
+    let identity = |value| {
+        let doubled = value * 2;
+        doubled
+    };
 }
 
 fn main() {}

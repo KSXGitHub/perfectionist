@@ -1,14 +1,14 @@
 // force-host
 // no-prefer-dynamic
 //
-// Two proc-macro span shapes an iterator-callback rule has to tell
-// apart, in one crate so a single fixture can hold both.
+// The proc-macro span shapes an iterator-callback rule has to tell
+// apart, in one crate so a single fixture can hold them all.
 
 #![crate_type = "proc-macro"]
 
 extern crate proc_macro;
 
-use proc_macro::{Group, Ident, Punct, Span, TokenStream, TokenTree};
+use proc_macro::{Delimiter, Group, Ident, Punct, Span, TokenStream, TokenTree};
 
 /// An over-threshold callback in which every token wears one user
 /// span, the way `quote_spanned!(field.span() => ...)` emits a whole
@@ -135,4 +135,71 @@ fn find_closure_paren(stream: TokenStream) -> Option<Span> {
         }
     }
     None
+}
+
+/// Wraps the first closure in the item's body in a synthesised
+/// `[1, 2].into_iter().map(...)`, passing the closure's own tokens
+/// through untouched and leaving the synthesised tokens on the
+/// `Span::call_site()` that `TokenStream::from_str` and `quote!` give
+/// them.
+///
+/// This is the shape that needs no span trickery at all: the callback
+/// keeps the caller's byte range, so it is keyed and
+/// `Span::from_expansion` is false for it, while the call that selects
+/// it exists only in the expansion. What rejects it is asking the same
+/// question of the call's own span.
+#[proc_macro_attribute]
+pub fn wrap_in_iterator_call(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let (wrapped, found) = wrap_closure(item);
+    assert!(found, "expected a closure in the item body");
+    wrapped
+}
+
+fn wrap_closure(stream: TokenStream) -> (TokenStream, bool) {
+    let trees: Vec<TokenTree> = stream.into_iter().collect();
+    if let Some((start, end)) = closure_range(&trees) {
+        let mut out = TokenStream::new();
+        out.extend(trees[..start].iter().cloned());
+        out.extend(
+            "[1, 2].into_iter().map"
+                .parse::<TokenStream>()
+                .expect("the prefix parses"),
+        );
+        out.extend([TokenTree::Group(Group::new(
+            Delimiter::Parenthesis,
+            trees[start..end].iter().cloned().collect(),
+        ))]);
+        out.extend(trees[end..].iter().cloned());
+        return (out, true);
+    }
+    let mut out = TokenStream::new();
+    let mut found = false;
+    for tree in trees {
+        match tree {
+            TokenTree::Group(group) if !found => {
+                let (inner, hit) = wrap_closure(group.stream());
+                found |= hit;
+                let mut rebuilt = Group::new(group.delimiter(), inner);
+                rebuilt.set_span(group.span());
+                out.extend([TokenTree::Group(rebuilt)]);
+            }
+            other => out.extend([other]),
+        }
+    }
+    (out, found)
+}
+
+/// The token-tree run of a closure written `|..| { .. }`, as a
+/// half-open range into `trees`.
+fn closure_range(trees: &[TokenTree]) -> Option<(usize, usize)> {
+    let open = trees.iter().position(is_pipe)?;
+    let close = trees[open + 1..].iter().position(is_pipe)? + open + 1;
+    match trees.get(close + 1)? {
+        TokenTree::Group(group) if group.delimiter() == Delimiter::Brace => Some((open, close + 2)),
+        _ => None,
+    }
+}
+
+fn is_pipe(tree: &TokenTree) -> bool {
+    matches!(tree, TokenTree::Punct(punct) if punct.as_char() == '|')
 }

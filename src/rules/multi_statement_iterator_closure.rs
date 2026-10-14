@@ -31,7 +31,8 @@ declare_tool_lint! {
     /// left alone. Callbacks inside macro arguments are also left alone.
     /// A macro invocation inside a checked callback counts once, regardless
     /// of its expansion. A callback the author wrote is still measured inside
-    /// a function whose signature an attribute macro rebuilt. Test code
+    /// a function whose signature an attribute macro rebuilt, and left alone
+    /// where a macro emitted the call around it. Test code
     /// follows the same policy as production code.
     ///
     /// Projects differ on whether several steps belong inline or in a
@@ -152,7 +153,15 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         if callback.hir_id != expr.hir_id {
             return;
         }
-        if callback.span.from_expansion() {
+        // Neither the callback nor the call may come from an expansion.
+        // The callback's own span is the usual question. The call's
+        // catches a macro that emits an iterator call around a closure
+        // the author wrote, where the callback's span is the author's
+        // and so answers nothing: synthesised tokens carry the
+        // expansion's context by default. A macro in the *receiver*
+        // leaves the call's span the author's, so
+        // `vec![1, 2].into_iter().map(..)` is still measured.
+        if callback.span.from_expansion() || call.span.from_expansion() {
             return;
         }
         // A call's span is built by the parser from the tokens the

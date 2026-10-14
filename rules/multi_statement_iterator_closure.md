@@ -25,7 +25,8 @@ iterators, asynchronous streams, and macro-generated closures are
 left alone. Callbacks inside macro arguments are also left alone.
 A macro invocation inside a checked callback counts once, regardless
 of its expansion. A callback the author wrote is still measured inside
-a function whose signature an attribute macro rebuilt. Test code
+a function whose signature an attribute macro rebuilt, and left alone
+where a macro emitted the call around it. Test code
 follows the same policy as production code.
 
 Projects differ on whether several steps belong inline or in a
