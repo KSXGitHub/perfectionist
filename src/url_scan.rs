@@ -11,7 +11,7 @@
 //!
 //! The grammar is deliberately small — a scheme run, a non-whitespace
 //! body, optional trailing punctuation classification — per the
-//! parser-combinator convention in
+//! parser-style convention in
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. No regex.
 
 /// Result of [`take_url`]: a `&str` slice covering the URL body and
