@@ -42,44 +42,55 @@ pub(super) fn iterator_callback<'tcx>(
     Some((name, arguments.last()?))
 }
 
+/// Every method on the standard `Iterator` trait that takes a
+/// callback, grouped by what the callback does.
+const CALLBACK_METHODS: &[&str] = &[
+    // Transforming.
+    "map",
+    "filter_map",
+    "flat_map",
+    "map_while",
+    "map_windows",
+    "scan",
+    // Filtering.
+    "filter",
+    "skip_while",
+    "take_while",
+    // Visiting.
+    "inspect",
+    "for_each",
+    "try_for_each",
+    // Generating.
+    "intersperse_with",
+    // Reducing.
+    "fold",
+    "try_fold",
+    "reduce",
+    "try_reduce",
+    // Searching.
+    "find",
+    "find_map",
+    "try_find",
+    "position",
+    "rposition",
+    "any",
+    "all",
+    // Partitioning.
+    "partition",
+    "partition_in_place",
+    "is_partitioned",
+    // Comparing.
+    "min_by",
+    "max_by",
+    "min_by_key",
+    "max_by_key",
+    "cmp_by",
+    "partial_cmp_by",
+    "eq_by",
+    "is_sorted_by",
+    "is_sorted_by_key",
+];
+
 fn has_callback(name: &str) -> bool {
-    matches!(
-        name,
-        "map"
-            | "filter"
-            | "filter_map"
-            | "flat_map"
-            | "map_while"
-            | "map_windows"
-            | "scan"
-            | "inspect"
-            | "intersperse_with"
-            | "skip_while"
-            | "take_while"
-            | "for_each"
-            | "try_for_each"
-            | "fold"
-            | "try_fold"
-            | "reduce"
-            | "try_reduce"
-            | "find"
-            | "find_map"
-            | "try_find"
-            | "any"
-            | "all"
-            | "position"
-            | "rposition"
-            | "partition"
-            | "partition_in_place"
-            | "is_partitioned"
-            | "min_by"
-            | "max_by"
-            | "min_by_key"
-            | "max_by_key"
-            | "cmp_by"
-            | "partial_cmp_by"
-            | "eq_by"
-            | "is_sorted_by"
-            | "is_sorted_by_key",
-    )
+    CALLBACK_METHODS.contains(&name)
 }
