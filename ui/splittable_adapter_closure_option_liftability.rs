@@ -6,8 +6,9 @@
 // the adapter, and a stage whose result borrows.
 //
 // Where the guard-and-value split is declined the chain trigger may still
-// have one, so a Bad case here is followed by the Good form of whichever
-// trigger reported it.
+// have one, and taking that one can admit the split the first trigger
+// declined. So a Good case here is the form no trigger reports, which for
+// a moved item means taking both splits.
 
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
@@ -51,34 +52,57 @@ impl Tick {
     }
 }
 
-// Bad: the guard-and-value split lifts a guard into a `filter`, which
-// hands the item by reference, so a guard that moves it is `E0308`. The
-// chain trigger's leading `map` hands it over, so the two calls split that
-// way instead.
+// Bad: a guard that moves the item is `E0308` once lifted into a `filter`,
+// which hands the item by reference, so the guard-and-value split is
+// declined and the chain trigger's leading `map` is what reports.
 fn guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.filter_map(|name| consume(name).then_some(1)).collect()
 }
 
-// Good: the chain's split, whose leading `map` hands the item over.
-fn split_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+// Bad: the chain trigger's split, whose leading `map` hands the item over
+// and leaves the next adapter a `bool` item. A `filter` may take that by
+// reference, so the guard-and-value split a moved item declines is
+// available on this form.
+fn chain_split_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names
         .map(consume)
         .filter_map(|flag| flag.then_some(1))
         .collect()
 }
 
-// Bad: a `map_while` guard lifts into a `take_while`, which hands the item
-// by reference where `map_while` hands it over.
+// Good: both splits taken, the guard filtering and the value mapping.
+fn split_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names
+        .map(consume)
+        .filter(|flag| *flag)
+        .map(|_| 1)
+        .collect()
+}
+
+// Bad: a guard that moves the item is `E0308` once lifted into a
+// `take_while`, which hands the item by reference where `map_while` hands
+// it over, so the chain trigger's leading `map` is what reports.
 fn prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names.map_while(|name| consume(name).then_some(1)).collect()
 }
 
-// Good: one adapter per half, the guard in the `take_while` that stops the
-// run where the folded form stopped it.
-fn split_prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+// Bad: the chain trigger's split, whose leading `map` leaves `map_while` a
+// `bool` item. A `take_while` may take that by reference, so the
+// guard-and-value split a moved item declines is available on this form.
+fn chain_split_prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
     names
         .map(consume)
         .map_while(|flag| flag.then_some(1))
+        .collect()
+}
+
+// Good: both splits taken, the guard in the `take_while` that stops the run
+// where the folded form stopped it and the value in a `map`.
+fn split_prefix_guard_moves_the_item(names: std::vec::IntoIter<String>) -> Vec<usize> {
+    names
+        .map(consume)
+        .take_while(|flag| *flag)
+        .map(|_| 1)
         .collect()
 }
 
