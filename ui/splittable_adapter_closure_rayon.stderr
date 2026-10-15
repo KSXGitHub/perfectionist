@@ -179,6 +179,66 @@ LL -     items.find_any(|text| wanted(text) && text.starts_with('#'))
 LL +     items.filter(|text| wanted(text)).find_any(|text| text.starts_with('#'))
    |
 
+warning: this closure chains 3 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
+   |
+LL |     items.filter_map(|text| text.trim().parse::<usize>().ok())
+   |           ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.filter_map(|text| text.trim().parse::<usize>().ok())
+LL +     items.map(str::trim).map(str::parse::<usize>).filter_map(Result::ok)
+   |
+
+warning: this closure chains 3 steps onto the item, so `flat_map` does all of them
+  --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
+   |
+LL |     items.flat_map(|text| text.trim().as_bytes().to_vec())
+   |           ^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.flat_map(|text| text.trim().as_bytes().to_vec())
+LL +     items.map(str::trim).map(str::as_bytes).flat_map(|/* name */| /* name */.to_vec())
+   |
+
+warning: this closure chains 2 steps onto the item, so `flat_map_iter` does all of them
+  --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
+   |
+LL |     items.flat_map_iter(|text| text.trim().bytes())
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.flat_map_iter(|text| text.trim().bytes())
+LL +     items.map(str::trim).flat_map_iter(str::bytes)
+   |
+
+warning: this closure chains 3 steps onto the item, so `try_for_each` does all of them
+  --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
+   |
+LL |     items.try_for_each(|text| text.trim().parse::<usize>().map(drop))
+   |           ^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.try_for_each(|text| text.trim().parse::<usize>().map(drop))
+LL +     items.map(str::trim).map(str::parse::<usize>).try_for_each(|/* name */| /* name */.map(drop))
+   |
+
+warning: this closure chains 3 steps onto the item, so `partition_map` does all of them
+  --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
+   |
+LL |     items.partition_map(|text| sorted(text.trim().len()))
+   |           ^^^^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     items.partition_map(|text| sorted(text.trim().len()))
+LL +     items.map(str::trim).map(str::len).partition_map(sorted)
+   |
+
 warning: calls to `std::mem::drop` with a value that implements `Copy` does nothing
   --> $DIR/splittable_adapter_closure_rayon.rs:LL:CC
    |

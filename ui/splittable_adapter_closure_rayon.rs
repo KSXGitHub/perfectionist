@@ -2,11 +2,12 @@
 // edition:2024
 //
 // rayon's parallel adapters, which the rule identifies by path because the
-// trait carries no diagnostic item. Two things separate them from the
+// trait carries no diagnostic item. These things separate them from the
 // sequential ones: a lifted step's result has to cross a thread, so it must
-// be `Send`, and the methods come in `_any` / `_first` / `_last` flavours
-// that differ in which item's answer wins rather than in what the closure
-// is handed.
+// be `Send`; the methods come in `_any` / `_first` / `_last` flavours that
+// differ in which item's answer wins rather than in what the closure is
+// handed; and `flat_map_iter` sits beside `flat_map`, for flattening what
+// can only be walked in sequence.
 //
 // The crate is not in the driver's sysroot, so a stub stands in for it,
 // carrying only the methods these cases call.
@@ -23,10 +24,19 @@
 extern crate rayon;
 
 use rayon::prelude::*;
+use std::num::ParseIntError;
 use std::rc::Rc;
 
 fn wanted(text: &str) -> bool {
     !text.is_empty()
+}
+
+fn sorted(length: usize) -> Either<usize, usize> {
+    if length > 0 {
+        Either::Left(length)
+    } else {
+        Either::Right(0)
+    }
 }
 
 // Bad: a parallel adapter, which splits the way the sequential one
@@ -78,7 +88,10 @@ fn not_sendable(items: Parallel<&'static str>) -> Parallel<usize> {
 
 // Not flagged: the guard-and-value trigger reads `Iterator`'s own
 // `filter_map` alone, and what each combinator hands its work to was tabled
-// for `Iterator`, so rayon's is left to the chain trigger.
+// for `Iterator`, so rayon's is left to the chain trigger. The chain
+// trigger declines this body in turn, the guard and the value each naming
+// the item, which leaves the later mention nothing to name once each step
+// has a closure of its own.
 fn parallel_guarded(items: Parallel<&'static str>) -> Vec<usize> {
     items
         .filter_map(|text| wanted(text).then(|| text.len()))
@@ -239,6 +252,75 @@ fn split_parallel_found(items: Parallel<&'static str>) -> Option<&'static str> {
     items
         .filter(|text| wanted(text))
         .find_any(|text| text.starts_with('#'))
+}
+
+// Bad: rayon's `filter_map` drops the items its closure answers `None`
+// with, and hands the closure the item by value, so the steps before that
+// answer lift.
+fn parallel_filter_map(items: Parallel<&'static str>) -> Parallel<usize> {
+    items.filter_map(|text| text.trim().parse::<usize>().ok())
+}
+
+// Good: one adapter per step, `filter_map` left the dropping.
+fn split_parallel_filter_map(items: Parallel<&'static str>) -> Parallel<usize> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .filter_map(Result::ok)
+}
+
+// Bad: `flat_map` flattens what its closure answers with, which is one
+// more thing done to the item rather than something done to the stream.
+fn parallel_flat_map(items: Parallel<&'static str>) -> Parallel<u8> {
+    items.flat_map(|text| text.trim().as_bytes().to_vec())
+}
+
+// Good: one adapter per step, `flat_map` left the flattening.
+fn split_parallel_flat_map(items: Parallel<&'static str>) -> Parallel<u8> {
+    items
+        .map(str::trim)
+        .map(str::as_bytes)
+        .flat_map(|bytes| bytes.to_vec())
+}
+
+// Bad: `flat_map_iter` flattens a sequential walk rather than a parallel
+// one, and hands its closure the item the way `flat_map` does.
+fn parallel_flat_map_iter(items: Parallel<&'static str>) -> Parallel<u8> {
+    items.flat_map_iter(|text| text.trim().bytes())
+}
+
+// Good: one adapter per step, `flat_map_iter` left the flattening.
+fn split_parallel_flat_map_iter(items: Parallel<&'static str>) -> Parallel<u8> {
+    items.map(str::trim).flat_map_iter(str::bytes)
+}
+
+// Bad: `try_for_each` consumes in parallel and can stop early, its item
+// entering by value and never coming back out.
+fn parallel_try_each(items: Parallel<&'static str>) -> Result<(), ParseIntError> {
+    items.try_for_each(|text| text.trim().parse::<usize>().map(drop))
+}
+
+// Good: one adapter per step, `try_for_each` left the consuming.
+fn split_parallel_try_each(items: Parallel<&'static str>) -> Result<(), ParseIntError> {
+    items
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .try_for_each(|parsed| parsed.map(drop))
+}
+
+// Bad: `partition_map` sorts each item into one of two collections by the
+// `Either` its closure answers with, which is a value it makes rather than
+// the item handed back.
+fn parallel_partition(items: Parallel<&'static str>) -> (Vec<usize>, Vec<usize>) {
+    items.partition_map(|text| sorted(text.trim().len()))
+}
+
+// Good: one adapter per step, `partition_map` left the sorting.
+fn split_parallel_partition(items: Parallel<&'static str>) -> (Vec<usize>, Vec<usize>) {
+    items
+        .map(str::trim)
+        .map(str::len)
+        .partition_map(sorted)
 }
 
 fn main() {}

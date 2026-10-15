@@ -1,6 +1,8 @@
 // A stand-in for `rayon::iter::ParallelIterator`, carrying only the
 // adapters the rule names. The names differ from the sequential set the
 // way rayon's do: there is no `scan`, no `map_while` and no `rposition`;
+// there is a `flat_map_iter` beside `flat_map`, for flattening what can
+// only be walked in sequence;
 // there is a `position_any` / `position_first` / `position_last` trio,
 // declared on the `IndexedParallelIterator` subtrait as upstream declares
 // them, a `find_map_any` / `find_map_first` / `find_map_last` trio in
@@ -23,6 +25,38 @@
 pub mod iter {
     /// A stand-in receiver, which no `Iterator` impl covers.
     pub struct Parallel<Item>(pub Vec<Item>);
+
+    /// A stand-in for upstream's trait of the same name, which is what
+    /// tells `flat_map` from `flat_map_iter`: one flattens what can be
+    /// walked in parallel and the other what can be walked in sequence.
+    pub trait IntoParallelIterator {
+        type Item: Send;
+
+        fn into_par_iter(self) -> Parallel<Self::Item>;
+    }
+
+    impl<Item: Send> IntoParallelIterator for Parallel<Item> {
+        type Item = Item;
+
+        fn into_par_iter(self) -> Parallel<Item> {
+            self
+        }
+    }
+
+    impl<Item: Send> IntoParallelIterator for Vec<Item> {
+        type Item = Item;
+
+        fn into_par_iter(self) -> Parallel<Item> {
+            Parallel(self)
+        }
+    }
+
+    /// A stand-in for the `either` crate's type of that name, which
+    /// upstream's `partition_map` answers with.
+    pub enum Either<Left, Right> {
+        Left(Left),
+        Right(Right),
+    }
 
     pub trait ParallelIterator: Sized + Send {
         type Item: Send;
@@ -55,8 +89,6 @@ pub mod iter {
             Parallel(kept)
         }
 
-        /// Here to be left alone: the guard-and-value trigger reads
-        /// `Iterator`'s own `filter_map`, and this one is in no table.
         fn filter_map<Output: Send, Body>(self, body: Body) -> Parallel<Output>
         where
             Body: Fn(Self::Item) -> Option<Output> + Send + Sync,
@@ -70,6 +102,30 @@ pub mod iter {
             Parallel(kept)
         }
 
+        fn flat_map<Output: Send, Made, Body>(self, body: Body) -> Parallel<Output>
+        where
+            Body: Fn(Self::Item) -> Made + Send + Sync,
+            Made: IntoParallelIterator<Item = Output>,
+        {
+            let mut made = Vec::new();
+            for item in self.into_items() {
+                made.extend(body(item).into_par_iter().into_items());
+            }
+            Parallel(made)
+        }
+
+        fn flat_map_iter<Output: Send, Made, Body>(self, body: Body) -> Parallel<Output>
+        where
+            Body: Fn(Self::Item) -> Made + Send + Sync,
+            Made: IntoIterator<Item = Output>,
+        {
+            let mut made = Vec::new();
+            for item in self.into_items() {
+                made.extend(body(item));
+            }
+            Parallel(made)
+        }
+
         fn for_each<Body>(self, body: Body)
         where
             Body: Fn(Self::Item) + Send + Sync,
@@ -77,6 +133,35 @@ pub mod iter {
             for item in self.into_items() {
                 body(item);
             }
+        }
+
+        /// Upstream bounds what the closure answers with on `Try`, which
+        /// is unstable, so this one takes a `Result`. The rule reads how
+        /// the item arrives rather than what comes back.
+        fn try_for_each<Error, Body>(self, body: Body) -> Result<(), Error>
+        where
+            Body: Fn(Self::Item) -> Result<(), Error> + Send + Sync,
+        {
+            for item in self.into_items() {
+                body(item)?;
+            }
+            Ok(())
+        }
+
+        fn partition_map<Left, Right, Body>(self, body: Body) -> (Vec<Left>, Vec<Right>)
+        where
+            Body: Fn(Self::Item) -> Either<Left, Right> + Send + Sync,
+            Left: Send,
+            Right: Send,
+        {
+            let (mut left, mut right) = (Vec::new(), Vec::new());
+            for item in self.into_items() {
+                match body(item) {
+                    Either::Left(made) => left.push(made),
+                    Either::Right(made) => right.push(made),
+                }
+            }
+            (left, right)
         }
 
         fn any<Body>(self, body: Body) -> bool
@@ -218,5 +303,7 @@ pub mod iter {
 }
 
 pub mod prelude {
-    pub use super::iter::{IndexedParallelIterator, Parallel, ParallelIterator};
+    pub use super::iter::{
+        Either, IndexedParallelIterator, IntoParallelIterator, Parallel, ParallelIterator,
+    };
 }

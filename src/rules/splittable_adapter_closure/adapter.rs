@@ -237,10 +237,21 @@ fn rayon(method: Symbol) -> Option<Adapter> {
     // side splits all the same. The `position_*` trio is declared on
     // `IndexedParallelIterator`, which is why `extension` looks that up
     // too.
+    //
+    // `filter_map` is read here rather than by the guard-and-value
+    // trigger, which speaks for `Iterator`'s adapters alone. So a body
+    // that is `Option` work gets no combinator split on this family, and
+    // a body that is a chain lifts into a leading `map` as every other
+    // adapter's does.
     Some(match method.as_str() {
-        "map" | "for_each" | "any" | "all" => unary("map"),
+        "map" | "flat_map" | "flat_map_iter" | "for_each" | "try_for_each" => unary("map"),
+        "filter_map" | "find_map_any" | "find_map_first" | "find_map_last" => unary("map"),
+        "any" | "all" => unary("map"),
         "position_any" | "position_first" | "position_last" => unary("map"),
-        "find_map_any" | "find_map_first" | "find_map_last" => unary("map"),
+        // `partition_map`'s closure returns an `Either`, which is a value
+        // it makes rather than the item handed back, so the steps under it
+        // lift as any other adapter's do.
+        "partition_map" => unary("map"),
         "fold" | "try_fold" => stateful("map"),
         _ => return None,
     })
