@@ -63,8 +63,8 @@ declare_tool_lint! {
     ///   naming the item, where each test is a filtering adapter of its
     ///   own.
     /// - A body under `filter_map`, `find_map` or `map_while` that welds
-    ///   a guard to a value or runs two fallible stages, where each half
-    ///   is the adapter that does that half.
+    ///   a guard to a value or runs two or more stages, where each stage
+    ///   is the adapter that does it.
     ///
     /// A chain starts at the item and runs outwards: a method call whose
     /// receiver is the chain so far, or a call whose sole argument is it,

@@ -43,7 +43,7 @@ pub(super) fn check<'tcx>(cx: &LateContext<'tcx>, call: &Call<'tcx>) -> Option<F
         yields,
     )?;
     Some(Finding {
-        message: format!("this closure {}, so `{method}` does both", split.summary()),
+        message: split.message(method),
         help: split.help(),
         moves_the_receiver: true,
         fix: None,

@@ -11,10 +11,12 @@ use crate::binding_uses::names;
 use crate::common::{binding_hir_id, binds_mutably, borrows};
 use crate::exclusive_captures::exclusive;
 use crate::extra_reference::survives;
+use core::mem::discriminant;
 use rustc_hir::def_id::LocalDefId;
 use rustc_hir::{Expr, ExprKind, Pat};
 use rustc_lint::LateContext;
 use rustc_middle::ty;
+use rustc_span::Symbol;
 
 /// Whether the adapter yields a stream or one value.
 ///
@@ -50,7 +52,11 @@ pub(super) enum Split {
 impl Split {
     /// What the closure is doing twice, which the `Fallible` shape has no
     /// guard in.
-    pub(super) fn summary(&self) -> &'static str {
+    ///
+    /// This speaks for a body whose chain holds one seam, so the two
+    /// stages it names are the whole of that body. [`Seams::message`] is
+    /// what a longer chain is reported by.
+    fn summary(&self) -> &'static str {
         match self {
             Self::Fallible(_) => "runs two fallible stages",
             Self::Infallible => "makes a value after a stage that may fail",
@@ -61,28 +67,30 @@ impl Split {
 
     /// What to tell the reader to do, which differs by what the split
     /// hands the work to.
-    pub(super) fn help(&self) -> String {
+    ///
+    /// `every` names the seam for a chain holding more than one of this
+    /// shape, so following the help once leaves no seam behind. A chain
+    /// mixing shapes is told [`Seams::help`]'s kind-agnostic form instead,
+    /// this one naming only its own.
+    fn help(&self, every: bool) -> String {
+        let seam = if every { "each" } else { "the" };
         match self {
-            Self::Fallible(Yield::Stream) => {
-                "give the `and_then` a trailing `filter_map` of its own, so each fallible \
-                 stage is one adapter"
-                    .to_owned()
-            }
-            Self::Fallible(Yield::OneValue) => {
-                "give the stage before the `and_then` a leading `filter_map` of its own, so \
-                 each fallible stage is one adapter"
-                    .to_owned()
-            }
-            Self::Infallible => {
-                "give the `map` its own trailing `map`, so the adapter is left only what \
-                 can fail"
-                    .to_owned()
-            }
-            Self::Filtering => {
-                "give the `filter` its own trailing `filter`, so the adapter is left only \
-                 what it makes"
-                    .to_owned()
-            }
+            Self::Fallible(Yield::Stream) => format!(
+                "give {seam} `and_then` a trailing `filter_map` of its own, so each fallible \
+                 stage is one adapter",
+            ),
+            Self::Fallible(Yield::OneValue) => format!(
+                "give the stage before {seam} `and_then` a leading `filter_map` of its own, \
+                 so each fallible stage is one adapter",
+            ),
+            Self::Infallible => format!(
+                "give {seam} `map` its own trailing `map`, so the adapter is left only what \
+                 can fail",
+            ),
+            Self::Filtering => format!(
+                "give {seam} `filter` its own trailing `filter`, so the adapter is left only \
+                 what it makes",
+            ),
             Self::Guarded(discipline) => format!(
                 "lift the guard into a leading `{}` and let a `map` make the value, so \
                  neither adapter does both",
@@ -92,8 +100,93 @@ impl Split {
     }
 }
 
-/// The split `body` admits under `discipline`, or `None` where it admits
-/// none.
+/// The seams the closure's chain holds: the shape the outermost one takes,
+/// and how far the chain below it runs.
+///
+/// A seam is a boundary the split can hand work across, so the count is
+/// what the closure would have to be rewritten into: a body of one seam
+/// becomes two adapters, and each further seam one more.
+pub(super) struct Seams {
+    /// The shape of the seam the body ends in, which is the one every
+    /// [`Split`] form is named for.
+    outermost: Split,
+    /// The innermost receiver plus every seam above it. A body holding one
+    /// seam counts 2, which is the case each [`Split`] form's own text
+    /// speaks for.
+    stages: usize,
+    /// Whether every seam takes `outermost`'s shape, which is what lets
+    /// that shape's lift target be named for all of them at once.
+    alike: bool,
+}
+
+impl Seams {
+    /// What to report, naming `adapter` as the one doing the stages.
+    pub(super) fn message(&self, adapter: Symbol) -> String {
+        match self.stages {
+            2 => format!(
+                "this closure {}, so `{adapter}` does both",
+                self.outermost.summary(),
+            ),
+            stages => format!("this closure runs {stages} stages, so `{adapter}` does all of them"),
+        }
+    }
+
+    /// What to tell the reader to do, which has to leave no seam behind:
+    /// a help the reader can follow and be reported again is advice that
+    /// did not finish.
+    pub(super) fn help(&self) -> String {
+        match (self.stages, self.alike) {
+            (2, _) => self.outermost.help(false),
+            (_, true) => self.outermost.help(true),
+            // A chain of unalike seams has a lift target per seam rather
+            // than one for all of them, and naming the outermost one's
+            // would leave the rest unaccounted for.
+            (_, false) => {
+                "give each stage an adapter of its own, so no adapter runs two".to_owned()
+            }
+        }
+    }
+}
+
+/// The seams `body`'s chain holds under `discipline`, or `None` where it
+/// holds none.
+///
+/// Only the seams that are themselves splittable are counted, each by the
+/// same check the outermost one passes. A seam the check declines ends the
+/// walk rather than being counted and left out of the help, so the help
+/// promises no split that would not compile: a chain whose inner stage
+/// borrows is reported as the one seam above it, not as the whole chain.
+pub(super) fn split<'tcx>(
+    cx: &LateContext<'tcx>,
+    body: &'tcx Expr<'tcx>,
+    closure: LocalDefId,
+    parameter: &'tcx Pat<'tcx>,
+    discipline: Discipline,
+    yields: Yield,
+) -> Option<Seams> {
+    let outermost = seam(cx, body, closure, parameter, discipline, yields)?;
+    let (mut stages, mut alike, mut current) = (2, true, body);
+    while let ExprKind::MethodCall(_, receiver, _, _) = current.kind {
+        // Every seam below the outermost sits under the adapter the
+        // outermost split leaves in front of it, and that one yields a
+        // stream whichever way the adapter being split yields: the leading
+        // adapter a one-value split calls for is a `filter_map`.
+        let Some(inner) = seam(cx, receiver, closure, parameter, discipline, Yield::Stream) else {
+            break;
+        };
+        stages += 1;
+        alike &= discriminant(&inner) == discriminant(&outermost);
+        current = receiver;
+    }
+    Some(Seams {
+        outermost,
+        stages,
+        alike,
+    })
+}
+
+/// The split the seam `body` ends in admits under `discipline`, or `None`
+/// where it admits none.
 ///
 /// The receiver has to name the item in every form: it is the stage the
 /// adapter keeps, and a receiver naming no item asks the same question
@@ -103,7 +196,7 @@ impl Split {
 /// value becomes a `map` over the item, so it may; every other form's
 /// argument becomes the closure of an adapter handed the stage before
 /// it, where the item is out of scope.
-pub(super) fn split<'tcx>(
+fn seam<'tcx>(
     cx: &LateContext<'tcx>,
     body: &'tcx Expr<'tcx>,
     closure: LocalDefId,
