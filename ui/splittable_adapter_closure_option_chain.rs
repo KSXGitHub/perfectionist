@@ -103,7 +103,8 @@ fn split_guarded(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter(|line| wanted(line)).map(|line| render(line)).collect()
 }
 
-// Bad: `then_some` is the same guard with the value already in hand.
+// Bad: `then_some` holds the guard with the value already in hand rather
+// than in a closure.
 fn guarded_by_value(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| wanted(line).then_some(1)).collect()
 }

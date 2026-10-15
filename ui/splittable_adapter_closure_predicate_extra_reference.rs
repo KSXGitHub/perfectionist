@@ -131,8 +131,8 @@ fn trait_method_on_the_receiver(rows: Vec<[u8; 4]>) -> bool {
         .any(|row| row.into_iter().any(|byte| byte == 0) && row.first().is_some())
 }
 
-// Not flagged: `Clone for &T` is the same interception, handing back the
-// reference where the item's own `clone` hands back a value.
+// Not flagged: `Clone for &T` intercepts the call one reference up, handing
+// back the reference where the item's own `clone` hands back a value.
 fn clone_on_the_receiver(words: Vec<String>) -> bool {
     words
         .iter()
@@ -153,8 +153,8 @@ fn dyn_parameter(items: Vec<Concrete>) -> bool {
 }
 
 // Not flagged: a reference parameter naming a type parameter is no
-// coercion site either, the extra reference being inferred into the
-// parameter instead of coerced away.
+// coercion site, the extra reference being inferred into the parameter
+// instead of coerced away.
 fn generic_reference_parameter(words: Vec<String>, allowed: &HashSet<String>) -> bool {
     words
         .iter()

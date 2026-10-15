@@ -97,7 +97,7 @@ fn split_piped_as_reference(value: String) -> usize {
 }
 
 // Bad: `pipe_as_mut` converts through `AsMut`, the mutable counterpart of
-// the same conversion.
+// `AsRef`.
 fn piped_as_mutable(mut value: String) -> usize {
     value.pipe_as_mut(|text: &mut str| text.trim().len())
 }

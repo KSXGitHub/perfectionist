@@ -73,7 +73,7 @@ fn split_either(items: Parallel<&'static str>) -> bool {
         .any(|text| text.starts_with('#'))
 }
 
-// Bad: `find` is lent the item for the same kind of reason, and the
+// Bad: `find` is lent the item rather than handed it, as `any` is, and the
 // conjunction has the split.
 fn found(items: Parallel<&'static str>) -> Option<&'static str> {
     items.find(|text| wanted(text) && text.starts_with('#'))
