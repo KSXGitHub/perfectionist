@@ -8,6 +8,137 @@ its error in the same step; the suggestion rewrote it so that each
 adapter did one thing. Neither style guide covers this, so the wording
 below is the catalogue's own rather than a quotation.
 
+## Status
+
+One rule implements this file's three triggers, in
+[`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs)
+and the trigger modules beside it. Three rules were tried first and read
+wrong against
+[One rule per file, one `Config` per rule](../CLAUDE.md#one-rule-per-file-one-config-per-rule):
+that section asks whether the sub-checks can be *cleanly separated*, and
+these cannot. They share the family table and the gates on captures,
+receiver moves and the extra reference a lifted test is handed; their
+configuration is disjoint only because all three have none; and the
+adapters whose closure returns an `Option` are a seam both the chain and
+the guard-and-value trigger have a split for, so which trigger answers is
+a question about what the closure holds rather than about which adapter
+holds it.
+
+| trigger         | module                                                                       | a lifted part goes into                          |
+|-----------------|------------------------------------------------------------------------------|--------------------------------------------------|
+| guard and value | [`option_chain.rs`](../src/rules/splittable_adapter_closure/option_chain.rs) | the combinator's counterpart, discipline-matched |
+| predicate       | [`predicate.rs`](../src/rules/splittable_adapter_closure/predicate.rs)       | `filter` or `take_while`, by discipline          |
+| chain           | [`step_chain.rs`](../src/rules/splittable_adapter_closure/step_chain.rs)     | the adapter mapping the item's channel           |
+
+The triggers are asked in that order and the first finding wins.
+
+Families reached: `Iterator`, `DoubleEndedIterator`, `Option`, `Result`,
+`Poll`, `ControlFlow`, `Itertools`, `ParallelIterator`, `Pipe` and
+`orx-parallel`'s own.
+
+The last is read from the signatures its methods are declared with rather
+than from a table of names, which
+[`src/rules/splittable_adapter_closure/signature.rs`](../src/rules/splittable_adapter_closure/signature.rs)
+is about. A table is a copy of a dependency's API: `orx-parallel` renamed its
+trait from `ParIter` to `Par`, dropped `take_while` and `map_while` and gained
+`fold` across one major release, and a copy would have stopped matching
+silently. What did not change is how each closure is declared, which is what
+the rule needs, so the reading answers both generations. `ui/auxiliary/`
+carries a stub per generation and a fixture apiece holds the rule to each,
+the way the `command-extra` stubs do for the rules naming that trait.
+
+Narrower than this file describes, each narrowing measured against this
+crate's own source:
+
+- **`Result::map_or_else`'s error closure is left alone.** It takes one
+  closure per channel, as [`Option` and `Result`](#option-and-result)
+  records, and the table holds one adapter per name, so the value closure
+  is the one read.
+- **Comparisons that all bound one quantity stay folded.** A comparison is
+  a bound rather than a question, and bounds on one quantity are how Rust
+  spells one test, so each gets no adapter of its own. Which side of the
+  operator the quantity falls on is not asked, and a quantity read twice
+  through a call counts as one, so `line.len() > 3 && line.len() < 80` is
+  the one length range it reads as. Bounds on two quantities ask two
+  questions and do split, as does one comparison among named questions.
+- **Liftability asks about a step's own receiver** rather than the item,
+  which [When a step can be lifted](#when-a-step-can-be-lifted) is about:
+  the item is the receiver of the first step alone, and a step applied to
+  an owned value declines however safe the borrow its result carries,
+  since the regions in typeck results are erased. What the step's
+  *arguments* could lend is read from the declared signature instead,
+  where they are not.
+- **The guard-and-value trigger declines a stage whose result borrows.**
+  The stage that stays becomes the next adapter's item, so a borrow leaves
+  the closure with it, and the erased regions make a borrow of the item
+  indistinguishable from one that outlives the closure. A stage returning
+  `Option<&str>` is the cost, and the cost is in which split is offered
+  rather than in silence: the chain trigger reads the same body as two
+  steps.
+- **The guard-and-value trigger counts every split as moving the
+  receiver**, where only a leading lift does. The shapes lifting work to
+  the right hand the receiver to the adapter that already had it, so
+  `find_map`, the one adapter among the three taking its receiver by
+  reference, declines a receiver named again for a split that would not
+  have moved it.
+- **A borrowing adapter whose receiver is named again is declined**
+  rather than suggesting the reborrow of
+  [Which adapters](#which-adapters), which is the cheaper error that
+  section asks for. A split whose head keeps the folded method borrows the
+  receiver where the folded form did, so the piping methods that hand a
+  borrow are not declined for it.
+- **A family read from signatures is given no prefix discipline.** A
+  prefix-shaped adapter and a set-shaped one are both declared
+  `Fn(&Item) -> bool`, so for such a family the name is all there is, and
+  the name is borrowed from `Iterator`. `orx-parallel` declares a
+  `take_while` under it whose result its own docs call not always
+  deterministic under parallel execution, deterministic only where the
+  result is collected in order, and splitting a conjunction there makes two
+  truncation points out of one. So the prefix discipline stays with the
+  families tabled method by method, whose adapters and exclusions were each
+  measured against the real crate.
+- **rayon's table lists more than this file measured.** The sample in
+  [Rayon's parallel adapters](#rayons-parallel-adapters) is seven adapters;
+  the implementation tables every one whose closure takes the item by
+  value, which rayon's own source puts at twelve, `flat_map_iter` and
+  `partition_map` among them.
+
+Not implemented, and the rest of this file is their active spec:
+
+- No autofix for the guard-and-value shape, which has more than one
+  reasonable text, nor for a chain under an adapter that keeps the method at
+  the head, which puts the leading step in its own method.
+- Both `## Deferred` sections below.
+
+The autofixes that are implemented differ from what this file asks for, each
+difference deliberate:
+
+- A conjunction is applied as one adapter per test, each keeping the closure
+  the test was written in, with
+  `clippy::redundant_closure_for_method_calls` left to reduce the ones that
+  reduce. Nothing in `clippy::all`, `pedantic`, `nursery` or `restriction`
+  asks for the closure form back, so the two fixes compose in that order and
+  stop.
+- A chain is applied as one adapter per step, each step named as the function
+  it already is. Reusing the item's name was tried and rejected: only the
+  first step is handed the item, so `|line| line.len()` above a `trim` binds
+  a length to a name meaning a line. A step that cannot be named declines to
+  a closure over the item where it is the first, and to a placeholder for the
+  reader above that, which is offered rather than applied. The path form is
+  only taken where the method's self type has the borrow depth and the base
+  type the receiver has, which is what keeps an item of `String` away from
+  the `str::len` it reaches through a deref, and where the name it would be
+  written as resolves where the chain sits -- a name needing an import is
+  offered alongside the `use` lines that would make it resolve, rather than
+  written as a path nobody writes by hand.
+- A chain under an adapter taking the whole chain, `fold` among them, is
+  applied by editing the closure rather than replacing it: the accumulator
+  parameter and the body around the chain are the reader's and stay, while the
+  item's parameter and the chain become the lifted value. The name for that
+  value is the reader's too, the item's own name having described what the
+  chain was handed rather than what it produces, so a placeholder stands in
+  and the rewrite is offered rather than applied.
+
 ## Statement
 
 An adapter should do one thing. A closure doing several makes one
@@ -327,11 +458,15 @@ What it lifts into is not `map` but the adapter that filters with the
 **same discipline**. These are the disciplines that turned up, and
 they decide everything:
 
-| discipline | what the adapter's answer depends on | adapters | lift target |
-|---|---|---|---|
-| **set** | which items satisfy the predicate, and nothing else | `filter`, `find`, `rfind`, `any`, `Option::filter`, `Option::is_some_and`, rayon `filter` / `find_first` / `any` | `filter` |
-| **prefix** | the leading run that satisfies it | `take_while`, `map_while` | `take_while` |
-| **neither** | the items a filter would drop, or where they sat | `all`, `Option::is_none_or`, `position`, `rposition`, `partition`, `skip_while` | none |
+| discipline | what the adapter's answer depends on | adapters | a test lifts into | a stage lifts into |
+|---|---|---|---|---|
+| **set** | which items satisfy the predicate, and nothing else | `filter`, `find`, `rfind`, `any`, `Option::filter`, `Option::is_some_and`, rayon `filter` / `find_first` / `any` | `filter` | `filter_map` |
+| **prefix** | the leading run that satisfies it | `take_while`, `map_while` | `take_while` | `map_while` |
+| **neither** | the items a filter would drop, or where they sat | `all`, `Option::is_none_or`, `position`, `rposition`, `partition`, `skip_while` | none | none |
+
+A stage that may fail drops its item where it fails, so it answers to this
+constraint exactly as a test does, and the adapter it lifts into is the one
+that drops the same way.
 
 Measured over `1..=8`, keeping the even multiples of three:
 
@@ -390,12 +525,15 @@ an `Option`, and what splits is the chain of `Option` combinators
 inside it: each has an iterator adapter that does the same thing, and
 the split hands the work over.
 
-| inside the closure         | becomes      |
-|----------------------------|--------------|
-| `Option::and_then`         | `filter_map` |
-| `Option::map`              | `map`        |
-| `Option::filter`           | `filter`     |
-| `bool::then` / `then_some` | `filter`, with the value going on to `map` |
+| inside the closure         | under a set-shaped adapter | under a prefix-shaped one |
+|----------------------------|----------------------------|---------------------------|
+| `Option::and_then`         | `filter_map`               | `map_while`               |
+| `Option::map`              | `map`                      | `map`                     |
+| `Option::filter`           | `filter`                   | `take_while`              |
+| `bool::then` / `then_some` | `filter`, with the value going on to `map` | `take_while`, with the value going on to `map` |
+
+The `map` row is the one that does not move between the columns, a trailing
+`map` dropping nothing and so suiting either discipline.
 
 ```rust
 // Avoid
@@ -415,12 +553,14 @@ Measured over `1..=8`: `and_then` gives `[61]` either way, `map`
 `Some(61)` either way.
 
 **The lifted adapter has to share the discipline of the one it goes in
-front of.** `filter_map` is set-shaped, so it may precede another
-set-shaped adapter and not a prefix-shaped one. Over `[6, 3, 12]`, a
-`map_while` whose closure ends in `and_then` gives `[61]` folded and
-`[61, 121]` split, because the lifted `filter_map` drops the very item
-that would have stopped it. `map_while`'s own guard splits into a
-`take_while` instead:
+front of**, which picks its name rather than deciding whether it exists.
+Over `[6, 3, 12]`, a `map_while` whose closure ends in `and_then` gives
+`[61]` folded and `[61, 121]` through a lifted `filter_map`, because that
+one drops the very item that would have stopped the run. The adapter that
+stops where `map_while` stops is a second `map_while`, and the split is
+into that: `map_while(parse).map_while(validate)`, measured equal to the
+folded form over inputs putting each stage's failure on either side of the
+other's. `map_while`'s own guard goes into a `take_while`:
 
 ```rust
 // Avoid
@@ -630,9 +770,16 @@ The differences from the sequential set:
 
 - **The names.** There is no `scan`, no `map_while` and no
   `rposition`; there is `position_any`, and `find_map_any` /
-  `find_map_first` / `find_map_last` in place of `find_map`. `fold`
-  yields per-chunk accumulators rather than one value, and its item
-  side splits all the same.
+  `find_map_first` / `find_map_last` in place of `find_map`, and a
+  `flat_map_iter` beside `flat_map` for flattening what can only be
+  walked in sequence. `fold` yields per-chunk accumulators rather than
+  one value, and its item side splits all the same.
+- **No prefix-shaped adapter at all.** `take_any_while` and
+  `skip_any_while` take items from *anywhere*, which upstream's own
+  example asserts by `result.len() <= 50` rather than by equality, so
+  they are a third discipline and get no lift target. The table in
+  [Splitting a predicate](#splitting-a-predicate) covers rayon's
+  set-shaped adapters alone for that reason.
 - **A lifted step's result must be `Send`.** `ParallelIterator::map`
   requires it of the item it produces; the folded form does not,
   because the value never leaves the closure:

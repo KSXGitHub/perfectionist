@@ -17,7 +17,8 @@ fn every_case_and_fixture_file_is_on_the_page() {
     let names = |suffix: &str| {
         let mut found: Vec<String> = fs::read_dir(dir)
             .unwrap_or_else(|error| panic!("failed to read {dir}: {error}"))
-            .map(|entry| entry.expect("failed to read a directory entry").file_name())
+            .map(|entry| entry.expect("failed to read a directory entry"))
+            .map(|entry| entry.file_name())
             .map(|name| name.to_string_lossy().into_owned())
             .filter(|name| name.ends_with(suffix))
             .collect();

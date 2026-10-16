@@ -1,0 +1,26 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_option_no_split.rs:LL:CC
+   |
+LL |     lines.map(|line| parse(line).map(double)).collect()
+   |           ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.map(|line| parse(line).map(double)).collect()
+LL +     lines.map(parse).map(|/* name */| /* name */.map(double)).collect()
+   |
+
+warning: this closure chains 4 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_no_split.rs:LL:CC
+   |
+LL |         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
+   |          ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|line| line.trim().parse::<usize>().map(double).ok())
+LL +         .map(str::trim).map(str::parse::<usize>).map(|/* name */| /* name */.map(double)).filter_map(Result::ok)
+   |
+
+warning: N warnings emitted
