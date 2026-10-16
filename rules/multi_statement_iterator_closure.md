@@ -11,24 +11,24 @@
 
 Flags inline callbacks to standard `Iterator` methods whose bodies
 contain more top-level statements than `max_statements` permits.
-A tail expression counts as a statement. Comments, line wrapping,
-and empty semicolons do not count. A single expression stays one even
-when it contains a `match`, an `if`, or a nested block. A body behind
-parentheses or an `async`, `gen`, `try` or `const` wrapper is counted
-through, as an `unsafe` or labelled block is.
+The value the body produces, written without a semicolon, counts
+as a statement. A macro invocation counts as one statement, even
+when it expands to nothing. Comments, line wrapping, and empty
+semicolons do not count. A single expression stays one even when
+it contains a `match`, an `if`, or a nested block. A body behind
+parentheses or an `async`, `gen`, `try` or `const` wrapper is
+counted through, as an `unsafe` or labelled block is.
 
 The check covers transforming, filtering, visiting, generating and
 reducing callbacks, in method calls and qualified calls such as
-`Iterator::map`. Named callbacks, custom methods with the same
-names, parallel iterators and asynchronous streams are left alone.
-Test code follows the same policy as production code.
+`Iterator::map`. A method that merely shares one of those names —
+a parallel iterator's `map`, an asynchronous stream's — is left
+alone: the rule asks the type system, not the spelling.
 
-Macro-generated closures are left alone, as are callbacks inside
-macro arguments. A macro invocation inside a checked callback
-counts once, regardless of its expansion. A callback the author
-wrote is still measured wherever a macro rewrote the code around
-it, and a call a macro assembled is left alone even where the
-closure inside it is the author's.
+A callback is measured only where the author's own source shows it
+passed to one of the covered methods. A call assembled by a macro
+is left alone, as is a callback inside a macro invocation's
+arguments.
 
 Projects differ on whether several steps belong inline or in a
 named helper, so the rule is inactive by default — enable it per
