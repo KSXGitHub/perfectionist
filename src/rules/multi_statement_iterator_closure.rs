@@ -180,13 +180,15 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
 const EXTRACTION_HELP: &str = "extract a named helper, or use an explicit loop for eager work \
                                when it preserves the required behaviour and performance";
 
-/// How to tell the fix did not work. The two shapes this rule leaves
-/// alone — a closure bound to a `let` and passed by name, and a body
-/// wrapped in one more block — both pass it with the steps still where
-/// they were.
-const MOVED_HELP: &str = "binding the same body to a `let`, or wrapping it in one more block, \
-                          silences this warning without moving the steps anywhere; name the \
-                          helper for the value it produces, not for the steps it replaces";
+/// How to tell the fix did not work, in the shape the sibling
+/// threshold rules use: a test the reader applies to the result.
+/// Naming the shapes this rule leaves alone instead — a closure bound
+/// to a `let` and passed by name, and a body wrapped in one more block
+/// — would print a working bypass under a `help:` label, where it
+/// reads as a recipe rather than as a caution.
+const MOVED_HELP: &str = "if the only name that fits the helper describes the steps rather than \
+                          the value it produces (`double_and_increment`, `parse_then_insert`), \
+                          the steps moved rather than went away";
 
 const REWRITE_NOTE: &str = "a helper can preserve a lazy chain; loop rewrites must preserve \
                             evaluation order, ownership, allocation behaviour and short-circuit \

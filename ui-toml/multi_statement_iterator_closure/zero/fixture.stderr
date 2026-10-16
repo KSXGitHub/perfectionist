@@ -5,7 +5,7 @@ LL |     let _ = [1, 2].into_iter().map(|value| value + 1);
    |                                    ^^^^^^^^^^^^^^^^^
    |
    = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
-   = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
    = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
    = note: `#[warn(perfectionist::multi_statement_iterator_closure)]` on by default
 
@@ -16,7 +16,7 @@ LL |     [1, 2].into_iter().for_each(|value| { dbg!(value); });
    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
-   = help: binding the same body to a `let`, or wrapping it in one more block, silences this warning without moving the steps anywhere; name the helper for the value it produces, not for the steps it replaces
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
    = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
 
 warning: N warnings emitted
