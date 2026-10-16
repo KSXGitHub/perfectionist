@@ -203,33 +203,35 @@ fn discipline(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
 /// many parameters it takes is not asked here, because [`check`] reads the
 /// closure's only parameter and turns away a closure with any other number.
 ///
-/// Two facts a signature cannot carry stay by name. A prefix-shaped
-/// adapter is declared exactly as a set-shaped one, `Fn(&Item) -> bool`
-/// either way, so which of them stops the run is the name's to say. And
-/// `all` is excluded because filtering before it makes an item that failed
-/// the first test vacuously fine, which is a property of the answer rather
-/// than of the signature.
+/// Two names are excluded for a property of the answer rather than of the
+/// signature, neither of which a signature can carry. `all` is excluded
+/// because filtering before it makes an item that failed the first test
+/// vacuously fine.
 ///
-/// The trait is not asked whether it declares the prefix-shaped adapter,
-/// because the name having matched is already that answer: a call resolved
-/// to `take_while` is a `take_while` the trait declares.
+/// `take_while` is excluded because the run it stops has to be the same run
+/// twice for a split to keep it, and a family read from signatures is one
+/// whose execution order nobody established. `orx-parallel` is the case to
+/// hold in mind: it declares a `take_while` under that very name whose
+/// result its own docs call "not always deterministic due to parallel
+/// execution", and deterministic only where the result is collected in
+/// order. Splitting a conjunction there makes two truncation points out of
+/// one, and a signature says nothing either way. So this path answers `Set` or
+/// nothing, and the prefix discipline stays with the tabled families, whose
+/// adapters were measured one at a time.
 fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
     let declaring = call.receiver.declaring?;
-    if call.method.as_str() == "all" {
+    if matches!(call.method.as_str(), "all" | PREFIX_SHAPED) {
         return None;
     }
     let closure = signature::closure(cx, call.receiver.method, declaring)?;
     if closure.handing != Handing::ByReference {
         return None;
     }
-    Some(match call.method.as_str() == PREFIX_SHAPED {
-        true => Discipline::Prefix,
-        false => Discipline::Set,
-    })
+    Some(Discipline::Set)
 }
 
-/// The adapter that stops a run rather than sieving it, where the family
-/// declares one.
+/// The adapter that stops a run rather than sieving it, which a family read
+/// from signatures is not given a discipline for.
 const PREFIX_SHAPED: &str = "take_while";
 
 /// Whether `method` hands the item to its closure by value, where the

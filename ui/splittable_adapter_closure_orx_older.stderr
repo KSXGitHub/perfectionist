@@ -23,18 +23,6 @@ LL -         .map_while(|text| text.trim().parse::<usize>().ok())
 LL +         .map(str::trim).map(str::parse::<usize>).map_while(Result::ok)
    |
 
-warning: this predicate runs 2 tests on the item, so `take_while` does all of them
-  --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
-   |
-LL |         .take_while(|text| wanted(text) && text.starts_with('#'))
-   |          ^^^^^^^^^^
-   |
-help: give every test but the last a leading `take_while` of its own, so each adapter asks one question
-   |
-LL -         .take_while(|text| wanted(text) && text.starts_with('#'))
-LL +         .take_while(|text| wanted(text)).take_while(|text| text.starts_with('#'))
-   |
-
 warning: this predicate runs 2 tests on the item, so `any` does all of them
   --> $DIR/splittable_adapter_closure_orx_older.rs:LL:CC
    |

@@ -8,9 +8,11 @@
 // Nothing here is a second table of names. Which adapter is which is read
 // from the signature each was declared with, and those did not change across
 // the rename, so the same reading answers this generation and the current
-// one alike. What the trait does and does not declare is asked of the trait,
-// which is how a `take_while` that exists only here gets a lift target only
-// here.
+// one alike.
+//
+// What a signature cannot carry is the order the adapter runs in, which is
+// why the `take_while` declared only in this generation is read as no
+// filtering discipline at all rather than as a prefix-shaped one.
 //
 // Every Bad case is followed by the Good one the rule's help asks for.
 
@@ -55,20 +57,14 @@ fn split_parsing(items: Parallel<&'static str>) -> Vec<usize> {
         .into_items()
 }
 
-// Bad: `take_while` is lent the item and stops the run, so its tests lift
-// into a leading `take_while` rather than a `filter`.
+// Not flagged: this `take_while` stops a run, and upstream's docs call the
+// result not always deterministic under parallel execution, so the run it
+// stops is not established to be the same run twice. Splitting the
+// conjunction would make two truncation points out of one, and the
+// signature the adapter is declared with says nothing either way.
 fn prefix(items: Parallel<&'static str>) -> Vec<&'static str> {
     items
         .take_while(|text| wanted(text) && text.starts_with('#'))
-        .into_items()
-}
-
-// Good: one `take_while` per test, which stops the run where the
-// conjunction stopped it.
-fn split_prefix(items: Parallel<&'static str>) -> Vec<&'static str> {
-    items
-        .take_while(|text| wanted(text))
-        .take_while(|text| text.starts_with('#'))
         .into_items()
 }
 
