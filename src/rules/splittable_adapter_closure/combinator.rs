@@ -46,7 +46,7 @@ pub(super) enum Split {
     Filtering,
     /// `guard.then(|| value)` splits in two: the guard into a leading
     /// adapter of the outer one's discipline, the value into a `map`.
-    Guarded(Discipline),
+    Guarded,
 }
 
 impl Split {
@@ -61,26 +61,31 @@ impl Split {
             Self::Fallible(_) => "runs two fallible stages",
             Self::Infallible => "makes a value after a stage that may fail",
             Self::Filtering => "tests a value it made in the same closure",
-            Self::Guarded(_) => "holds a guard and a value",
+            Self::Guarded => "holds a guard and a value",
         }
     }
 
     /// What to tell the reader to do, which differs by what the split
     /// hands the work to.
     ///
+    /// Which adapter each shape names is `discipline`'s to say, since an
+    /// adapter answering by the leading run takes the work in a different
+    /// one from an adapter answering by the whole set.
+    ///
     /// `every` names the seam for a chain holding more than one of this
     /// shape, so following the help once leaves no seam behind. A chain
     /// mixing shapes is told [`Seams::help`]'s kind-agnostic form instead,
     /// this one naming only its own.
-    fn help(&self, every: bool) -> String {
+    fn help(&self, discipline: Discipline, every: bool) -> String {
         let seam = if every { "each" } else { "the" };
+        let (stage, test) = (discipline.fallible_target(), discipline.lift_target());
         match self {
             Self::Fallible(Yield::Stream) => format!(
-                "give {seam} `and_then` a trailing `filter_map` of its own, so each fallible \
+                "give {seam} `and_then` a trailing `{stage}` of its own, so each fallible \
                  stage is one adapter",
             ),
             Self::Fallible(Yield::OneValue) => format!(
-                "give the stage before {seam} `and_then` a leading `filter_map` of its own, \
+                "give the stage before {seam} `and_then` a leading `{stage}` of its own, \
                  so each fallible stage is one adapter",
             ),
             Self::Infallible => format!(
@@ -88,13 +93,12 @@ impl Split {
                  can fail",
             ),
             Self::Filtering => format!(
-                "give {seam} `filter` its own trailing `filter`, so the adapter is left only \
+                "give {seam} `filter` its own trailing `{test}`, so the adapter is left only \
                  what it makes",
             ),
-            Self::Guarded(discipline) => format!(
-                "lift the guard into a leading `{}` and let a `map` make the value, so \
+            Self::Guarded => format!(
+                "lift the guard into a leading `{test}` and let a `map` make the value, so \
                  neither adapter does both",
-                discipline.lift_target(),
             ),
         }
     }
@@ -117,6 +121,9 @@ pub(super) struct Seams {
     /// Whether every seam takes `outermost`'s shape, which is what lets
     /// that shape's lift target be named for all of them at once.
     alike: bool,
+    /// The discipline of the adapter the closure was passed to, which is
+    /// what names each shape's lift target.
+    discipline: Discipline,
 }
 
 impl Seams {
@@ -136,8 +143,8 @@ impl Seams {
     /// did not finish.
     pub(super) fn help(&self) -> String {
         match (self.stages, self.alike) {
-            (2, _) => self.outermost.help(false),
-            (_, true) => self.outermost.help(true),
+            (2, _) => self.outermost.help(self.discipline, false),
+            (_, true) => self.outermost.help(self.discipline, true),
             // A chain of unalike seams has a lift target per seam rather
             // than one for all of them, and naming the outermost one's
             // would leave the rest unaccounted for.
@@ -164,14 +171,14 @@ pub(super) fn split<'tcx>(
     discipline: Discipline,
     yields: Yield,
 ) -> Option<Seams> {
-    let outermost = seam(cx, body, closure, parameter, discipline, yields)?;
+    let outermost = seam(cx, body, closure, parameter, yields)?;
     let (mut stages, mut alike, mut current) = (2, true, body);
     while let ExprKind::MethodCall(_, receiver, _, _) = current.kind {
         // Every seam below the outermost sits under the adapter the
         // outermost split leaves in front of it, and that one yields a
         // stream whichever way the adapter being split yields: the leading
         // adapter a one-value split calls for is a `filter_map`.
-        let Some(inner) = seam(cx, receiver, closure, parameter, discipline, Yield::Stream) else {
+        let Some(inner) = seam(cx, receiver, closure, parameter, Yield::Stream) else {
             break;
         };
         stages += 1;
@@ -182,11 +189,16 @@ pub(super) fn split<'tcx>(
         outermost,
         stages,
         alike,
+        discipline,
     })
 }
 
-/// The split the seam `body` ends in admits under `discipline`, or `None`
-/// where it admits none.
+/// The split the seam `body` ends in admits, or `None` where it admits
+/// none.
+///
+/// The adapter's discipline does not reach here. It says which adapter the
+/// lifted work is named for, which [`Split::help`] asks it, and every
+/// shape splits under either discipline once that name is the right one.
 ///
 /// The receiver has to name the item in every form: it is the stage the
 /// adapter keeps, and a receiver naming no item asks the same question
@@ -201,7 +213,6 @@ fn seam<'tcx>(
     body: &'tcx Expr<'tcx>,
     closure: LocalDefId,
     parameter: &'tcx Pat<'tcx>,
-    discipline: Discipline,
     yields: Yield,
 ) -> Option<Split> {
     let item = binding_hir_id(parameter)?;
@@ -221,13 +232,13 @@ fn seam<'tcx>(
     }
     let receiver_ty = cx.typeck_results().expr_ty(receiver);
     let split = match segment.ident.name.as_str() {
-        "then" | "then_some" if receiver_ty.is_bool() => Split::Guarded(discipline),
+        "then" | "then_some" if receiver_ty.is_bool() => Split::Guarded,
         "and_then" if is_option(cx, receiver_ty) => Split::Fallible(yields),
         "map" if is_option(cx, receiver_ty) => Split::Infallible,
         "filter" if is_option(cx, receiver_ty) => Split::Filtering,
         _ => return None,
     };
-    if !matches!(split, Split::Guarded(_)) && names(cx, argument, &[item]) {
+    if !matches!(split, Split::Guarded) && names(cx, argument, &[item]) {
         return None;
     }
     // Each half of the split gets a closure of its own, and a capture only
@@ -245,18 +256,11 @@ fn seam<'tcx>(
     if matches!(split, Split::Fallible(_) | Split::Infallible) && borrows(receiver_ty) {
         return None;
     }
-    // A leading `filter_map` or a trailing `filter` drops items, which
-    // moves where a prefix-shaped adapter stops. Only the forms lifting
-    // into a `take_while`, or into a `map` that drops nothing, survive
-    // there.
-    if let (Discipline::Prefix, Split::Fallible(_) | Split::Filtering) = (discipline, &split) {
-        return None;
-    }
     // A guard lifts into `filter` or `take_while`, which hand the item by
     // reference where `filter_map` and its kin hand it over. A guard that
     // moves the item is then `E0308` and one that writes to it `E0596`,
     // with nothing to amend by hand.
-    if matches!(split, Split::Guarded(_)) && !takes_one_more_reference(cx, parameter, receiver) {
+    if matches!(split, Split::Guarded) && !takes_one_more_reference(cx, parameter, receiver) {
         return None;
     }
     // A one-value adapter has no trailing adapter but the `Option`'s, so
@@ -266,7 +270,7 @@ fn seam<'tcx>(
     // `Guarded`'s `map` would have to follow an iterator the guard's
     // leading adapter produced, and the one value is gone.
     match (yields, &split) {
-        (Yield::OneValue, Split::Filtering | Split::Guarded(_)) => None,
+        (Yield::OneValue, Split::Filtering | Split::Guarded) => None,
         _ => Some(split),
     }
 }

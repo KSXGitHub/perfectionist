@@ -155,6 +155,25 @@ fn split_three_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.map_while(parse).map(double).map(bump).collect()
 }
 
+// Bad: three fallible stages under a prefix-shaped adapter, whose lift
+// target for a stage is a `map_while`, so the count names how many of
+// those the rewrite comes to.
+fn three_fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map_while(|line| parse(line).and_then(validate).and_then(narrow))
+        .collect()
+}
+
+// Good: one `map_while` per stage, each stopping the run on its own
+// failure.
+fn split_three_fallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
+    lines
+        .map_while(parse)
+        .map_while(validate)
+        .map_while(narrow)
+        .collect()
+}
+
 // Bad: the inner stage borrows what the item points at, so lifting that
 // stage is `E0515` and the count stops at the seam above it. Reporting
 // the two-stage shape is what holds the help to a split that compiles.
