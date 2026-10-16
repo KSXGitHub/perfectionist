@@ -600,14 +600,13 @@ fn theme_option(symbol: &str, value: &str, label: &str, checked: bool) -> Markup
 /// once its handlers are wired up.
 ///
 /// Below 1100px the nav becomes an overlay (a 280px panel on
-/// phone-landscape / tablet, full-screen at <=600px / phone-
-/// portrait). The JS also locks body scroll while it's open,
-/// which stops the mobile URL bar from collapsing under it and
-/// keeps every `position: fixed` element steady. The close button
-/// lives inside the overlay in normal flow rather than as a
-/// fixed-position sibling, so it's never affected by visual-viewport
-/// quirks even on browsers where `position: fixed` drifts with the
-/// URL bar.
+/// phone-landscape / tablet, full-screen at <=600px /
+/// phone-portrait). The JS also locks body scroll while it's open,
+/// which stops the mobile URL bar from collapsing under it and keeps
+/// every `position: fixed` element steady. The close button lives
+/// inside the overlay in normal flow rather than as a fixed-position
+/// sibling, so it's never affected by visual-viewport quirks even on
+/// browsers where `position: fixed` drifts with the URL bar.
 fn nav_drawer(rules: &[Rule]) -> Markup {
     html! {
         button

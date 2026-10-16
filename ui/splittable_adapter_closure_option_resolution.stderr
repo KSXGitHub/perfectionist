@@ -1,0 +1,38 @@
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_resolution.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+   |           ^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| sieve(line).and_then(parse)).collect()
+LL +     lines.map(sieve).filter_map(|/* name */| /* name */.and_then(parse)).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_resolution.rs:LL:CC
+   |
+LL |     lines.filter_map(|line| sieve(line).map(render)).collect()
+   |           ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.filter_map(|line| sieve(line).map(render)).collect()
+LL +     lines.map(sieve).filter_map(|/* name */| /* name */.map(render)).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `filter_map` does all of them
+  --> $DIR/splittable_adapter_closure_option_resolution.rs:LL:CC
+   |
+LL |         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
+   |          ^^^^^^^^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .filter_map(|line| sieve(line).filter(|text| wanted(text)))
+LL +         .map(sieve).filter_map(|/* name */| /* name */.filter(|text| wanted(text)))
+   |
+
+warning: N warnings emitted

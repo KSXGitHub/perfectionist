@@ -69,12 +69,13 @@ pub(super) fn crate_is_declared(cx: &LateContext<'_>) -> bool {
 
 /// Every `CommandExtra` the compilation loaded.
 ///
-/// More than one is ordinary rather than exotic: two semver-
-/// incompatible majors of one package in a graph is a resolution Cargo
-/// reaches whenever two dependencies disagree, and both are loaded
-/// under the same crate name. Which of them a lookup meets first is
-/// `CrateNum` order, which this rule neither controls nor can read an
-/// intention into, so the caller asks all of them rather than picking.
+/// More than one is ordinary rather than exotic: two
+/// semver-incompatible majors of one package in a graph is a
+/// resolution Cargo reaches whenever two dependencies disagree, and
+/// both are loaded under the same crate name. Which of them a lookup
+/// meets first is `CrateNum` order, which this rule neither controls
+/// nor can read an intention into, so the caller asks all of them
+/// rather than picking.
 ///
 /// Empty is not the absence of the dependency --
 /// [`crate_is_declared`] says why a declared crate can be missing from
@@ -127,7 +128,8 @@ pub(super) fn workspace_declares_the_package() -> bool {
     cargo_manifest::workspace()
         .and_then(|manifest| manifest.get("workspace"))
         .and_then(toml::Value::as_table)
-        .is_some_and(|workspace| names_the_package(workspace.get("dependencies")))
+        .map(|workspace| workspace.get("dependencies"))
+        .is_some_and(names_the_package)
 }
 
 /// Whether a dependency table holds `command-extra`, under that key or

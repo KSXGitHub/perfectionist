@@ -5,14 +5,24 @@
 //! from the rule standing down. `--fail-on-no-libraries` turns that
 //! into a test failure.
 //!
+//! A `cargo dylint` that predates a flag passed here rejects the
+//! whole invocation as an unknown argument, so every run fails for a
+//! reason that reads as a bad flag. [`check_dylint_version`] checks
+//! the binary on `PATH` against the version this workspace pins.
+//!
 //! Every command here clears the dylint-specific variables the
 //! in-process UI harness leaves set in this process, so a spawned
 //! `cargo dylint` never inherits them.
 
+use cargo_toml::{Dependency, Manifest};
 use command_extra::CommandExtra;
+use derive_more::Display;
 use pipe_trait::Pipe;
+use std::io;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, ExitStatus};
+
+mod banner;
 
 /// The dylint-specific environment variables `dylint_testing` sets in
 /// *this* process, and which a spawned `cargo dylint` must not inherit.
@@ -108,6 +118,81 @@ fn run_dylint_inner(
         .expect("failed to run `cargo dylint`");
     let stderr = String::from_utf8(output.stderr).expect("dylint stderr is not UTF-8");
     (stderr, output.status.success())
+}
+
+/// The dependency whose version requirement the `cargo dylint` on
+/// `PATH` has to satisfy.
+const DYLINT_LIBRARY_CRATE: &str = "dylint_linting";
+
+/// Installing the pinned version belongs to the recipe this names,
+/// never to a test run.
+const REMEDY: &str = "run `just install-dev-tools`";
+
+/// What a check of the `cargo dylint` on `PATH` can come out short of.
+#[derive(Display)]
+pub enum DylintVersionError {
+    #[display("Failed to read Cargo.toml: {_0}")]
+    ReadManifest(cargo_toml::Error),
+    #[display("Cargo.toml pins {DYLINT_LIBRARY_CRATE} to no version requirement")]
+    Pin,
+    #[display("Failed to spawn `cargo dylint`: {_0}; {REMEDY}")]
+    Spawn(io::Error),
+    #[display("`cargo dylint --version` failed with {_0}; {REMEDY}\n{_1}")]
+    Status(ExitStatus, String),
+    #[display("`cargo dylint --version` printed {_0:?} rather than a version banner; {REMEDY}")]
+    Unreadable(String),
+    #[display("cargo-dylint {_0} is not the pinned {DYLINT_LIBRARY_CRATE} {_1}; {REMEDY}")]
+    Mismatch(String, String),
+}
+
+/// The version `repository_dir`'s manifest pins
+/// [`DYLINT_LIBRARY_CRATE`] to, which `cargo install --version` reads
+/// as that one release rather than as a range.
+fn pinned_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
+    repository_dir
+        .join("Cargo.toml")
+        .pipe(Manifest::from_path)
+        .map_err(DylintVersionError::ReadManifest)?
+        .dependencies
+        .get(DYLINT_LIBRARY_CRATE)
+        .map(Dependency::try_req)
+        .and_then(Result::ok)
+        .map(str::to_owned)
+        .ok_or(DylintVersionError::Pin)
+}
+
+/// Check the `cargo dylint` that [`run_dylint`] would spawn against
+/// the version `repository_dir`'s manifest pins, returning that
+/// version.
+pub fn check_dylint_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
+    let pinned = pinned_version(repository_dir)?;
+    let output = "cargo"
+        .pipe(Command::new)
+        .with_current_dir(repository_dir)
+        .with_arg("dylint")
+        .with_arg("--version")
+        .output()
+        .map_err(DylintVersionError::Spawn)?;
+    if !output.status.success() {
+        let stderr = output
+            .stderr
+            .pipe(String::from_utf8)
+            .expect("dylint stderr is not UTF-8")
+            .trim()
+            .to_owned();
+        return Err(DylintVersionError::Status(output.status, stderr));
+    }
+    let reported = output
+        .stdout
+        .pipe(String::from_utf8)
+        .expect("dylint stdout is not UTF-8");
+    let Some(installed) = banner::parse_version(&reported) else {
+        return Err(DylintVersionError::Unreadable(reported.trim().to_owned()));
+    };
+    match installed == pinned {
+        true => Ok(pinned),
+        false => Err(DylintVersionError::Mismatch(installed.to_owned(), pinned)),
+    }
 }
 
 #[cfg(test)]

@@ -2,6 +2,10 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::splittable_adapter_closure,
+    reason = "exercises overly_long_method_chain"
+)]
 
 // The rule is inactive by default, so this directory's `dylint.toml`
 // enables it and sets no knob; what it pins is the default limit of 5.

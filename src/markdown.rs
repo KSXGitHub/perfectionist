@@ -12,7 +12,7 @@
 //!   ranges of code spans and code blocks, for a rule that only needs
 //!   code excluded from a prose scan.
 //!
-//! The implementation is a hand-written parser-combinator walk; one
+//! The implementation is a hand-written recursive-descent walk; one
 //! `take_*` per construct recognised. Emphasis and list markers are
 //! matched only when [`classify_constructs`] is asked for them (see
 //! [`ClassifyOptions`]).
@@ -42,7 +42,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
         let rest = &input[idx..];
 
         // Block-level constructs anchored at line start. Each of
-        // the `take_*` block-level combinators below consumes a span
+        // the `take_*` block-level parsers below consumes a span
         // that ends either at a line boundary (the trailing `\n`
         // is included in the returned length) or at EOF, so the
         // next position is always the start of a new line — set
@@ -140,7 +140,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
     while idx < bytes.len() {
         let rest = &input[idx..];
 
-        // Block-level code anchored at line start. Both combinators
+        // Block-level code anchored at line start. Both parsers
         // consume through a line boundary (or EOF), so the next
         // position always begins a new line.
         if at_line_start {
@@ -189,7 +189,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// `[...]` link (`` [`Foo`] ``, `` [`Foo`](dest) ``, `` [`Foo`][id] ``)
 /// and *not* sitting inside a code block.
 ///
-/// The walk shares the same combinator surface and ordering as
+/// The walk shares the same parser surface and ordering as
 /// [`scan_skip_regions`]; the only difference is what it records. Block
 /// constructs, autolinks, and links are *consumed* (so a `` `Foo` ``
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
@@ -754,7 +754,7 @@ pub(crate) struct ClassifyOptions {
 /// Tier A structural classification: walk `input` as a markdown
 /// fragment and return every recognised [`Construct`] in source order.
 ///
-/// The walk shares the combinator surface and line-start bookkeeping of
+/// The walk shares the parser surface and line-start bookkeeping of
 /// [`scan_skip_regions`]; the difference is that it records *what* each
 /// construct is, not just that it is a skip region. Code blocks, code
 /// spans, links, autolinks, reference definitions, HTML tags, and

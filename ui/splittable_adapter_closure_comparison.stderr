@@ -1,0 +1,62 @@
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_comparison.rs:LL:CC
+   |
+LL |         .filter(|span| span.offset >= start && span.length < limit)
+   |          ^^^^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .filter(|span| span.offset >= start && span.length < limit)
+LL +         .filter(|span| span.offset >= start).filter(|span| span.length < limit)
+   |
+
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_comparison.rs:LL:CC
+   |
+LL |         .filter(|line| line.len() > 3 && line.trim().len() < 80)
+   |          ^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .filter(|line| line.len() > 3 && line.trim().len() < 80)
+LL +         .filter(|line| line.len() > 3).filter(|line| line.trim().len() < 80)
+   |
+
+warning: this predicate runs 3 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_comparison.rs:LL:CC
+   |
+LL |         .filter(|span| span.offset >= start && span.length < limit && span.offset != skipped)
+   |          ^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .filter(|span| span.offset >= start && span.length < limit && span.offset != skipped)
+LL +         .filter(|span| span.offset >= start).filter(|span| span.length < limit).filter(|span| span.offset != skipped)
+   |
+
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_comparison.rs:LL:CC
+   |
+LL |         .filter(|span| span.offset == 0 && span.length == 1)
+   |          ^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -         .filter(|span| span.offset == 0 && span.length == 1)
+LL +         .filter(|span| span.offset == 0).filter(|span| span.length == 1)
+   |
+
+warning: this predicate runs 2 tests on the item, so `filter` does all of them
+  --> $DIR/splittable_adapter_closure_comparison.rs:LL:CC
+   |
+LL |     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
+   |           ^^^^^^
+   |
+help: give every test but the last a leading `filter` of its own, so each adapter asks one question
+   |
+LL -     lines.filter(|line| line.len() > 3 && wanted(line)).collect()
+LL +     lines.filter(|line| line.len() > 3).filter(|line| wanted(line)).collect()
+   |
+
+warning: N warnings emitted

@@ -54,6 +54,7 @@ dependencies = [
  "cargo_toml",
  "clap",
  "command-extra",
+ "derive_more",
  "dylint_testing",
  "pipe-trait",
  "serde",

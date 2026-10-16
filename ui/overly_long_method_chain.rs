@@ -15,7 +15,7 @@ fn six_calls(names: &[String]) -> String {
     names
         .iter()
         .filter(|name| !name.is_empty())
-        .map(|name| name.trim().to_owned())
+        .map(|name| name.to_owned())
         .rev()
         .collect::<Vec<_>>()
         .join(", ")

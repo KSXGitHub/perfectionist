@@ -13,7 +13,7 @@
 //! scheme; the SSH forms (which carry no web scheme) map to `https`,
 //! since only the host + owner/repo matter for a *web* link.
 //!
-//! Written as small `take_*` parser combinators per
+//! Written as small `take_*` parsers per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`; no regex.
 
 /// How the authority is separated from the path: `/` for the URL
