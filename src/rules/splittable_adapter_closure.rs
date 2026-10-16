@@ -92,21 +92,13 @@ declare_tool_lint! {
     ///
     /// ### When it stays silent
     ///
-    /// A chain the closure does not always reach stays, since lifting it
-    /// would run it for every item rather than for some. An item the
-    /// closure names more than once stays, there being no binding for the
-    /// later mentions to name once each step has its own closure.
-    ///
-    /// Comparisons that all bound one quantity stay whole, because that is
-    /// how Rust spells one test: `pos >= range.start && pos < range.end`
-    /// asks whether a position is inside a range, and each half on its own
-    /// adapter reads worse than the pair does. Which side of the operator
-    /// the quantity falls on is not asked. Bounds on two quantities ask two
-    /// questions, so `span.offset >= start && span.length < limit` splits,
-    /// and so does one comparison among named questions.
-    ///
-    /// Otherwise the lint declines any split that would not compile, or
-    /// would not mean what the closure means.
+    /// - A chain the closure does not always reach.
+    /// - An item the closure names more than once.
+    /// - Comparisons that all bound one quantity, which is how Rust
+    ///   spells one test: `pos >= range.start && pos < range.end` asks
+    ///   one question. Bounds on two quantities ask two, and split.
+    /// - Any split that would not compile, or would not mean what the
+    ///   closure means.
     ///
     /// ### Applicability
     ///
@@ -115,21 +107,13 @@ declare_tool_lint! {
     /// is described rather than rewritten, its split having more than one
     /// reasonable text.
     ///
-    /// The conjunction's rewrite keeps the closure each test was written in
-    /// rather than reducing it to a path. A path asks more of a test than
-    /// the split does, so `clippy::redundant_closure_for_method_calls` is
-    /// what reduces the ones that can be reduced, and the two fixes compose
-    /// in that order.
+    /// A rewrite is shown rather than applied where it would drop a
+    /// comment, or where a step cannot be named as the function it is and
+    /// a placeholder stands in for the reader to fill.
     ///
-    /// A chain's rewrite names each step as the function it already is,
-    /// because only the first step is handed the item and so only the first
-    /// could take the item's own name. Where a step cannot be named that
-    /// way, the first falls back to a closure over the item, and a later one
-    /// to a placeholder for the reader to fill in, which is offered rather
-    /// than applied.
-    ///
-    /// A rewrite that would drop a comment is offered as advice rather than
-    /// applied.
+    /// The conjunction's rewrite keeps the closure each test was written
+    /// in, leaving `clippy::redundant_closure_for_method_calls` to reduce
+    /// the ones that reduce.
     ///
     /// ### Example
     ///
