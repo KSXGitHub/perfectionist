@@ -62,6 +62,9 @@ checks the iteration form, while this rule checks the callback body.
 
 ## Example
 
+**Avoid:** 2 top-level statements — the `let`, then the tail
+expression
+
 ```rust,ignore
 entries.iter().map(|entry| {
     let name = normalize(entry.name());
@@ -69,13 +72,13 @@ entries.iter().map(|entry| {
 })
 ```
 
-Keep the lazy chain and name the operation:
+**Prefer:** a name for the operation, with the chain still lazy
 
 ```rust,ignore
 entries.iter().map(format_entry)
 ```
 
-A multiline single expression is also allowed:
+**Not flagged:** one expression, however many lines it spans
 
 ```rust,ignore
 entries.iter().map(|entry| match entry.kind() {
