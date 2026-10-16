@@ -320,7 +320,7 @@ article.rule table code {
 .search-result {
   color: #1f2328;
 }
-.search-result:hover {
+.search-result[aria-selected="true"] {
   background: #f6f8fa;
 }
 .search-result-name {

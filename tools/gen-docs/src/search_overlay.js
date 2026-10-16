@@ -216,6 +216,56 @@
     return out
   }
 
+  // ---- The selected result ----------------------------------------------
+  //
+  // One selection serves the keyboard and the pointer between them: Up
+  // and Down move it, a pointer movement inside a result's box takes it,
+  // and the pointer leaving the list gives it up. Enter follows whatever
+  // holds it.
+  //
+  // It is not focus. The caret stays in the input throughout, so a
+  // reader can go on typing with a result selected — which is the whole
+  // reason the selection is written on the element rather than taken
+  // from the browser. The highlight is `aria-selected`, which search.css
+  // draws, and the input's `aria-activedescendant` names the element
+  // holding it, which is how assistive tech learns of a selection that
+  // never takes focus.
+
+  /**
+   * The results now listed, in the order they are listed. `apply`
+   * empties the list and fills it again, so this is rebuilt on every
+   * keystroke.
+   * @type {HTMLAnchorElement[]}
+   */
+  var rendered = []
+
+  /** Which of `rendered` is selected, or `-1` for none. */
+  var selected = -1
+
+  /**
+   * Select the result at `at`, or `-1` to select nothing.
+   *
+   * A non-negative `selected` always names a result still in the list,
+   * because `apply` gives the selection up before emptying the list it
+   * indexes.
+   * @param {number} at
+   */
+  function select(at) {
+    if (at === selected) {
+      return
+    }
+    if (selected >= 0) {
+      rendered[selected].setAttribute('aria-selected', 'false')
+    }
+    selected = at
+    if (at < 0) {
+      input.removeAttribute('aria-activedescendant')
+      return
+    }
+    rendered[at].setAttribute('aria-selected', 'true')
+    input.setAttribute('aria-activedescendant', rendered[at].id)
+  }
+
   // ---- Rendering --------------------------------------------------------
 
   /**
@@ -234,11 +284,15 @@
       return
     }
     link.href = result.entry.href
+    // Unique within the page, because the input's
+    // `aria-activedescendant` names the selected result by it.
+    link.id = 'search-result-' + rendered.length
     // The score the result was ranked by, for whoever is debugging a
     // ranking that reads wrong.
     link.setAttribute('data-score', result.score.toFixed(4))
     renderName(name, result.entry.name, result.nameRanges)
     renderText(text, result.text, result.textRanges)
+    rendered.push(link)
     results.appendChild(item)
   }
 
@@ -251,9 +305,16 @@
     results.hidden = shown !== results
     emptyPrompt.hidden = shown !== emptyPrompt
     emptyNoMatch.hidden = shown !== emptyNoMatch
+    // The combobox's popup is the results list, so it is expanded
+    // exactly when that list is the panel on show.
+    input.setAttribute('aria-expanded', shown === results ? 'true' : 'false')
   }
 
   function apply() {
+    // The selection is given up before the elements it indexes are
+    // removed, so it never names a result that has left the list.
+    select(-1)
+    rendered = []
     while (results.firstChild) {
       results.removeChild(results.firstChild)
     }
@@ -277,6 +338,11 @@
     showOnly(results)
     for (var i = 0; i < ranked.length; i++) {
       renderResult(ranked[i])
+    }
+    // The first result is selected as soon as there is one, so Enter
+    // follows it without an arrow key first.
+    if (rendered.length > 0) {
+      select(0)
     }
   }
 
@@ -445,6 +511,11 @@
 
   input.addEventListener('input', apply)
   input.addEventListener('search', apply)
+
+  // ---- Enter follows the selected result --------------------------------
+  //
+  // Taken from the input alone rather than from the overlay, so that Enter
+  // goes on pressing the Close button once Tab has moved there.
   input.addEventListener('keydown', function (event) {
     if (event.key !== 'Enter') {
       return
@@ -457,43 +528,51 @@
     // The input is in no form, so Enter submits nothing; suppressing the
     // default only keeps a stray form association from navigating.
     event.preventDefault()
-    apply()
+    // Nothing is selected before anything is typed, when nothing
+    // matched, and once the pointer has left the list; Enter has no
+    // result to follow in any of them.
+    if (selected < 0) {
+      return
+    }
+    // Clicking the result is how Enter follows it: the click runs the
+    // handler the results list carries, which closes the overlay and
+    // places focus, and the browser then navigates exactly as it does
+    // for a click of the reader's own.
+    rendered[selected].click()
   })
 
-  // ---- Up and Down move focus, as Tab does ------------------------------
+  // ---- Up and Down move the selection -----------------------------------
   //
-  // The browser's own sequential focus navigation cannot be asked for: a
-  // `KeyboardEvent` built in script carries `isTrusted: false`, and an
-  // untrusted event never performs a default action, so dispatching a
-  // synthetic Tab moves nothing. What is reused is the focus itself —
-  // `element.focus()` is the same focus Tab arrives at, `:focus-visible`
-  // and all — leaving only the order to be written out, which is the
-  // document order Tab already walks.
-  //
-  // The keys are taken while the caret is still in the input, so the
+  // The keys are pressed with the caret still in the input, so the
   // default has to go with them: Up and Down would otherwise jump the
   // caret to the ends of the value. Home and End still do that.
+  //
+  // They are taken from the overlay rather than from the input, because
+  // the selection is not focus: it is the dialog's, and moving it means
+  // the same thing wherever inside the dialog the caret happens to be.
 
   /**
-   * Everything in the overlay that can take focus, in the order Tab
-   * reaches it. A rendered element has client rects and a hidden one has
-   * none, so the test skips whatever the reader cannot see.
-   * @returns {readonly HTMLElement[]}
+   * Move the selection by `step`, which is `1` for Down and `-1` for Up.
+   * Called only with results listed, so there is always one to land on.
+   * @param {number} step
    */
-  function focusables() {
-    var found = overlay.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])')
-    /** @type {HTMLElement[]} */
-    var out = []
-    for (var i = 0; i < found.length; i++) {
-      var element = found[i]
-      if (!(element instanceof HTMLElement)) {
-        continue
-      }
-      if (element.getClientRects().length > 0) {
-        out.push(element)
-      }
+  function move(step) {
+    var next
+    if (selected < 0) {
+      // A list with nothing selected is entered at the end the key
+      // points away from: Down takes the first result, Up the last.
+      next = step > 0 ? 0 : rendered.length - 1
+    } else {
+      // Wrapping, so Down past the last result takes the first and Up
+      // past the first takes the last. These keys reach nothing but the
+      // list, so there is nowhere an end could hand the reader on to.
+      next = (selected + step + rendered.length) % rendered.length
     }
-    return out
+    select(next)
+    // `nearest` scrolls nothing for a selection already in view, and
+    // only as far as the edge the selection stepped past for one that
+    // is not.
+    rendered[next].scrollIntoView({ block: 'nearest' })
   }
 
   overlay.addEventListener('keydown', function (event) {
@@ -508,24 +587,48 @@
     if (event.isComposing) {
       return
     }
-    var items = focusables()
-    if (items.length === 0) {
+    // With no results listed there is nothing to move, so the keys stay
+    // the browser's and go on jumping the caret.
+    if (rendered.length === 0) {
       return
     }
-    var step = event.key === 'ArrowDown' ? 1 : -1
-    var active = document.activeElement
-    var at = -1
-    for (var i = 0; i < items.length; i++) {
-      if (items[i] === active) {
-        at = i
-        break
+    event.preventDefault()
+    move(event.key === 'ArrowDown' ? 1 : -1)
+  })
+
+  // ---- The pointer moves the selection ----------------------------------
+  //
+  // The pointer selects rather than hovers, so that it and the arrow
+  // keys drive one highlight between them. A CSS `:hover` would draw a
+  // second highlight that Enter does not follow, and both would be lit
+  // at once whenever the pointer rested over one result while the keys
+  // had moved to another.
+
+  results.addEventListener('mousemove', function (event) {
+    var over = event.target
+    if (!(over instanceof Element)) {
+      return
+    }
+    var link = over.closest('.search-result')
+    // A movement over the list's own padding is inside no result's box,
+    // and leaves the selection where it is. Only the pointer leaving the
+    // list altogether gives it up.
+    if (!link) {
+      return
+    }
+    for (var i = 0; i < rendered.length; i++) {
+      if (rendered[i] === link) {
+        select(i)
+        return
       }
     }
-    // Wrapping is what Tab does here. Every other child of <body> is
-    // inert while the overlay is open, so there is nowhere else to go.
-    var next = at < 0 ? (step > 0 ? 0 : items.length - 1) : (at + step + items.length) % items.length
-    event.preventDefault()
-    items[next].focus()
+  })
+
+  // The pointer off the list selects nothing, so Enter follows nothing:
+  // a reader who has moved the mouse away from the results is pointing
+  // at none of them.
+  results.addEventListener('mouseleave', function () {
+    select(-1)
   })
 
   // Following a result closes the overlay so the rule it lands on is
