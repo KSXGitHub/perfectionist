@@ -11,26 +11,26 @@
 
 Flags a closure passed to an adapter where the closure does
 several things the pipeline has an adapter apiece for, so one
-adapter does all of them. Three shapes trigger it:
+adapter does all of them. It triggers on:
 
 - A chain of two or more steps rooted at the closure's item, where
-  each step is a leading `map` of its own. The receivers in scope
-  are iterators, `Option`, `Result`, `Poll`, `ControlFlow`, and the
-  [`itertools::Itertools`](https://docs.rs/itertools),
-  [`rayon::iter::ParallelIterator`](https://docs.rs/rayon),
-  [`pipe_trait::Pipe`](https://docs.rs/pipe-trait) and
-  [`orx_parallel::Par`](https://docs.rs/orx-parallel) traits.
-
-`orx-parallel`'s adapters are read from the signatures they are
-declared with rather than from their names, so the trait is answered
-for under either name it has carried, and a method it drops or adds
-needs nothing said about the version that did so.
+  each step is a leading `map` of its own.
 - A predicate that is a conjunction of two or more tests, each
   naming the item, where each test is a filtering adapter of its
   own.
 - A body under `filter_map`, `find_map` or `map_while` that welds
   a guard to a value or runs two or more stages, where each stage
   is the adapter that does it.
+
+The receivers in scope are iterators, `Option`, `Result`, `Poll`,
+`ControlFlow`, and the
+[`itertools::Itertools`](https://docs.rs/itertools),
+[`rayon::iter::ParallelIterator`](https://docs.rs/rayon),
+[`pipe_trait::Pipe`](https://docs.rs/pipe-trait) and
+[`orx_parallel::Par`](https://docs.rs/orx-parallel) traits. The
+last is identified by the signatures its adapters are declared
+with rather than by their names, so it is answered for under
+either name the trait has carried.
 
 A chain starts at the item and runs outwards: a method call whose
 receiver is the chain so far, or a call whose sole argument is it,
