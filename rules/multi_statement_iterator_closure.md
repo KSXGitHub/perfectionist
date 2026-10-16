@@ -76,6 +76,11 @@ entries.iter().map(|entry| {
 
 ```rust,ignore
 entries.iter().map(format_entry)
+
+fn format_entry(entry: &Entry) -> String {
+    let name = normalize(entry.name());
+    format!("{name}: {}", entry.value())
+}
 ```
 
 **Not flagged:** one expression, however many lines it spans
