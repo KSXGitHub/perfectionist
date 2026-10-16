@@ -14,7 +14,7 @@
 //! in-process UI harness leaves set in this process, so a spawned
 //! `cargo dylint` never inherits them.
 
-use cargo_toml::Manifest;
+use cargo_toml::{Dependency, Manifest};
 use command_extra::CommandExtra;
 use derive_more::Display;
 use pipe_trait::Pipe;
@@ -155,7 +155,8 @@ fn pinned_version(repository_dir: &Path) -> Result<String, DylintVersionError> {
         .map_err(DylintVersionError::ReadManifest)?
         .dependencies
         .get(DYLINT_LIBRARY_CRATE)
-        .and_then(|dependency| dependency.try_req().ok())
+        .map(Dependency::try_req)
+        .and_then(Result::ok)
         .map(str::to_owned)
         .ok_or(DylintVersionError::Pin)
 }

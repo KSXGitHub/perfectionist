@@ -62,7 +62,8 @@ impl ThiserrorUsage {
             .collect();
         let thiserror_crates = thiserror_paths
             .iter()
-            .filter_map(|segments| segments.first().copied())
+            .filter_map(|segments| segments.first())
+            .copied()
             .collect();
         Self {
             thiserror_paths,

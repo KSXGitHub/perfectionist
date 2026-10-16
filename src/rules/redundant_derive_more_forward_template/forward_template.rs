@@ -184,7 +184,7 @@ const VARIANT_PLACEHOLDER: &str = "_variant";
 /// identifier argument. `None` for an explicit positional index
 /// (`{0}`), which names an argument rather than a field.
 fn field_reference(text: &str) -> Option<FieldReference> {
-    if let Some(index) = text.strip_prefix('_').and_then(|rest| rest.parse().ok()) {
+    if let Some(index) = text.strip_prefix('_').map(str::parse).and_then(Result::ok) {
         return Some(FieldReference::Index(index));
     }
     if text.starts_with(|first: char| first.is_ascii_digit()) {
