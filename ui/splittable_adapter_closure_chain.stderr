@@ -1,0 +1,62 @@
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |         .map(|header| header.trim().to_ascii_lowercase())
+   |          ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|header| header.trim().to_ascii_lowercase())
+LL +         .map(str::trim).map(str::to_ascii_lowercase)
+   |
+
+warning: this closure chains 3 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |         .map(|line| line.trim().to_ascii_lowercase().len())
+   |          ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|line| line.trim().to_ascii_lowercase().len())
+LL +         .map(str::trim).map(str::to_ascii_lowercase).map(|/* name */| /* name */.len())
+   |
+
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.map(|line| parse(line.trim())).collect()
+   |           ^^^
+   |
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -     lines.map(|line| parse(line.trim())).collect()
+LL +     lines.map(str::trim).map(parse).collect()
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
+   |           ^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(1, |acc, line| line.trim().len().wrapping_mul(acc))
+LL +     lines.map(str::trim).map(str::len).fold(1, |acc, /* name */| /* name */.wrapping_mul(acc))
+   |
+
+warning: this closure chains 2 steps onto the item, so `fold` does all of them
+  --> $DIR/splittable_adapter_closure_chain.rs:LL:CC
+   |
+LL |     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
+   |           ^^^^
+   |
+help: lift every step into a leading `map` of its own, leaving the closure the accumulation
+   |
+LL -     lines.fold(0, |total, line| line.trim().parse().unwrap_or_else(|_| total))
+LL +     lines.map(str::trim).map(str::parse).fold(0, |total, /* name */| /* name */.unwrap_or_else(|_| total))
+   |
+
+warning: N warnings emitted
