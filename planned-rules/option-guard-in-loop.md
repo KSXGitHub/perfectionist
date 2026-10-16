@@ -224,11 +224,13 @@ author's call, not a fix to be made unattended.
   borrow the name.
 - `perfectionist::excessive_nesting` counts depth without judging
   what produced it; this rule removes one specific cause.
-- [`splittable-adapter-closure`](./splittable-adapter-closure.md)
+- `perfectionist::splittable_adapter_closure`
+  ([`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs))
   picks up where this rule's help stops. The `filter_map` it asks for
-  carries whatever the guard's scrutinee was, so a
-  scrutinee that was itself a composition arrives as a closure doing
-  several things — `filter_map(|x| parse(x).and_then(validate))`,
-  which is among the shapes that rule names. The two compose in that
-  order rather than disagreeing: this one flattens the nesting, that
-  one splits what the flattening carried over.
+  carries whatever the guard's scrutinee was, so a scrutinee that was
+  itself a composition arrives as a closure doing several things —
+  `filter_map(|x| parse(x).and_then(validate))`, which is among the
+  shapes `splittable_adapter_closure` names. The two compose in that
+  order rather than disagreeing: this rule flattens the nesting, and
+  `splittable_adapter_closure` splits what the flattening carried
+  over.
