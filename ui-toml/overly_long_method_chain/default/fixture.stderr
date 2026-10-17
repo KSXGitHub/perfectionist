@@ -1,4 +1,4 @@
-warning: method chain has 6 distinct calls, above the limit of 5
+warning: method chain has 6 calls, above the limit of 5
   --> $DIR/fixture.rs:LL:CC
    |
 LL | /     names
@@ -14,7 +14,7 @@ LL | |         .join(", ")
    = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
    = note: `#[warn(perfectionist::overly_long_method_chain)]` on by default
 
-warning: method chain has 6 distinct calls, above the limit of 5
+warning: method chain has 6 calls, above the limit of 5
   --> $DIR/fixture.rs:LL:CC
    |
 LL | /     loader
@@ -29,7 +29,7 @@ LL | |         .count()
    = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
    = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
 
-warning: method chain has 6 distinct calls, above the limit of 5
+warning: method chain has 6 calls, above the limit of 5
   --> $DIR/fixture.rs:LL:CC
    |
 LL |       let count = input
@@ -45,7 +45,7 @@ LL | |         .count();
    = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
    = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
 
-warning: method chain has 6 distinct calls, above the limit of 5
+warning: method chain has 6 calls, above the limit of 5
   --> $DIR/fixture.rs:LL:CC
    |
 LL |       let count = fetch
@@ -57,6 +57,21 @@ LL | |         .map(str::trim)
 LL | |         .max()
 LL | |         .unwrap_or(0);
    | |_____________________^
+   |
+   = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
+   = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
+
+warning: method chain has 6 calls, above the limit of 5
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL | /     rows.iter()
+LL | |         .filter(|row| {
+LL | |             let total: u32 = row.iter().sum();
+LL | |             total > 10
+...  |
+LL | |         })
+LL | |         .collect()
+   | |__________________^
    |
    = help: give a stage a name — bind it to a `let`, or move a run of stages into a function — named for the value it produces, not for the stages it replaces
    = help: if the only name that fits describes the steps rather than the value (`filtered`, `mapped`, `result`), the cut is in the wrong place; split where the chain produces something you can name
