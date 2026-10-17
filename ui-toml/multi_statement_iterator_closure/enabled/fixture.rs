@@ -74,6 +74,13 @@ fn named_callbacks_are_not_inline() {
     let _ = [1, 2].into_iter().map(named_callback);
 }
 
+fn immediately_invoked_closure() {
+    (|value| {
+        let doubled = value * 2;
+        doubled
+    })(1);
+}
+
 macro_rules! multiple_statements {
     () => { dbg!(1); dbg!(2); };
 }
