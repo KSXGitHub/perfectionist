@@ -31,6 +31,7 @@ mod code_lines;
 mod command_extra;
 mod comment_walk;
 mod common;
+mod defaulted_mapper;
 mod derive_list;
 mod enclosing_hir;
 mod exclusive_captures;

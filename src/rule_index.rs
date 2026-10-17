@@ -118,6 +118,8 @@ rule_index! {
     impure_macro_arguments => ImpureMacroArguments,
     lint_attribute_trailing_comment => LintAttributeTrailingComment,
     macro_trailing_comma => MacroTrailingComma,
+    map_or => MapOr,
+    map_or_else => MapOrElse,
     mutating_command_builder => MutatingCommandBuilder,
     named_prelude_imports => NamedPreludeImports,
     needless_borrowed_parameters => NeedlessBorrowedParameters,
