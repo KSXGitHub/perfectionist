@@ -90,7 +90,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
     };
     html! {
         div.custom-type {
-            p {
+            p.custom-type-heading {
                 code.custom-type-name { (ty.name) }
                 " "
                 span.custom-type-kind { (kind_label) }

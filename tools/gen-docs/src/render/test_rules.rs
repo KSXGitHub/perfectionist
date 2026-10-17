@@ -31,7 +31,7 @@ fn lint_names_offer_a_line_break_after_every_underscore() {
     // The index table's "Lint" cell — the narrowest of the three
     // columns, and the one that motivated this.
     let cell = format!(
-        r##"<td><a href="#/rule/redundant-derive-more-forward-template"><code>{broken}</code></a></td>"##,
+        r##"<td><a href="#/rule/redundant-derive-more-forward-template"><code class="index-lint-name">{broken}</code></a></td>"##,
     );
     assert!(
         html.contains(&cell),
