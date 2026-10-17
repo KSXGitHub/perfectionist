@@ -676,7 +676,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     " top"
                 }
             }
-            p {
+            p.rule-statement {
                 (state_badge(rule.default_state))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
