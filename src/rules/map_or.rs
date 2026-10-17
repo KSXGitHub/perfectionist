@@ -20,23 +20,9 @@ declare_tool_lint! {
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. The
-    /// call names the default before the mapper it stands in for, so
-    /// it states the exceptional case ahead of the ordinary one, and a
-    /// diff shows the mapper — usually the part that changed — behind
-    /// it.
-    ///
-    /// The help names what states the two the other way round: a
-    /// `match`, which fits any call and is the only remedy that leaves
-    /// the default unevaluated where there is a value; the chain
-    /// `map(_).unwrap_or(_)`; and, for some defaults, one shorter call
-    /// — `false` into `is_some_and` (`is_ok_and` on a `Result`), `true`
-    /// into `is_none_or`, `None` into `and_then`, and a default the
-    /// type's `Default` gives into `map(_).unwrap_or_default()`. Those
-    /// predicates need Rust 1.70, or 1.82 for `is_none_or`, so the help
-    /// names the chain beside them.
-    ///
-    /// Which remedy reads best is the author's, so the rule suggests
-    /// none of them.
+    /// call names the default before the mapper it stands in for, so a
+    /// reader meets the exceptional case first, and a diff shows the
+    /// mapper — usually the part that changed — behind it.
     ///
     /// ### Interaction with Clippy
     ///
@@ -45,7 +31,7 @@ declare_tool_lint! {
     /// is founded on: the arguments are not in execution order.
     /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
     /// `match` remedy. A project enabling either group has to allow
-    /// that lint for these remedies to stand.
+    /// that lint, or the two trade warnings at one call site.
     ///
     /// At its default levels Clippy redirects a boolean default
     /// (`clippy::unnecessary_map_or`, itself gated on the crate's

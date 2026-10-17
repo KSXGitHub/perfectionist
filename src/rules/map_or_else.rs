@@ -20,20 +20,9 @@ declare_tool_lint! {
     ///
     /// This is a stylistic preference, not a correctness issue. The
     /// call names the default closure before the mapper it stands in
-    /// for, and that closure is a body rather than a token, so the
-    /// mapper — usually the part a diff changed — ends up behind
-    /// however many lines the other branch takes.
-    ///
-    /// The help names what states the two the other way round: a
-    /// `match`, which fits any call and takes arms that are more than
-    /// an expression; and the chain `map(_).unwrap_or_else(_)`, which
-    /// carries both closures over unchanged, since
-    /// `Result::unwrap_or_else` is handed the error just as
-    /// `map_or_else` hands it. A closure that only builds the type's
-    /// `Default` shortens that chain to `map(_).unwrap_or_default()`.
-    ///
-    /// Which remedy reads best is the author's, so the rule suggests
-    /// none of them.
+    /// for, so a reader meets the exceptional case first, and a diff
+    /// shows the mapper — usually the part that changed — behind
+    /// however many lines that closure takes.
     ///
     /// ### Interaction with Clippy
     ///
@@ -42,7 +31,7 @@ declare_tool_lint! {
     /// is founded on: the arguments are not in execution order.
     /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
     /// `match` remedy. A project enabling either group has to allow
-    /// that lint for these remedies to stand.
+    /// that lint, or the two trade warnings at one call site.
     ///
     /// At its default levels Clippy reaches the method only where the
     /// mapper hands its parameter straight back
