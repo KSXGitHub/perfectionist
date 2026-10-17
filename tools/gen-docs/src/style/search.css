@@ -221,10 +221,8 @@ h2.index-heading {
   padding: 0.4rem;
   list-style: none;
   overflow-y: auto;
-  /* Matching the padding, so a result the arrow keys scroll to lands
-     where one already in view sits rather than flush against the edge.
-     An engine without it leaves the result flush, which is legible; the
-     declaration is worth no more than that. */
+  /* Matches the padding, so a result the arrow keys scroll to lands
+     where one already in view sits rather than flush against the edge. */
   scroll-padding: 0.4rem;
   /* Keeps a scroll gesture that reaches the end of the list from carrying
      on into the page behind the overlay. */
@@ -248,17 +246,9 @@ h2.index-heading {
   font-size: 0.85rem;
 }
 
-/* Qualified with `a` to outrank base.css's `a:hover` underline, which it
-   ties with on specificity and beats on order. A result is a row in a
-   list rather than a link in a sentence, so it stays undecorated
-   whatever the pointer is doing.
-
-   Nothing here is drawn on `:hover`, and the highlight marking which
-   result Enter follows is `aria-selected`, written by
-   `search_overlay.js` on one result at a time for the arrow keys and
-   the pointer alike. A highlight the pointer drew on its own would be a
-   second one that Enter does not follow. Being a colour and nothing
-   else, it is in light.css and dark.css. */
+/* Qualified with `a` so it outranks base.css's `a:hover` underline: a
+   result is a row in a list rather than a link in a sentence, so it
+   stays undecorated whatever the pointer is doing. */
 a.search-result {
   display: block;
   padding: 0.45rem 0.6rem;
