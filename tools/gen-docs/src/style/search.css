@@ -246,9 +246,6 @@ h2.index-heading {
   font-size: 0.85rem;
 }
 
-/* Qualified with `a` so it outranks base.css's `a:hover` underline: a
-   result is a row in a list rather than a link in a sentence, so it
-   stays undecorated whatever the pointer is doing. */
 a.search-result {
   display: block;
   padding: 0.45rem 0.6rem;
