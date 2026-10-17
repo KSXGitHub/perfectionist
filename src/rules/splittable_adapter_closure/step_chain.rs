@@ -616,13 +616,17 @@ fn point_free<'tcx>(
             }
             // A path takes its generic arguments turbofished where a method
             // call writes them bare, and the span covers what was written.
-            let turbofish = segment.args.map_or_else(String::new, |arguments| {
-                let written = snippet_with_applicability(cx, arguments.span_ext, "", applicability);
-                match written.starts_with("::") {
-                    true => written.into_owned(),
-                    false => format!("::{written}"),
-                }
-            });
+            let turbofish = segment
+                .args
+                .map(|arguments| {
+                    let written =
+                        snippet_with_applicability(cx, arguments.span_ext, "", applicability);
+                    match written.starts_with("::") {
+                        true => written.into_owned(),
+                        false => format!("::{written}"),
+                    }
+                })
+                .unwrap_or_default();
             Some(format!("{owner}::{}{turbofish}", segment.ident.name))
         }
         _ => None,

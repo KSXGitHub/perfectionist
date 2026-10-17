@@ -250,7 +250,9 @@ fn common_module_name(items: &[TestItem]) -> Option<Symbol> {
 /// the inline module's own identifier when known; bare test items have
 /// none and fall back to the conventional `tests`.
 fn help_extract(file: &SourceFile, module_name: Option<Symbol>) -> String {
-    let name = module_name.map_or_else(|| "tests".to_owned(), |name| name.to_string());
+    let name = module_name
+        .map(|name| name.to_string())
+        .unwrap_or_else(|| "tests".to_owned());
     match paths::real_path(file).and_then(|path| paths::canonical_target(&path, &name)) {
         Some(target) => format!(
             "move the inline test code into a separate file (e.g. `{}`) and replace it with an \
