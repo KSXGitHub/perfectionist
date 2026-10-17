@@ -51,7 +51,7 @@ table.index th {
     padding: 0.15rem 0;
   }
 
-  table.index .index-lint code {
+  table.index .index-lint-name {
     overflow-wrap: anywhere;
   }
 }

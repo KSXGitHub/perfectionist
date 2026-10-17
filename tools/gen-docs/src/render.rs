@@ -292,9 +292,11 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     tbody {
                         @for rule in rules {
                             tr {
-                                td.index-lint {
+                                td {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                        code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
+                                        code.index-lint-name {
+                                            (breakable_lint_name(unnamespaced(&rule.namespaced)))
+                                        }
                                     }
                                 }
                                 td { (state_badge(rule.default_state)) }
