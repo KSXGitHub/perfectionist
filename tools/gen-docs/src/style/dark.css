@@ -115,16 +115,16 @@
   html:not([color-scheme-override="light"]) article.rule {
     border-top-color: #21262d;
   }
-  html:not([color-scheme-override="light"]) article.rule h2 .lint-prefix {
+  html:not([color-scheme-override="light"]) article.rule .rule-heading .lint-prefix {
     color: #8b949e;
   }
-  html:not([color-scheme-override="light"]) article.rule h2 .rule-anchor {
+  html:not([color-scheme-override="light"]) article.rule .rule-heading .rule-anchor {
     color: #8b949e;
   }
-  html:not([color-scheme-override="light"]) article.rule h2 .rule-jump-link {
+  html:not([color-scheme-override="light"]) article.rule .rule-heading .rule-jump-link {
     color: #8b949e;
   }
-  html:not([color-scheme-override="light"]) article.rule h2 .rule-jump-link:hover {
+  html:not([color-scheme-override="light"]) article.rule .rule-heading .rule-jump-link:hover {
     color: #4493f8;
   }
   html:not([color-scheme-override="light"]) article.rule .source {
@@ -420,16 +420,16 @@ html[color-scheme-override="dark"] .state-inactive {
 html[color-scheme-override="dark"] article.rule {
   border-top-color: #21262d;
 }
-html[color-scheme-override="dark"] article.rule h2 .lint-prefix {
+html[color-scheme-override="dark"] article.rule .rule-heading .lint-prefix {
   color: #8b949e;
 }
-html[color-scheme-override="dark"] article.rule h2 .rule-anchor {
+html[color-scheme-override="dark"] article.rule .rule-heading .rule-anchor {
   color: #8b949e;
 }
-html[color-scheme-override="dark"] article.rule h2 .rule-jump-link {
+html[color-scheme-override="dark"] article.rule .rule-heading .rule-jump-link {
   color: #8b949e;
 }
-html[color-scheme-override="dark"] article.rule h2 .rule-jump-link:hover {
+html[color-scheme-override="dark"] article.rule .rule-heading .rule-jump-link:hover {
   color: #4493f8;
 }
 html[color-scheme-override="dark"] article.rule .source {
