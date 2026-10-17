@@ -12,14 +12,6 @@
 Checks the usage of `map_or_else(_, _)` on `Option` and
 `Result`.
 
-Where the default hands back the one the mapped type's
-`Default` gives — a closure ignoring what it is handed, or
-`String::new` and the like — the call is rewritten as
-`map_or_default`, which a fixer run applies. A `Foo::new`
-qualifies only where `Foo::default()` is that very call, and a
-crate whose `rust-version` predates `map_or_default` keeps the
-help text instead. Any other default is the author's to settle.
-
 Left alone: `map_or_default`, which takes no default; a
 receiver of any other type; and a call an expansion produced,
 though one written as a macro *argument* is flagged.
