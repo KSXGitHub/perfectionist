@@ -1,6 +1,6 @@
 // edition:2024
 
-// Regression test: `map_or_else_usage` must not fire on a call to an
+// Regression test: `map_or_else` must not fire on a call to an
 // extension trait's method of the same name. The trait below lends
 // `map_or_else` to a borrowed `Option`, where the inherent method
 // cannot apply — it takes `self`, and a `String` cannot be moved out of

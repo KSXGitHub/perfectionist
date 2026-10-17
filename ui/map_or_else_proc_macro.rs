@@ -1,6 +1,6 @@
 // aux-build:proc_macro_synth_binding.rs
 
-// Regression test: `map_or_else_usage` must not fire on a
+// Regression test: `map_or_else` must not fire on a
 // `FLAG.map_or_else(|| false, |flag| flag)` synthesised by a proc-macro
 // derive whose expansion stamps the user's span on every token of the
 // call. The rule reports at the method name and its arguments, so a
@@ -19,12 +19,12 @@
 
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthMapOrElseUsage;
+use proc_macro_synth_binding::SynthMapOrElse;
 
 const FLAG: Option<bool> = Some(true);
 
-#[derive(SynthMapOrElseUsage)]
-#[synth_map_or_else_usage]
-struct UsesSynthMapOrElseUsage;
+#[derive(SynthMapOrElse)]
+#[synth_map_or_else]
+struct UsesSynthMapOrElse;
 
 fn main() {}

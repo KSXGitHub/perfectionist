@@ -885,10 +885,10 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
     out
 }
 
-/// `#[derive(SynthMapOrUsage)]` + `#[synth_map_or_usage]` →
-/// `fn _synth_map_or_usage() { let _ = FLAG.map_or(false, |flag| flag); }`,
+/// `#[derive(SynthMapOr)]` + `#[synth_map_or]` →
+/// `fn _synth_map_or() { let _ = FLAG.map_or(false, |flag| flag); }`,
 /// where every token of the statement inherits the user-span of
-/// `synth_map_or_usage` and the wrapping `fn` keeps the derive's
+/// `synth_map_or` and the wrapping `fn` keeps the derive's
 /// call-site span.
 ///
 /// The call's own span is then a user span, which
@@ -897,23 +897,23 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
 /// the call lives, which is what `hir_in_external_macro` reads.
 ///
 /// `FLAG` is the fixture's own `const`.
-#[proc_macro_derive(SynthMapOrUsage, attributes(synth_map_or_usage))]
-pub fn synth_map_or_usage(input: TokenStream) -> TokenStream {
-    let attr_span = find_attr_span(input, "synth_map_or_usage")
-        .expect("`#[derive(SynthMapOrUsage)]` requires a `#[synth_map_or_usage]`");
+#[proc_macro_derive(SynthMapOr, attributes(synth_map_or))]
+pub fn synth_map_or(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or")
+        .expect("`#[derive(SynthMapOr)]` requires a `#[synth_map_or]`");
     let body = respan(
         "let _ = FLAG.map_or(false, |flag| flag);"
             .parse()
             .expect("valid tokens"),
         attr_span,
     );
-    wrap_fn_block("_synth_map_or_usage", body)
+    wrap_fn_block("_synth_map_or", body)
 }
 
-/// `#[derive(SynthMapOrElseUsage)]` + `#[synth_map_or_else_usage]` →
-/// `fn _synth_map_or_else_usage() { let _ = FLAG.map_or_else(|| false, |flag| flag); }`,
+/// `#[derive(SynthMapOrElse)]` + `#[synth_map_or_else]` →
+/// `fn _synth_map_or_else() { let _ = FLAG.map_or_else(|| false, |flag| flag); }`,
 /// where every token of the statement inherits the user-span of
-/// `synth_map_or_else_usage` and the wrapping `fn` keeps the derive's
+/// `synth_map_or_else` and the wrapping `fn` keeps the derive's
 /// call-site span.
 ///
 /// The call's own span is then a user span, which
@@ -922,17 +922,17 @@ pub fn synth_map_or_usage(input: TokenStream) -> TokenStream {
 /// the call lives, which is what `hir_in_external_macro` reads.
 ///
 /// `FLAG` is the fixture's own `const`.
-#[proc_macro_derive(SynthMapOrElseUsage, attributes(synth_map_or_else_usage))]
-pub fn synth_map_or_else_usage(input: TokenStream) -> TokenStream {
-    let attr_span = find_attr_span(input, "synth_map_or_else_usage")
-        .expect("`#[derive(SynthMapOrElseUsage)]` requires a `#[synth_map_or_else_usage]`");
+#[proc_macro_derive(SynthMapOrElse, attributes(synth_map_or_else))]
+pub fn synth_map_or_else(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or_else")
+        .expect("`#[derive(SynthMapOrElse)]` requires a `#[synth_map_or_else]`");
     let body = respan(
         "let _ = FLAG.map_or_else(|| false, |flag| flag);"
             .parse()
             .expect("valid tokens"),
         attr_span,
     );
-    wrap_fn_block("_synth_map_or_else_usage", body)
+    wrap_fn_block("_synth_map_or_else", body)
 }
 
 /// Every token of `stream`, groups walked into, moved to `span`.

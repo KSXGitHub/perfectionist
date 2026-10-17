@@ -2,7 +2,7 @@
 //!
 //! `Option::map_or`, `Option::map_or_else`, `Result::map_or` and
 //! `Result::map_or_else` each take a default and a mapper, in that
-//! order. `map_or_usage` and `map_or_else_usage` fire on one method
+//! order. `map_or` and `map_or_else` fire on one method
 //! name apiece, and what they share is finding the call: the name, the
 //! receiver's family, the default, and the span to report at.
 //!

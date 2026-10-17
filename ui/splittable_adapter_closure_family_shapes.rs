@@ -17,8 +17,8 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 #![allow(
-    perfectionist::map_or_usage,
-    perfectionist::map_or_else_usage,
+    perfectionist::map_or,
+    perfectionist::map_or_else,
     reason = "the defaulted adapters this fixture measures are calls those rules flag"
 )]
 

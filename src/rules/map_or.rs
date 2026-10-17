@@ -34,6 +34,7 @@ declare_tool_lint! {
     /// type's `Default` gives into `map(_).unwrap_or_default()`. Those
     /// predicates need Rust 1.70, or 1.82 for `is_none_or`, so the help
     /// names the chain beside them.
+    ///
     /// Which remedy reads best is the author's, so the rule suggests
     /// none of them.
     ///
@@ -54,10 +55,9 @@ declare_tool_lint! {
     ///
     /// ### Interaction with sibling rules
     ///
-    /// `perfectionist::map_or_else_usage` holds `map_or_else` to the
-    /// same order. `perfectionist::splittable_adapter_closure` reads
-    /// the same calls for a different fault — a mapper doing several
-    /// jobs.
+    /// `perfectionist::map_or_else` says the same of the sibling
+    /// method. `perfectionist::splittable_adapter_closure` reads the
+    /// same calls for a different fault — a mapper doing several jobs.
     ///
     /// ### Example
     ///
@@ -81,7 +81,7 @@ declare_tool_lint! {
     ///     None => 80,
     /// };
     /// ```
-    pub perfectionist::MAP_OR_USAGE,
+    pub perfectionist::MAP_OR,
     Warn,
     "`map_or` call, which names its default before the mapper it stands in for",
     report_in_external_macro: false
@@ -97,7 +97,7 @@ const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or(...)`";
 const MATCH_HELP: &str =
     "or a `match`, which also leaves the default unevaluated where there is a value";
 
-const CONFIG_KEY: &str = "perfectionist::map_or_usage";
+const CONFIG_KEY: &str = "perfectionist::map_or";
 
 /// The rule has no configuration knobs. Not dead code: the read
 /// below rejects a mistyped key in the rule's `dylint.toml` table,
@@ -106,11 +106,11 @@ const CONFIG_KEY: &str = "perfectionist::map_or_usage";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct MapOrUsage;
+pub struct MapOr;
 
-impl_lint_pass!(MapOrUsage => [MAP_OR_USAGE]);
+impl_lint_pass!(MapOr => [MAP_OR]);
 
-impl Register for rule::MapOrUsage {
+impl Register for rule::MapOr {
     /// A method name and a receiver type decide the whole trigger, and
     /// every call they find is the shape the rule objects to, so there
     /// is no false-positive rate a baseline would have to hedge
@@ -118,16 +118,16 @@ impl Register for rule::MapOrUsage {
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
-        lint_store.register_lints(&[MAP_OR_USAGE]);
+        lint_store.register_lints(&[MAP_OR]);
     }
 
     fn register_pass(lint_store: &mut LintStore) {
         let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        lint_store.register_late_lint_pass(Box::new(|_| Box::new(MapOrUsage)));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(MapOr)));
     }
 }
 
-impl<'tcx> LateLintPass<'tcx> for MapOrUsage {
+impl<'tcx> LateLintPass<'tcx> for MapOr {
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         let Some(call) = defaulted_call(cx, expr, "map_or") else {
             return;
@@ -189,7 +189,7 @@ fn remedy(cx: &LateContext<'_>, call: &DefaultedCall<'_>) -> Remedy {
 fn emit(cx: &LateContext<'_>, call: &DefaultedCall<'_>) {
     span_lint_and_then(
         cx,
-        MAP_OR_USAGE,
+        MAP_OR,
         call.span,
         "`map_or` names its default before the mapper it stands in for",
         |diag| {

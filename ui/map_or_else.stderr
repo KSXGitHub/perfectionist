@@ -1,15 +1,15 @@
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |     width.map_or_else(|| 80, |width| width.saturating_sub(2))
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = help: put the default last: `map(...).unwrap_or_else(...)`
    = help: or a `match`, which also takes arms that are more than an expression
-   = note: `#[warn(perfectionist::map_or_else_usage)]` on by default
+   = note: `#[warn(perfectionist::map_or_else)]` on by default
 
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |     parsed.map_or_else(|error| error.len() as u32, |width| width + 1)
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -18,7 +18,7 @@ LL |     parsed.map_or_else(|error| error.len() as u32, |width| width + 1)
    = help: or a `match`, which also takes arms that are more than an expression
 
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |     name.map_or_else(String::new, |name| name.to_uppercase())
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -27,7 +27,7 @@ LL |     name.map_or_else(String::new, |name| name.to_uppercase())
    = help: or a `match`, which also takes arms that are more than an expression
 
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |       parsed.map_or_else(
    |  ____________^
@@ -40,7 +40,7 @@ LL | |     )
    = help: or a `match`, which also takes arms that are more than an expression
 
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |     width.map_or_else(|| 0, |width| width + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +49,7 @@ LL |     width.map_or_else(|| 0, |width| width + 1)
    = help: or a `match`, which also takes arms that are more than an expression
 
 warning: `map_or_else` names its default before the mapper it stands in for
-  --> $DIR/map_or_else_usage.rs:LL:CC
+  --> $DIR/map_or_else.rs:LL:CC
    |
 LL |     assert!(width.map_or_else(|| false, |width| width > 2));
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
