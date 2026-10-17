@@ -298,7 +298,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                             tr {
                                 td {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                        code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
+                                        code.index-lint-name {
+                                            (breakable_lint_name(unnamespaced(&rule.namespaced)))
+                                        }
                                     }
                                 }
                                 td { (state_badge(rule.default_state)) }
@@ -690,7 +692,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     let source_url = format!("{repo_url}/blob/{commit_sha}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
-            h2 {
+            h2.rule-heading {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
@@ -705,7 +707,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     " top"
                 }
             }
-            p {
+            p.rule-statement {
                 (state_badge(rule.default_state))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }

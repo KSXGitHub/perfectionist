@@ -180,15 +180,15 @@
     var articles = document.querySelectorAll('article.rule')
     for (var i = 0; i < articles.length; i++) {
       var article = articles[i]
-      var nameHost = article.querySelector('h2 .lint-name')
+      var nameHost = article.querySelector('.rule-heading .lint-name')
       var id = article.getAttribute('id')
       if (!nameHost || !id) {
         continue
       }
-      // The default-state badge marks the statement paragraph; the
-      // statement is that paragraph minus the badge's own word.
-      var badge = article.querySelector('p .state')
-      var statementHost = badge ? badge.parentElement : null
+      // The statement paragraph carries the default-state badge too, so
+      // the statement itself is that paragraph minus the badge's word.
+      var statementHost = article.querySelector('.rule-statement')
+      var badge = statementHost ? statementHost.querySelector('.state') : null
       /** @type {string[]} */
       var paragraphs = []
       var blocks = article.querySelectorAll('p, li')
