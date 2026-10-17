@@ -1,17 +1,25 @@
 use crate::common::DefaultState;
-use crate::defaulted_mapper::{DefaultedCall, Family, defaulted_call};
+use crate::defaulted_mapper::{Collapse, DefaultedCall, MAP_OR_DEFAULT, collapse, defaulted_call};
 use crate::rule_index::{Register, rule};
-use clippy_utils::diagnostics::span_lint_and_then;
-use clippy_utils::{is_default_equivalent, is_none_expr};
-use rustc_ast::LitKind;
-use rustc_hir::{Expr, ExprKind};
-use rustc_lint::{LateContext, LateLintPass, LintStore};
+use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
+use clippy_utils::msrvs::Msrv;
+use clippy_utils::source::snippet_with_applicability;
+use rustc_errors::Applicability;
+use rustc_hir::Expr;
+use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 
 declare_tool_lint! {
     /// ### What it does
     ///
     /// Checks the usage of `map_or(_, _)` on `Option` and `Result`.
+    ///
+    /// Where the default is the one the mapped type's `Default` gives,
+    /// the call is rewritten as `map_or_default`, which a fixer run
+    /// applies. A `Foo::new()` qualifies only where `Foo::default()`
+    /// is that very call, and a crate whose `rust-version` predates
+    /// `map_or_default` keeps the help text instead. Any other default
+    /// is the author's to settle.
     ///
     /// Left alone: `map_or_default`, which takes no default; a
     /// receiver of any other type; and a call an expansion produced,
@@ -83,6 +91,9 @@ const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or(...)`";
 const MATCH_HELP: &str =
     "or a `match`, which also leaves the default unevaluated where there is a value";
 
+/// What the diagnostic says, whichever remedy follows it.
+const MESSAGE: &str = "`map_or` names its default before the mapper it stands in for";
+
 const CONFIG_KEY: &str = "perfectionist::map_or";
 
 /// The rule has no configuration knobs. Not dead code: the read
@@ -92,7 +103,12 @@ const CONFIG_KEY: &str = "perfectionist::map_or";
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {}
 
-pub struct MapOr;
+#[derive(Default)]
+pub struct MapOr {
+    /// The crate's `rust-version`, which says whether the
+    /// `map_or_default` the fix writes would compile there.
+    msrv: Msrv,
+}
 
 impl_lint_pass!(MapOr => [MAP_OR]);
 
@@ -109,106 +125,75 @@ impl Register for rule::MapOr {
 
     fn register_pass(lint_store: &mut LintStore) {
         let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        lint_store.register_late_lint_pass(Box::new(|_| Box::new(MapOr)));
+        lint_store.register_late_lint_pass(Box::new(|_| Box::new(MapOr::default())));
     }
 }
 
 impl<'tcx> LateLintPass<'tcx> for MapOr {
+    fn check_crate(&mut self, cx: &LateContext<'tcx>) {
+        self.msrv.read_cargo(cx.sess());
+    }
+
     fn check_expr(&mut self, cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) {
         let Some(call) = defaulted_call(cx, expr, "map_or") else {
             return;
         };
-        emit(cx, &call);
+        emit(cx, &call, self.msrv);
     }
-}
-
-/// What the help names, which the default decides.
-enum Remedy {
-    /// One method of the receiver's own, answering what the whole call
-    /// answers. `since` is the Rust version that method arrived in,
-    /// where a crate may predate it.
-    OneCall {
-        method: &'static str,
-        since: Option<&'static str>,
-    },
-    /// The chain, ending in `unwrap_or_default` because the default is
-    /// one the type's own `Default` gives.
-    DefaultedChain,
-    /// The chain. Nothing about this default is shorter than it.
-    Chain,
-}
-
-/// The remedy `call`'s default earns.
-///
-/// A boolean answers a test each family already has a name for, and a
-/// `None` answers the `and_then` an `Option` already has. `Result` is
-/// missing the counterpart of `is_none_or`, so a `true` default
-/// collapses into nothing there; a `None` default on a `Result` is left
-/// to the chain as well, since reaching `and_then` would mean an `ok()`
-/// first, which is a step rather than a shorter spelling.
-fn remedy(cx: &LateContext<'_>, call: &DefaultedCall<'_>) -> Remedy {
-    let one_call = |method, since| Remedy::OneCall { method, since };
-    if let ExprKind::Lit(literal) = call.default.kind
-        && let LitKind::Bool(value) = literal.node
-    {
-        return match (call.family, value) {
-            (Family::Option, false) => one_call("is_some_and", Some("1.70")),
-            (Family::Option, true) => one_call("is_none_or", Some("1.82")),
-            (Family::Result, false) => one_call("is_ok_and", Some("1.70")),
-            (Family::Result, true) => Remedy::Chain,
-        };
-    }
-    if call.family == Family::Option && is_none_expr(cx, call.default) {
-        return one_call("and_then", None);
-    }
-    // A default the type's own `Default` gives, written as the call that
-    // gives it. A literal `0` or `""` is left to the chain: it names the
-    // value it stands for where `unwrap_or_default` hides it, and
-    // `clippy::unwrap_or_default` draws the line in the same place.
-    if matches!(call.default.kind, ExprKind::Call(..)) && is_default_equivalent(cx, call.default) {
-        return Remedy::DefaultedChain;
-    }
-    Remedy::Chain
 }
 
 /// Report the call and name what it can become.
-fn emit(cx: &LateContext<'_>, call: &DefaultedCall<'_>) {
-    span_lint_and_then(
-        cx,
-        MAP_OR,
-        call.span,
-        "`map_or` names its default before the mapper it stands in for",
-        |diag| {
-            match remedy(cx, call) {
-                // The chain rides along where the named method is
-                // younger than `map_or` itself, so a crate pinned below
-                // that version still reads advice it can take.
-                Remedy::OneCall {
-                    method,
-                    since: Some(version),
-                } => {
-                    diag.help(format!(
-                        "that default is what `{method}` means (Rust {version} or later)",
-                    ));
-                    diag.help(CHAIN_HELP);
-                }
-                Remedy::OneCall {
-                    method,
-                    since: None,
-                } => {
-                    diag.help(format!("that default is what `{method}` means"));
-                }
-                Remedy::DefaultedChain => {
-                    diag.help("the default is the type's own: `map(...).unwrap_or_default()`");
-                }
-                Remedy::Chain => {
-                    diag.help(CHAIN_HELP);
-                }
+///
+/// The one remedy the rule applies itself is `map_or_default`, where
+/// the default is the mapped type's own: it answers what the call
+/// answers, in one call, so neither the chain nor a `match` is worth
+/// naming beside it. Every other default leaves the choice open, and
+/// the help names the candidates.
+fn emit<'tcx>(cx: &LateContext<'tcx>, call: &DefaultedCall<'tcx>, msrv: Msrv) {
+    let collapse = collapse(cx, call, Some(call.default));
+    if let Some(Collapse::Default) = collapse
+        && msrv.meets(cx, MAP_OR_DEFAULT)
+    {
+        let mut applicability = Applicability::MachineApplicable;
+        let mapper = snippet_with_applicability(cx, call.mapper.span, "..", &mut applicability);
+        span_lint_and_sugg(
+            cx,
+            MAP_OR,
+            call.span,
+            MESSAGE,
+            "the default is the mapped type's own, so one call says it",
+            format!("map_or_default({mapper})"),
+            applicability,
+        );
+        return;
+    }
+    span_lint_and_then(cx, MAP_OR, call.span, MESSAGE, |diag| {
+        match collapse {
+            // The chain rides along where the named predicate is
+            // younger than `map_or` itself, so a crate pinned below
+            // that version still reads advice it can take.
+            Some(Collapse::Predicate { method, since }) => {
+                diag.help(format!(
+                    "that default is what `{method}` means (Rust {since} or later)",
+                ));
+                diag.help(CHAIN_HELP);
             }
-            // Every default has this one, so every diagnostic ends on
-            // it rather than reading as though the call above were the
-            // answer.
-            diag.help(MATCH_HELP);
-        },
-    );
+            Some(Collapse::AndThen) => {
+                diag.help("that default is what `and_then` means");
+            }
+            // Reached only where the crate predates
+            // `map_or_default`, since the fix above takes this
+            // default otherwise.
+            Some(Collapse::Default) => {
+                diag.help("the default is the mapped type's own: `map(...).unwrap_or_default()`");
+            }
+            None => {
+                diag.help(CHAIN_HELP);
+            }
+        }
+        // Every default has this one, so every diagnostic ends on
+        // it rather than reading as though the call above were the
+        // answer.
+        diag.help(MATCH_HELP);
+    });
 }

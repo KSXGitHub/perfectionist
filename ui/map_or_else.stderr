@@ -23,6 +23,42 @@ warning: `map_or_else` names its default before the mapper it stands in for
 LL |     name.map_or_else(String::new, |name| name.to_uppercase())
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     name.map_or_else(String::new, |name| name.to_uppercase())
+LL +     name.map_or_default(|name| name.to_uppercase())
+   |
+
+warning: `map_or_else` names its default before the mapper it stands in for
+  --> $DIR/map_or_else.rs:LL:CC
+   |
+LL |     width.map_or_else(|| 0, |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or_else(|| 0, |width| width + 1)
+LL +     width.map_or_default(|width| width + 1)
+   |
+
+warning: `map_or_else` names its default before the mapper it stands in for
+  --> $DIR/map_or_else.rs:LL:CC
+   |
+LL |     name.map_or_else(|_| String::new(), |name| name.to_uppercase())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     name.map_or_else(|_| String::new(), |name| name.to_uppercase())
+LL +     name.map_or_default(|name| name.to_uppercase())
+   |
+
+warning: `map_or_else` names its default before the mapper it stands in for
+  --> $DIR/map_or_else.rs:LL:CC
+   |
+LL |     width.map_or_else(Port::new, Port)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
    = help: put the default last: `map(...).unwrap_or_else(...)`
    = help: or a `match`, which also takes arms that are more than an expression
 
@@ -45,8 +81,11 @@ warning: `map_or_else` names its default before the mapper it stands in for
 LL |     width.map_or_else(|| 0, |width| width + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)`
-   = help: or a `match`, which also takes arms that are more than an expression
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or_else(|| 0, |width| width + 1)
+LL +     width.map_or_default(|width| width + 1)
+   |
 
 warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else.rs:LL:CC
@@ -54,6 +93,7 @@ warning: `map_or_else` names its default before the mapper it stands in for
 LL |     assert!(width.map_or_else(|| false, |width| width > 2));
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
+   = help: that default is what `is_some_and` means (Rust 1.70 or later)
    = help: put the default last: `map(...).unwrap_or_else(...)`
    = help: or a `match`, which also takes arms that are more than an expression
 
