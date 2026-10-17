@@ -1117,14 +1117,15 @@ disjoint. Its `pipe_at_chain_boundary` sub-check forbids a
 by one — which the split satisfies by construction, since splitting
 leaves a `.pipe(…)` followed by another.
 
-[`map_or_usage`](./map-or-usage.md) is about the same `map_or` and
-`map_or_else` calls this rule keys as `Option` and `Result`'s defaulted
-adapters, and asks for something this rule does not: that the call go,
-rewritten as a `match` or a `map(…).unwrap_or(…)` chain, because its
-default stands before its mapper. The two fixes compose in either order.
-Splitting a mapper that does several jobs leaves the call where it is,
-and moving the default leaves the split mapper alone, so a site that
-draws both diagnostics can take either fix first.
+[`map_or_usage` and `map_or_else_usage`](./map-or-usage.md) are about
+the same `map_or` and `map_or_else` calls this rule keys as `Option`
+and `Result`'s defaulted adapters, and ask for something this rule does
+not: that the call go, rewritten as a `match` or a
+`map(…).unwrap_or(…)` chain, because its default stands before its
+mapper. The fixes compose in either order. Splitting a mapper that does
+several jobs leaves the call where it is, and moving the default leaves
+the split mapper alone, so a site that draws both diagnostics can take
+either fix first.
 
 ## Configuration
 

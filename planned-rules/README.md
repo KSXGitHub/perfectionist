@@ -108,15 +108,17 @@ pattern that several rules call out by reference — live in
   call. Active by default.
 
 ### `Option` and `Result` combinators
-- [`map-or-usage.md`](./map-or-usage.md) — flag a call to
-  `Option::map_or`, `Option::map_or_else`, `Result::map_or` or
-  `Result::map_or_else`. Each takes its default before the mapper, so
-  the reader meets the value the receiver does not hold before the one
-  it does, and the two arguments stand in the reverse of the order they
-  run in. The remedy is a `match`, a `map(...).unwrap_or(...)` chain,
-  or the shorter `is_some_and` / `is_none_or` / `and_then` / `ok` where
-  the default identifies one. Reverses `clippy::map_unwrap_or`
-  (pedantic) and, for the `match` remedy,
+- [`map-or-usage.md`](./map-or-usage.md) — two rules, `map_or_usage`
+  and `map_or_else_usage`, each flagging its own method's calls on
+  `Option` and `Result`. Both methods take the default before the
+  mapper, so the reader meets the value the receiver does not hold
+  before the one it does, and the two arguments stand in the reverse of
+  the order they run in. `map_or`'s remedy is `is_some_and` /
+  `is_none_or` / `is_ok_and` / `and_then` / `ok` where the default
+  identifies one and a `map(...).unwrap_or(...)` chain otherwise;
+  `map_or_else`'s is the `unwrap_or_else` chain or a `match`, and is
+  the one with a machine-applicable autofix. Both reverse
+  `clippy::map_unwrap_or` (pedantic), and the `match` remedy reverses
   `clippy::option_if_let_else` (nursery), so a project that enables
   either group allows that lint. Active by default.
 
