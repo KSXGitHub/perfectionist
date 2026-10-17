@@ -9,78 +9,51 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a call to `Option::map_or_else` or `Result::map_or_else`,
-    /// which take the default closure first and the mapper second, and
-    /// names the remedies that put them back in the order they run:
-    /// the chain `map(...).unwrap_or_else(...)`, or a `match`.
+    /// Checks the usage of `map_or_else(_, _)` on `Option` and
+    /// `Result`.
     ///
-    /// The chain carries both closures over unchanged, the error one
-    /// included: `Result::map_or_else` hands its first closure the
-    /// error, and so does `Result::unwrap_or_else`. A `match` is the
-    /// remedy where an arm would hold more than an expression —
-    /// several error variants to tell apart, a binding to name, a `?`
-    /// or a `return` to reach for.
-    ///
-    /// Left alone:
-    ///
-    /// - `map_or_default`, which takes the mapper and nothing else, so
-    ///   it has no order to get wrong.
-    /// - A receiver of any other type, however its own `map_or_else`
-    ///   is shaped.
-    /// - A call an expansion produced, whose line its reader cannot
-    ///   act on. A call written as a macro *argument* is the author's
-    ///   own and is flagged.
+    /// Left alone: `map_or_default`, which takes no default; a
+    /// receiver of any other type; and a call an expansion produced,
+    /// though one written as a macro *argument* is flagged.
     ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. The
-    /// call returns exactly what each remedy returns, and since only
-    /// one of the two closures ever runs, moving them changes neither
-    /// what runs nor when.
+    /// call names the default closure before the mapper it stands in
+    /// for, and that closure is a body rather than a token, so the
+    /// mapper — usually the part a diff changed — ends up behind
+    /// however many lines the other branch takes.
     ///
-    /// The preference is that a call should read in the order it runs.
-    /// The default closure is a body rather than a token, so the
-    /// mapper — the part a reader is usually looking for, and the part
-    /// a diff usually changed — ends up behind however many lines the
-    /// other branch takes. The chain puts the receiver first, then
-    /// what happens to it, then what stands in when there is nothing
-    /// to happen to, which is the order the machine takes them in.
-    ///
-    /// What the preference gives up is one call's worth of brevity.
+    /// The help names what states the two the other way round: a
+    /// `match`, which fits any call and takes arms that are more than
+    /// an expression; and the chain `map(_).unwrap_or_else(_)`, which
+    /// carries both closures over unchanged, since
+    /// `Result::unwrap_or_else` is handed the error just as
+    /// `map_or_else` hands it. A closure that only builds the type's
+    /// `Default` shortens that chain to `map(_).unwrap_or_default()`.
+    /// Which remedy reads best is the author's, so the rule suggests
+    /// none of them.
     ///
     /// ### Interaction with Clippy
     ///
-    /// `clippy::map_unwrap_or` is this rule's exact reverse: it
-    /// rewrites `map(f).unwrap_or_else(g)` into `map_or_else(g, f)`.
-    /// It is in the `pedantic` group, so allow-by-default, and its own
-    /// documentation records the same observation this rule is founded
-    /// on — that the arguments are not in execution order. A project
-    /// that enables `clippy::pedantic` has to allow that lint for this
-    /// one's remedies to stand. `clippy::option_if_let_else`, in the
-    /// `nursery` group, is the reverse of the `match` remedy and takes
-    /// the same treatment.
+    /// `clippy::map_unwrap_or` (`pedantic`) is this rule's exact
+    /// reverse, and its own documentation records the caveat this rule
+    /// is founded on: the arguments are not in execution order.
+    /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
+    /// `match` remedy. A project enabling either group has to allow
+    /// that lint for these remedies to stand.
     ///
-    /// At its default levels Clippy says nothing about `map_or_else`
-    /// beyond the degenerate case the
-    /// `clippy::unnecessary_option_map_or_else` and
-    /// `clippy::unnecessary_result_map_or_else` pair covers, where the
-    /// mapper hands its parameter straight back. Where the default
-    /// closure is one the type's own `Default` gives, prefer
-    /// `unwrap_or_default()` to close the chain, which is what
-    /// `clippy::unwrap_or_default` asks for in turn.
+    /// At its default levels Clippy reaches the method only where the
+    /// mapper hands its parameter straight back
+    /// (`clippy::unnecessary_option_map_or_else`,
+    /// `clippy::unnecessary_result_map_or_else`). Every other call
+    /// draws nothing, which is the gap this rule fills.
     ///
     /// ### Interaction with sibling rules
     ///
     /// `perfectionist::map_or_usage` holds `map_or` to the same order.
-    /// The two are separate rules because the remedies are: a default
-    /// that is a value has predicates to collapse into — `is_some_and`
-    /// and the rest — where a default that is a closure has only the
-    /// chain and the `match`.
-    ///
-    /// `perfectionist::splittable_adapter_closure` reads the same calls
-    /// for a different fault — a mapper doing several jobs — and asks
-    /// for the closure to be split rather than the call to go. A call
-    /// that draws both diagnostics can take either fix first.
+    /// `perfectionist::splittable_adapter_closure` reads the same
+    /// calls for a different fault — a mapper doing several jobs.
     ///
     /// ### Example
     ///
@@ -90,26 +63,32 @@ declare_tool_lint! {
     /// let label = parsed.map_or_else(|error| error.to_string(), Entry::into_name);
     /// ```
     ///
-    /// **Prefer:**
+    /// **Prefer:** the chain, which reads in the order it runs
     ///
     /// ```rust,ignore
     /// let label = parsed.map(Entry::into_name).unwrap_or_else(|error| error.to_string());
     /// ```
+    ///
+    /// **Prefer:** a `match`, which names both cases
+    ///
+    /// ```rust,ignore
+    /// let label = match parsed {
+    ///     Ok(entry) => entry.into_name(),
+    ///     Err(error) => error.to_string(),
+    /// };
+    /// ```
     pub perfectionist::MAP_OR_ELSE_USAGE,
     Warn,
-    "`map_or_else` call, whose default stands before the mapper, in the reverse of the order they run",
+    "`map_or_else` call, which names its default before the mapper it stands in for",
     report_in_external_macro: false
 }
 
-/// The chain the method folds into one call, and the shorter ending a
-/// default-producing closure earns there.
-const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or_else(...)` states the steps in \
-                          the order they run, and `map(...).unwrap_or_default()` says it shorter \
-                          where the default is the one the type's own `Default` gives";
+/// The chain the method folds into one call.
+const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or_else(...)`";
 
-/// The remedy for a default whose body outgrows a closure.
-const MATCH_HELP: &str = "or a `match`, which names both cases and keeps the mapper next to the \
-                          value it maps";
+/// The remedy every call has, and the only one whose branches take more
+/// than an expression.
+const MATCH_HELP: &str = "or a `match`, which also takes arms that are more than an expression";
 
 const CONFIG_KEY: &str = "perfectionist::map_or_else_usage";
 
@@ -160,7 +139,7 @@ fn emit(cx: &LateContext<'_>, call: &DefaultedCall<'_>) {
         cx,
         MAP_OR_ELSE_USAGE,
         call.span,
-        "`map_or_else` takes the default before the mapper, in the reverse of the order they run",
+        "`map_or_else` names its default before the mapper it stands in for",
         |diag| {
             diag.help(CHAIN_HELP);
             diag.help(MATCH_HELP);

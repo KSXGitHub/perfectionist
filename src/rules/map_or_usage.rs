@@ -11,94 +11,53 @@ use rustc_session::{declare_tool_lint, impl_lint_pass};
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a call to `Option::map_or` or `Result::map_or`, which take
-    /// the default first and the mapper second, and names the remedies
-    /// that put them back in the order they run.
+    /// Checks the usage of `map_or(_, _)` on `Option` and `Result`.
     ///
-    /// Which remedy the help names depends on the default:
-    ///
-    /// | The call                      | Prefer                         |
-    /// |-------------------------------|--------------------------------|
-    /// | `opt.map_or(false, f)`        | `opt.is_some_and(f)`           |
-    /// | `opt.map_or(true, f)`         | `opt.is_none_or(f)`            |
-    /// | `res.map_or(false, f)`        | `res.is_ok_and(f)`             |
-    /// | `opt.map_or(None, f)`         | `opt.and_then(f)`              |
-    /// | `x.map_or(String::new(), f)`  | `x.map(f).unwrap_or_default()` |
-    /// | `x.map_or(default, f)`        | `x.map(f).unwrap_or(default)`  |
-    ///
-    /// The predicates are younger than `map_or` itself — `is_some_and`
-    /// and `is_ok_and` stabilised in Rust 1.70 and `is_none_or` in
-    /// 1.82 — so the help names the chain beside each one, which every
-    /// version has. `Result` has no counterpart of `is_none_or`, so
-    /// `res.map_or(true, f)` takes the chain as well.
-    ///
-    /// Where the default collapses into no shorter call, the help names
-    /// the chain and a `match`. The `match` is the remedy when an arm
-    /// would hold more than an expression, and the only one that leaves
-    /// the default out of the path that does not need it, since
-    /// `map_or` and `unwrap_or` both evaluate it either way.
-    ///
-    /// Left alone:
-    ///
-    /// - `map_or_default`, which takes the mapper and nothing else, so
-    ///   it has no order to get wrong.
-    /// - A receiver of any other type, however its own `map_or` is
-    ///   shaped.
-    /// - A call an expansion produced, whose line its reader cannot act
-    ///   on. A call written as a macro *argument* is the author's own
-    ///   and is flagged.
+    /// Left alone: `map_or_default`, which takes no default; a
+    /// receiver of any other type; and a call an expansion produced,
+    /// though one written as a macro *argument* is flagged.
     ///
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. The
-    /// call returns exactly what each remedy returns.
+    /// call names the default before the mapper it stands in for, so
+    /// it states the exceptional case ahead of the ordinary one, and a
+    /// diff shows the mapper — usually the part that changed — behind
+    /// it.
     ///
-    /// The preference is that a call should read in the order it runs.
-    /// A reader who reaches `width.map_or(` is handed a receiver and
-    /// must then hold a number that means nothing yet, until the mapper
-    /// arrives to explain it. The chain hands over the receiver, then
-    /// what happens to it, then what stands in when there is nothing to
-    /// happen to — the order the machine takes them in. A diff is where
-    /// that costs most: the mapper is usually the part that changed, and
-    /// it sits behind an argument belonging to the other branch, so a
-    /// reviewer reads the exception first and the change second.
-    ///
-    /// What the preference gives up is one call's worth of brevity.
+    /// The help names what states the two the other way round: a
+    /// `match`, which fits any call and is the only remedy that leaves
+    /// the default unevaluated where there is a value; the chain
+    /// `map(_).unwrap_or(_)`; and, for some defaults, one shorter call
+    /// — `false` into `is_some_and` (`is_ok_and` on a `Result`), `true`
+    /// into `is_none_or`, `None` into `and_then`, and a default the
+    /// type's `Default` gives into `map(_).unwrap_or_default()`. Those
+    /// predicates need Rust 1.70, or 1.82 for `is_none_or`, so the help
+    /// names the chain beside them.
+    /// Which remedy reads best is the author's, so the rule suggests
+    /// none of them.
     ///
     /// ### Interaction with Clippy
     ///
-    /// `clippy::map_unwrap_or` is this rule's exact reverse: it rewrites
-    /// `map(f).unwrap_or(a)` into `map_or(a, f)`. It is in the
-    /// `pedantic` group, so allow-by-default, and its own documentation
-    /// records the same observation this rule is founded on — that the
-    /// arguments are not in execution order. A project that enables
-    /// `clippy::pedantic` has to allow that lint for this one's remedies
-    /// to stand. `clippy::option_if_let_else`, in the `nursery` group,
-    /// is the reverse of the `match` remedy and takes the same
-    /// treatment.
+    /// `clippy::map_unwrap_or` (`pedantic`) is this rule's exact
+    /// reverse, and its own documentation records the caveat this rule
+    /// is founded on: the arguments are not in execution order.
+    /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
+    /// `match` remedy. A project enabling either group has to allow
+    /// that lint for these remedies to stand.
     ///
-    /// Three warn-by-default lints already push particular defaults off
-    /// the method and agree with this rule's direction:
-    /// `clippy::unnecessary_map_or` sends a boolean default to
-    /// `is_some_and` or `is_none_or`, `clippy::option_map_or_none` sends
-    /// a `None` default to `and_then`, and
-    /// `clippy::result_map_or_into_option` sends `map_or(None, Some)` to
-    /// `ok()`. The first of them is gated on the crate's `rust-version`,
-    /// so a crate pinned below 1.82 hears nothing from it; every other
-    /// default draws nothing from Clippy at its default levels, which is
-    /// the gap this rule fills.
+    /// At its default levels Clippy redirects a boolean default
+    /// (`clippy::unnecessary_map_or`, itself gated on the crate's
+    /// `rust-version`) and a `None` one (`clippy::option_map_or_none`,
+    /// `clippy::result_map_or_into_option`). Every other default draws
+    /// nothing, which is the gap this rule fills.
     ///
     /// ### Interaction with sibling rules
     ///
     /// `perfectionist::map_or_else_usage` holds `map_or_else` to the
-    /// same order. The two are separate rules because the remedies are:
-    /// a default that is a value has predicates to collapse into, where
-    /// a default that is a closure has only the chain and the `match`.
-    ///
-    /// `perfectionist::splittable_adapter_closure` reads the same calls
-    /// for a different fault — a mapper doing several jobs — and asks
-    /// for the closure to be split rather than the call to go. A call
-    /// that draws both diagnostics can take either fix first.
+    /// same order. `perfectionist::splittable_adapter_closure` reads
+    /// the same calls for a different fault — a mapper doing several
+    /// jobs.
     ///
     /// ### Example
     ///
@@ -108,28 +67,35 @@ declare_tool_lint! {
     /// let width = terminal_width.map_or(80, |width| width.saturating_sub(2));
     /// ```
     ///
-    /// **Prefer:**
+    /// **Prefer:** the chain, which reads in the order it runs
     ///
     /// ```rust,ignore
     /// let width = terminal_width.map(|width| width.saturating_sub(2)).unwrap_or(80);
     /// ```
+    ///
+    /// **Prefer:** a `match`, which names both cases
+    ///
+    /// ```rust,ignore
+    /// let width = match terminal_width {
+    ///     Some(width) => width.saturating_sub(2),
+    ///     None => 80,
+    /// };
+    /// ```
     pub perfectionist::MAP_OR_USAGE,
     Warn,
-    "`map_or` call, whose default stands before the mapper, in the reverse of the order they run",
+    "`map_or` call, which names its default before the mapper it stands in for",
     report_in_external_macro: false
 }
 
-/// The remedy that always applies, whatever the default is: the chain
-/// the method folds into one call.
-const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or(...)` states the steps in the \
-                          order they run";
+/// The chain the method folds into one call, which every default can
+/// take.
+const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or(...)`";
 
-/// The remedy for a default that is more than a value to hand over, and
-/// the only one that stops the default being evaluated where the
-/// receiver holds a value: `map_or` and `unwrap_or` both evaluate it
-/// either way.
-const MATCH_HELP: &str = "or a `match`, which names both cases and leaves the default out of the \
-                          path that does not need it";
+/// The remedy every call has, whatever its default, and the only one
+/// that stops the default being evaluated where the receiver holds a
+/// value: `map_or` and `unwrap_or` both evaluate it either way.
+const MATCH_HELP: &str =
+    "or a `match`, which also leaves the default unevaluated where there is a value";
 
 const CONFIG_KEY: &str = "perfectionist::map_or_usage";
 
@@ -182,9 +148,8 @@ enum Remedy {
     /// The chain, ending in `unwrap_or_default` because the default is
     /// one the type's own `Default` gives.
     DefaultedChain,
-    /// The chain, or a `match`. Nothing about this default is shorter
-    /// than either.
-    ChainOrMatch,
+    /// The chain. Nothing about this default is shorter than it.
+    Chain,
 }
 
 /// The remedy `call`'s default earns.
@@ -204,7 +169,7 @@ fn remedy(cx: &LateContext<'_>, call: &DefaultedCall<'_>) -> Remedy {
             (Family::Option, false) => one_call("is_some_and", Some("1.70")),
             (Family::Option, true) => one_call("is_none_or", Some("1.82")),
             (Family::Result, false) => one_call("is_ok_and", Some("1.70")),
-            (Family::Result, true) => Remedy::ChainOrMatch,
+            (Family::Result, true) => Remedy::Chain,
         };
     }
     if call.family == Family::Option && is_none_expr(cx, call.default) {
@@ -217,7 +182,7 @@ fn remedy(cx: &LateContext<'_>, call: &DefaultedCall<'_>) -> Remedy {
     if matches!(call.default.kind, ExprKind::Call(..)) && is_default_equivalent(cx, call.default) {
         return Remedy::DefaultedChain;
     }
-    Remedy::ChainOrMatch
+    Remedy::Chain
 }
 
 /// Report the call and name what it can become.
@@ -226,39 +191,38 @@ fn emit(cx: &LateContext<'_>, call: &DefaultedCall<'_>) {
         cx,
         MAP_OR_USAGE,
         call.span,
-        "`map_or` takes the default before the mapper, in the reverse of the order they run",
-        |diag| match remedy(cx, call) {
-            // The chain rides along where the named method is younger
-            // than `map_or` itself, so a crate pinned below that
-            // version still reads advice it can take.
-            Remedy::OneCall {
-                method,
-                since: Some(version),
-            } => {
-                diag.help(format!(
-                    "that default is what `{method}` means: call it instead, where the crate is \
-                     on Rust {version} or later",
-                ));
-                diag.help(CHAIN_HELP);
+        "`map_or` names its default before the mapper it stands in for",
+        |diag| {
+            match remedy(cx, call) {
+                // The chain rides along where the named method is
+                // younger than `map_or` itself, so a crate pinned below
+                // that version still reads advice it can take.
+                Remedy::OneCall {
+                    method,
+                    since: Some(version),
+                } => {
+                    diag.help(format!(
+                        "that default is what `{method}` means (Rust {version} or later)",
+                    ));
+                    diag.help(CHAIN_HELP);
+                }
+                Remedy::OneCall {
+                    method,
+                    since: None,
+                } => {
+                    diag.help(format!("that default is what `{method}` means"));
+                }
+                Remedy::DefaultedChain => {
+                    diag.help("the default is the type's own: `map(...).unwrap_or_default()`");
+                }
+                Remedy::Chain => {
+                    diag.help(CHAIN_HELP);
+                }
             }
-            Remedy::OneCall {
-                method,
-                since: None,
-            } => {
-                diag.help(format!(
-                    "that default is what `{method}` means: call it instead",
-                ));
-            }
-            Remedy::DefaultedChain => {
-                diag.help(
-                    "the default is one the type's own `Default` gives: \
-                     `map(...).unwrap_or_default()`",
-                );
-            }
-            Remedy::ChainOrMatch => {
-                diag.help(CHAIN_HELP);
-                diag.help(MATCH_HELP);
-            }
+            // Every default has this one, so every diagnostic ends on
+            // it rather than reading as though the call above were the
+            // answer.
+            diag.help(MATCH_HELP);
         },
     );
 }

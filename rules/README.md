@@ -96,11 +96,11 @@ Lint-control attributes use the `perfectionist::` namespace.
 
 - [`map_or_else_usage`](./map_or_else_usage.md) (default: `active`).
 
-  `map_or_else` call, whose default stands before the mapper, in the reverse of the order they run
+  `map_or_else` call, which names its default before the mapper it stands in for
 
 - [`map_or_usage`](./map_or_usage.md) (default: `active`).
 
-  `map_or` call, whose default stands before the mapper, in the reverse of the order they run
+  `map_or` call, which names its default before the mapper it stands in for
 
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 

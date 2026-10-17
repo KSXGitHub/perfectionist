@@ -1,32 +1,32 @@
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |     width.map_or_else(|| 80, |width| width.saturating_sub(2))
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
    = note: `#[warn(perfectionist::map_or_else_usage)]` on by default
 
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |     parsed.map_or_else(|error| error.len() as u32, |width| width + 1)
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
 
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |     name.map_or_else(String::new, |name| name.to_uppercase())
    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
 
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |       parsed.map_or_else(
@@ -36,25 +36,25 @@ LL | |         |width| width + 1,
 LL | |     )
    | |_____^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
 
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |     width.map_or_else(|| 0, |width| width + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
 
-warning: `map_or_else` takes the default before the mapper, in the reverse of the order they run
+warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else_usage.rs:LL:CC
    |
 LL |     assert!(width.map_or_else(|| false, |width| width > 2));
    |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
-   = help: put the default last: `map(...).unwrap_or_else(...)` states the steps in the order they run, and `map(...).unwrap_or_default()` says it shorter where the default is the one the type's own `Default` gives
-   = help: or a `match`, which names both cases and keeps the mapper next to the value it maps
+   = help: put the default last: `map(...).unwrap_or_else(...)`
+   = help: or a `match`, which also takes arms that are more than an expression
 
 warning: N warnings emitted
