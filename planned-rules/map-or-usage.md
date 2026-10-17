@@ -89,7 +89,7 @@ written.
 ## The name
 
 The anti-pattern is the call, so the name is the call's — the shape
-`thiserror_usage` already wears for this catalogue's other ban.
+`thiserror_usage` already has as this catalogue's other ban.
 `#[deny(perfectionist::map_or_usage)]` reads as forbidding the use of
 `map_or`, and `#[allow(perfectionist::map_or_usage)]` as permitting it
 at one site.
@@ -192,8 +192,9 @@ Everything here was read off the toolchain this repository pins, with
   remedy.** It rewrites an `if let` or `match` over an `Option` into
   `map_or` / `map_or_else`, and does the same for a `Result` whose
   `Err` arm ignores the error; it stays silent where an `Err` arm uses
-  the error. It is `nursery`, so allow by default, and a consumer who
-  enables that group allows this one too.
+  the error. It is `nursery`, so allow by default, and a project that
+  enables `clippy::nursery` has to allow `clippy::option_if_let_else`
+  for the `match` remedy to stand.
 - **Several Clippy lints at warn by default already push particular
   defaults off `map_or`, in this rule's direction.**
   `clippy::unnecessary_map_or` sends a boolean default to `is_some_and`
