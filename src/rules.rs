@@ -43,6 +43,7 @@ pub mod splittable_adapter_closure;
 pub mod thiserror_usage;
 pub mod too_many_local_bindings;
 pub mod too_many_struct_fields;
+pub mod trivial_else_branch;
 pub mod uncombined_self_import;
 pub mod unconsumed_into_conversion;
 pub mod unicode_ellipsis_in_comments;
