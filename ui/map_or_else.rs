@@ -72,6 +72,12 @@ fn error_ignored_default(name: Result<&str, String>) -> String {
     name.map_or_else(|_| String::new(), |name| name.to_uppercase())
 }
 
+// Bad: a closure handing back `None` on an `Option` is what `and_then`
+// means, which wins over `None` being an `Option`'s own `Default`.
+fn option_none_default(width: Option<u32>) -> Option<u32> {
+    width.map_or_else(|| None, |width| width.checked_add(1))
+}
+
 // Bad, and no fix: `Port::new` hands back `Port(8080)` where
 // `Port::default` hands back `Port(0)`, so the call keeps its default
 // and the help names the open remedies.

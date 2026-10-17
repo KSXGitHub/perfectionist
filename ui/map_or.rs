@@ -31,6 +31,10 @@ impl Default for Port {
     }
 }
 
+/// A tuple one element wider than the twelve `Default` reaches, so
+/// every element has a `Default` the tuple itself has not.
+type Wide = (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8);
+
 macro_rules! defaulting {
     ($option:expr) => {
         $option.map_or(false, |value| value > 1)
@@ -91,6 +95,15 @@ fn constructed_default(name: Option<&str>) -> String {
 // and the help names the open remedies.
 fn constructor_that_is_not_the_default(width: Option<u16>) -> Port {
     width.map_or(Port::new(), Port)
+}
+
+// Bad, and no fix: every element of the default is that element's
+// `Default`, which is not a `Default` for the tuple, so
+// `map_or_default` would not compile.
+fn default_without_a_default(width: Option<u8>) -> Wide {
+    width.map_or((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), |width| {
+        (width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    })
 }
 
 // Bad: `Default::default()` says outright what the fix writes.

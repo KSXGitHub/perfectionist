@@ -104,6 +104,18 @@ LL |     width.map_or(Port::new(), Port)
 warning: `map_or` names its default before the mapper it stands in for
   --> $DIR/map_or.rs:LL:CC
    |
+LL |       width.map_or((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), |width| {
+   |  ___________^
+LL | |         (width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+LL | |     })
+   | |______^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
 LL |     width.map_or(Default::default(), |width| width + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |

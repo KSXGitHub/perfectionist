@@ -56,6 +56,15 @@ LL +     name.map_or_default(|name| name.to_uppercase())
 warning: `map_or_else` names its default before the mapper it stands in for
   --> $DIR/map_or_else.rs:LL:CC
    |
+LL |     width.map_or_else(|| None, |width| width.checked_add(1))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `and_then` means
+   = help: or a `match`, which also takes arms that are more than an expression
+
+warning: `map_or_else` names its default before the mapper it stands in for
+  --> $DIR/map_or_else.rs:LL:CC
+   |
 LL |     width.map_or_else(Port::new, Port)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
