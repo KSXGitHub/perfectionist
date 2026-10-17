@@ -39,6 +39,8 @@ impl<Held> BorrowedMapOrElse<Held> for &Option<Held> {
     }
 }
 
+// Not flagged: the call is `BorrowedMapOrElse`'s rather than the inherent
+// `map_or_else`, which cannot take a `String` out of a borrow.
 fn through_a_trait(name: &Option<String>) -> usize {
     name.map_or_else(|| 0, |name| name.len())
 }
