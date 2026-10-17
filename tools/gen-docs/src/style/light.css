@@ -129,6 +129,9 @@ table.index tr {
 article.rule {
   border-top-color: #eaeef2;
 }
+article.rule:focus-visible .rule-heading {
+  outline-color: #0969da;
+}
 article.rule .rule-heading .lint-prefix {
   color: #57606a;
 }

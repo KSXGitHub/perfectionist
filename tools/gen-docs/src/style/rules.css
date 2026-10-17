@@ -74,6 +74,15 @@ article.rule .rule-heading {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
+article.rule:focus-visible {
+  outline: none;
+}
+
+article.rule:focus-visible .rule-heading {
+  outline: 2px solid;
+  outline-offset: 2px;
+}
+
 /* `right: 100%` parks the icon left of the heading's <code>, so the
    rule name stays aligned with body paragraphs; spanning <code> with
    `top`/`bottom: 0` centres it on the text, not the taller line box.
