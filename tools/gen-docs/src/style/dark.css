@@ -309,7 +309,7 @@
   html:not([color-scheme-override="light"]) .search-result {
     color: #e6edf3;
   }
-  html:not([color-scheme-override="light"]) .search-result:hover {
+  html:not([color-scheme-override="light"]) .search-result[aria-selected="true"] {
     background: #161b22;
   }
   html:not([color-scheme-override="light"]) .search-result-name {
@@ -617,7 +617,7 @@ html[color-scheme-override="dark"] .search-close:focus-visible {
 html[color-scheme-override="dark"] .search-result {
   color: #e6edf3;
 }
-html[color-scheme-override="dark"] .search-result:hover {
+html[color-scheme-override="dark"] .search-result[aria-selected="true"] {
   background: #161b22;
 }
 html[color-scheme-override="dark"] .search-result-name {
