@@ -1,11 +1,10 @@
-//! The call shape the two defaulted-mapper rules read.
+//! The call shape the defaulted-mapper rules read.
 //!
 //! `Option::map_or`, `Option::map_or_else`, `Result::map_or` and
 //! `Result::map_or_else` each take a default and a mapper, in that
 //! order. `perfectionist::map_or` and `perfectionist::map_or_else`
 //! fire on one method name apiece, and what they share is finding the
-//! call: the name, the receiver's family, the arguments, the mapped
-//! type and the span to report at.
+//! call.
 //!
 //! What each one does with the call it finds is its own business, but
 //! the question of what the default collapses the whole call into is
@@ -104,7 +103,7 @@ pub(crate) fn defaulted_call<'tcx>(
     }
     let family = family(cx, receiver)?;
     // A derive can stamp a user-source span on a call it synthesised,
-    // which leaves the expansion check above nothing to find, and the
+    // which leaves the `from_expansion` check nothing to find, and the
     // diagnostic span this rule picks is narrower than the call, so
     // `report_in_external_macro: false` does not see the expansion
     // either.
@@ -121,9 +120,8 @@ pub(crate) fn defaulted_call<'tcx>(
 }
 
 /// Which family `receiver`'s type belongs to, if either. The type is
-/// taken as adjusted and peeled of references, the way the method call
-/// itself reached the receiver: `map_or` takes `self`, so a
-/// `&Option<u8>` arrives derefed.
+/// taken the way the method call itself reached the receiver: `map_or`
+/// takes `self`, so a `&Option<u8>` arrives derefed.
 fn family(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Family> {
     let adt = cx
         .typeck_results()
@@ -155,9 +153,8 @@ pub(crate) enum Collapse {
 
 /// What `call` collapses into, given `value`: the value its default
 /// yields, where the author wrote one. `map_or` always has it; a
-/// `map_or_else` has it only where the default is a closure ignoring
-/// what it is handed, and hands over `None` for a function named as a
-/// path, which [`Collapse::Default`] still reaches.
+/// `map_or_else` has it only where its own `default_value` finds one,
+/// and `None` still reaches [`Collapse::Default`].
 ///
 /// The order is what decides the ties. `false` is a `bool`'s `Default`
 /// and `None` is an `Option`'s, so both would answer
@@ -186,13 +183,11 @@ pub(crate) fn collapse<'tcx>(
             return Some(Collapse::AndThen);
         }
     }
-    // What `is_default_equivalent` and its call form admit is a closed
-    // set: the literals a primitive's `Default` yields,
-    // `Default::default` itself, and `new` on the std containers whose
-    // `Default` is documented to be that call, with anything else held
-    // to a comparison against the type's own `Default` body. A
-    // `Foo::new` of the crate's own is not in it unless `Foo::default`
-    // is literally that call.
+    // Which values count as a default is `is_default_equivalent`'s
+    // judgement. A `Foo::new` of the crate's own counts only where the
+    // default is written as a value: comparing `Foo::default`'s body
+    // against the call needs the call, which the path form is not
+    // handed.
     let yields_default = match value {
         Some(value) => is_default_equivalent(cx, value),
         None => is_default_equivalent_call(cx, call.default, None),

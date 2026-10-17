@@ -74,13 +74,12 @@ declare_tool_lint! {
     report_in_external_macro: false
 }
 
-/// The chain the method folds into one call, which every default can
-/// take.
+/// The chain the method folds into one call.
 const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or(...)`";
 
 /// The remedy every call has, whatever its default, and the only one
-/// that stops the default being evaluated where the receiver holds a
-/// value: `map_or` and `unwrap_or` both evaluate it either way.
+/// that leaves the default unevaluated where there is a value:
+/// `map_or` and `unwrap_or` both evaluate it either way.
 const MATCH_HELP: &str =
     "or a `match`, which also leaves the default unevaluated where there is a value";
 
@@ -175,7 +174,7 @@ fn emit<'tcx>(cx: &LateContext<'tcx>, call: &DefaultedCall<'tcx>, msrv: Msrv) {
                 diag.help("that default is what `and_then` means");
             }
             // Reached only where the crate predates
-            // `map_or_default`, since the fix above takes this
+            // `map_or_default`, which is suggested for this
             // default otherwise.
             Some(Collapse::Default) => {
                 diag.help("the default is the mapped type's own: `map(...).unwrap_or_default()`");

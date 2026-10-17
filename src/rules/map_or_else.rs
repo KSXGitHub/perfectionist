@@ -79,7 +79,7 @@ declare_tool_lint! {
 /// The chain the method folds into one call.
 const CHAIN_HELP: &str = "put the default last: `map(...).unwrap_or_else(...)`";
 
-/// The remedy every call has, and the only one whose branches take more
+/// The remedy every call has, and the only one whose arms take more
 /// than an expression.
 const MATCH_HELP: &str = "or a `match`, which also takes arms that are more than an expression";
 
@@ -140,7 +140,7 @@ impl<'tcx> LateLintPass<'tcx> for MapOrElse {
 ///
 /// A default named as a path has no body to read, and answers `None`.
 /// What that leaves is the question of whether the function is one of
-/// the few that hand back a type's `Default`, which the classifier
+/// the few that hand back a type's `Default`, which [`collapse`]
 /// settles from the path itself.
 fn default_value<'tcx>(
     cx: &LateContext<'tcx>,
@@ -196,7 +196,7 @@ fn emit<'tcx>(cx: &LateContext<'tcx>, call: &DefaultedCall<'tcx>, msrv: Msrv) {
                 diag.help("that default is what `and_then` means");
             }
             // Reached only where the crate predates
-            // `map_or_default`, since the fix above takes this
+            // `map_or_default`, which is suggested for this
             // default otherwise.
             Some(Collapse::Default) => {
                 diag.help("the default is the mapped type's own: `map(...).unwrap_or_default()`");

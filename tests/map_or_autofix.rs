@@ -10,8 +10,8 @@
 //! where it lands, and whether the fixer leaves alone what the rules
 //! decline.
 //!
-//! The shapes that earned the test are each a way the splice could go
-//! wrong:
+//! Among the shapes that earned the test, each a way the splice could
+//! go wrong:
 //!
 //! - A mapper written as a path, where the rewrite has to carry the
 //!   path over rather than a closure.
@@ -153,8 +153,8 @@ fn the_autofix_leaves_the_crate_compiling() {
         "the autofix produced code that does not compile; stderr was:\n{stderr}",
     );
 
-    // A revert would also leave the file untouched, which the assertion
-    // above cannot tell from a rule that stood down. Comparing the
+    // A revert would also leave the file untouched, which the stderr
+    // assertion cannot tell from a rule that stood down. Comparing the
     // whole file pins every rewrite, and pins that `Port::new()` kept
     // its call.
     assert_eq!(

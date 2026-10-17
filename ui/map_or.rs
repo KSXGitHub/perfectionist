@@ -37,7 +37,7 @@ macro_rules! defaulting {
     };
 }
 
-// Bad: the default `80` is read before the mapper that explains it.
+// Bad: the default `80` is read before the mapper it stands in for.
 fn literal_default(width: Option<u32>) -> u32 {
     width.map_or(80, |width| width.saturating_sub(2))
 }
@@ -86,7 +86,7 @@ fn constructed_default(name: Option<&str>) -> String {
     name.map_or(String::new(), |name| name.to_uppercase())
 }
 
-// Not flagged for the fix: `Port::new` hands back `Port(8080)` where
+// Bad, and no fix: `Port::new` hands back `Port(8080)` where
 // `Port::default` hands back `Port(0)`, so the call keeps its default
 // and the help names the open remedies.
 fn constructor_that_is_not_the_default(width: Option<u16>) -> Port {
@@ -122,8 +122,8 @@ fn tested(width: Option<u32>) -> bool {
     width.is_some_and(|width| width > 2)
 }
 
-// Good: a `match` names both cases and keeps the default off the
-// path that has a value.
+// Good: a `match` names both cases and leaves the default
+// unevaluated where there is a value.
 fn matched(width: Option<u32>) -> u32 {
     match width {
         Some(width) => width.saturating_sub(2),

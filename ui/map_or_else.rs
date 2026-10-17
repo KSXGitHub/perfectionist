@@ -59,20 +59,20 @@ fn constructed_default(name: Option<&str>) -> String {
     name.map_or_else(String::new, |name| name.to_uppercase())
 }
 
-// Bad: a closure handing back the type's `Default` is the same case
-// written the other way.
+// Bad: a closure handing back the type's `Default` is what the fix
+// takes.
 fn closure_default(width: Option<u32>) -> u32 {
     width.map_or_else(|| 0, |width| width + 1)
 }
 
 // Bad: a `Result` closure that ignores the error and hands back the
-// type's `Default` qualifies as well, since `map_or_default` ignores
-// the error too.
+// type's `Default` qualifies for the fix, since `map_or_default`
+// ignores the error too.
 fn error_ignored_default(name: Result<&str, String>) -> String {
     name.map_or_else(|_| String::new(), |name| name.to_uppercase())
 }
 
-// Not flagged for the fix: `Port::new` hands back `Port(8080)` where
+// Bad, and no fix: `Port::new` hands back `Port(8080)` where
 // `Port::default` hands back `Port(0)`, so the call keeps its default
 // and the help names the open remedies.
 fn constructor_that_is_not_the_default(width: Option<u16>) -> Port {
@@ -108,8 +108,8 @@ fn chained(parsed: Result<u32, String>) -> u32 {
         .unwrap_or_else(|error| error.len() as u32)
 }
 
-// Good: the chain's shorter ending, where the default closure only
-// built the type's own `Default`.
+// Good: the `unwrap_or_default` ending, where the default closure
+// only built the type's own `Default`.
 fn defaulted(name: Option<&str>) -> String {
     name.map(|name| name.to_uppercase()).unwrap_or_default()
 }

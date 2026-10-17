@@ -19,7 +19,7 @@
 #![allow(
     perfectionist::map_or,
     perfectionist::map_or_else,
-    reason = "the defaulted adapters this fixture measures are calls those rules flag"
+    reason = "the defaulted adapters this fixture covers are calls those rules flag"
 )]
 
 use std::ops::ControlFlow;
