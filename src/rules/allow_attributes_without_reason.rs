@@ -445,7 +445,8 @@ fn build_insertion(snippet: &str) -> Option<Insertion> {
     let newline_before_close = head.rfind('\n')?;
     let last_content_line_start = head[..newline_before_close]
         .rfind('\n')
-        .map_or(open_paren_offset + 1, |index| index + 1);
+        .map(|index| index + 1)
+        .unwrap_or(open_paren_offset + 1);
     let last_content_line = &head[last_content_line_start..newline_before_close];
     let indent: String = last_content_line
         .chars()
