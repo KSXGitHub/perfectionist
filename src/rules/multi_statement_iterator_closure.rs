@@ -15,26 +15,16 @@ use statements::{StatementCounts, count_source_statements};
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags inline callbacks to standard `Iterator` methods whose bodies
-    /// contain more top-level statements than `max_statements` permits.
-    /// The value the body produces, written without a semicolon, counts
-    /// as a statement. A macro invocation counts as one statement, even
-    /// when it expands to nothing. Comments, line wrapping, and empty
-    /// semicolons do not count. A single expression stays one even when
-    /// it contains a `match`, an `if`, or a nested block. A body behind
-    /// parentheses or an `async`, `gen`, `try` or `const` wrapper is
-    /// counted through, as an `unsafe` or labelled block is.
+    /// Flags an inline callback to a standard `Iterator` method whose
+    /// body does more than `max_statements` permits. The value the body
+    /// produces counts towards that, so a `let` and the value it feeds
+    /// are already two.
     ///
-    /// The check covers transforming, filtering, visiting, generating and
-    /// reducing callbacks, in method calls and qualified calls such as
-    /// `Iterator::map`. A method that merely shares one of those names —
-    /// a parallel iterator's `map`, an asynchronous stream's — is left
-    /// alone: the rule asks the type system, not the spelling.
-    ///
-    /// A callback is measured only where the author's own source shows it
-    /// passed to one of the covered methods. A call assembled by a macro
-    /// is left alone, as is a callback inside a macro invocation's
-    /// arguments.
+    /// A method that merely shares an `Iterator` method's name — a
+    /// parallel iterator's `map`, an asynchronous stream's — is left
+    /// alone: the rule asks the type system, not the spelling. A
+    /// callback is measured only where the author's own source shows it
+    /// passed to such a method, so a macro's own code is left alone too.
     ///
     /// Projects differ on whether several steps belong inline or in a
     /// named helper, so the rule is inactive by default — enable it per
@@ -52,12 +42,10 @@ declare_tool_lint! {
     /// that performs several steps can be easier to follow as a named
     /// helper, or as a loop body when the operation is eager.
     ///
-    /// Extracting a helper preserves a chain's structure. A loop rewrite
-    /// needs more care: preserve laziness, evaluation order, ownership,
-    /// allocation behaviour, and short-circuit results. A closure-local
-    /// `return` must not become a return from the enclosing function.
-    /// The lint does not establish equivalent performance and provides no
-    /// automatic fix. Benchmark performance-sensitive rewrites.
+    /// A loop rewrite needs more care than a helper does. A
+    /// closure-local `return` must not become a return from the
+    /// enclosing function, and the rule establishes nothing about
+    /// performance, so benchmark a rewrite that matters to it.
     ///
     /// ### Interaction with Clippy
     ///
