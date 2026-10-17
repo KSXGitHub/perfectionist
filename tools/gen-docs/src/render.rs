@@ -191,6 +191,10 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
 /// `aria-controls`.
 pub(crate) const SEARCH_OVERLAY_ID: &str = "search-overlay";
 
+/// `id` of the search overlay's results list, shared by the list markup
+/// in [`search_templates`] and the overlay input's `aria-controls`.
+const SEARCH_RESULTS_ID: &str = "search-results";
+
 /// `id` shared by the inert `<template>` holding the search overlay's
 /// markup ([`search_templates`]) and the `search_overlay.js` lookup that
 /// clones it into the page.
@@ -412,6 +416,7 @@ fn search_templates() -> Markup {
                                 "search-input",
                                 "Search lints…",
                                 "Search lints",
+                                Some(SEARCH_RESULTS_ID),
                             )
                         })
                     }
@@ -419,7 +424,11 @@ fn search_templates() -> Markup {
                     // empty `<ul>` still claims the dialog's whole
                     // remaining height, which would push either message
                     // below it.
-                    ul.search-results aria-label="Search results" hidden {}
+                    ul  .search-results
+                        id=(SEARCH_RESULTS_ID)
+                        role="listbox"
+                        aria-label="Search results"
+                        hidden {}
                     // What the reader sees instead, one at a time. Both
                     // are rendered here rather than written by the script
                     // so the wording lives with the rest of the page's
@@ -434,8 +443,7 @@ fn search_templates() -> Markup {
                         "No lint matches that search."
                     }
                     // Last, so it sits in the results' corner rather than
-                    // in the search box, and so Tab reaches it after the
-                    // results rather than before them.
+                    // in the search box.
                     button.search-close type="button" {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
@@ -447,10 +455,14 @@ fn search_templates() -> Markup {
             }
         }
         template id=(SEARCH_RESULT_TEMPLATE_ID) {
-            li {
-                // No `href` until a result fills it in: the blueprint
-                // points nowhere.
-                a.search-result {
+            // A listbox takes options as its children, so the `<li>`
+            // is hidden from assistive tech.
+            li role="presentation" {
+                // No `href` and no `id` until a result fills them in:
+                // the blueprint points nowhere. `tabindex` keeps Tab out
+                // of the results, which the caret selects among without
+                // leaving the search box.
+                a.search-result role="option" aria-selected="false" tabindex="-1" {
                     code.search-result-name {}
                     span.search-result-text {}
                 }
@@ -462,15 +474,25 @@ fn search_templates() -> Markup {
 /// One query input, as both the search overlay and the filter boxes want
 /// it.
 ///
+/// `listbox` is the `id` of the list this input selects within, which
+/// makes it a combobox over that list rather than a plain search box. A
+/// box that only narrows a list selects nothing in it, and passes
+/// `None`.
+///
 /// The attributes after `type="search"` keep a phone or tablet keyboard
 /// from capitalising the first letter and autocorrecting a half-typed
 /// lint name into a dictionary word, neither of which can match a
 /// snake_case identifier.
-fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
+fn search_text_input(class: &str, placeholder: &str, label: &str, listbox: Option<&str>) -> Markup {
+    let combobox = listbox.is_some();
     html! {
         input
             class=(class)
             type="search"
+            role=[combobox.then_some("combobox")]
+            aria-controls=[listbox]
+            aria-expanded=[combobox.then_some("false")]
+            aria-autocomplete=[combobox.then_some("list")]
             placeholder=(placeholder)
             aria-label=(label)
             autocapitalize="none"
@@ -526,7 +548,14 @@ fn filter_container(kind: &str, label: &str) -> Markup {
         div class=(class) id=(id) {
             template {
                 div.filter-box hidden {
-                    (search_text_input("filter-input", "Filter by name…", label))
+                    ({
+                        search_text_input(
+                            "filter-input",
+                            "Filter by name…",
+                            label,
+                            None,
+                        )
+                    })
                 }
             }
         }
