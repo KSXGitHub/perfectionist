@@ -192,9 +192,7 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
 pub(crate) const SEARCH_OVERLAY_ID: &str = "search-overlay";
 
 /// `id` of the search overlay's results list, shared by the list markup
-/// in [`search_templates`] and the `aria-controls` of the overlay's
-/// input: that input is a combobox, and the list is the popup it
-/// expands.
+/// in [`search_templates`] and the overlay input's `aria-controls`.
 const SEARCH_RESULTS_ID: &str = "search-results";
 
 /// `id` shared by the inert `<template>` holding the search overlay's
@@ -443,10 +441,7 @@ fn search_templates() -> Markup {
                         "No lint matches that search."
                     }
                     // Last, so it sits in the results' corner rather than
-                    // in the search box. Tab reaches it straight from
-                    // the search box, the results being options the
-                    // caret selects among rather than stops of their
-                    // own.
+                    // in the search box.
                     button.search-close type="button" {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
@@ -458,14 +453,13 @@ fn search_templates() -> Markup {
             }
         }
         template id=(SEARCH_RESULT_TEMPLATE_ID) {
-            // A listbox takes options as its children, so the `<li>` the
-            // list needs for its own layout is hidden from assistive
-            // tech and the option sits on the link inside it.
+            // A listbox takes options as its children, so the `<li>`
+            // is hidden from assistive tech.
             li role="presentation" {
                 // No `href` and no `id` until a result fills them in:
-                // the blueprint points nowhere and is named by nothing.
-                // `tabindex` keeps Tab out of a list the caret selects
-                // in without ever leaving the search box.
+                // the blueprint points nowhere. `tabindex` keeps Tab out
+                // of the results, which the caret selects among without
+                // leaving the search box.
                 a.search-result role="option" aria-selected="false" tabindex="-1" {
                     code.search-result-name {}
                     span.search-result-text {}
@@ -478,14 +472,10 @@ fn search_templates() -> Markup {
 /// One query input, as both the search overlay and the filter boxes want
 /// it.
 ///
-/// `listbox` is the `id` of the list the input selects within, which
-/// makes it a combobox over that list: the search overlay passes one and
-/// a filter box passes `None`, since a filter box narrows a list it
-/// selects nothing in. The combobox is what lets Up and Down move a
-/// selection while the caret stays put — `search_overlay.js` names the
-/// selected result by its `id` in this input's `aria-activedescendant`,
-/// and flips `aria-expanded` as the list is shown and hidden, neither of
-/// which means anything on a plain search box.
+/// `listbox` is the `id` of the list this input selects within, which
+/// makes it a combobox over that list rather than a plain search box. A
+/// box that only narrows a list selects nothing in it, and passes
+/// `None`.
 ///
 /// The attributes after `type="search"` keep a phone or tablet keyboard
 /// from capitalising the first letter and autocorrecting a half-typed
