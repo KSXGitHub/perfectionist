@@ -115,6 +115,9 @@
   html:not([color-scheme-override="light"]) article.rule {
     border-top-color: #21262d;
   }
+  html:not([color-scheme-override="light"]) article.rule:focus-visible .rule-heading {
+    outline-color: #4493f8;
+  }
   html:not([color-scheme-override="light"]) article.rule .rule-heading .lint-prefix {
     color: #8b949e;
   }
@@ -419,6 +422,9 @@ html[color-scheme-override="dark"] .state-inactive {
 }
 html[color-scheme-override="dark"] article.rule {
   border-top-color: #21262d;
+}
+html[color-scheme-override="dark"] article.rule:focus-visible .rule-heading {
+  outline-color: #4493f8;
 }
 html[color-scheme-override="dark"] article.rule .rule-heading .lint-prefix {
   color: #8b949e;
