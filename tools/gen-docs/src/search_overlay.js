@@ -253,6 +253,11 @@
     }
     next.setAttribute('aria-selected', 'true')
     input.setAttribute('aria-activedescendant', next.id)
+    // Scrolling belongs here rather than at any one caller: this is the
+    // only place a selection is made, and a selection the reader cannot
+    // see is one Enter would follow blind. `nearest` moves the list only
+    // for a result not already wholly in view.
+    next.scrollIntoView({ block: 'nearest' })
   }
 
   // ---- Rendering --------------------------------------------------------
@@ -551,11 +556,7 @@
       // points away from.
       at = step > 0 ? 0 : rendered.length - 1
     }
-    var landed = rendered[at]
-    select(landed)
-    // `nearest`, so a selection the reader can already see stays put
-    // rather than the list jumping under it.
-    landed.scrollIntoView({ block: 'nearest' })
+    select(rendered[at])
   }
 
   overlay.addEventListener('keydown', function (event) {
