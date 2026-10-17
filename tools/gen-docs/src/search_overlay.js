@@ -218,52 +218,41 @@
 
   // ---- The selected result ----------------------------------------------
   //
-  // One selection serves the keyboard and the pointer between them: Up
-  // and Down move it, a pointer movement inside a result's box takes it,
-  // and the pointer leaving the list gives it up. Enter follows whatever
-  // holds it.
-  //
-  // It is not focus. The caret stays in the input throughout, so a
-  // reader can go on typing with a result selected — which is the whole
-  // reason the selection is written on the element rather than taken
-  // from the browser. The highlight is `aria-selected`, which search.css
-  // draws, and the input's `aria-activedescendant` names the element
-  // holding it, which is how assistive tech learns of a selection that
-  // never takes focus.
+  // The selection is not focus: the caret stays in the input throughout,
+  // so a reader can go on typing with a result selected. The highlight is
+  // `aria-selected`, which search.css draws, and `aria-activedescendant`
+  // on the input names the selected element for assistive tech.
 
   /**
-   * The results now listed, in the order they are listed. `apply`
-   * empties the list and fills it again, so this is rebuilt on every
-   * keystroke.
+   * The results now listed, rebuilt by `apply` on every keystroke.
    * @type {HTMLAnchorElement[]}
    */
   var rendered = []
 
-  /** Which of `rendered` is selected, or `-1` for none. */
-  var selected = -1
+  /**
+   * The selected result, or `null` for none.
+   * @type {HTMLAnchorElement | null}
+   */
+  var selected = null
 
   /**
-   * Select the result at `at`, or `-1` to select nothing.
-   *
-   * A non-negative `selected` always names a result still in the list,
-   * because `apply` gives the selection up before emptying the list it
-   * indexes.
-   * @param {number} at
+   * Make `next` the selected result, or `null` to select nothing.
+   * @param {HTMLAnchorElement | null} next
    */
-  function select(at) {
-    if (at === selected) {
+  function select(next) {
+    if (next === selected) {
       return
     }
-    if (selected >= 0) {
-      rendered[selected].setAttribute('aria-selected', 'false')
+    if (selected) {
+      selected.setAttribute('aria-selected', 'false')
     }
-    selected = at
-    if (at < 0) {
+    selected = next
+    if (!next) {
       input.removeAttribute('aria-activedescendant')
       return
     }
-    rendered[at].setAttribute('aria-selected', 'true')
-    input.setAttribute('aria-activedescendant', rendered[at].id)
+    next.setAttribute('aria-selected', 'true')
+    input.setAttribute('aria-activedescendant', next.id)
   }
 
   // ---- Rendering --------------------------------------------------------
@@ -311,9 +300,9 @@
   }
 
   function apply() {
-    // The selection is given up before the elements it indexes are
-    // removed, so it never names a result that has left the list.
-    select(-1)
+    // Given up before the list holding it is emptied, so `move` never
+    // looks for a result that has left.
+    select(null)
     rendered = []
     while (results.firstChild) {
       results.removeChild(results.firstChild)
@@ -339,10 +328,10 @@
     for (var i = 0; i < ranked.length; i++) {
       renderResult(ranked[i])
     }
-    // The first result is selected as soon as there is one, so Enter
-    // follows it without an arrow key first.
+    // Pre-selected, so Enter follows the first result without an
+    // arrow key.
     if (rendered.length > 0) {
-      select(0)
+      select(rendered[0])
     }
   }
 
@@ -528,17 +517,13 @@
     // The input is in no form, so Enter submits nothing; suppressing the
     // default only keeps a stray form association from navigating.
     event.preventDefault()
-    // Nothing is selected before anything is typed, when nothing
-    // matched, and once the pointer has left the list; Enter has no
-    // result to follow in any of them.
-    if (selected < 0) {
+    if (!selected) {
       return
     }
-    // Clicking the result is how Enter follows it: the click runs the
-    // handler the results list carries, which closes the overlay and
-    // places focus, and the browser then navigates exactly as it does
-    // for a click of the reader's own.
-    rendered[selected].click()
+    // A click, so that following a result by Enter and by pointer is one
+    // path: the handler the results list carries closes the overlay and
+    // places focus, and the browser navigates.
+    selected.click()
   })
 
   // ---- Up and Down move the selection -----------------------------------
@@ -547,32 +532,30 @@
   // default has to go with them: Up and Down would otherwise jump the
   // caret to the ends of the value. Home and End still do that.
   //
-  // They are taken from the overlay rather than from the input, because
-  // the selection is not focus: it is the dialog's, and moving it means
-  // the same thing wherever inside the dialog the caret happens to be.
+  // Bound to the overlay rather than to the input, because the selection
+  // is the dialog's: moving it means the same wherever the caret is.
 
   /**
-   * Move the selection by `step`, which is `1` for Down and `-1` for Up.
-   * Called only with results listed, so there is always one to land on.
+   * Move the selection by `step`. Called only with results listed, so
+   * there is always one to land on.
    * @param {number} step
    */
   function move(step) {
-    var next
-    if (selected < 0) {
-      // A list with nothing selected is entered at the end the key
-      // points away from: Down takes the first result, Up the last.
-      next = step > 0 ? 0 : rendered.length - 1
+    var at
+    if (selected) {
+      // Wrapping: these keys reach nothing but the list, so there is
+      // nowhere an end could hand the reader on to.
+      at = (rendered.indexOf(selected) + step + rendered.length) % rendered.length
     } else {
-      // Wrapping, so Down past the last result takes the first and Up
-      // past the first takes the last. These keys reach nothing but the
-      // list, so there is nowhere an end could hand the reader on to.
-      next = (selected + step + rendered.length) % rendered.length
+      // A list with nothing selected is entered at the end the key
+      // points away from.
+      at = step > 0 ? 0 : rendered.length - 1
     }
-    select(next)
-    // `nearest` scrolls nothing for a selection already in view, and
-    // only as far as the edge the selection stepped past for one that
-    // is not.
-    rendered[next].scrollIntoView({ block: 'nearest' })
+    var landed = rendered[at]
+    select(landed)
+    // `nearest`, so a selection the reader can already see stays put
+    // rather than the list jumping under it.
+    landed.scrollIntoView({ block: 'nearest' })
   }
 
   overlay.addEventListener('keydown', function (event) {
@@ -587,8 +570,8 @@
     if (event.isComposing) {
       return
     }
-    // With no results listed there is nothing to move, so the keys stay
-    // the browser's and go on jumping the caret.
+    // Nothing to move, so the keys stay the browser's and go on
+    // jumping the caret.
     if (rendered.length === 0) {
       return
     }
@@ -598,11 +581,10 @@
 
   // ---- The pointer moves the selection ----------------------------------
   //
-  // The pointer selects rather than hovers, so that it and the arrow
-  // keys drive one highlight between them. A CSS `:hover` would draw a
-  // second highlight that Enter does not follow, and both would be lit
-  // at once whenever the pointer rested over one result while the keys
-  // had moved to another.
+  // The pointer selects rather than hovers. A CSS `:hover` would draw a
+  // second highlight that Enter does not follow, lit alongside the first
+  // whenever the pointer rested on one result while the keys had moved
+  // to another.
 
   results.addEventListener('mousemove', function (event) {
     var over = event.target
@@ -611,24 +593,17 @@
     }
     var link = over.closest('.search-result')
     // A movement over the list's own padding is inside no result's box,
-    // and leaves the selection where it is. Only the pointer leaving the
-    // list altogether gives it up.
-    if (!link) {
+    // and leaves the selection where it is.
+    if (!(link instanceof HTMLAnchorElement)) {
       return
     }
-    for (var i = 0; i < rendered.length; i++) {
-      if (rendered[i] === link) {
-        select(i)
-        return
-      }
-    }
+    select(link)
   })
 
-  // The pointer off the list selects nothing, so Enter follows nothing:
-  // a reader who has moved the mouse away from the results is pointing
-  // at none of them.
+  // A reader who has moved the pointer off the list is pointing at no
+  // result, so Enter follows none.
   results.addEventListener('mouseleave', function () {
-    select(-1)
+    select(null)
   })
 
   // Following a result closes the overlay so the rule it lands on is
