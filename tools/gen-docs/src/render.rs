@@ -292,7 +292,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                     tbody {
                         @for rule in rules {
                             tr {
-                                td {
+                                td.index-lint {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
                                         code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
                                     }
@@ -661,7 +661,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     let source_url = format!("{repo_url}/blob/{commit_sha}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
-            h2 {
+            h2.rule-heading {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }

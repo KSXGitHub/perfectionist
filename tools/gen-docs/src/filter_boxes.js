@@ -293,7 +293,7 @@
     }
   }
 
-  var indexFilter = installFilter('index', 'table.index tbody', 'tr', 'td:first-child code')
+  var indexFilter = installFilter('index', 'table.index tbody', 'tr', '.index-lint code')
 
   installFilter('nav', 'ul.nav-sidebar-list', 'li', 'a code')
 

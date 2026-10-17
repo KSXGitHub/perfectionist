@@ -51,7 +51,7 @@ table.index th {
     padding: 0.15rem 0;
   }
 
-  table.index td:first-child code {
+  table.index .index-lint code {
     overflow-wrap: anywhere;
   }
 }
@@ -70,7 +70,7 @@ article.rule {
   border-top: 1px solid;
 }
 
-article.rule h2 {
+article.rule .rule-heading {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -79,11 +79,11 @@ article.rule h2 {
    `top`/`bottom: 0` centres it on the text, not the taller line box.
    The ~0.95rem reach stays within the body's 1rem padding to avoid
    horizontal scroll on phones. */
-article.rule h2 code {
+article.rule .rule-heading code {
   position: relative;
 }
 
-article.rule h2 .rule-anchor {
+article.rule .rule-heading .rule-anchor {
   position: absolute;
   right: 100%;
   top: 0;
@@ -97,26 +97,26 @@ article.rule h2 .rule-anchor {
   transition: opacity 0.12s ease-in-out;
 }
 
-article.rule h2 .rule-anchor-icon {
+article.rule .rule-heading .rule-anchor-icon {
   width: 0.8rem;
   height: 0.8rem;
   fill: currentColor;
 }
 
-article.rule h2:hover .rule-anchor,
-article.rule h2 .rule-anchor:focus {
+article.rule .rule-heading:hover .rule-anchor,
+article.rule .rule-heading .rule-anchor:focus {
   opacity: 1;
 }
 
-article.rule h2 .lint-prefix {
+article.rule .rule-heading .lint-prefix {
   font-size: 0.89em;
 }
 
-article.rule h2 .lint-name {
+article.rule .rule-heading .lint-name {
   font-size: 1.11em;
 }
 
-article.rule h2 .rule-jump-link {
+article.rule .rule-heading .rule-jump-link {
   float: right;
   font-family: "Cantarell", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 0.8rem;
@@ -124,14 +124,14 @@ article.rule h2 .rule-jump-link {
   text-decoration: none;
 }
 
-article.rule h2 .rule-jump-link:hover {
+article.rule .rule-heading .rule-jump-link:hover {
   text-decoration: underline;
 }
 
 /* Sized against the text beside it, and nudged onto that text's
    centre: the box sits on the baseline otherwise, and `middle` aligns
    it on the parent's x-height rather than on the words it labels. */
-article.rule h2 .rule-jump-icon {
+article.rule .rule-heading .rule-jump-icon {
   width: 0.9em;
   height: 0.9em;
   vertical-align: -0.06em;
@@ -250,7 +250,7 @@ div.custom-type {
   border-radius: 0 6px 6px 0;
 }
 
-div.custom-type > p:first-child {
+div.custom-type > .custom-type-heading {
   margin: 0 0 0.25rem;
 }
 

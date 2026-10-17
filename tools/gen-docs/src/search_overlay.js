@@ -180,7 +180,7 @@
     var articles = document.querySelectorAll('article.rule')
     for (var i = 0; i < articles.length; i++) {
       var article = articles[i]
-      var nameHost = article.querySelector('h2 .lint-name')
+      var nameHost = article.querySelector('.rule-heading .lint-name')
       var id = article.getAttribute('id')
       if (!nameHost || !id) {
         continue
