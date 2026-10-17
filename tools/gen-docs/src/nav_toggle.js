@@ -383,14 +383,6 @@
   // sidebar and focus would otherwise drop to <body>. Rule articles and
   // the catalogue heading aren't focusable by default, so set
   // tabindex="-1" before .focus().
-  //
-  // It has to be the element the fragment names and no other: once this
-  // handler returns, the browser follows the link, and following it
-  // focuses the fragment's target when that target is focusable and
-  // unfocuses everything when it is not. Focusing a rule's <h2> here
-  // instead leaves the reader on <body> a moment later, which is why
-  // the ring a keyboard reader lands on is drawn on that heading by
-  // rules.css rather than moved here.
   sidebar.addEventListener('click', function (event) {
     var link = /** @type {Element} */ (event.target).closest('a')
     if (!link) {

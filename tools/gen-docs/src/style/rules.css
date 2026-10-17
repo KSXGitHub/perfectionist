@@ -74,17 +74,10 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Following a link to a rule leaves DOM focus on the <article>: the
-   handlers in nav_toggle.js and search_overlay.js make the fragment's
-   target focusable, and the navigation that follows focuses it. That
-   box holds the rule's whole documentation, which for all but the
-   shortest rules is taller than the screen, so a ring drawn around it
-   shows an edge down each side and no bottom in view. Mark the heading
-   instead — one line tall, at the top of what the fragment has just
-   scrolled into view, and the same ring this page's controls draw.
-   `:first-child` keeps the mark on the rule's own name: a heading
-   written in a rule's rustdoc renders at the level it is written, so a
-   `##` would be a second <h2> in the same article. */
+/* A rule link's fragment names the <article>, so that is what takes
+   focus: a box holding the rule's whole documentation, taller than the
+   screen for all but the shortest rules. Mark the heading instead,
+   which fits. `:first-child` leaves out a `##` in the rule's rustdoc. */
 article.rule:focus-visible {
   outline: none;
 }
