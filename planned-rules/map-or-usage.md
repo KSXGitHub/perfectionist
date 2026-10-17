@@ -92,7 +92,7 @@ describes:
 | Clippy at its default levels    | redirects the boolean half | silent, bar the degenerate mapper |
 | the short remedies              | `is_some_and`, `is_none_or`, `is_ok_and`, `and_then`, `ok`, `unwrap_or_default` | none apply |
 | an MSRV floor on the remedy     | 1.70 and 1.82 for the predicates | none |
-| the chain as an autofix         | `MaybeIncorrect`, since it reorders two evaluations | `MachineApplicable` |
+| taking the chain by hand        | reorders the default against the mapper | changes nothing observable |
 
 The call counts and the line-spanning figures point opposite ways:
 `map_or` is the common call whose default is a token, and `map_or_else`
@@ -106,9 +106,9 @@ want to disable the frequent, milder one without losing the other.
 asks whether the checks have distinct triggers, disjoint configuration
 and no shared diagnostic. The triggers are disjoint by method name, the
 configuration is empty on both sides, and the diagnostics differ in
-every part a reader acts on: which remedy the help names, whether an
-MSRV bears on it, and whether `cargo dylint --fix` may apply it. A
-single rule would also have to carry a name claiming one method while
+every part a reader acts on: which remedies the help names, whether an
+MSRV bears on them, and what taking one costs at that site. A single
+rule would also have to carry a name claiming one method while
 firing on another, which
 [Do not over-claim in the name](./IMPLEMENTATION_CONVENTIONS.md#do-not-over-claim-in-the-name)
 rules out.
@@ -134,8 +134,10 @@ its name would tell a reader the opposite of what they do.
 
 ## The remedies
 
-Which rewrite is right depends on the default, so each diagnostic names
-the remedy for the default it sees.
+Which rewrite is right depends on the default, so each diagnostic
+names, in its `help:` text, the remedies that fit the default it sees.
+It names them; it never emits one as a replacement, per
+[Autofix](#autofix).
 
 `map_or_usage`:
 
@@ -209,6 +211,13 @@ With side effects in both arguments, `x.map_or(default, f)` runs
 runs them in the order they are written. For `map_or_else` nothing
 changes at all: only one of its two closures ever runs, so laziness and
 order are the same before and after.
+
+The chain also only ever relaxes borrow-checking, since the two
+arguments no longer have to coexist: a `map_or_else` whose closures
+both borrow one local mutably is `E0499`, where the chain of the same
+two bodies compiles. So a reader told to take the chain is never told
+to write something that will not build — which is a property of the
+rewrite, not a reason to apply it for them.
 
 ## Interaction with Clippy
 
@@ -379,19 +388,42 @@ arbitrating between opinions. Shipping on is also what
 
 ## Autofix
 
-**`map_or_else_usage`** can offer the chain as
-`Applicability::MachineApplicable`: both arguments are closures, only
-one of them ever runs, and the rewrite moves them without changing what
-either receives. It also only ever relaxes borrow-checking, since the
-two closures no longer have to coexist — a `map_or_else` whose closures
-both borrow one local mutably is `E0499`, where the chain of the same
-two bodies compiles. The one reservation is that the applied diff is
-what `clippy::pedantic` objects to, so a first implementation may
-prefer to suggest without applying and let a human take it.
+None, on either rule, and no structured suggestion either: the help
+text names the candidate remedies in prose and the diagnostic carries
+no replacement span. `cargo dylint --fix` applies a
+`MachineApplicable` suggestion, so withholding the span is what keeps
+the choice with the author; an `Applicability::Unspecified` suggestion
+would not be applied but would still render one rewrite as *the*
+answer, which is the same claim in quieter type.
 
-**`map_or_usage`** gets none. Its short remedies are not a span swap,
-and the swap it does have reorders the default against the mapper,
-which makes the chain `MaybeIncorrect` at best.
+The issue this file comes from puts the reason in one clause: the right
+fix is a chain or a `match` "depending on the situation". A lint can
+read the arguments and not the situation. Whether a `match` beats the
+chain turns on what the arms would hold, whether the default ought to
+stop being eager, how far the mapper has drifted from its receiver, and
+how the call reads against its neighbours — judgement the author has
+and the rule does not.
+
+Encoding criteria for that choice is the alternative, and it costs more
+than it buys: a rule whose whole trigger is a method name and a
+receiver type would grow a second, larger half that decides between two
+restructurings, with its own conditionals to maintain and its own way
+of being wrong. Being wrong there is worse than being silent, because a
+fix the author would not have chosen arrives already applied.
+
+`map_or_else_usage`'s chain is the one rewrite that is mechanically
+safe — [Equivalence of the remedies](#equivalence-of-the-remedies)
+measures that it preserves the value, the laziness and the order, and
+only relaxes borrow-checking. It is still not offered. Mechanically
+safe is not the same as better reading, and a `match` is often the
+better reading at exactly the sites where `map_or_else_usage` has the
+most to say: the quarter of them whose default spans lines.
+
+The boolean default is the one shape with a single right answer
+(`is_some_and`, `is_none_or`, `is_ok_and`), and it needs no suggestion
+from this catalogue: `clippy::unnecessary_map_or` already carries an
+applicable one wherever the consumer's MSRV allows it, and naming the
+method in the help covers the consumers it skips.
 
 ## Interaction with sibling rules
 
@@ -429,6 +461,10 @@ which makes the chain `MaybeIncorrect` at best.
 - **The help text** reads the first argument syntactically — a boolean
   literal, the `None` path, a `Default::default()` call — so no part of
   either rule needs a type beyond the receiver's.
+- **Emit with `span_lint_hir_and_then` and a `help` note**, not
+  `span_lint_and_sugg`: the remedies are named rather than rendered,
+  per [Autofix](#autofix), and the `hir` form is what carries the
+  `HirId` the lint level and the proc-macro guard are read from.
 - **A `Result`'s `map_or_else` keeps its error closure.** The rewrite
   moves it from the first argument of `map_or_else` to the only
   argument of `unwrap_or_else`, where it is handed the same error.

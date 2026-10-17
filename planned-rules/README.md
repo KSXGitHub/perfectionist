@@ -116,8 +116,9 @@ pattern that several rules call out by reference — live in
   the order they run in. `map_or`'s remedy is `is_some_and` /
   `is_none_or` / `is_ok_and` / `and_then` / `ok` where the default
   identifies one and a `map(...).unwrap_or(...)` chain otherwise;
-  `map_or_else`'s is the `unwrap_or_else` chain or a `match`, and is
-  the one with a machine-applicable autofix. Both reverse
+  `map_or_else`'s is the `unwrap_or_else` chain or a `match`. Both name
+  their remedies in the help text and neither has an autofix, since
+  which restructuring reads better is the author's call. Both reverse
   `clippy::map_unwrap_or` (pedantic), and the `match` remedy reverses
   `clippy::option_if_let_else` (nursery), so a project that enables
   either group allows that lint. Active by default.
