@@ -74,10 +74,6 @@ article.rule h2 {
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
 
-/* A rule link's fragment names the <article>, so that is what takes
-   focus: a box holding the rule's whole documentation, taller than the
-   screen for all but the shortest rules. Mark the heading instead,
-   which fits. `:first-child` leaves out a `##` in the rule's rustdoc. */
 article.rule:focus-visible {
   outline: none;
 }
