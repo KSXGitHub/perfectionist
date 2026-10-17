@@ -94,6 +94,14 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
+- [`map_or_else_usage`](./map_or_else_usage.md) (default: `active`).
+
+  `map_or_else` call, whose default stands before the mapper, in the reverse of the order they run
+
+- [`map_or_usage`](./map_or_usage.md) (default: `active`).
+
+  `map_or` call, whose default stands before the mapper, in the reverse of the order they run
+
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 
   a command setter taking `&mut self` where `command-extra`'s by-value form exists

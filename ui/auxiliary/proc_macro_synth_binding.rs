@@ -885,6 +885,56 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthMapOrUsage)]` + `#[synth_map_or_usage]` →
+/// `fn _synth_map_or_usage() { let _ = FLAG.map_or(false, |flag| flag); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_map_or_usage` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The call's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both
+/// let through. Only the enclosing item's `def_span` still says where
+/// the call lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthMapOrUsage, attributes(synth_map_or_usage))]
+pub fn synth_map_or_usage(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or_usage")
+        .expect("`#[derive(SynthMapOrUsage)]` requires a `#[synth_map_or_usage]`");
+    let body = respan(
+        "let _ = FLAG.map_or(false, |flag| flag);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_fn_block("_synth_map_or_usage", body)
+}
+
+/// `#[derive(SynthMapOrElseUsage)]` + `#[synth_map_or_else_usage]` →
+/// `fn _synth_map_or_else_usage() { let _ = FLAG.map_or_else(|| false, |flag| flag); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_map_or_else_usage` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The call's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both
+/// let through. Only the enclosing item's `def_span` still says where
+/// the call lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthMapOrElseUsage, attributes(synth_map_or_else_usage))]
+pub fn synth_map_or_else_usage(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or_else_usage")
+        .expect("`#[derive(SynthMapOrElseUsage)]` requires a `#[synth_map_or_else_usage]`");
+    let body = respan(
+        "let _ = FLAG.map_or_else(|| false, |flag| flag);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_fn_block("_synth_map_or_else_usage", body)
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream

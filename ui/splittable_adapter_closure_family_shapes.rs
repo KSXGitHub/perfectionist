@@ -16,6 +16,11 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+#![allow(
+    perfectionist::map_or_usage,
+    perfectionist::map_or_else_usage,
+    reason = "the defaulted adapters this fixture measures are calls those rules flag"
+)]
 
 use std::ops::ControlFlow;
 use std::task::Poll;

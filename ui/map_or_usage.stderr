@@ -1,0 +1,107 @@
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(80, |width| width.saturating_sub(2))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+   = help: or a `match`, which names both cases and leaves the default out of the path that does not need it
+   = note: `#[warn(perfectionist::map_or_usage)]` on by default
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(0, |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+   = help: or a `match`, which names both cases and leaves the default out of the path that does not need it
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(false, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_some_and` means: call it instead, where the crate is on Rust 1.70 or later
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(true, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_none_or` means: call it instead, where the crate is on Rust 1.82 or later
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(false, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_ok_and` means: call it instead, where the crate is on Rust 1.70 or later
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(true, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+   = help: or a `match`, which names both cases and leaves the default out of the path that does not need it
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(None, |width| width.checked_add(1))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `and_then` means: call it instead
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(None, |width| width.checked_add(1))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+   = help: or a `match`, which names both cases and leaves the default out of the path that does not need it
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     name.map_or(String::new(), |name| name.to_uppercase())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: the default is one the type's own `Default` gives: `map(...).unwrap_or_default()`
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(Default::default(), |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: the default is one the type's own `Default` gives: `map(...).unwrap_or_default()`
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     width.map_or(0, |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+   = help: or a `match`, which names both cases and leaves the default out of the path that does not need it
+
+warning: `map_or` takes the default before the mapper, in the reverse of the order they run
+  --> $DIR/map_or_usage.rs:LL:CC
+   |
+LL |     assert!(width.map_or(false, |width| width > 2));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_some_and` means: call it instead, where the crate is on Rust 1.70 or later
+   = help: put the default last: `map(...).unwrap_or(...)` states the steps in the order they run
+
+warning: N warnings emitted
