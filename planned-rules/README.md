@@ -107,6 +107,19 @@ pattern that several rules call out by reference — live in
   one name, so `map` into `map` is free where `any` into `map` costs a
   call. Active by default.
 
+### `Option` and `Result` combinators
+- [`map-or-usage.md`](./map-or-usage.md) — flag a call to
+  `Option::map_or`, `Option::map_or_else`, `Result::map_or` or
+  `Result::map_or_else`. Each takes its default before the mapper, so
+  the reader meets the value the receiver does not hold before the one
+  it does, and the two arguments stand in the reverse of the order they
+  run in. The remedy is a `match`, a `map(...).unwrap_or(...)` chain,
+  or the shorter `is_some_and` / `is_none_or` / `and_then` / `ok` where
+  the default identifies one. Reverses `clippy::map_unwrap_or`
+  (pedantic) and, for the `match` remedy,
+  `clippy::option_if_let_else` (nursery), so a project that enables
+  either group allows that lint. Active by default.
+
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
   `#[cfg_attr(..., ignore = "...")]` over `#[cfg(...)]` on `#[test]`s, and
