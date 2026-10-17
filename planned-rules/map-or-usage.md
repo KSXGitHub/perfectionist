@@ -26,15 +26,14 @@ let width = terminal_width.map_or(80, |width| width.saturating_sub(2));
 let label = parsed.map_or_else(|error| error.to_string(), Entry::into_name);
 ```
 
-**Prefer** a chain, which states the same steps in the order they
-evaluate:
+**Prefer:** a chain, which states the steps in the order they evaluate
 
 ```rust
 let width = terminal_width.map(|width| width.saturating_sub(2)).unwrap_or(80);
 let label = parsed.map(Entry::into_name).unwrap_or_else(|error| error.to_string());
 ```
 
-**or a `match`**, where the default is itself a branch:
+**Prefer:** a `match`, where the default is itself a branch
 
 ```rust
 let label = match parsed {
