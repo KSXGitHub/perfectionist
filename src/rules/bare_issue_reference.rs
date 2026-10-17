@@ -687,8 +687,7 @@ fn doc_line_prefix(chunk: &CommentChunk<'_>, rendered_pos: usize) -> Option<Stri
     let line_start = src
         .get(..content_offset)?
         .rfind('\n')
-        .map(|nl| nl + 1)
-        .unwrap_or(0);
+        .map_or_default(|nl| nl + 1);
     let prefix = src.get(line_start..content_offset)?;
     Some(prefix.trim_end_matches(' ').to_owned())
 }
