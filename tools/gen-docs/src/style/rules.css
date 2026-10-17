@@ -78,7 +78,7 @@ article.rule:focus-visible {
   outline: none;
 }
 
-article.rule:focus-visible > h2:first-child {
+article.rule:focus-visible > h2 {
   outline: 2px solid;
   outline-offset: 2px;
 }
