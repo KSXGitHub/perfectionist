@@ -24,7 +24,7 @@ struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     flag_pseudo_em_dash: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    message: Option<&'static str>,
+    help: Option<&'static str>,
 }
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -108,14 +108,14 @@ fn flag_pseudo_em_dash_false_reports_the_unicode_dash_only() {
     );
 }
 
-/// `message` replaces the help text wholesale. The note explaining
+/// `help` replaces the help text wholesale. The note explaining
 /// what a dash elides is not part of that text and stays in place.
 #[test]
-fn message_replaces_the_help_text() {
+fn help_replaces_the_help_text() {
     run(
-        "ui-toml/em_dash_prose/custom_message",
+        "ui-toml/em_dash_prose/custom_help",
         RuleConfig {
-            message: Some("see the house style guide at docs/style.md"),
+            help: Some("see the house style guide at docs/style.md"),
             ..RuleConfig::default()
         },
     );

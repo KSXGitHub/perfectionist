@@ -19,7 +19,7 @@ use rustc_span::Span;
 const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
                             to work out, and marks a sentence carrying more than one thought";
 
-/// What to do about it. Replaced wholesale by the `message`
+/// What to do about it. Replaced wholesale by the `help`
 /// configuration field.
 const RESTRUCTURE_HELP: &str = "restructure the sentence so each clause carries one thought, rather than putting a \
      different mark where the dash was: make it two sentences, or use the mark that states the \
@@ -31,10 +31,10 @@ pub(super) fn emit_dash(
     hir_id: HirId,
     span: Span,
     finding: Finding,
-    message: Option<&str>,
+    help: Option<&str>,
 ) {
     let Finding { dash, surface } = finding;
-    let help = message.unwrap_or(RESTRUCTURE_HELP).to_owned();
+    let help = help.unwrap_or(RESTRUCTURE_HELP).to_owned();
     span_lint_hir_and_then(
         lint_context,
         EM_DASH_PROSE,

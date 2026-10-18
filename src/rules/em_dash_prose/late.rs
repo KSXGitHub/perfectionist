@@ -94,9 +94,9 @@ impl<'tcx> LateLintPass<'tcx> for EmDashProseLate {
         // order the reader scans the file rather than by which scan
         // produced them.
         findings.sort_by_key(|(span, _)| span.lo());
-        let message = self.config.message.as_deref();
+        let help = self.config.help.as_deref();
         emit_at_enclosing_hir(lint_context.tcx, findings, |hir_id, span, finding| {
-            emit_dash(lint_context, hir_id, span, finding, message);
+            emit_dash(lint_context, hir_id, span, finding, help);
         });
     }
 }

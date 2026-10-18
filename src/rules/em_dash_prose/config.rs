@@ -42,7 +42,7 @@ struct Config {
     /// house style guide, or to write the instruction in another
     /// language. Unset by default, and the note saying what a dash
     /// leaves the reader to work out stays in place either way.
-    message: Option<String>,
+    help: Option<String>,
 }
 
 impl Default for Config {
@@ -53,7 +53,7 @@ impl Default for Config {
             scan_macro_messages: true,
             flag_en_dash: true,
             flag_pseudo_em_dash: true,
-            message: None,
+            help: None,
         }
     }
 }
@@ -66,7 +66,7 @@ pub(super) struct ResolvedConfig {
     pub(super) scan_regular_comments: bool,
     pub(super) scan_macro_messages: bool,
     pub(super) policy: DashPolicy,
-    pub(super) message: Option<String>,
+    pub(super) help: Option<String>,
 }
 
 /// Read the rule's configuration from the shared [`CONFIG_KEY`] table.
@@ -82,6 +82,6 @@ pub(super) fn resolved_config() -> ResolvedConfig {
             en_dash: config.flag_en_dash,
             ascii_run: config.flag_pseudo_em_dash,
         },
-        message: config.message,
+        help: config.help,
     }
 }

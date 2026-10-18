@@ -124,7 +124,7 @@ another language's comment marker or an end-of-options
 separator as it is a dash, so string literals are left to the
 Unicode dashes whatever this is set to.
 
-### Field: `message`
+### Field: `help`
 
 - _Type:_ `string`
 - _Optional_
