@@ -53,9 +53,8 @@ max_depth = 5
 
 # A ratchet: existing files are longer than this rule's default of 500
 # lines, and the longest of them, the markdown scanner, runs to 839.
-# This ceiling
-# sits at that length so no new file may go longer; lower it as they
-# are split.
+# This ceiling sits at that length so no new file may go longer; lower
+# it as they are split.
 ["perfectionist::overly_long_file"]
 max_lines = 839
 

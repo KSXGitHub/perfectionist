@@ -226,9 +226,7 @@ The shapes to avoid:
   Shipped docs must not name a lint that `src/rule_index.rs` does
   not, or a reader who writes
   `#[expect(perfectionist::<that name>)]` for it is flagged by
-  `perfectionist::unknown_perfectionist_lints`. The shipped docs that
-  carry lint names are the `declare_tool_lint!` rustdoc and the
-  `rules/*.md` catalogue generated from it. Planning files are
+  `perfectionist::unknown_perfectionist_lints`. Planning files are
   exempt; naming unimplemented siblings is what they are for.
 - **If a passage exists only to restate the code beneath it, delete
   it.** Length is not thoroughness.

@@ -608,9 +608,9 @@
   })
 
   // Following a result closes the overlay so the rule it lands on is
-  // visible, and moves focus there so a keyboard reader keeps their place
-  // because the link they just activated is inside a now-hidden overlay, and
-  // focus would otherwise drop to <body>. Modifier-key clicks and
+  // visible, and moves focus there so a keyboard reader keeps their
+  // place. The link they just activated is inside a now-hidden overlay,
+  // so focus would otherwise drop to <body>. Modifier-key clicks and
   // non-primary buttons are "open in a new tab" gestures and must leave
   // this page as it stands. Rule articles aren't focusable by default, so
   // `tabindex="-1"` goes on first.
