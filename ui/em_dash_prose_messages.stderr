@@ -4,9 +4,8 @@ warning: em dash `—` in `println!` message
 LL |     println!("Bad: a printed message with an em dash — and a clause.");
    |                                                      ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
 warning: en dash `–` in `eprintln!` message
@@ -15,9 +14,8 @@ warning: en dash `–` in `eprintln!` message
 LL |     eprintln!("Bad: a printed message with an en dash – and a clause.");
    |                                                       ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `format!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -25,9 +23,8 @@ warning: em dash `—` in `format!` message
 LL |     let _ = format!("Bad: a formatted message with an em dash — here.");
    |                                                               ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `println!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -35,9 +32,8 @@ warning: em dash `—` in `println!` message
 LL |     std::println!("Bad: a qualified call's message with a dash — here.");
    |                                                                ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `writeln!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -45,9 +41,8 @@ warning: em dash `—` in `writeln!` message
 LL |     let _ = writeln!(buffer, "Bad: a written message with a dash — here.");
    |                                                                  ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `panic!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -55,9 +50,8 @@ warning: em dash `—` in `panic!` message
 LL |     panic!("Bad: a panic message with an em dash — and a clause.");
    |                                                  ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `todo!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -65,9 +59,8 @@ warning: em dash `—` in `todo!` message
 LL |     todo!("Bad: a todo message with an em dash — and a clause.");
    |                                                ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `unimplemented!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -75,9 +68,8 @@ warning: em dash `—` in `unimplemented!` message
 LL |     unimplemented!("Bad: an unimplemented message with a dash — here.");
    |                                                               ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `unreachable!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -85,9 +77,8 @@ warning: em dash `—` in `unreachable!` message
 LL |     unreachable!("Bad: an unreachable message with a dash — here.");
    |                                                           ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `assert!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -95,9 +86,8 @@ warning: em dash `—` in `assert!` message
 LL |     assert!(flag, "Bad: an assertion message with a dash — here.");
    |                                                          ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `assert_eq!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -105,9 +95,8 @@ warning: em dash `—` in `assert_eq!` message
 LL |     assert_eq!(left, right, "Bad: a comparison message with — here.");
    |                                                             ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `expect` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -115,9 +104,8 @@ warning: em dash `—` in `expect` message
 LL |     let _: i32 = Some(1).expect("Bad: an expect message with a dash — here.");
    |                                                                     ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: em dash `—` in `expect_err` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
@@ -125,8 +113,7 @@ warning: em dash `—` in `expect_err` message
 LL |         .expect_err("Bad: an expect_err message with a dash — here.");
    |                                                             ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
 
 warning: N warnings emitted

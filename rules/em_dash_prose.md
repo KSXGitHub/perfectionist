@@ -29,14 +29,18 @@ warning and leaves the phrasing it reports in place.
 
 ## Why restrict this?
 
-This is a stylistic preference, not a correctness issue. An em
-dash glues two clauses together without committing to a
-relationship between them, and that is the register
-AI-generated prose settles into: a writing assistant reaches
-for the dash whenever the structure of a sentence has not been
-decided. A comma, a semicolon, a colon or a sentence break
-each name the relationship instead, which is why an author
-writing carefully rarely picks the dash over one of them.
+This is a stylistic preference, not a correctness issue.
+Documentation and comments are technical writing, read for
+ease of understanding rather than for effect, and a dash
+standing between two clauses asks the reader to work out a
+relationship the sentence never states. A comma, a semicolon,
+a colon or a sentence break each state it instead.
+
+The dash is a symptom more than the fault. A sentence that
+reaches for one is usually carrying more than one thought, so
+the mark is where the strain shows rather than what causes it,
+and giving each thought a clause of its own is what makes the
+passage read easily.
 
 ## Example
 
@@ -128,5 +132,5 @@ Unicode dashes whatever this is set to.
 Replacement for the diagnostic's help text, which otherwise
 asks for the sentence to be restructured. Set it to point at a
 house style guide, or to write the instruction in another
-language. Unset by default, and the note explaining what a
-dash elides stays in place either way.
+language. Unset by default, and the note saying what a dash
+leaves the reader to work out stays in place either way.

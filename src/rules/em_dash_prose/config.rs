@@ -40,8 +40,8 @@ struct Config {
     /// Replacement for the diagnostic's help text, which otherwise
     /// asks for the sentence to be restructured. Set it to point at a
     /// house style guide, or to write the instruction in another
-    /// language. Unset by default, and the note explaining what a
-    /// dash elides stays in place either way.
+    /// language. Unset by default, and the note saying what a dash
+    /// leaves the reader to work out stays in place either way.
     message: Option<String>,
 }
 

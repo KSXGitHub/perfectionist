@@ -4,9 +4,8 @@ warning: em dash `—` in comment
 LL | // Bad: the help text in the diagnostic comes from the knob — not the default.
    |                                                             ^
    |
-   = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
    = help: see the house style guide at docs/style.md
-   = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
 warning: N warnings emitted

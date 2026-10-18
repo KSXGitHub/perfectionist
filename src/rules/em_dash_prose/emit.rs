@@ -16,24 +16,15 @@ use rustc_span::Span;
 
 /// Why a dash in running prose is worth a warning. Stated once, since
 /// it reads the same for every dash the rule flags.
-const ELISION_NOTE: &str = "a dash between two clauses leaves the relationship between them \
-                            unstated, which is the register AI-generated prose settles into; \
-                            deliberate technical writing names that relationship";
+const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
+                            to work out, and marks a sentence carrying more than one thought";
 
 /// What to do about it. Replaced wholesale by the `message`
 /// configuration field.
-const RESTRUCTURE_HELP: &str = "reword so each clause stands on its own, rather than replacing the dash in place: split \
-     the sentence in two, or pick the mark that names the relationship the dash left unstated (a \
-     colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a \
+const RESTRUCTURE_HELP: &str = "restructure the sentence so each clause carries one thought, rather than putting a \
+     different mark where the dash was: make it two sentences, or use the mark that states the \
+     relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a \
      dependent clause)";
-
-/// Addressed to the readership this rule was written for. An assistant
-/// that substitutes a different punctuation character has read the
-/// diagnostic as a spelling correction, which is the one reading it is
-/// not.
-const ASSISTANT_NOTE: &str = "an assistant meeting this diagnostic in its own output is being \
-                              asked to rewrite the surrounding paragraph, not to substitute \
-                              another punctuation character";
 
 pub(super) fn emit_dash(
     lint_context: &LateContext<'_>,
@@ -53,7 +44,6 @@ pub(super) fn emit_dash(
         |diag| {
             diag.note(ELISION_NOTE);
             diag.help(help);
-            diag.note(ASSISTANT_NOTE);
         },
     );
 }
