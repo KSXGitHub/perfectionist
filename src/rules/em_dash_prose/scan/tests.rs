@@ -146,6 +146,28 @@ fn a_typographic_quotation_keeps_its_dashes() {
     }
 }
 
+/// A Chinese title mark delimits the name of a work, which is
+/// reproduced as verbatim as a quotation, so a dash inside one stays.
+/// The single marks carry a title too: a style guide may use them for
+/// a title nested in another or for one standing on its own.
+#[test]
+fn a_title_mark_keeps_its_dashes() {
+    for titled in [
+        "the book 《one — two》 is out",
+        "the essay 〈one — two〉 is out",
+        "the book 《one -- two》 is out",
+    ] {
+        assert_eq!(scan(titled, ALL), [], "{titled:?}");
+    }
+}
+
+/// A single title mark inside a double one is swallowed by the outer
+/// span, so the dash between the two stays.
+#[test]
+fn a_nested_title_mark_keeps_the_outer_span() {
+    assert_eq!(scan("《a book 〈a chapter〉 — and more》", ALL), []);
+}
+
 /// Prose on either side of a quotation is still the author's own, so a
 /// dash outside the quote marks is reported.
 #[test]

@@ -33,10 +33,10 @@ declare_tool_lint! {
     ///
     /// Quoted words keep their dashes, since an author cannot
     /// restructure a sentence they are only reproducing: a span
-    /// between a pair of quotation marks, a code span, a code block,
-    /// and a blockquote in a doc comment are all left alone. An alert
-    /// wears the blockquote marker but is an aside in the author's
-    /// own voice, so it is scanned like any other prose.
+    /// between a pair of quotation or title marks, a code span, a code
+    /// block, and a blockquote in a doc comment are all left alone. An
+    /// alert wears the blockquote marker but is an aside in the
+    /// author's own voice, so it is scanned like any other prose.
     ///
     /// No fix is offered, and that is the rule's point rather than an
     /// omission. Replacing the dash without rewording silences the

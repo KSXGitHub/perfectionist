@@ -58,17 +58,19 @@ fn take_hyphen_run(input: &str) -> Option<(usize, &str)> {
     (length >= 2).then(|| (length, &input[length..]))
 }
 
-/// Quotation marks that come as a distinct pair, each entry an
-/// `(opening, closing)` character.
+/// Quotation and title marks that come as a distinct pair, each entry
+/// an `(opening, closing)` character.
 ///
-/// Each of these is a quotation mark and nothing else at its own end
-/// of the pair, so none needs the word-boundary test that tells an
-/// ASCII single quote from an apostrophe. U+2019 doubles as an
-/// apostrophe, but it only ever closes a span this table opens with
-/// U+2018. The backtick is absent because a backtick-quoted run is a
-/// markdown code span, which both of the rule's surfaces mask before
-/// the quotation scan runs.
-const PAIRED_QUOTES: &[(char, char)] = &[
+/// Each of these delimits text the author is reproducing and nothing
+/// else at its own end of the pair, so none needs the word-boundary
+/// test that tells an ASCII single quote from an apostrophe. U+2019
+/// doubles as an apostrophe, but it only ever closes a span this table
+/// opens with U+2018. A Chinese title mark earns its place on the
+/// quotation's own terms: a title is reproduced verbatim, so a dash
+/// inside one belongs to whoever named the work. The backtick is
+/// absent because a backtick-quoted run is a markdown code span, which
+/// both of the rule's surfaces mask before the quotation scan runs.
+const PAIRED_MARKS: &[(char, char)] = &[
     ('‘', '’'),   // single turned comma, single comma
     ('“', '”'),   // double turned comma, double comma
     ('‚', '‘'),   // single low-9, single turned comma
@@ -77,14 +79,16 @@ const PAIRED_QUOTES: &[(char, char)] = &[
     ('‹', '›'),   // single guillemets
     ('「', '」'), // corner brackets
     ('『', '』'), // white corner brackets
+    ('《', '》'), // double title marks
+    ('〈', '〉'), // single title marks
 ];
 
-/// Take a span delimited by one of the [`PAIRED_QUOTES`] from the
+/// Take a span delimited by one of the [`PAIRED_MARKS`] from the
 /// front of `input`, reporting the byte length of the span including
 /// both marks. The closing mark has to arrive on the same line, so an
 /// opening mark left unclosed delimits nothing.
 fn take_paired_quoted(input: &str) -> Option<usize> {
-    for &(opening, closing) in PAIRED_QUOTES {
+    for &(opening, closing) in PAIRED_MARKS {
         let Some(body) = input.strip_prefix(opening) else {
             continue;
         };
@@ -179,7 +183,7 @@ fn take_single_quoted(bytes: &[u8], index: usize) -> Option<usize> {
 ///
 /// A quotation is someone else's words, so the dashes inside one are
 /// not the author's to restructure. Both ASCII marks are recognised,
-/// as are the typographic pairs in [`PAIRED_QUOTES`]. A quote mark
+/// as are the typographic pairs in [`PAIRED_MARKS`]. A quote mark
 /// that falls inside `skips` opens nothing: the backtick span holding
 /// `` `don't` `` would otherwise pair its apostrophe with a later one
 /// and mask the prose in between.
