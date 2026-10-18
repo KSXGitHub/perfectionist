@@ -17,14 +17,16 @@ declare_tool_lint! {
     ///
     /// Flags an inline callback to a standard `Iterator` method whose
     /// body does more than `max_statements` permits. The value the body
-    /// produces counts towards that, so a `let` and the value it feeds
-    /// are already two.
+    /// produces counts towards that. A `let` and the value it feeds are
+    /// already two.
     ///
     /// A method that merely shares an `Iterator` method's name is left
-    /// alone, a parallel iterator's `map` and an asynchronous stream's
-    /// among them: the rule asks the type system, not the spelling. A
-    /// callback is measured only where the author's own source shows it
-    /// passed to such a method, so a macro's own code is left alone too.
+    /// alone. The rule asks the type system, not the spelling. A
+    /// parallel iterator's `map` and an asynchronous stream's are left
+    /// alone for that reason.
+    ///
+    /// A callback is measured only where the author's own source shows
+    /// it passed to such a method. A macro's own code is left alone.
     ///
     /// Enable the rule per crate by adding to `dylint.toml`:
     ///
@@ -38,24 +40,25 @@ declare_tool_lint! {
     /// This is a stylistic preference, not a correctness issue. A short
     /// callback keeps the transformation visible in the chain. A callback
     /// that performs several steps can be easier to follow as a named
-    /// helper, or as a loop body when the operation is eager.
+    /// helper. When the operation is eager, a loop body can be easier
+    /// still.
     ///
     /// A loop rewrite needs more care than a helper does. A
     /// closure-local `return` must not become a return from the
-    /// enclosing function, and the rule establishes nothing about
-    /// performance, so benchmark a rewrite that matters to it.
+    /// enclosing function. The rule establishes nothing about
+    /// performance. Benchmark a rewrite that matters to it.
     ///
     /// ### Interaction with Clippy
     ///
     /// Clippy's `needless_for_each` already recommends loops for simple
     /// eager iteration. This check also covers callbacks inside transformed
-    /// or lazy chains. The two can report the same `for_each` call: Clippy
-    /// checks the iteration form, while this rule checks the callback body.
+    /// or lazy chains. The two can report the same `for_each` call.
+    /// Clippy checks the iteration form. This rule checks the callback
+    /// body.
     ///
     /// ### Example
     ///
-    /// **Avoid:** 2 top-level statements, the `let` and then the tail
-    /// expression
+    /// **Avoid:** 2 top-level statements
     ///
     /// ```rust,ignore
     /// entries.iter().map(|entry| {
@@ -64,7 +67,7 @@ declare_tool_lint! {
     /// })
     /// ```
     ///
-    /// **Prefer:** a name for the operation, with the chain still lazy
+    /// **Prefer:** a name for the operation
     ///
     /// ```rust,ignore
     /// entries.iter().map(format_entry)
@@ -94,8 +97,8 @@ const CONFIG_KEY: &str = "perfectionist::multi_statement_iterator_closure";
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields)]
 struct Config {
-    /// Maximum top-level statements, including a tail expression, in an
-    /// inline iterator callback. Defaults to `1`.
+    /// Maximum top-level statements in an inline iterator callback. The
+    /// value the body produces counts as one. Defaults to `1`.
     max_statements: usize,
 }
 
@@ -153,11 +156,11 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
         }
         // The lookup is what establishes that the author wrote this
         // callback, and writes it to one of the methods the rule
-        // covers: `count_source_statements` records a range only for a
-        // closure the source shows in that position. So a call a macro
-        // assembled around the author's closure finds nothing here,
-        // and no question about where either span came from has to
-        // stand in for reading the source.
+        // covers. `count_source_statements` records a range only for a
+        // closure the source shows in that position. A call a macro
+        // assembled around the author's closure therefore finds
+        // nothing here. No question about where either span came from
+        // has to stand in for reading the source.
         let Some(statements) = self
             .counts
             .get(&(callback.span.lo(), callback.span.hi()))
@@ -174,12 +177,12 @@ impl<'tcx> LateLintPass<'tcx> for MultiStatementIteratorClosure {
 const EXTRACTION_HELP: &str = "extract a named helper, or use an explicit loop for eager work \
                                when it preserves the required behaviour and performance";
 
-/// How to tell the fix did not work, in the shape the sibling
-/// threshold rules use: a test the reader applies to the result.
+/// How to tell the fix did not work. The sibling threshold rules put
+/// a test the reader applies to the result, and this follows them.
 /// The shapes this rule leaves alone are a closure bound to a `let`
 /// and passed by name, and a body wrapped in one more block. Naming
 /// either of them here would print a working bypass under a `help:`
-/// label, where it reads as a recipe rather than as a caution.
+/// label. There it reads as a recipe rather than as a caution.
 const MOVED_HELP: &str = "if the only name that fits the helper describes the steps rather than \
                           the value it produces (`double_and_increment`, `parse_then_insert`), \
                           the steps moved rather than went away";

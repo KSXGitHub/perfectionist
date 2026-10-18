@@ -22,7 +22,7 @@ fn run_ui(src_base: &str, dylint_toml: &str) {
         .run();
 }
 
-/// No `max_statements` override: the fixture is measured against the
+/// No `max_statements` override. The fixture is measured against the
 /// rule's own default of 1.
 #[test]
 fn enabled_with_default_threshold() {

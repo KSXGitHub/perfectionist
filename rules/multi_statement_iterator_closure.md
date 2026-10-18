@@ -11,14 +11,16 @@
 
 Flags an inline callback to a standard `Iterator` method whose
 body does more than `max_statements` permits. The value the body
-produces counts towards that, so a `let` and the value it feeds
-are already two.
+produces counts towards that. A `let` and the value it feeds are
+already two.
 
 A method that merely shares an `Iterator` method's name is left
-alone, a parallel iterator's `map` and an asynchronous stream's
-among them: the rule asks the type system, not the spelling. A
-callback is measured only where the author's own source shows it
-passed to such a method, so a macro's own code is left alone too.
+alone. The rule asks the type system, not the spelling. A
+parallel iterator's `map` and an asynchronous stream's are left
+alone for that reason.
+
+A callback is measured only where the author's own source shows
+it passed to such a method. A macro's own code is left alone.
 
 Enable the rule per crate by adding to `dylint.toml`:
 
@@ -32,24 +34,25 @@ enable = ["multi_statement_iterator_closure"]
 This is a stylistic preference, not a correctness issue. A short
 callback keeps the transformation visible in the chain. A callback
 that performs several steps can be easier to follow as a named
-helper, or as a loop body when the operation is eager.
+helper. When the operation is eager, a loop body can be easier
+still.
 
 A loop rewrite needs more care than a helper does. A
 closure-local `return` must not become a return from the
-enclosing function, and the rule establishes nothing about
-performance, so benchmark a rewrite that matters to it.
+enclosing function. The rule establishes nothing about
+performance. Benchmark a rewrite that matters to it.
 
 ## Interaction with Clippy
 
 Clippy's `needless_for_each` already recommends loops for simple
 eager iteration. This check also covers callbacks inside transformed
-or lazy chains. The two can report the same `for_each` call: Clippy
-checks the iteration form, while this rule checks the callback body.
+or lazy chains. The two can report the same `for_each` call.
+Clippy checks the iteration form. This rule checks the callback
+body.
 
 ## Example
 
-**Avoid:** 2 top-level statements, the `let` and then the tail
-expression
+**Avoid:** 2 top-level statements
 
 ```rust,ignore
 entries.iter().map(|entry| {
@@ -58,7 +61,7 @@ entries.iter().map(|entry| {
 })
 ```
 
-**Prefer:** a name for the operation, with the chain still lazy
+**Prefer:** a name for the operation
 
 ```rust,ignore
 entries.iter().map(format_entry)
@@ -87,5 +90,5 @@ Configure via `dylint.toml` under `["perfectionist::multi_statement_iterator_clo
 - _Type:_ `unsigned integer`
 - _Optional_
 
-Maximum top-level statements, including a tail expression, in an
-inline iterator callback. Defaults to `1`.
+Maximum top-level statements in an inline iterator callback. The
+value the body produces counts as one. Defaults to `1`.

@@ -18,16 +18,16 @@
 // find. Nothing is reported for it.
 //
 // `#[rebuilt_signature]` is the opposite shape, and the one a guard
-// like that gets wrong: the macro re-emits the `fn` keyword as its own
-// token and passes the body through, so the item's span carries the
-// expansion while the callback inside it is the caller's own source,
+// like that gets wrong. The macro re-emits the `fn` keyword as its own
+// token and passes the body through. The item's span therefore carries
+// the expansion. The callback inside it is the caller's own source,
 // down to the byte. That callback is reported. `#[verbatim]` is the
 // control, and the swap between the two is what shows the signature
 // token is the only difference.
 //
-// `#[respan_onto_paren]` is one way past a byte-range lookup: it
+// `#[respan_onto_paren]` is one way past a byte-range lookup. It
 // stamps synthesised code onto the span of a parenthesis group the
-// caller wrote, so the synthesised callback lands on the key a
+// caller wrote. The synthesised callback therefore lands on the key a
 // parenthesised callback is written under. What rejects it is that
 // every token it emits carries that one span, leaving the call
 // starting no earlier than its own argument, which no call the author
@@ -36,17 +36,17 @@
 // holding no iterator call at all.
 //
 // `#[wrap_in_iterator_call]` needs no span trickery whatever, which is
-// what makes it the one to care about: it wraps a closure the caller
-// wrote in a synthesised iterator call and leaves the synthesised
-// tokens on the `Span::call_site()` that `quote!` hands them. The
+// what makes it the one to care about. It wraps a closure the caller
+// wrote in a synthesised iterator call. The synthesised tokens keep the
+// `Span::call_site()` that `quote!` hands them. The
 // callback's byte range is the caller's, so it is keyed and its own
 // span answers nothing. The call is what came from the expansion, and
 // asking that of the call's span is what rejects it. Nothing is
 // reported for it either.
 //
-// `#[respan_two_targets]` is the same trick with two targets: the
+// `#[respan_two_targets]` is the same trick with two targets. The
 // synthesised call takes one span the caller wrote and the synthesised
-// callback another, so no comparison between the two spans separates it
+// callback another. No comparison between the two spans separates it
 // from real code. Reading the source does, since neither span covers a
 // callback the author passed to anything. Nothing is reported for it.
 //

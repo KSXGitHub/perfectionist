@@ -12,11 +12,11 @@ use std::collections::HashMap;
 /// A range is recorded only where the source itself shows a closure
 /// passed as the final argument of a call to one of
 /// [`CALLBACK_METHODS`]. That is what makes a lookup the whole
-/// verification rather than half of one: a closure the late pass finds
+/// verification rather than half of one. A closure the late pass finds
 /// in callback position is the author's own only if the bytes under it
 /// are a callback the author wrote. An expansion cannot arrange that by
-/// borrowing a span, because the span it borrows has to cover a closure
-/// the author already passed to one of these methods.
+/// borrowing a span. The span it borrows has to cover a closure the
+/// author already passed to one of these methods.
 pub(super) type StatementCounts = HashMap<SpanRange, usize>;
 
 pub(super) fn count_source_statements(cx: &LateContext<'_>) -> StatementCounts {
@@ -43,9 +43,9 @@ impl<'ast> Visitor<'ast> for CountStatements<'_> {
             && let Some(count) = closure_statements(argument)
         {
             // The argument's own span is the only key the late pass
-            // ever looks up, parentheses included: lowering drops
+            // ever looks up, parentheses included. Lowering drops
             // `ExprKind::Paren` and widens the closure's span to the
-            // outermost parenthesised one, which is the span of the
+            // outermost parenthesised one. That is the span of the
             // argument as written. Keying the levels inside it as well
             // was measured to change nothing.
             self.counts
@@ -60,7 +60,7 @@ impl<'ast> Visitor<'ast> for CountStatements<'_> {
 /// arguments.
 ///
 /// The name is the one in the source rather than the one the call
-/// resolves to. Asking the source is the point: a macro cannot take an
+/// resolves to. Asking the source is the point. A macro cannot take an
 /// author-written call of some other function and have it answer for an
 /// `Iterator` method.
 fn final_argument(expr: &Expr) -> Option<(Symbol, &Expr)> {
@@ -97,8 +97,8 @@ fn closure_statements(expr: &Expr) -> Option<usize> {
 /// `try` or `const` wrapper around it hold; `None` for a body that is
 /// any other single expression.
 ///
-/// A wrapped block is counted through, as a plain or `unsafe` one is:
-/// the statements are the steps the callback performs either way, and
+/// A wrapped block is counted through, as a plain or `unsafe` one is.
+/// The statements are the steps the callback performs either way.
 /// `|handle| async move { ... }` is how a callback performs them in an
 /// asynchronous pipeline. Counting only `ExprKind::Block` would draw
 /// the line at which variant the parser picked rather than at anything

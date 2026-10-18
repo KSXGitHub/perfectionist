@@ -19,7 +19,7 @@ const SYNTHESISED: &str = "const _: () = { fn _synth() { \
 
 /// Re-emits the `fn` keyword at `Span::call_site()` and passes the rest
 /// of the item through, which is what `quote! { fn #name(#inputs)
-/// #body }` produces: the signature is the macro's, the body is the
+/// #body }` produces. The signature is the macro's. The body is the
 /// caller's own source.
 #[proc_macro_attribute]
 pub fn rebuilt_signature(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -143,10 +143,10 @@ fn find_closure_paren(stream: TokenStream) -> Option<Span> {
 /// `Span::call_site()` that `TokenStream::from_str` and `quote!` give
 /// them.
 ///
-/// This is the shape that needs no span trickery at all: the callback
+/// This is the shape that needs no span trickery at all. The callback
 /// keeps the caller's byte range, so it is keyed and
-/// `Span::from_expansion` is false for it, while the call that selects
-/// it exists only in the expansion. What rejects it is asking the same
+/// `Span::from_expansion` is false for it. The call that selects it
+/// exists only in the expansion. What rejects it is asking the same
 /// question of the call's own span.
 #[proc_macro_attribute]
 pub fn wrap_in_iterator_call(_attr: TokenStream, item: TokenStream) -> TokenStream {
