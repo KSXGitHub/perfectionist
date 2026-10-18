@@ -168,8 +168,8 @@ var perfectionistMatchText = (function () {
   /**
    * Drop one of a doubled final consonant, which is what English put
    * there when the ending went on: `getting` leaves `gett`, and the word
-   * behind it is `get`. An `ll`, `ss` or `zz` is the word's own doubling
-   * in `fall` and `pass`, and stays.
+   * behind it is `get`. An `ll`, `ss` or `zz` is the word's own doubling,
+   * as in `fall` and `pass`, so it stays.
    * @param {string} word
    * @returns {string}
    */
@@ -190,8 +190,8 @@ var perfectionistMatchText = (function () {
   /**
    * The stem a word shares with its variants: `cloning`, `cloned`,
    * `clones` and `clone` all come back `clon`, so a reader who types one
-   * finds a lint named with another. The regular endings and nothing more
-   * with no dictionary, and no ending that rewrote the word rather
+   * finds a lint named with another. The regular endings and nothing more:
+   * no dictionary, and no ending that rewrote the word rather
    * than extending it, so `getter` stems to itself. Characters come off the end
    * only, so a stem is always a prefix of its word, which `matchVariants`
    * is built on.

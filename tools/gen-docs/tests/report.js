@@ -40,7 +40,7 @@
 
   /**
    * Put a row into one of its states: the attribute tests.css reads, the
-   * glyph a reader sees, and the name a screen reader hears in its place
+   * glyph a reader sees, and the name a screen reader hears in its place.
    * The state is carried by each of them rather than by a class that
    * only CSS understands.
    * @param {HTMLElement} row

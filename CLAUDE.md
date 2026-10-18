@@ -224,10 +224,11 @@ The shapes to avoid:
   Write it with obviously-fake names.
 - **Do not describe a lint as existing until it is registered.**
   Shipped docs must not name a lint that `src/rule_index.rs` does
-  not. Those are the `declare_tool_lint!` rustdoc and the
-  `rules/*.md` catalogue generated from it, or a reader who writes
+  not, or a reader who writes
   `#[expect(perfectionist::<that name>)]` for it is flagged by
-  `perfectionist::unknown_perfectionist_lints`. Planning files are
+  `perfectionist::unknown_perfectionist_lints`. The shipped docs that
+  carry lint names are the `declare_tool_lint!` rustdoc and the
+  `rules/*.md` catalogue generated from it. Planning files are
   exempt; naming unimplemented siblings is what they are for.
 - **If a passage exists only to restate the code beneath it, delete
   it.** Length is not thoroughness.
@@ -452,7 +453,7 @@ enum FrobStyle {
 
 The wrong placement is the recurring mistake this convention
 exists to stop: `Rounded`'s doc reading "… the default.", or
-`FrobStyle`'s own doc reading "Defaults to `rounded`.". It already had to
+`FrobStyle`'s own doc reading "Defaults to `rounded`." It already had to
 be corrected once for `ReferenceScope::Crate` in
 <https://github.com/KSXGitHub/perfectionist/pull/218>. The
 `#[default]` *attribute* on a variant is fine, being code that
@@ -537,7 +538,7 @@ necessary developer tools and run every task that `just all`
 performs. The recipe lives in the top-level `justfile`.
 The toolchain is provisioned by `just install-dev-tools`, which
 covers `cargo-dylint`, `dylint-link` and anything else the project
-requires. It which drops binaries into
+requires. It drops the binaries into
 `.dev-tools/bin` (already on `PATH` via the justfile). Run it
 once per fresh checkout, and again whenever `Cargo.lock` updates
 the pinned `dylint_linting` version.
@@ -667,8 +668,8 @@ drive a headless Chromium from a throwaway Playwright script:
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
 Every rule's documentation needs a section that explains the
-motivation. That means the rustdoc on the `declare_tool_lint!` block
-and the planning file in `planned-rules/`.
+motivation. The rustdoc on the `declare_tool_lint!` block needs one,
+and so does the planning file in `planned-rules/`.
 Pick the heading based on whether the violation is objectively
 broken or a stylistic preference:
 
@@ -716,7 +717,7 @@ shared `SourceMap` so a rule reaching separate-file submodules
 still sees `#[cfg(...)]` gates intact. It exists because this
 exact bug has been written twice: a source-layout rule shipped as
 a pre-expansion `EarlyLintPass` silently skips every separate-file
-submodule. before implementing any rule that reads
+submodule. Before implementing any rule that reads
 the *written layout* of items across module scopes, read
 [Reaching every module (source-layout rules)](planned-rules/IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules).
 The planning files document who depends on whom in their
