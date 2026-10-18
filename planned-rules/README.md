@@ -97,15 +97,32 @@ pattern that several rules call out by reference — live in
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
   — flag a closure doing several jobs where one adapter per job would
   do: a chain of steps on the item, a predicate that is a conjunction,
-  or a guard welded to a value. Three rules implement those three
-  triggers, over nine families; the file's `## Status` section says which
-  rule covers which, which families each reaches, and how each is
+  or a guard welded to a value. One rule,
+  `perfectionist::splittable_adapter_closure`, implements all three
+  triggers; the file's `## Status` section says which module answers
+  each trigger, which families the rule reaches, and how it is
   narrower than the file. It remains the spec for the `[T; N]` receiver,
   the unanchored chain and the autofix. Narrows what also satisfies
   `perfectionist::overly_long_method_chain`, and contradicts it where the
   lift target is a method of another name: that rule collapses a run of
   one name, so `map` into `map` is free where `any` into `map` costs a
   call. Active by default.
+
+### `Option` and `Result` combinators
+- [`map-or-usage.md`](./map-or-usage.md) — two rules, `map_or_usage`
+  and `map_or_else_usage`, each flagging its own method's calls on
+  `Option` and `Result`. Both methods take the default before the
+  mapper, so the reader meets the value the receiver does not hold
+  before the one it does, and the two arguments stand in the reverse of
+  the order they run in. `map_or`'s remedy is `is_some_and` /
+  `is_none_or` / `is_ok_and` / `and_then` / `ok` where the default
+  identifies one and a `map(...).unwrap_or(...)` chain otherwise;
+  `map_or_else`'s is the `unwrap_or_else` chain or a `match`. Both name
+  their remedies in the help text and neither has an autofix, since
+  which restructuring reads better is the author's call. Both reverse
+  `clippy::map_unwrap_or` (pedantic), and the `match` remedy reverses
+  `clippy::option_if_let_else` (nursery), so a project that enables
+  either group allows that lint. Active by default.
 
 ### Tests
 - [`cfg-attr-ignore-tests.md`](./cfg-attr-ignore-tests.md) — prefer
