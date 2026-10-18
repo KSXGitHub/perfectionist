@@ -20,9 +20,7 @@ among them: the rule asks the type system, not the spelling. A
 callback is measured only where the author's own source shows it
 passed to such a method, so a macro's own code is left alone too.
 
-Projects differ on whether several steps belong inline or in a
-named helper, so the rule is inactive by default. Enable it per
-crate by adding to `dylint.toml`:
+Enable the rule per crate by adding to `dylint.toml`:
 
 ```toml
 [perfectionist]
