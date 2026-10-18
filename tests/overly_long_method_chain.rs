@@ -4,7 +4,7 @@
 //! sweep under `ui/` for `tests/ui.rs` to pick up: `ui/overly_long_
 //! method_chain.rs` holds two over-limit chains and an empty `.stderr`,
 //! which is what proves the rule stays off until it is enabled. Every
-//! fixture here therefore travels with a `dylint.toml` that enables it
+//! fixture here therefore travels with a `dylint.toml` that enables
 //! it: `default` pins the default limit, `zero_threshold` pins where
 //! a chain starts and ends. `exempt_tests` needs `#[cfg(test)]` code to
 //! exist, so it is covered by a minimal Cargo project run through

@@ -6,7 +6,8 @@
     reason = "the leading comments document each case; they are not rationales to lift",
 )]
 
-// Bad: a built-in lint that is not exempt, so removal or `#[expect]`.
+// Bad: a built-in lint that is not exempt, so the fix offers removal
+// or `#[expect]`.
 #[allow(non_snake_case, reason = "external API uses camelCase")]
 fn simple_builtin() {}
 
@@ -24,14 +25,16 @@ fn simple_perfectionist(x: i32) -> i32 {
     x
 }
 
-// Bad: multi-line single-lint attribute, so removal or `#[expect]`.
+// Bad: multi-line single-lint attribute, so the fix offers removal or
+// `#[expect]`.
 #[allow(
     clippy::type_complexity,
     reason = "the type mirrors the upstream alias",
 )]
 fn multiline_simple() {}
 
-// Bad: `cfg_attr`-wrapped, so only the inner `allow` -> `expect` swap.
+// Bad: `cfg_attr`-wrapped, so the fix offers only the inner `allow` ->
+// `expect` swap.
 #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
 fn cfg_attr_simple() {}
 

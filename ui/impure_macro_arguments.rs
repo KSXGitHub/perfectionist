@@ -349,7 +349,7 @@ fn _array_repeat_with_impure_half_flagged() {
     let _ = await_macro!([0; size()]);
 }
 
-// Binary chains over pure operands are pure, comparisons and
+// Binary chains over pure operands are pure. Comparisons and
 // arithmetic on local bindings, fields, and constants are side-effect-
 // free and produce the same result regardless of how many times the
 // macro evaluates them. Flagging these would defeat the debug-only

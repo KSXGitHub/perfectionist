@@ -220,7 +220,7 @@ pub(crate) fn is_option(ty: &Type) -> bool {
 /// renderer never shows Rust syntax to the reader; TOML authors
 /// write arrays as `[a, b]`, integers without sign annotations, and
 /// strings without `char` / `&str` / `Cow` distinctions, so the
-/// labels echo that vocabulary. The translation is purely structural
+/// labels echo that vocabulary. The translation is purely
 /// structural, with no ad-hoc exceptions for specific field names, so
 /// adding a new built-in type means extending the match arms here.
 ///

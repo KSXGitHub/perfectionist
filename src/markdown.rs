@@ -45,7 +45,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
         // the `take_*` block-level parsers below consumes a span
         // that ends either at a line boundary (the trailing `\n`
         // is included in the returned length) or at EOF, so the
-        // next position is always the start of a new line, so set
+        // next position is always the start of a new line. Set
         // `at_line_start = true` unconditionally after a successful
         // match instead of probing the byte at the new position.
         if at_line_start {
@@ -116,7 +116,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 }
 
 /// Tier B code-region mask: the byte ranges of CommonMark code
-/// regions: inline code spans and block-level code (fenced and
+/// regions. Those are inline code spans and block-level code (fenced and
 /// four-space-indented blocks, which is where doc-test code lives).
 /// For a rule that scans prose and needs only to exclude code from
 /// the scan, not classify every construct.
@@ -127,7 +127,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// `scan_code_spans` knob, since a project may want a flagged
 /// character caught even inside an inline code span. A code span is
 /// always *parsed*, so a backtick run inside it never spuriously
-/// opens a second span. It joins the mask only when
+/// opens a second span. A code span joins the mask only when
 /// `include_code_spans` is `true`.
 ///
 /// Like [`scan_skip_regions`], the returned ranges are sorted by start

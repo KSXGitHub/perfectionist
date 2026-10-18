@@ -43,11 +43,11 @@ pub(crate) trait Register {
 
 /// Expand the rule list into the index.
 ///
-/// Each entry pairs the rule's name with the type to generate for it.
-/// That name is the snake_case one it wears in `dylint.toml` and in
-/// `#[allow(perfectionist::...)]`, and the name of its
-/// `src/rules/<name>.rs` file. Both are spelled out because `macro_rules!`
-/// cannot case-convert an identifier.
+/// Each entry pairs the rule's name with the type to generate for it,
+/// and both are spelled out because `macro_rules!` cannot case-convert
+/// an identifier. That name is the snake_case one the rule wears in
+/// `dylint.toml` and in `#[allow(perfectionist::...)]`, and the name of
+/// its `src/rules/<name>.rs` file.
 ///
 /// Entries are in ascending order, since [`is_registered_lint`]
 /// binary-searches [`LINT_NAMES`]; the tests below hold them to it.

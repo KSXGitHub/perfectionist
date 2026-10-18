@@ -185,7 +185,7 @@ fn does_not_flag_production_module_gated_by_any_test_cfg() {
 /// Nested composition: `#[cfg(all(any(test, unix), unix))]` gates real
 /// production code. The inner `any(test, unix)` does *not* imply test
 /// (it holds on a non-test `unix` build), so neither does the enclosing
-/// `all(...)`, so the module is production and must be descended into
+/// `all(...)`. The module is production and must be descended into
 /// rather than charged against the inline-test budget. This locks in the nested
 /// case the `entry_implies_test` docstring claims: before the fix, both
 /// `all` and `any` reduced with `.any(... mentions test)`, so the inner

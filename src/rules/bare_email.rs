@@ -320,9 +320,9 @@ fn emit_email(
             }
             Style::Forbid => {
                 diag.help(
-                    "move the email out of source, into a \
-                         CONTRIBUTING.md or SECURITY.md say, or remove \
-                         it entirely",
+                    "move the email out of source, for instance into a \
+                         CONTRIBUTING.md or SECURITY.md, or remove it \
+                         entirely",
                 );
             }
         },

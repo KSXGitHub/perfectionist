@@ -91,13 +91,13 @@ pub(super) struct Config {
     // read only when the rule is enabled (see `register_pass`), so a
     // disabled rule never needs any of it.
     /// The grouping style to enforce: `single_block` or `multi_block`. It
-    /// has no default, a project enabling the rule stating which layout
-    /// it wants, so it must be set when the rule is enabled.
+    /// has no default, since a project enabling the rule states which
+    /// layout it wants; it must therefore be set when the rule is enabled.
     pub(super) style: Style,
     /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
-    /// Like `style` it has no default, a project enabling the rule
-    /// stating how it wants re-exports laid out, so it must be set when
-    /// the rule is enabled. `grouped` pulls every re-export into one contiguous
+    /// Like `style` it has no default, since a project enabling the rule
+    /// states how it wants re-exports laid out; it must therefore be set
+    /// when the rule is enabled. `grouped` pulls every re-export into one contiguous
     /// leading block above all private imports; `split` breaks that block
     /// into two, submodule re-exports (`pub use child::Item;`) above
     /// alias re-exports (`pub use Item;` / `pub use Item as Alias;`);

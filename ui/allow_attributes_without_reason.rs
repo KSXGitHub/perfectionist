@@ -61,8 +61,8 @@ fn good_multibyte() {}
 fn reason_empty() {}
 
 // Bad: whitespace-only `reason` is treated the same as an empty
-// literal: it is long enough for the default length floor but carries
-// no rationale.
+// literal. The literal `"   "` is long enough for the default length
+// floor but carries no rationale.
 #[allow(dead_code, reason = "   ")]
 fn reason_whitespace_only() {}
 

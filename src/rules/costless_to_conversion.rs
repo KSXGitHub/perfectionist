@@ -39,9 +39,9 @@ declare_tool_lint! {
     /// - A method produced by a macro.
     ///
     /// What no reading of the body can tell is a free borrow from one
-    /// whose author means to make it cost later, std naming
-    /// `CStr::to_bytes` with `to_` for that reason, so that case takes
-    /// an `#[expect(...)]`.
+    /// whose author means to make it cost later: `CStr::to_bytes` is
+    /// named with `to_` in std for that reason, so that case takes an
+    /// `#[expect(...)]`.
     ///
     /// ### Why restrict this?
     ///

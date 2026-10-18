@@ -22,7 +22,7 @@ pub(super) struct Config {
     /// exception. Defaults to `["prelude"]`.
     pub(super) prelude_segment_names: Vec<String>,
     /// Module paths whose glob import is never flagged, regardless of the
-    /// exceptions above. It is the path before the `::*` of a
+    /// exceptions above. Each is the path before the `::*` of a
     /// `use <path>::*`.
     /// Each entry is **absolute**: an extern-crate path with a leading
     /// `::` (`"::rayon::iter"`, which exempts both `use rayon::iter::*;`

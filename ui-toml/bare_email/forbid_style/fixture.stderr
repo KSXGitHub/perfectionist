@@ -1,10 +1,10 @@
 warning: bare email address `security@example.net`
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// address out of the source, over security@example.net.
-   |                                     ^^^^^^^^^^^^^^^^^^^^
+LL | /// address out of the source: security@example.net.
+   |                                ^^^^^^^^^^^^^^^^^^^^
    |
-   = help: move the email out of source, into a CONTRIBUTING.md or SECURITY.md say, or remove it entirely
+   = help: move the email out of source, for instance into a CONTRIBUTING.md or SECURITY.md, or remove it entirely
    = note: `#[warn(perfectionist::bare_email)]` on by default
 
 warning: N warnings emitted

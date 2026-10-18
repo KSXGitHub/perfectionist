@@ -620,11 +620,11 @@ fn theme_option(symbol: &str, value: &str, label: &str, checked: bool) -> Markup
 /// The toggle is rendered with the HTML `hidden` attribute: the
 /// click handler, scroll lock, focus moves, and `inert` setup are
 /// all JS-driven, so a button visible to the reader without those
-/// installed would be inert (a CSP-blocked or failed-to-load
-/// external script, a stripped script tag, a parse error before the
-/// handler attaches: any of these leave the page with a visible,
+/// installed would be inert. A CSP-blocked or failed-to-load
+/// external script, a stripped script tag and a parse error before
+/// the handler attaches all leave the page with a visible,
 /// non-functional hamburger if the button isn't gated on script
-/// readiness).
+/// readiness.
 /// `<noscript>` only covers "scripting disabled in the browser",
 /// not "script failed to run"; the `hidden` attribute covers both
 /// uniformly. The script reveals the button by clearing `hidden`

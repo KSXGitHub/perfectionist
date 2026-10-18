@@ -98,8 +98,8 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     // onto itself and truncate it, or onto whatever `..` reaches. So
     // every component of the fixture path has to be an ordinary name,
     // which also rejects the two arguments being passed the wrong way
-    // round. That is how such a path is actually reached,
-    // `CARGO_MANIFEST_DIR` being absolute.
+    // round. Swapping them is how an absolute path is actually
+    // reached, `CARGO_MANIFEST_DIR` being absolute.
     assert!(
         manifest_dir.is_absolute(),
         "the manifest dir must be absolute, got {manifest_dir:?}",

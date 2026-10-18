@@ -11,9 +11,9 @@
 //!    already, so the build hits the network just once and then works
 //!    offline, and
 //! 2. links the cached files into the output directory beside `index.html`
-//!    ([`install_into`]) so the stylesheet's relative `url(...)` resolves
-//!    by hard-linking first (cache and output normally share a
-//!    filesystem) and falling back to a byte copy across filesystems.
+//!    ([`install_into`]) so the stylesheet's relative `url(...)`
+//!    resolves. It hard-links first (cache and output normally share a
+//!    filesystem) and falls back to a byte copy across filesystems.
 
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
@@ -26,7 +26,7 @@ use std::process::Command;
 /// under in the cache and the output (for the font it must match the name
 /// `base.css` references in `url(...)`); `url` is where it is fetched from
 /// on a cache miss. Both the variable Cantarell font and the OFL license
-/// text it ships under are listed, OFL requiring the license to
+/// text it ships under are listed. OFL requires the license to
 /// accompany every redistributed copy, and the rendered site is one
 /// such copy.
 pub(crate) const DOWNLOADS: &[(&str, &str)] = &[
@@ -89,9 +89,9 @@ pub(crate) fn ensure_cached(cache_dir: &Path, downloads: &[(&str, &str)]) -> Res
 }
 
 /// Link each cached download into `out_dir` so it lands beside
-/// `index.html`. Hard-links first, since the cache and the output
-/// directory normally share a filesystem, so this avoids duplicating
-/// the bytes, and falls back to a byte copy when hard-linking isn't
+/// `index.html`. Hard-links first, because the cache and the output
+/// directory normally share a filesystem and a link avoids duplicating
+/// the bytes. Falls back to a byte copy when hard-linking isn't
 /// possible (e.g.
 /// the output is on a different mount). Assumes [`ensure_cached`] has
 /// already populated the cache directory.

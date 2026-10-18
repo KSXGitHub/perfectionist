@@ -89,7 +89,7 @@ fn bare_trailing_comment_ignored() {}
 #[allow(dead_code)] //----------
 fn divider_trailing_comment_ignored() {}
 
-// Good: a comment on the line *above* the attribute is out of scope
+// Good: a comment on the line *above* the attribute is out of
 // scope: only same-line trailing comments are lifted, never a comment
 // that might instead be documenting the item below.
 // documentation for the function, not the attribute

@@ -7,8 +7,9 @@
 // where the crate is present.
 //
 // The default also accepts a declaration in the surrounding workspace's
-// own table, which is read from the manifest `CARGO_MANIFEST_DIR` leads
-// to, this repository's. It declares `command-extra` per-package, so
+// own table, read from the manifest `CARGO_MANIFEST_DIR` leads to. That
+// manifest is this repository's, and it declares `command-extra`
+// per-package, so
 // there is nothing there for the fixture to inherit.
 
 #![feature(register_tool)]

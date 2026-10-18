@@ -1,6 +1,6 @@
 /// Bad: bare email under `style = "forbid"` should emit no
 /// suggestion at all, only prose telling the author to move the
-/// address out of the source, over security@example.net.
+/// address out of the source: security@example.net.
 fn _bare_email_forbid_style() {}
 
 fn main() {}
