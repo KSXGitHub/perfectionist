@@ -133,7 +133,7 @@ pub(crate) struct HighlightCss {
 ///
 /// [`ThemeSet::load_defaults`] parses the *entire* bundled theme set, so
 /// it is called exactly once here and both themes are taken from that
-/// single load, calling it per theme parsing the whole set twice.
+/// single load. Calling it per theme would parse the whole set twice.
 pub(crate) static HIGHLIGHT_CSS: LazyLock<HighlightCss> = LazyLock::new(|| {
     let themes = ThemeSet::load_defaults().themes;
     let light = themes

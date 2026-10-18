@@ -60,11 +60,10 @@ declare_tool_lint! {
     /// Some paths are deliberately left alone. Nothing is flagged in a
     /// `#![no_std]` crate, where there is no `std::` to name. A path is
     /// left alone when its `std::` spelling would name a *different*
-    /// item, `core::panic::PanicInfo` not being
-    /// `std::panic::PanicInfo`, and so is a macro path, because
-    /// `core::panic!` and `std::panic!`
-    /// are genuinely different macros. A path produced by a macro
-    /// expansion is left alone as well.
+    /// item: `core::panic::PanicInfo` is not `std::panic::PanicInfo`. A
+    /// macro path is left alone too, because `core::panic!` and
+    /// `std::panic!` are genuinely different macros. A path produced by
+    /// a macro expansion is left alone as well.
     ///
     /// Where one `core` token is shared by several names
     /// (`use core::{fmt::Display, panic::PanicInfo};`), the rewrite is

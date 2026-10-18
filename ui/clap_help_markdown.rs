@@ -92,7 +92,7 @@ enum Mode {
     Slow,
 }
 
-/// The [`DisplayFormat`] of [`Bytes`]: gated behind a `cli` feature, and
+/// The [`DisplayFormat`] of [`Bytes`]: gated behind a `cli` feature
 /// and, as a `ValueEnum` container doc, never reaching `--help`.
 #[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 #[derive(Clone)]

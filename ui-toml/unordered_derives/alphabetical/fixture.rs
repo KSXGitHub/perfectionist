@@ -62,8 +62,8 @@ struct _CfgAttrCompound;
 struct _CfgAttrNested;
 
 // Bad: a derive gated by a predicate that is FALSE on the test host is
-// still ordered, since `unordered_derives` is a pre-expansion pass and
-// never evaluates the `cfg` predicate, so the check is host-independent. Keep
+// still ordered. `unordered_derives` is a pre-expansion pass and never
+// evaluates the `cfg` predicate, so the check is host-independent. Keep
 // the predicate as `windows` (false on the Unix CI host): "simplifying"
 // it back to `unix` would silently drop the platform-independence
 // coverage this case exists to pin.

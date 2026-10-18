@@ -25,10 +25,11 @@ declare_tool_lint! {
     /// and `&T` otherwise.
     ///
     /// The call has to reproduce the field's own type for a borrow to
-    /// serve in its place. So a `Copy` field is left alone, returning
-    /// it by value being the borrowed form's equal, and so is a call that
-    /// renders the field rather than copying it, such as `to_string` on
-    /// a numeric field, where no borrow of the field is a `String`.
+    /// serve in its place. So a `Copy` field is left alone, because
+    /// returning it by value is the borrowed form's equal. A call that
+    /// renders the field rather than copying it is left alone as well,
+    /// such as `to_string` on a numeric field, where no borrow of the
+    /// field is a `String`.
     ///
     /// An `Rc` or an `Arc` field is left alone too: cloning one bumps a
     /// refcount rather than copying what it points at, so a borrow

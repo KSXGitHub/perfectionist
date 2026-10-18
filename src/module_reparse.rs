@@ -3,8 +3,8 @@
 //! A rule that inspects the *source-level* layout of items hits a
 //! wall in a pre-expansion `EarlyLintPass`. The blank-line grouping of
 //! a module's `use` statements and the text of its doc comments are
-//! two such layouts: an out-of-line `mod foo;` module is
-//! still `ModKind::Unloaded` there (its file is not parsed until macro
+//! both such layouts. In that pass an out-of-line `mod foo;` module is
+//! still `ModKind::Unloaded` (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
 //! separate-file submodule.
 //!

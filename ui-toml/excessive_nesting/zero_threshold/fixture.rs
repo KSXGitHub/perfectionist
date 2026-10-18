@@ -62,7 +62,7 @@ fn if_let(input: Option<u8>) {
     }
 }
 
-// Bad: 1 level, since a let chain binds a pattern like a bare `if let`
+// Bad: 1 level. A let chain binds a pattern like a bare `if let`
 // does, so the path names it `if let` and the suggestion is `let ...
 // else`.
 fn if_let_chain(input: Option<u8>, ready: bool) {
@@ -108,7 +108,7 @@ fn if_in_arm(value: u8, ready: bool) {
     }
 }
 
-// Bad: 2 levels, since an `if` in an arm guard sits under the `match` just
+// Bad: 2 levels. An `if` in an arm guard sits under the `match` just
 // as one in an arm body does, but a guard must evaluate to `bool`, so
 // such an `if` always has an `else` and never draws the arm-guard
 // suggestion.
@@ -128,7 +128,8 @@ fn for_loop(items: &[u8]) {
     }
 }
 
-// Bad: 1 level, the `if` a `while` lowers to not being a level.
+// Bad: 1 level, the `while` itself. The `if` a `while` lowers to is
+// not a level.
 fn while_loop(mut count: u8) {
     while count > 0 {
         count -= 1;
@@ -202,9 +203,8 @@ async fn awaiting(ready: impl Future<Output = bool>) {
     }
 }
 
-// Bad: 2 levels, since an `async` closure is one the author wrote, so
-// it is a level like any other closure, and the `if` inside it is
-// another.
+// Bad: 2 levels. An `async` closure is one the author wrote, so it is
+// a level like any other closure, and the `if` inside it is another.
 fn async_closure(ready: bool) {
     let _make = async move || {
         if ready {

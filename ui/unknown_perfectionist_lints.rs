@@ -17,7 +17,7 @@ fn typo_close() {}
 #[deny(perfectionist::unknown_perfectionist_lint)]
 fn typo_close_two() {}
 
-// Bad: word fragment dropped, so three edits from
+// Bad: word fragment dropped, leaving three edits from
 // `unicode_ellipsis_in_comments`, the threshold's limit.
 #[allow(perfectionist::unicode_ellipsis_comments)]
 fn typo_dropped_fragment() {}

@@ -228,8 +228,9 @@ impl Register for rule::ImportGroupingMismatch {
         // until macro expansion, so a pre-expansion pass never sees them.
         // `check_crate` re-parses each module file instead (see
         // [`crate::module_reparse`]), reaching every submodule while keeping
-        // `#[cfg(...)]` gates intact, parsing not stripping cfg being the
-        // reason a pre-expansion pass would otherwise be needed.
+        // `#[cfg(...)]` gates intact. Keeping those gates is the reason a
+        // pre-expansion pass would otherwise be needed; parsing does not
+        // strip cfg, unlike the post-expansion AST.
         lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(ImportGroupingMismatch {
                 config: config.clone(),

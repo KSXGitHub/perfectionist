@@ -15,7 +15,7 @@ declare_tool_lint! {
     /// When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
     /// `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
     /// on the same source line as the attribute's closing `]`,
-    /// and that documents *why* the level was chosen, lifts the comment
+    /// and that comment documents *why* the level was chosen, lifts it
     /// into the attribute's `reason = "..."` field and removes the
     /// original comment.
     ///

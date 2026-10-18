@@ -25,9 +25,9 @@ it names exactly what each variant would be formatted with
 anyway.
 
 Each of `derive_more`'s formatting derives is read through its
-own helper attribute, `Display` through `#[display(...)]` and
-`LowerHex` through `#[lower_hex(...)]`, yet the
-trait a template forwards to comes from the *placeholder*, not
+own helper attribute, among them `Display` through
+`#[display(...)]` and `LowerHex` through `#[lower_hex(...)]`, yet
+the trait a template forwards to comes from the *placeholder*, not
 from the attribute's name. So `#[lower_hex("{_0}")]` stays
 unflagged: a bare `{}` forwards to `Display`, which is not
 what the `LowerHex` derive would have done.

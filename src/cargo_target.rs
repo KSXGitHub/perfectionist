@@ -21,7 +21,7 @@ use std::path::{Component, Path};
 ///
 /// This is a convention, not a stability guarantee, and it is the
 /// weaker of [`classify`]'s two signals: Cargo could name build-script
-/// crates something else, and a library may carry the prefix itself:
+/// crates something else, and a library may carry the prefix itself;
 /// `build-script-cfg` and `build_script_file_gen` are published. The
 /// crate root decides where it can; the prefix answers what is left.
 const BUILD_SCRIPT_CRATE_NAME_PREFIX: &str = "build_script_";

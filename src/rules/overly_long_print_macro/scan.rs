@@ -88,8 +88,8 @@ pub(super) fn build_fold_suggestion(
     // template is itself a top-level token tree (`find_template_literal`
     // only ever selects a lone `TokenTree::Token`, never a nested group)
     // at or before it in source order. So `comma_at >= template_hi`: the
-    // insertion above leaves the `[..template_hi]` prefix untouched,
-    // and therefore both template offsets computed below.
+    // insertion above leaves untouched both the `[..template_hi]` prefix
+    // and the template offsets computed below.
     let template_lo = (template_span.lo().0.checked_sub(open_span.hi().0)?) as usize;
     let template_hi = (template_span.hi().0.checked_sub(open_span.hi().0)?) as usize;
     let before_template = inner.get(..template_lo)?;

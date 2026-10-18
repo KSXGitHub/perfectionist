@@ -3,7 +3,7 @@
 /// wrapping it in markdown.
 fn _doc_bare_url_form() {}
 
-// Bad: closes #56, and plain line comments are scanned under
+// Bad: closes #56. Plain line comments are scanned under
 // `include_plain_comments = true`, and take their shape from
 // `plain_comment_form`, which is `bare_url` by default.
 fn _plain_bare_url_form() {}

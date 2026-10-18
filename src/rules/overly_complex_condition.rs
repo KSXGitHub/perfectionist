@@ -106,8 +106,8 @@ const DEFAULT_MAX_OPERATORS: usize = 3;
 
 /// What to do, and the constraint that decides whether it was done. The
 /// count alone is satisfied by binding the clauses under any name at
-/// all, so the help rules out the name a mechanical split reaches for
-/// for: one assembled from the clauses rather than drawn from what
+/// all, so the help rules out the name a mechanical split reaches for:
+/// one assembled from the clauses rather than drawn from what
 /// they together decide.
 const NAMING_HELP: &str = "bind the condition, or the part of it that names a concept, to a \
                            `let` named for the predicate it decides, not for the clauses it \

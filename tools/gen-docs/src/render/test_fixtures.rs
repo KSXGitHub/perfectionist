@@ -34,7 +34,7 @@ pub(super) fn fake_context() -> RenderContext<'static> {
 /// just its contents. The narrow-viewport CSS selector
 /// `.nav-toggle[aria-expanded="true"] + .nav-sidebar` depends
 /// on adjacent-sibling ordering, so tests that want to count
-/// or inspect sidebar entries should do so against this slice
+/// or inspect sidebar entries should do so against this
 /// slice, not the whole page, where the index table and rule
 /// articles emit substrings (`href="#/rule/*"`,
 /// `<code>name</code>`, `id="/rule/*"`) that overlap

@@ -77,9 +77,9 @@ fn _skip_uncurated() {
 }
 
 // Skipped: the first top-level token shares its line with the opening
-// delimiter, the visual-indent shape rustfmt produces, and rustfmt's
-// `trailing_comma = "Vertical"` does not add a trailing comma to that
-// shape (and actively strips any that gets added). The two tools have
+// delimiter. That is the visual-indent shape rustfmt produces, and
+// rustfmt's `trailing_comma = "Vertical"` does not add a trailing comma
+// to that shape (and actively strips any that gets added). The two tools have
 // to agree, so the lint skips it. The first three cases are single
 // multi-line elements; the fourth is a multi-element list whose first
 // element happens to start on the opening-delimiter line, locking in

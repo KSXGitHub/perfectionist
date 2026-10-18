@@ -131,7 +131,7 @@ fn flags_an_ungated_test_helper_when_the_exception_is_off() {
 /// The compound-predicate cases: `all(...)` is test-only as soon as one
 /// conjunct is, `not(...)` composes by De Morgan so a double negation
 /// is still test-only, and `any(...)` is test-only only if *every*
-/// branch is, since `any(test, <anything else>)` can hold in a build
+/// branch is. `any(test, <anything else>)` can hold in a build
 /// without `test`, so it is production code as far as the rule is
 /// concerned.
 ///

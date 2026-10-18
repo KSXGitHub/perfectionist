@@ -33,10 +33,10 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    `cfg!` takes a cfg predicate, the `env!` / `include_*` /
 ///    `is_x86_feature_detected!` family takes a string literal, the
 ///    `line!` / `column!` / `file!` / `module_path!` family takes
-///    no argument, `compile_error!` aborts compilation. Or, in the
+///    no argument, and `compile_error!` aborts compilation. In the
 ///    matryoshka case from issue [#71](https://github.com/KSXGitHub/perfectionist/issues/71),
-///    is itself a call to another
-///    macro from this group. None of these evaluates a user
+///    that argument is itself a call to another macro from this
+///    group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
 ///    surfaces at the call site.
 /// 3. Third-party macros whose matchers are known to evaluate every

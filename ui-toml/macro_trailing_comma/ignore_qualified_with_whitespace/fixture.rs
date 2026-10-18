@@ -3,8 +3,8 @@
 // `dylint.toml` adds the multi-segment, whitespace-padded entry
 // `"  std::vec  "` to `ignore`. This exercises two things at once:
 //
-// 1. Multi-segment `ignore` entries, where only `extra_macros`'s
-//    multi-segment branch was previously covered.
+// 1. Multi-segment `ignore` entries. Before this fixture, only
+//    `extra_macros`'s multi-segment branch was covered.
 // 2. `parse_path`'s per-segment whitespace trimming, so a stray
 //    space in the config doesn't silently de-fang the entry.
 //

@@ -3,8 +3,8 @@
 //!
 //! ## What this actually tests
 //!
-//! Not `derive_more`'s behaviour, which would be a tautology. The
-//! subject is *this crate's trigger*, and `derive_more` is only the
+//! Not `derive_more`'s behaviour; testing that would be a tautology.
+//! The subject is *this crate's trigger*, and `derive_more` is only the
 //! oracle it is judged against. Each case is compiled, then run through
 //! `cargo dylint --fix`, so the rule itself decides what gets deleted
 //! and its own suggestion span performs the deletion. Whatever the fixer

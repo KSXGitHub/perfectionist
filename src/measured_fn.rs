@@ -15,8 +15,8 @@ use rustc_hir::intravisit::FnKind;
 use rustc_lint::LateContext;
 use rustc_span::{Span, Symbol};
 
-/// A function the rule measures: what to call it in the diagnostic and
-/// where to anchor the diagnostic, which is its signature.
+/// A function the rule measures: what to call it in the diagnostic,
+/// and the signature span the diagnostic anchors at.
 pub(crate) struct MeasuredFn {
     pub(crate) name: Symbol,
     pub(crate) kind_label: &'static str,

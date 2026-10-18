@@ -208,7 +208,7 @@ impl Holder {
     }
 
     // Bad: a `Box<T>` is owned storage for one `T`, so what a caller
-    // borrows is the `T`, so `&str` and never `&Box<str>`.
+    // borrows is the `T`: `&str`, never `&Box<str>`.
     fn boxed(&self) -> Box<str> {
         self.boxed.clone()
     }

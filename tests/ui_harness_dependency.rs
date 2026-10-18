@@ -4,10 +4,11 @@
 //! reaches `DYLINT_TOML` directly.
 //!
 //! While the dependency is absent the compiler enforces that on its
-//! own. This test covers the step that would quietly undo it, the
-//! dependency restored to a manifest by a merge resolved against
-//! a branch predating its removal, and says why it was moved, where
-//! the compiler would only stop reporting an unknown crate.
+//! own. This test covers the step that would quietly undo it: the
+//! dependency restored to a manifest, say by a merge resolved against
+//! a branch predating its removal. It also says why the dependency was
+//! moved, where the compiler would only stop reporting an unknown
+//! crate.
 
 use std::fs;
 use std::path::Path;

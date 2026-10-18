@@ -151,8 +151,8 @@ pub(super) fn escape_for_rust_string(input: &str) -> String {
             '\t' => out.push_str(r"\t"),
             '\0' => out.push_str(r"\0"),
             character if (character as u32) < 0x20 || (character as u32) == 0x7F => {
-                // Any other C0 byte / DEL: use the `\u{...}` form
-                // form, the only escape that works for every control
+                // Any other C0 byte / DEL: use the `\u{...}` form,
+                // the only escape that works for every control
                 // codepoint without a dedicated short form.
                 let _ = write!(out, r"\u{{{:x}}}", character as u32);
             }

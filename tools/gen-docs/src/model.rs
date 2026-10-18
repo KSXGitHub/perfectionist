@@ -49,10 +49,10 @@ pub(crate) struct Rule {
     /// initializer is read directly here as an enum-variant path
     /// with no `bool` intermediate. The renderer surfaces this as the
     /// "Default state" line in place of the old "Default level"
-    /// line, because under the
-    /// current convention every rule's `declare_tool_lint!` level
-    /// is `Warn`, so the user signal worth surfacing per rule is
-    /// whether the rule runs at all, not what level it fires at.
+    /// line. Under the current convention every rule's
+    /// `declare_tool_lint!` level is `Warn`, so the user signal worth
+    /// surfacing per rule is whether the rule runs at all, not what
+    /// level it fires at.
     pub(crate) default_state: DefaultState,
     /// The third positional argument to `declare_tool_lint!`.
     pub(crate) short_desc: String,
@@ -208,10 +208,10 @@ pub(crate) struct EnumVariant {
 
 /// A field of a project-local struct surfaced under a rule's
 /// Types section. Mirrors [`ConfigField`] for the nested-struct
-/// case, but the renderer omits the optional badge here, since a
-/// custom struct's TOML representation requires every field
-/// to be present, since serde's `default` attribute belongs to
-/// the top-level `Config` deserialisation, not nested.
+/// case, but the renderer omits the optional badge here. A custom
+/// struct's TOML representation requires every field to be present,
+/// since serde's `default` attribute belongs to the top-level
+/// `Config` deserialisation, not nested.
 #[derive(Clone)]
 pub(crate) struct StructField {
     /// The TOML key for this field, after applying the struct's

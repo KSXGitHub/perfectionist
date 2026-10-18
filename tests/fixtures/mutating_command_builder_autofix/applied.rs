@@ -3,8 +3,8 @@
 // between the pair: `applied.rs` holds the shapes as written and
 // `applied.fixed.rs` as the fixer leaves them, and the test compares
 // the fixer's output against the latter byte for byte, so the two files
-// have to differ by exactly the rewrite and by nothing else, so this
-// header included.
+// have to differ by exactly the rewrite and by nothing else. That
+// includes this header.
 //
 // What that test asserts is the rule's own decision, not the
 // compiler's, which is why it runs the fixer rather than reading a
