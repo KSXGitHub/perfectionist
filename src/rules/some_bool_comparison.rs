@@ -162,7 +162,7 @@ struct Rewrite {
 }
 
 /// How the comparison is rewritten, given that it was written with
-/// `equality`, so `==` rather than `!=`, against `literal`.
+/// `equality` (`==` rather than `!=`) against `literal`.
 ///
 /// The default is the literal's opposite throughout, which is what makes
 /// the call answer for `None` the way the comparison did; the negation
@@ -227,7 +227,8 @@ fn comparison<'tcx>(
 
 /// The boolean a `Some` of a boolean literal carries, where the author
 /// wrote that literal. Any outer `&` comes off the call and off its
-/// argument, the two peels that admit `&Some(true)` and `Some(&true)`.
+/// argument: those two peels are what admit `&Some(true)` and
+/// `Some(&true)`.
 ///
 /// A literal out of an expansion answers `None`. The rewrite reads its
 /// value and drops its text, so `opt == wanted!()` would otherwise be

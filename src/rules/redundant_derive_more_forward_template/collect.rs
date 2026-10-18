@@ -158,11 +158,12 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     //
     // A template that does not mention `{_variant}` is simply what a
     // variant falls back to once its own attribute is gone. One that
-    // *does* mention it looks safe, the variant being wrapped either
-    // way, but only for some traits: under a wrapping template
-    // `derive_more` abandons the transparent path, and for `Pointer` it
-    // then dereferences the field, so the wrapped form prints the
-    // pointee's address and the deleted form prints the binding's.
+    // *does* mention it looks safe, because the variant is wrapped
+    // either way, but it is safe for only some traits: under a wrapping
+    // template `derive_more` abandons the transparent path, and for
+    // `Pointer` it then dereferences the field, so the wrapped form
+    // prints the pointee's address and the deleted form prints the
+    // binding's.
     // Aliasing the placeholder (`#[display("{_variant}", _variant = 1)]`)
     // makes the template replacing again. Both are narrow, and reasoning
     // about which combinations survive has been wrong more than once, so

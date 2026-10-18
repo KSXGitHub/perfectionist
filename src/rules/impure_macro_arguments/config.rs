@@ -248,8 +248,8 @@ pub(super) struct Config {
     /// appear in the built-in defaults or in `extra_pure_methods`.
     /// Empty by default; checked after the merge, so this knob always
     /// wins. Useful for opting back into linting on a default entry
-    /// the project does not consider pure, say removing `as_ref` for a
-    /// project that wraps it in an impure implementation.
+    /// the project does not consider pure: removing `as_ref`, say,
+    /// where a project wraps it in an impure implementation.
     pub ignore_pure_methods: Vec<String>,
     /// Macro names added to the built-in pure-macro list. Each
     /// entry is matched against the invocation's final path segment

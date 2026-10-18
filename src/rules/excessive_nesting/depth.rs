@@ -114,9 +114,9 @@ impl<'tcx> Walker<'tcx> {
         self.path.pop();
     }
 
-    /// Visit an expression in body position, the `then` of an `if`, an
-    /// arm's body or a closure's body, where a block is the construct's
-    /// own body rather than a nested one.
+    /// Visit an expression in body position (the `then` of an `if`, an
+    /// arm's body or a closure's body), where a block is the
+    /// construct's own body rather than a nested one.
     fn visit_body_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         let ExprKind::Block(block, None) = expr.kind else {
             self.visit_expr(expr);

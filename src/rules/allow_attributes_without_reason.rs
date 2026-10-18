@@ -85,7 +85,7 @@ struct Config {
     /// reason (`"x"`, `"ok"`) satisfies the literal presence
     /// requirement but conveys nothing; the default floor of 3
     /// excludes those cases. Projects that want a higher bar (e.g.
-    /// require a full sentence) can raise it. The lower bound is `1`
+    /// require a full sentence) can raise it. The lower bound is `1`,
     /// and `0` is rejected at parse time, since an empty literal is
     /// already treated as a missing reason regardless of this knob.
     min_reason_length: NonZeroUsize,

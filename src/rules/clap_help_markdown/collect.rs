@@ -134,10 +134,11 @@ fn walk_items(
                 }
             }
             // Descend into inline `mod { ... }` bodies, but only those
-            // live in the compiled crate. A re-parse keeps cfg-disabled
-            // inline modules, which have no HIR node and so could not be
-            // silenced by a local `#[allow]`, which is the guard the
-            // `import_grouping_mismatch` reference implementation documents.
+            // live in the compiled crate. That restriction is the guard
+            // the `import_grouping_mismatch` reference implementation
+            // documents: a re-parse keeps cfg-disabled inline modules,
+            // which have no HIR node and so could not be silenced by a
+            // local `#[allow]`.
             ItemKind::Mod(_, _, ModKind::Loaded(items, _, spans))
                 if live_module_spans.contains(&(spans.inner_span.lo(), spans.inner_span.hi())) =>
             {

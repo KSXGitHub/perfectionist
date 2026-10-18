@@ -50,17 +50,17 @@ LL | /// Bad: a doc comment leaves an address bare: mailto:security@example.com.
 warning: bare email address `security@example.org`
   --> $DIR/bare_email.rs:LL:CC
    |
-LL | /** Bad: a `/** */` doc-block leaves one bare: security@example.org. */
-   |                                                ^^^^^^^^^^^^^^^^^^^^
+LL | /** Bad: a `/** */` doc-block leaves an address bare: security@example.org. */
+   |                                                       ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /** Bad: a `/** */` doc-block leaves one bare: security@example.org. */
-LL + /** Bad: a `/** */` doc-block leaves one bare: <security@example.org>. */
+LL - /** Bad: a `/** */` doc-block leaves an address bare: security@example.org. */
+LL + /** Bad: a `/** */` doc-block leaves an address bare: <security@example.org>. */
    |
 help: or prefix with `mailto:`
    |
-LL | /** Bad: a `/** */` doc-block leaves one bare: mailto:security@example.org. */
-   |                                                +++++++
+LL | /** Bad: a `/** */` doc-block leaves an address bare: mailto:security@example.org. */
+   |                                                       +++++++
 
 warning: N warnings emitted

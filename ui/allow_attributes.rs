@@ -42,7 +42,8 @@ fn cfg_attr_simple() {}
 #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
 fn cfg_attr_nested() {}
 
-// Bad: mixed exempt and rewriteable, so drop the rewriteable lints or split.
+// Bad: mixed exempt and rewriteable, so drop the rewriteable lints or
+// split them.
 #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
 fn split_mixed() {}
 

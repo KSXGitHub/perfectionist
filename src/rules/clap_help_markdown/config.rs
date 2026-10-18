@@ -139,10 +139,10 @@ pub(super) struct ResolvedConfig {
 
 impl ResolvedConfig {
     pub(super) fn from_config(config: Config) -> Self {
-        // Effective set = (default ∪ extra_constructs) \ ignore_constructs
-        // which is the same add/subtract-over-a-curated-default shape
-        // as the catalogue's `resolve_string_set` /
-        // `resolve_symbol_set` helpers.
+        // Effective set = (default ∪ extra_constructs) \ ignore_constructs.
+        // That is the same add/subtract-over-a-curated-default shape as
+        // the catalogue's `resolve_string_set` / `resolve_symbol_set`
+        // helpers.
         let mut forbid: BTreeSet<ConstructCategory> = DEFAULT_FORBID
             .iter()
             .copied()

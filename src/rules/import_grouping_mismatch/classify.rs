@@ -102,8 +102,8 @@ fn is_alias_reexport(tree: &UseTree) -> bool {
 /// - `grouped` gives every re-export the single leading rank `0`, one
 ///   block above the styled private-import blocks.
 /// - `split` keeps submodule re-exports at rank `0` and alias re-exports
-///   at rank `1`, two blocks above the private imports, as
-///   [`is_alias_reexport`] decides.
+///   at rank `1`, two blocks above the private imports.
+///   [`is_alias_reexport`] draws that split.
 /// - `by_path` reserves no leading rank; a re-export is classified by its
 ///   path exactly like a private import.
 pub(super) fn rank(

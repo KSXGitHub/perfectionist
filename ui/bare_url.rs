@@ -11,7 +11,7 @@ fn _doc_bad() {}
 fn _doc_block_bad() {}
 
 mod _inner_doc_block {
-    /*! Bad: an inner `/*! */` doc-block leaves one bare: https://example.com. */
+    /*! Bad: an inner `/*! */` doc-block leaves a URL bare: https://example.com. */
 }
 
 /// Good: <https://example.com> wrapped explicitly.
@@ -55,7 +55,7 @@ fn _doc_skip_host_case_insensitive() {}
 /// URL already inside an HTML attribute: <a href="https://example.com">click</a>.
 fn _doc_html_attribute_skip() {}
 
-// URL with trailing dot: https://example.org. Should be `MaybeIncorrect`.
+// URL with trailing dot: https://example.org. The suggestion should be `MaybeIncorrect`.
 fn _plain_trailing_dot() {}
 
 // A finding anchors to the nearest documentable HIR node. Items and

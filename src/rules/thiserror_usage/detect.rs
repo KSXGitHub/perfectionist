@@ -39,9 +39,9 @@ impl ThiserrorUsage {
     ///
     /// - `use thiserror::Error;`: the outer prefix's first segment is
     ///   `thiserror`, which matches immediately.
-    /// - `use thiserror::{Error, ErrorKind};`: the outer prefix matches
-    ///   the same way, and the nested children inherit it, so we don't
-    ///   have to walk them.
+    /// - `use thiserror::{Error, ErrorKind};`: the outer prefix's first
+    ///   segment is `thiserror` again, and the nested children inherit
+    ///   that prefix, so we don't have to walk them.
     /// - `use {thiserror::Error, std::io};`: a top-level braced form
     ///   with an empty outer prefix; recurse into the children and
     ///   flag if any child's prefix names a thiserror crate.

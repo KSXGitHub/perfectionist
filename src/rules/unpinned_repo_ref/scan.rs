@@ -16,8 +16,8 @@ use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, take_url};
 /// substring within `text`; `ref_text` is that substring.
 ///
 /// `skips` are byte ranges (markdown code spans / blocks) where a URL
-/// is example text, not a live link, and must be ignored. It is empty
-/// for surfaces that aren't markdown (plain comments, string
+/// is example text, not a live link, and must be ignored. The list is
+/// empty for surfaces that aren't markdown (plain comments, string
 /// literals).
 pub(super) fn scan_text(
     text: &str,

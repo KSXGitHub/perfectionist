@@ -12,10 +12,10 @@ pub(super) struct Config {
     /// the same name on `perfectionist::wildcard_imports`, so a project
     /// can flip both rules with one value. Defaults to `["prelude"]`.
     pub(super) prelude_segment_names: Vec<String>,
-    /// Prelude module paths whose named imports are never flagged,
-    /// each the module path leading up to and including the prelude
-    /// segment. Each
-    /// entry is **absolute**: an extern-crate path with a leading `::`
+    /// Prelude module paths whose named imports are never flagged. An
+    /// entry is the module path leading up to and including the
+    /// prelude segment, and is **absolute**: an extern-crate path with
+    /// a leading `::`
     /// (`"::diesel::prelude"`), or a crate-root path written
     /// `"crate::prelude"`. Because an entry matches the path up to *and
     /// including* the prelude segment, it must end with a
