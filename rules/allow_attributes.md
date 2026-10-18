@@ -18,8 +18,7 @@ resolved two ways:
 1. **Remove** it where the lint can no longer fire at the site
    (a dead suppression, e.g. `clippy::too_many_arguments` left on
    a function that has since shed its arguments).
-2. **Replace** it with `#[expect]` where the lint still fires
-   and
+2. **Replace** it with `#[expect]` where the lint still fires and
    you want the suppression to report itself the moment it stops.
 
 If the attribute also names a lint the rule leaves alone (an

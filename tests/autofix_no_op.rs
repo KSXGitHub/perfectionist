@@ -454,11 +454,11 @@ fn count(line: &str, brace: char) -> isize {
     line.chars().filter(|found| *found == brace).count() as isize
 }
 
-/// Reduce an expanded module to just the code the derive generated:
+/// Reduce an expanded module to just the code the derive generated.
 /// The echoed helper attribute is dropped: its removal is the very
 /// thing under test, so it differs between the two expansions by
-/// construction. Whitespace is then collapsed so the
-/// pretty-printer's line wrapping cannot masquerade as a difference.
+/// construction. Whitespace is then collapsed so the pretty-printer's
+/// line wrapping cannot masquerade as a difference.
 fn normalise(expanded: &str) -> String {
     const HELPERS: &[&str] = &[
         "display",

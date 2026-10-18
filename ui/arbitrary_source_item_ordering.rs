@@ -103,8 +103,9 @@ mod trailing_cfg_imports {
     pub use std::os::unix::ffi::OsStringExt;
 }
 
-// Good: being excused, a gated import does not close the leading section
-// either, so the `pub mod` below it is still in the right place.
+// Good: a gated import is excused from the ordering, so like an
+// `extern crate` it does not close the leading section and the
+// `pub mod` below it is still in the right place.
 mod cfg_import_does_not_pin {
     #[cfg(unix)]
     use std::os::unix::ffi::OsStrExt;

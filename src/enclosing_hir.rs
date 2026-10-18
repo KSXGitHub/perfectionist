@@ -32,10 +32,9 @@ pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> 
         reason = "this doc names the U+2026 glyph the comment-walking rules handle"
     )
 )]
-/// Like [`find_enclosing_hir_ids`], but a node's outer attributes
-/// count toward containment alongside the node's own span. That
-/// includes the `#[doc]` attributes that `///` / `//!` / `/** */` doc
-/// comments lower to.
+/// Like [`find_enclosing_hir_ids`], but a node's doc comments count
+/// toward containment alongside the node's own span, through the
+/// `#[doc]` attributes that `///`, `//!` and `/** */` lower to.
 ///
 /// This is what the comment-walking rules need. An item's own span
 /// starts at the item keyword, *after* its leading doc comment, so a

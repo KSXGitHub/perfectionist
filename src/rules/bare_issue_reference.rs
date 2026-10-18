@@ -188,8 +188,8 @@ pub struct BareIssueReference {
 
 /// Resolve the `repository` config value to its canonical web base.
 /// `None` when unset, in which case the lint runs help-only.
-/// **Panics** when
-/// it is set but unparseable, so a malformed URL fails loudly at
+/// **Panics** when it is set but unparseable, so a malformed URL fails
+/// loudly at
 /// launch rather than silently disabling the autofix and leaving the
 /// author to wonder why no link is suggested.
 fn resolve_repository(repository: Option<&str>) -> Option<String> {

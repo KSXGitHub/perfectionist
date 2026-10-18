@@ -31,8 +31,8 @@ inactive by default; a project opts in and sets `style` to one of:
 
 Orthogonally to `style`, the `reexports` knob controls `pub`
 re-exports, meaning any `use` with an explicit visibility. Like
-`style` it
-is mandatory once the rule is enabled, and is one of: `grouped`,
+`style` it is mandatory once the rule is enabled, and is one of:
+`grouped`,
 which pulls every re-export into one contiguous leading block above
 the private imports, visibility outranking path and cfg gating;
 `split`, which breaks that block into two, submodule re-exports
@@ -186,13 +186,13 @@ layout it wants; it must therefore be set when the rule is enabled.
 How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
 Like `style` it has no default, since a project enabling the rule
 states how it wants re-exports laid out; it must therefore be set
-when the rule is enabled. `grouped` pulls every re-export into one contiguous
-leading block above all private imports; `split` breaks that block
-into two, submodule re-exports (`pub use child::Item;`) above
+when the rule is enabled. `grouped` pulls every re-export into
+one contiguous leading block above all private imports; `split`
+breaks that block into two, submodule re-exports
+(`pub use child::Item;`) above
 alias re-exports (`pub use Item;` / `pub use Item as Alias;`);
-`by_path`
-gives re-exports no dedicated block at all, classifying each by its
-path like a private import.
+`by_path` gives re-exports no dedicated block at all,
+classifying each by its path like a private import.
 
 ### Field: `order`
 

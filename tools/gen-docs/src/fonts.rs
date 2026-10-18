@@ -56,8 +56,8 @@ pub(crate) fn cache_dir(root: &Path) -> PathBuf {
 /// [`cache_dir`] with the [`CACHE_DIR_ENV`] lookup already done, so the
 /// choice it makes is testable without mutating the process
 /// environment. A test that set the var instead would race every
-/// sibling test that reads one, such as the `std::env::temp_dir`
-/// several of them call. That race is why `std::env::set_var` is
+/// sibling test that reads one, as several do through
+/// `std::env::temp_dir`. That race is why `std::env::set_var` is
 /// `unsafe`.
 fn cache_dir_from(root: &Path, configured: Option<OsString>) -> PathBuf {
     match configured {

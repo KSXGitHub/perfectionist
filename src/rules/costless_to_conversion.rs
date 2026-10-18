@@ -19,8 +19,8 @@ declare_tool_lint! {
     /// Flags an inherent `to_*` method taking `&self` and nothing else
     /// that hands back a borrow, whether `&T` or an `Option` or
     /// `Result` of one, and does nothing to earn it: the body is a
-    /// field of
-    /// `self`, a borrow of one, or a single `as_*` view of one. It
+    /// field of `self`, a borrow of one, or a single `as_*` view of
+    /// one. It
     /// asks for the `as_*` prefix instead.
     ///
     /// A `Deref` on the way is taken to be free, whatever the

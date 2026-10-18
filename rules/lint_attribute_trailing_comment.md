@@ -11,10 +11,9 @@
 
 When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
 `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
-on the same source line as the attribute's closing `]`,
-and that comment documents *why* the level was chosen, lifts it
-into the attribute's `reason = "..."` field and removes the
-original comment.
+on the same source line as the attribute's closing `]`, lifts
+that comment into the attribute's `reason = "..."` field and
+removes the original.
 
 Only the trailing placement counts: a same-line comment after
 `]` is unambiguously about the attribute. A comment on the
