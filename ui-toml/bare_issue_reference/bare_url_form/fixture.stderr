@@ -1,7 +1,7 @@
 warning: ambiguous `#55`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: closes #55, and the `bare_url` form replaces the `#55` token
+LL | /// Bad: closes #55. The `bare_url` form replaces the `#55` token
    |                 ^^^ help: substitute the issue URL: `https://github.com/owner/repo/issues/55`
    |
    = help: if `#55` is not an issue or pull request, enclose it in backticks so it renders as code

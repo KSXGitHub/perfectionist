@@ -93,8 +93,9 @@ declare_tool_lint! {
     /// promises more than cost: it promises to consume, so
     /// `perfectionist::unconsumed_into_conversion` measures one that does
     /// not. A name that is none of the three and that the getter rule
-    /// does not read as a getter is left alone by all of them: it names
-    /// no field, and nothing in `getter_name_patterns` admits it.
+    /// does not read as a getter is left alone by all of them. The
+    /// getter rule reads a name as a getter only where it names a field
+    /// or where `getter_name_patterns` admits it.
     ///
     /// ### Example
     ///

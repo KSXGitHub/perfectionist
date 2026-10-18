@@ -1,4 +1,4 @@
-/// Bad: closes #55, and the `bare_url` form replaces the `#55` token
+/// Bad: closes #55. The `bare_url` form replaces the `#55` token
 /// outright with the issue URL, dropping the token rather than
 /// wrapping it in markdown.
 fn _doc_bare_url_form() {}

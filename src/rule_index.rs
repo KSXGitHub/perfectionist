@@ -78,8 +78,9 @@ macro_rules! rule_index {
         /// bytes beats hashing, and beats a tree's pointer chase.
         /// The set is also swept end to end whenever an unknown name
         /// is reported, to find the closest registered name to
-        /// suggest, an order a slice already has and a `HashSet`
-        /// does not. Being static, it costs no lazy initialisation
+        /// suggest. That sweep keeps the first of two equally close
+        /// names, so it needs a fixed order, which a slice has and a
+        /// `HashSet` does not. Being static, it costs no lazy initialisation
         /// and no allocation in the runs that never consult it.
         pub(crate) static LINT_NAMES: &[&str] = &[$( stringify!($rule_name) ),+];
 

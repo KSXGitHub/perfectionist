@@ -99,9 +99,9 @@ const DEFAULT_MAX_CALLS: usize = 5;
 /// name should be about. Naming the remedy after the cut (`an intermediate
 /// result`) would hand the reader the very name the rule is trying to
 /// prevent.
-const NAMING_HELP: &str = "give a stage a name drawn from the value it produces, not from \
-                           the stages it replaces: bind it to a `let`, or move a run of \
-                           stages into a function";
+const NAMING_HELP: &str = "bind a stage to a `let`, or move a run of stages into a function; \
+                           name it for the value it produces, not for the stages it \
+                           replaces";
 
 /// How to tell the fix did not work, in the shape `overly_long_file`
 /// and `excessive_nesting` use: a mechanical split passes the rule

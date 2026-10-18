@@ -8,9 +8,9 @@
 //! oracle it is judged against. Each case is compiled, then run through
 //! `cargo dylint --fix`, so the rule itself decides what gets deleted
 //! and its own suggestion span performs the deletion. Whatever the fixer
-//! touched must then expand to byte-identical generated code, the
-//! same body and the same `where` clause, and still compile. A trigger
-//! that grows
+//! touched must then expand to generated code that is byte-identical,
+//! with the same body and the same `where` clause, and must still
+//! compile. A trigger that grows
 //! to cover a new shape is therefore checked automatically; nothing here
 //! restates a hand-maintained list of what the rule is believed to do.
 //!
@@ -455,9 +455,9 @@ fn count(line: &str, brace: char) -> isize {
 }
 
 /// Reduce an expanded module to just the code the derive generated:
-/// drop the echoed helper attribute, which differs by construction
-/// because the whole point is that it is gone, and collapse whitespace
-/// so the
+/// The echoed helper attribute is dropped: its removal is the very
+/// thing under test, so it differs between the two expansions by
+/// construction. Whitespace is then collapsed so the
 /// pretty-printer's line wrapping cannot masquerade as a difference.
 fn normalise(expanded: &str) -> String {
     const HELPERS: &[&str] = &[

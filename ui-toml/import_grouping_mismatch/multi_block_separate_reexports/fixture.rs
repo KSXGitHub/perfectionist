@@ -40,9 +40,9 @@ pub use crate::config::Cfg;
 
 struct Sep2;
 
-// Bad: a cfg-gated re-export stays in the leading re-export block, not
-// the trailing cfg block, visibility taking precedence over cfg gating,
-// so it must move above the private std import.
+// Bad: visibility outranks cfg gating, so a cfg-gated re-export stays
+// in the leading re-export block rather than the trailing cfg block,
+// and must move above the private std import.
 use std::mem::swap;
 #[cfg(unix)]
 pub use std::collections::BTreeMap;

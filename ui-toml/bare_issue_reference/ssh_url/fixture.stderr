@@ -1,7 +1,7 @@
 warning: ambiguous `#321`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: closes #321, and `repository` is given as an scp-like SSH clone
+LL | /// Bad: closes #321. `repository` is given as an scp-like SSH clone
    |                 ^^^^
    |
    = help: if `#321` is not an issue or pull request, enclose it in backticks so it renders as code
@@ -9,13 +9,13 @@ LL | /// Bad: closes #321, and `repository` is given as an scp-like SSH clone
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 help: use an inline markdown link to the issue
    |
-LL - /// Bad: closes #321, and `repository` is given as an scp-like SSH clone
-LL + /// Bad: closes [#321](https://github.com/owner/repo/issues/321), and `repository` is given as an scp-like SSH clone
+LL - /// Bad: closes #321. `repository` is given as an scp-like SSH clone
+LL + /// Bad: closes [#321](https://github.com/owner/repo/issues/321). `repository` is given as an scp-like SSH clone
    |
 help: use an inline markdown link to the pull request
    |
-LL - /// Bad: closes #321, and `repository` is given as an scp-like SSH clone
-LL + /// Bad: closes [#321](https://github.com/owner/repo/pull/321), and `repository` is given as an scp-like SSH clone
+LL - /// Bad: closes #321. `repository` is given as an scp-like SSH clone
+LL + /// Bad: closes [#321](https://github.com/owner/repo/pull/321). `repository` is given as an scp-like SSH clone
    |
 
 warning: N warnings emitted

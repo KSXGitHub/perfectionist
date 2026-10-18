@@ -143,9 +143,9 @@ impl Register for rule::ImpureMacroArguments {
 /// [`Mutex`] just serialises the queue against parallel pre-expansion
 /// passes within one compilation.
 ///
-/// The static is private, and child modules ([`late`]) read it
-/// through Rust's standard descendant-reachability rule for non-`pub`
-/// items.
+/// Being private costs nothing here: child modules ([`late`]) read
+/// the static through Rust's standard descendant-reachability rule
+/// for non-`pub` items.
 static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
 
 impl EarlyLintPass for ImpureMacroArguments {

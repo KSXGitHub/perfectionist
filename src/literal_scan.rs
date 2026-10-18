@@ -161,9 +161,8 @@ pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usiz
 /// Recognises `\xNN` (4 bytes), `\u{...}` (variable length), and any
 /// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`, `\'`,
 /// the line-continuation `\<newline>`, ...). The returned slice is the
-/// verbatim source spelling of the escape, escapes are not decoded,
-/// and callers that need the decoded character derive it from the
-/// slice.
+/// verbatim source spelling of the escape, with nothing decoded. A
+/// caller that needs the decoded character derives it from the slice.
 ///
 /// The "cooked" qualifier is load-bearing: in a *raw* string literal a
 /// backslash is an ordinary character, so running this scanner over a

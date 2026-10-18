@@ -37,8 +37,8 @@ mod renamed {
 }
 
 // Bad: a brace list flags each leaf in turn. The fix rebuilds the whole
-// tree, so it is offered once, on the first leaf, and both entries
-// land back under the prefix they now share.
+// tree, so it is offered once on the first leaf. Both entries land
+// back under the prefix they now share.
 mod braced {
     use crate::prelude::{A, helper};
 }
