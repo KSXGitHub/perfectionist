@@ -31,12 +31,8 @@ declare_tool_lint! {
     /// spelling `--` are flagged alongside it, each behind a knob of
     /// its own.
     ///
-    /// Quoted words keep their dashes, since an author cannot
-    /// restructure a sentence they are only reproducing: a span
-    /// between a pair of quotation or title marks, a code span, a code
-    /// block, and a blockquote in a doc comment are all left alone. An
-    /// alert wears the blockquote marker but is an aside in the
-    /// author's own voice, so it is scanned like any other prose.
+    /// A dash inside a quotation or a code region stays: the author
+    /// is reproducing that text rather than writing it.
     ///
     /// No fix is offered, and that is the rule's point rather than an
     /// omission. Replacing the dash without rewording silences the
