@@ -13,10 +13,10 @@ struct Config {
     scan_doc_comments: bool,
     /// Scan regular comments (`//`, `/* */`). Defaults to `true`.
     scan_regular_comments: bool,
-    /// Scan the message of a call to one of the macros or methods the
-    /// lint's description lists, the writers, the panics, the
-    /// assertions, the `log` family, and `expect` / `expect_err` among
-    /// them. Defaults to `true`.
+    /// Scan the message of a writer, panic, assertion or logging
+    /// macro, and of the `Option` / `Result` methods `expect` and
+    /// `expect_err`. A call is recognised by the last segment of its
+    /// path. Defaults to `true`.
     scan_macro_messages: bool,
     /// Flag U+2013 EN DASH (`–`) wherever U+2014 EM DASH is
     /// flagged. Defaults to `true`: the en dash reads as a narrower

@@ -15,60 +15,16 @@ the message of a macro or method that shows text to the
 program's user. U+2013 EN DASH and the typewriter spelling
 `--` are flagged alongside it, each behind a knob of its own.
 
-The messages scanned are those of the writers `print!`,
-`println!`, `eprint!`, `eprintln!`, `format!`, `write!` and
-`writeln!`; of the panics `panic!`, `unimplemented!`, `todo!`,
-`unreachable!` and `debug_unreachable!`; of the assertions
-`assert!`, `assert_eq!`, `assert_ne!`, `debug_assert!`,
-`debug_assert_eq!` and `debug_assert_ne!`; of the
-[`log`](https://docs.rs/log) family `log!`, `error!`, `warn!`,
-`info!`, `debug!` and `trace!`; and of the `Option` / `Result`
-methods `expect` and `expect_err`. A call matches by the final
-segment of its macro path, so `std::println!` and
-[`tracing::info!`](https://docs.rs/tracing) match too.
-
-Only an argument that is a string literal on its own is
-scanned, and only past the arguments that hold something other
-than a message, which together keep program data out:
-`write!`'s writer, `log!`'s level and `assert_eq!`'s pair of
-compared values are all left alone. So is a dash written as a
-`\u{2014}` escape rather than as the character itself, and one
-in a literal nested inside another macro call.
-
-The ASCII `--` is reported in comments only. Inside a string
-literal it is as often another language's comment marker or an
-end-of-options separator as it is a dash, so a literal is
-scanned for the Unicode dashes alone.
-
-A quotation keeps its dashes, on every surface the rule
-scans. The author of the surrounding sentence cannot
-restructure words they are only reproducing, so a span between
-a pair of quotation marks is left alone: the ASCII `'` and
-`"`, the backtick, and the typographic pairs
-`‘` / `’`, `“` / `”`, `‚` / `‘`, `„` / `“`,
-`«` / `»`, `‹` / `›`, `「` / `」` and `『` / `』`.
-An apostrophe opens nothing, so `don't` masks no prose, and a
-quotation has to close on the line it opened.
-
-A blockquote in a doc comment is a quotation at block level
-and keeps its dashes too. The exception is an alert, a block
-whose first line is a bracketed-bang name such as `[!NOTE]` or
-`[!WARNING]`: that is an aside in the author's own voice
-borrowing the blockquote syntax, so it is scanned like any
-other prose. A plain `//` comment is not markdown, so a
-leading `>` there delimits nothing.
-
-A code block, fenced or indented, keeps its dashes in either
-comment kind for the same reason a backtick span does: a dash
-there belongs to the code being quoted rather than to a
-sentence, so `--` inside a shell command and `--` opening a
-comment in a fenced Lua block are both left alone.
+Quoted words keep their dashes, since an author cannot
+restructure a sentence they are only reproducing: a span
+between a pair of quotation marks, a code span, a code block,
+and a blockquote in a doc comment are all left alone. An alert
+wears the blockquote marker but is an aside in the author's
+own voice, so it is scanned like any other prose.
 
 No fix is offered, and that is the rule's point rather than an
-omission. Swapping the dash for a comma or a colon silences the
-warning and leaves the phrasing it reports in place, so the
-diagnostic carries prose only and no tool can rewrite the
-sentence mechanically.
+omission. Replacing the dash without rewording silences the
+warning and leaves the phrasing it reports in place.
 
 ## Why restrict this?
 
@@ -80,11 +36,6 @@ for the dash whenever the structure of a sentence has not been
 decided. A comma, a semicolon, a colon or a sentence break
 each name the relationship instead, which is why an author
 writing carefully rarely picks the dash over one of them.
-
-The warning asks for the structural work the dash was eliding,
-which is why it suggests nothing: the sentence usually wants
-splitting into shorter complete ones, not a different
-punctuation character in the same slot.
 
 ## Example
 
@@ -134,10 +85,10 @@ Scan regular comments (`//`, `/* */`). Defaults to `true`.
 - _Type:_ `boolean`
 - _Optional_
 
-Scan the message of a call to one of the macros or methods the
-lint's description lists, the writers, the panics, the
-assertions, the `log` family, and `expect` / `expect_err` among
-them. Defaults to `true`.
+Scan the message of a writer, panic, assertion or logging
+macro, and of the `Option` / `Result` methods `expect` and
+`expect_err`. A call is recognised by the last segment of its
+path. Defaults to `true`.
 
 ### Field: `flag_en_dash`
 

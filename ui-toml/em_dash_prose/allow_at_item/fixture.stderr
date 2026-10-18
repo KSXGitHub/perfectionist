@@ -5,7 +5,7 @@ LL | /// But this em dash — is still flagged.
    |                      ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 

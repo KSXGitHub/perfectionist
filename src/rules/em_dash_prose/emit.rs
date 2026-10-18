@@ -22,10 +22,10 @@ const ELISION_NOTE: &str = "a dash between two clauses leaves the relationship b
 
 /// What to do about it. Replaced wholesale by the `message`
 /// configuration field.
-const RESTRUCTURE_HELP: &str = "do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each \
-     clause stands on its own: split it into separate sentences, or pick the mark that names the \
-     relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a \
-     comma attaches a dependent clause)";
+const RESTRUCTURE_HELP: &str = "reword so each clause stands on its own, rather than replacing the dash in place: split \
+     the sentence in two, or pick the mark that names the relationship the dash left unstated (a \
+     colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a \
+     dependent clause)";
 
 /// Addressed to the readership this rule was written for. An assistant
 /// that substitutes a different punctuation character has read the

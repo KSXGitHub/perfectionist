@@ -5,7 +5,7 @@ LL | // Bad: a line comment with an em dash — and a clause after it.
    |                                        ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
@@ -16,7 +16,7 @@ LL | // Bad: a line comment with an en dash – and a clause after it.
    |                                        ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: ASCII `--` used as an em dash in comment
@@ -26,7 +26,7 @@ LL | // Bad: a line comment with ASCII hyphens -- and a clause after it.
    |                                           ^^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in comment
@@ -36,7 +36,7 @@ LL | /* Bad: a block comment with an em dash — and a clause after it. */
    |                                         ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in comment
@@ -46,7 +46,7 @@ LL |  * Bad: the first line of a block comment with an em dash — here.
    |                                                           ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in comment
@@ -56,7 +56,7 @@ LL |  * Bad: a later line of a block comment with an em dash — here.
    |                                                         ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -66,7 +66,7 @@ LL | /// Bad: a doc comment with an em dash — and a clause after it.
    |                                        ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -76,7 +76,7 @@ LL | /// Bad: the first line of a doc comment with an em dash — here.
    |                                                          ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -86,7 +86,7 @@ LL | /// Bad: a later line of a doc comment with an em dash — here.
    |                                                        ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -96,7 +96,7 @@ LL | /** Bad: a `/** */` doc comment with an em dash — and a clause. */
    |                                                 ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -106,7 +106,7 @@ LL | /// > An alert carries a remark — and a clause after it.
    |                                 ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in doc comment
@@ -116,7 +116,7 @@ LL |     //! Bad: an inner doc comment with an em dash — and a clause.
    |                                                   ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: em dash `—` in comment
@@ -126,7 +126,7 @@ LL |     // > A line comment is not markdown — and holds no quotation.
    |                                         ^
    |
    = note: a dash between two clauses leaves the relationship between them unstated, which is the register AI-generated prose settles into; deliberate technical writing names that relationship
-   = help: do not swap the dash for `,`, `;`, `:`, `(`, `)` or `--`. Restructure the sentence so each clause stands on its own: split it into separate sentences, or pick the mark that names the relationship (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
+   = help: reword so each clause stands on its own, rather than replacing the dash in place: split the sentence in two, or pick the mark that names the relationship the dash left unstated (a colon introduces an elaboration, a semicolon joins parallel statements, a comma attaches a dependent clause)
    = note: an assistant meeting this diagnostic in its own output is being asked to rewrite the surrounding paragraph, not to substitute another punctuation character
 
 warning: N warnings emitted
