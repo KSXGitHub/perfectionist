@@ -10,10 +10,11 @@
 ## What it does
 
 Flags a dash standing between two clauses of a sentence:
-U+2014 EM DASH in a doc comment, in a regular comment, or in
-the message of a macro or method that shows text to the
-program's user. U+2013 EN DASH and the typewriter spelling
-`--` are flagged alongside it, each behind a knob of its own.
+U+2014 EM DASH (`—`) in a doc comment, in a regular comment,
+or in the message of a macro or method that shows text to the
+program's user. U+2013 EN DASH (`–`) and the typewriter
+spelling `--` are flagged alongside it, each behind a knob of
+its own.
 
 Quoted words keep their dashes, since an author cannot
 restructure a sentence they are only reproducing: a span
