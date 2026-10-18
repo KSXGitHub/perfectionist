@@ -47,6 +47,15 @@ fn an_alert_is_not_a_quotation() {
     }
 }
 
+/// A blank line ends an alert as it ends a quotation, and the block is
+/// left out at that point too: whichever way the block closes, its
+/// opening line is what decided it was an alert.
+#[test]
+fn an_alert_a_blank_line_ends_is_not_a_quotation() {
+    let text = "> [!NOTE]\n> a remark — to the reader\n\nback to prose.\n";
+    assert_eq!(quotations(text), [] as [&str; 0]);
+}
+
 /// Only the opening line decides: a bracketed-bang name further down
 /// is quoted text like the rest of the block.
 #[test]
@@ -61,6 +70,32 @@ fn a_bracketed_name_below_the_opening_line_is_quoted_text() {
 fn a_reference_link_does_not_open_an_alert() {
     let text = "> [a link][target] — quoted\n";
     assert_eq!(quotations(text), ["> [a link][target] — quoted\n"]);
+}
+
+/// A bracketed bang with no name between the brackets is not an alert,
+/// so the block stays a quotation.
+#[test]
+fn an_empty_bracketed_bang_opens_no_alert() {
+    let text = "> [!] — quoted\n";
+    assert_eq!(quotations(text), ["> [!] — quoted\n"]);
+}
+
+/// An alert name is a word, so a bracketed bang holding anything else
+/// leaves the block a quotation.
+#[test]
+fn a_bracketed_bang_holding_more_than_a_name_opens_no_alert() {
+    for quoted in ["> [!a link] — quoted\n", "> [!NOTE-2] — quoted\n"] {
+        assert_eq!(quotations(quoted), [quoted], "{quoted:?}");
+    }
+}
+
+/// A bracketed bang the line never closes is not an alert, so the
+/// block stays a quotation. The name is spelled the way an alert's is,
+/// so the closing bracket is the only thing left to decide it.
+#[test]
+fn an_unclosed_bracketed_bang_opens_no_alert() {
+    let text = "> [!NOTE\n> quoted — text\n";
+    assert_eq!(quotations(text), ["> [!NOTE\n> quoted — text\n"]);
 }
 
 /// A text with no `>` line has no blockquote in it.

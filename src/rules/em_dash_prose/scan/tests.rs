@@ -118,6 +118,15 @@ fn an_ascii_quotation_keeps_its_dashes() {
     assert_eq!(scan("he wrote 'one -- two' there", ALL), []);
 }
 
+/// A quote mark opening the text opens a quotation: a comment whose
+/// rendered text starts with one has nothing before the mark to rule
+/// it out.
+#[test]
+fn a_quotation_opening_the_text_keeps_its_dashes() {
+    assert_eq!(scan(r#""one — two" and more"#, ALL), []);
+    assert_eq!(scan("'one — two' and more", ALL), []);
+}
+
 /// The typographic quotation marks delimit a quotation as much as the
 /// ASCII ones do, each pair closing with its own mark.
 #[test]
@@ -157,6 +166,28 @@ fn an_apostrophe_opens_no_quotation() {
     assert_eq!(scan("the user’s own — not ours", ALL), [("—", Dash::Em)]);
 }
 
+/// A single quotation closes at a mark that ends the quoted word, so
+/// an apostrophe inside the quotation does not close it early and
+/// leave the rest of it read as prose.
+#[test]
+fn an_apostrophe_inside_a_single_quotation_does_not_close_it() {
+    assert_eq!(scan("'he isn't — sure' now", ALL), []);
+}
+
+/// A single quotation closes at a mark the quoted text runs up to, so
+/// a mark with a space before it does not close it early.
+#[test]
+fn a_mark_with_a_space_before_it_does_not_close_a_single_quotation() {
+    assert_eq!(scan("'a ' b — c' d", ALL), []);
+}
+
+/// A single quote mark followed by a space quotes nothing, so it opens
+/// no quotation and the dash after it is still the author's own.
+#[test]
+fn a_mark_followed_by_a_space_opens_no_single_quotation() {
+    assert_eq!(scan("use ' a — b' here", ALL), [("—", Dash::Em)]);
+}
+
 /// A Rust lifetime reads as an opening quote and finds nothing to
 /// close it, so it masks nothing after itself.
 #[test]
@@ -177,10 +208,28 @@ fn an_unpaired_quote_mark_masks_nothing() {
 
 /// A quotation closes at the end of its line, so an opening quote mark
 /// does not reach across a joined comment line to mask the next one.
+/// A mark that would close it waits on the second line, so a scan
+/// willing to cross the join would find one.
 #[test]
 fn a_quotation_does_not_cross_a_line() {
     assert_eq!(
-        scan("an opening \" here\nand a dash — there", ALL),
+        scan("an opening \" here\nand a dash — there \" close", ALL),
+        [("—", Dash::Em)],
+    );
+    assert_eq!(
+        scan("an opening 'word here\nand a dash — there word' close", ALL),
+        [("—", Dash::Em)],
+    );
+}
+
+/// A typographic quotation closes at the end of its line too, so an
+/// opening mark does not reach across a joined comment line to mask
+/// the next one. The mark that closes the pair waits on the second
+/// line, so a scan willing to cross the join would find one.
+#[test]
+fn a_typographic_quotation_does_not_cross_a_line() {
+    assert_eq!(
+        scan("an opening “ here\nand a dash — there ” close", ALL),
         [("—", Dash::Em)],
     );
 }

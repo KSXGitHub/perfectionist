@@ -1,0 +1,11 @@
+warning: em dash `—` in `println!` message
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     println!("Bad: a printed message with an em dash — and a clause.");
+   |                                                      ^
+   |
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = note: `#[warn(perfectionist::em_dash_prose)]` on by default
+
+warning: N warnings emitted

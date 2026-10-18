@@ -68,6 +68,27 @@ fn _unrelated_expect() {
     Settings.expect("Good: another type's expect message with — here.");
 }
 
+// The rule reads the message from the source text of a string literal,
+// so an argument that is not one holds nothing for it to scan.
+fn _expect_a_borrowed_string(message: String) {
+    let _: i32 = Some(1).expect(&message);
+}
+
+trait ExpectErr {
+    fn expect_err(&self, code: i32);
+}
+
+impl<Value> ExpectErr for Option<Value> {
+    fn expect_err(&self, _code: i32) {}
+}
+
+// `Option` has no inherent `expect_err`, so this trait method answers
+// the call. Its argument is a code rather than a message, and a
+// non-string literal holds no prose.
+fn _expect_err_taking_a_code() {
+    Some(1).expect_err(42);
+}
+
 #[expect(
     perfectionist::numeric_escape_for_visible_character,
     reason = "this message spells the escape on purpose, so that the \
@@ -75,8 +96,11 @@ fn _unrelated_expect() {
               character"
 )]
 // A dash written as an escape is a deliberate spelling, so it stays.
+// Both message surfaces read the literal's source text rather than its
+// value, so the escape reaches each of them as an escape.
 fn _escaped() {
     println!("Good: a printed message spelling the escape \u{2014} out.");
+    let _: i32 = Some(1).expect("Good: an expect message spelling it \u{2014} out.");
 }
 
 fn main() {}

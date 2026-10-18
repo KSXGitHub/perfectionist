@@ -68,6 +68,21 @@ fn scan_regular_comments_false_keeps_doc_comments() {
     );
 }
 
+/// Both comment knobs off together skip the comment walk before it
+/// starts, and the macro-message surface still fires, so the rule is
+/// reaching the crate rather than falling silent.
+#[test]
+fn both_comment_knobs_false_keep_macro_messages() {
+    run(
+        "ui-toml/em_dash_prose/no_comments",
+        RuleConfig {
+            scan_doc_comments: Some(false),
+            scan_regular_comments: Some(false),
+            ..RuleConfig::default()
+        },
+    );
+}
+
 /// `scan_macro_messages = false` takes both message surfaces out, the
 /// macro argument and the `expect` panic message alike, and leaves the
 /// comment surfaces alone.
