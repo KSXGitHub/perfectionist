@@ -229,10 +229,9 @@ impl Register for rule::AllowAttributes {
 }
 
 /// Collect every registered lint whose printed name carries no tool
-/// prefix, which are the built-in rustc lints. `clippy::*` /
-/// `rustdoc::*` /
-/// `perfectionist::*` lints are recognised structurally by their path
-/// prefix instead, so they are filtered out here.
+/// prefix: those are the built-in rustc lints. `clippy::*` /
+/// `rustdoc::*` / `perfectionist::*` lints are recognised structurally
+/// by their path prefix instead, so they are filtered out here.
 fn collect_builtin_lint_names(lint_store: &LintStore) -> HashSet<String> {
     lint_store
         .get_lints()

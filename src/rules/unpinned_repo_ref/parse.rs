@@ -154,9 +154,9 @@ fn is_version_pattern_ref(text: &str) -> bool {
     take_version_pattern(text).is_some_and(|((), rest)| rest.is_empty())
 }
 
-/// Take a version pattern, `0.1.2`, `0.1.2-suffix`, `v0.1.2` or
-/// `v0.1.2-suffix`, the union of [`take_prefixed_version`] and
-/// [`take_unprefixed_version`].
+/// Take a version pattern, the union of [`take_prefixed_version`] and
+/// [`take_unprefixed_version`]: `0.1.2`, `0.1.2-suffix`, `v0.1.2` or
+/// `v0.1.2-suffix`.
 fn take_version_pattern(input: &str) -> Option<((), &str)> {
     take_prefixed_version(input).or_else(|| take_unprefixed_version(input))
 }

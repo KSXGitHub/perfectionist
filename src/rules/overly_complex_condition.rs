@@ -227,7 +227,7 @@ struct Operators {
     /// Whether a join between two clauses went uncounted, which is
     /// what makes the note worth emitting: the reader can then see more
     /// `&&` in the source than the count names. A `let` elsewhere in
-    /// the condition, in a `let`'s own initialiser say, omits
+    /// the condition, in a `let`'s own initialiser, say, omits
     /// nothing, so it earns no note.
     omits_a_join: bool,
 }

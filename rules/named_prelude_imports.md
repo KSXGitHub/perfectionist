@@ -77,10 +77,10 @@ can flip both rules with one value. Defaults to `["prelude"]`.
 - _Type:_ `[string]`
 - _Optional_
 
-Prelude module paths whose named imports are never flagged,
-each the module path leading up to and including the prelude
-segment. Each
-entry is **absolute**: an extern-crate path with a leading `::`
+Prelude module paths whose named imports are never flagged. An
+entry is the module path leading up to and including the
+prelude segment, and is **absolute**: an extern-crate path with
+a leading `::`
 (`"::diesel::prelude"`), or a crate-root path written
 `"crate::prelude"`. Because an entry matches the path up to *and
 including* the prelude segment, it must end with a

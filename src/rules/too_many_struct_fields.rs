@@ -179,8 +179,9 @@ impl<'tcx> LateLintPass<'tcx> for TooManyStructFields {
             VariantData::Unit(..) => 0,
         };
         // No `hir_in_external_macro` guard, though the diagnostic span
-        // below is `def_span`, the `struct Name` header, and so is
-        // narrower than the field list that produced the violation.
+        // below is `def_span`, which covers the `struct Name` header and
+        // so is narrower than the field list that produced the
+        // violation.
         // Both halves of the proc-macro gap are already closed: an
         // expansion from another crate is filtered by
         // `report_in_external_macro: false`, because `def_span` inherits

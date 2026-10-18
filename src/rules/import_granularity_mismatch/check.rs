@@ -107,9 +107,9 @@ fn crate_compliant(self_merge: Option<SelfMerge>, stmts: &[&StmtInfo]) -> bool {
     // `use foo;` binds `foo` in every namespace it exists in, so it is
     // not interchangeable with the module-only `self`. There is no safe
     // one-`use`-per-root shape, so such a root is left split across
-    // statements rather than flagged, the same reasoning that keeps
-    // `is_collapsed` from folding `{thing, thing::Opts}` inside a single
-    // brace. See <https://github.com/KSXGitHub/perfectionist/issues/186>.
+    // statements rather than flagged. That is the same reasoning that
+    // keeps `is_collapsed` from folding `{thing, thing::Opts}` inside a
+    // single brace. See <https://github.com/KSXGitHub/perfectionist/issues/186>.
     let bare_item_roots: HashSet<&str> = stmts
         .iter()
         .filter(|stmt| stmt.is_crate_item())

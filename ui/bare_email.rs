@@ -7,7 +7,7 @@
 /// Bad: a doc comment leaves an address bare: security@example.com.
 fn _doc_bad() {}
 
-/** Bad: a `/** */` doc-block leaves one bare: security@example.org. */
+/** Bad: a `/** */` doc-block leaves an address bare: security@example.org. */
 fn _doc_block_bad() {}
 
 /// Good: <security@example.com> wrapped explicitly.

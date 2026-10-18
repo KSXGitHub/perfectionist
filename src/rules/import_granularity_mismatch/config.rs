@@ -67,9 +67,9 @@ pub(super) struct Config {
     pub(super) respect_doc_comments: bool,
     /// Under `style = "crate"`, force one shape when a path segment
     /// names both an item and a module (`use crate::thing;` next to
-    /// `use crate::thing::T;`). Unset by default, since the two shapes
-    /// are not interchangeable, so the rule flags neither single-statement
-    /// form and offers both as `MaybeIncorrect` when a merge is forced.
+    /// `use crate::thing::T;`). Unset by default: the two shapes are not
+    /// interchangeable, so the rule flags neither single-statement form
+    /// and offers both as `MaybeIncorrect` when a merge is forced.
     /// Set `fold` to always enforce `use crate::thing::{self, T};`, or
     /// `split` to always enforce `use crate::{thing, thing::T};`;
     /// either value also flags the opposite single-statement form.

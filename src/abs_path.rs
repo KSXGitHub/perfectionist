@@ -10,7 +10,7 @@
 //!   editions, so an `allowed_paths` entry uses the `::`-led form and
 //!   matches either spelling of the `use`.
 //! - A **crate-root** path uses the `crate` keyword (`crate::internals`)
-//!   and *no* leading `::`, `::crate` not being valid syntax. A
+//!   and *no* leading `::`, since `::crate` is not valid syntax. A
 //!   crate-root entry is therefore written exactly as the `use` writes
 //!   it.
 //!

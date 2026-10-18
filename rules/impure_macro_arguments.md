@@ -165,8 +165,8 @@ Method names to drop from the pure-method list, even if they
 appear in the built-in defaults or in `extra_pure_methods`.
 Empty by default; checked after the merge, so this knob always
 wins. Useful for opting back into linting on a default entry
-the project does not consider pure, say removing `as_ref` for a
-project that wraps it in an impure implementation.
+the project does not consider pure: removing `as_ref`, say,
+where a project wraps it in an impure implementation.
 
 ### Field: `extra_pure_macros`
 

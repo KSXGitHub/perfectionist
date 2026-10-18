@@ -186,9 +186,9 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
 /// Containment check that resolves macro hygiene before comparing byte
 /// ranges. A HIR item synthesised by a macro expansion can carry an
 /// `Item.span` whose byte positions point into the macro definition
-/// body (def-site), rather than into the call site. The `pub const
-/// $name: $ty = $value;` template inside a `macro_rules!` block is one
-/// such item. A direct byte-range check against a pre-expansion target
+/// body (def-site), rather than into the call site. A `macro_rules!`
+/// block's `pub const $name: $ty = $value;` template is one such
+/// def-site body. A direct byte-range check against a pre-expansion target
 /// span (which sits at the call site) misses such an item, so the
 /// `best[index]` slot lands on a *child* HIR node of the expanded item
 /// (one of the captures, which does carry a call-site span) rather than
