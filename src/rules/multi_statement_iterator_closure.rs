@@ -20,14 +20,14 @@ declare_tool_lint! {
     /// produces counts towards that, so a `let` and the value it feeds
     /// are already two.
     ///
-    /// A method that merely shares an `Iterator` method's name — a
-    /// parallel iterator's `map`, an asynchronous stream's — is left
-    /// alone: the rule asks the type system, not the spelling. A
+    /// A method that merely shares an `Iterator` method's name is left
+    /// alone, a parallel iterator's `map` and an asynchronous stream's
+    /// among them: the rule asks the type system, not the spelling. A
     /// callback is measured only where the author's own source shows it
     /// passed to such a method, so a macro's own code is left alone too.
     ///
     /// Projects differ on whether several steps belong inline or in a
-    /// named helper, so the rule is inactive by default — enable it per
+    /// named helper, so the rule is inactive by default. Enable it per
     /// crate by adding to `dylint.toml`:
     ///
     /// ```toml
@@ -56,7 +56,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// **Avoid:** 2 top-level statements — the `let`, then the tail
+    /// **Avoid:** 2 top-level statements, the `let` and then the tail
     /// expression
     ///
     /// ```rust,ignore
@@ -178,10 +178,10 @@ const EXTRACTION_HELP: &str = "extract a named helper, or use an explicit loop f
 
 /// How to tell the fix did not work, in the shape the sibling
 /// threshold rules use: a test the reader applies to the result.
-/// Naming the shapes this rule leaves alone instead — a closure bound
-/// to a `let` and passed by name, and a body wrapped in one more block
-/// — would print a working bypass under a `help:` label, where it
-/// reads as a recipe rather than as a caution.
+/// The shapes this rule leaves alone are a closure bound to a `let`
+/// and passed by name, and a body wrapped in one more block. Naming
+/// either of them here would print a working bypass under a `help:`
+/// label, where it reads as a recipe rather than as a caution.
 const MOVED_HELP: &str = "if the only name that fits the helper describes the steps rather than \
                           the value it produces (`double_and_increment`, `parse_then_insert`), \
                           the steps moved rather than went away";

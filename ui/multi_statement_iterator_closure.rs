@@ -9,7 +9,7 @@
 // configuration that enables it the pass never registers and nothing in
 // this file produces a diagnostic. The callback below holds a `let` and
 // a tail expression, which is more than the default `max_statements`
-// permits, so it would be flagged once the rule is on -- which is what
+// permits, so it would be flagged once the rule is on. That is what
 // makes the empty `.stderr` mean something. The threshold and the shapes
 // it counts are exercised under
 // `ui-toml/multi_statement_iterator_closure/`, whose configurations

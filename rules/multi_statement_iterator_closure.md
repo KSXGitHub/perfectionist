@@ -14,14 +14,14 @@ body does more than `max_statements` permits. The value the body
 produces counts towards that, so a `let` and the value it feeds
 are already two.
 
-A method that merely shares an `Iterator` method's name — a
-parallel iterator's `map`, an asynchronous stream's — is left
-alone: the rule asks the type system, not the spelling. A
+A method that merely shares an `Iterator` method's name is left
+alone, a parallel iterator's `map` and an asynchronous stream's
+among them: the rule asks the type system, not the spelling. A
 callback is measured only where the author's own source shows it
 passed to such a method, so a macro's own code is left alone too.
 
 Projects differ on whether several steps belong inline or in a
-named helper, so the rule is inactive by default — enable it per
+named helper, so the rule is inactive by default. Enable it per
 crate by adding to `dylint.toml`:
 
 ```toml
@@ -50,7 +50,7 @@ checks the iteration form, while this rule checks the callback body.
 
 ## Example
 
-**Avoid:** 2 top-level statements — the `let`, then the tail
+**Avoid:** 2 top-level statements, the `let` and then the tail
 expression
 
 ```rust,ignore

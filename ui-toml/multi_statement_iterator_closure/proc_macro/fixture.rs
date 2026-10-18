@@ -40,8 +40,8 @@
 // wrote in a synthesised iterator call and leaves the synthesised
 // tokens on the `Span::call_site()` that `quote!` hands them. The
 // callback's byte range is the caller's, so it is keyed and its own
-// span answers nothing -- the call is what came from the expansion,
-// and asking that of the call's span is what rejects it. Nothing is
+// span answers nothing. The call is what came from the expansion, and
+// asking that of the call's span is what rejects it. Nothing is
 // reported for it either.
 //
 // `#[respan_two_targets]` is the same trick with two targets: the
@@ -54,10 +54,10 @@
 // from the other side, and are why asking where the *call* came from
 // does not work. A call's span runs from its receiver to its closing
 // parenthesis, and combining spans of differing syntax context yields
-// the macro's, so substituting the receiver -- or merely rebuilding the
-// argument list's parentheses, leaving every token the caller's -- is
-// enough to make an author-written call look macro-made. Both callbacks
-// are the caller's own, and both are reported.
+// the macro's. So substituting the receiver is enough to make an
+// author-written call look macro-made, and so is merely rebuilding the
+// argument list's parentheses, leaving every token the caller's. Both
+// callbacks are the caller's own, and both are reported.
 //
 // `#[substitute_callee]` is why the name recorded is the one in the
 // source. The caller wrote `helper(..)` with a closure as its final
