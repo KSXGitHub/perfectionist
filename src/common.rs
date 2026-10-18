@@ -3,6 +3,7 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
+use clippy_utils::res::MaybeDef;
 use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
@@ -321,6 +322,22 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
         hir::PatKind::Binding(_, hir_id, _, None) => Some(hir_id),
         _ => None,
     }
+}
+
+/// Whether `receiver` is an `Option` or a `Result`, looking through
+/// references.
+///
+/// Both rules that read a panic message out of an `expect` /
+/// `expect_err` argument ask this first: the two method names are
+/// common enough on other types that the receiver has to be checked
+/// before the first argument is treated as a panic message.
+pub(crate) fn receiver_is_option_or_result<'tcx>(
+    lint_context: &LateContext<'tcx>,
+    receiver: &hir::Expr<'tcx>,
+) -> bool {
+    let receiver_type = lint_context.typeck_results().expr_ty(receiver).peel_refs();
+    receiver_type.is_diag_item(lint_context, sym::Option)
+        || receiver_type.is_diag_item(lint_context, sym::Result)
 }
 
 /// Whether `ty` mentions a region, which is where a borrow would show
