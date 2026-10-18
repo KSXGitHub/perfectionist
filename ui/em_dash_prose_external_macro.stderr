@@ -1,0 +1,15 @@
+warning: em dash `—` in `expect` message
+  --> $DIR/em_dash_prose_external_macro.rs:LL:CC
+   |
+LL |         $value.expect("a local macro's expect message with a dash — here")
+   |                                                                   ^
+...
+LL |     let _: i32 = expect_locally!(value);
+   |                  ---------------------- in this macro invocation
+   |
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = note: `#[warn(perfectionist::em_dash_prose)]` on by default
+   = note: this warning originates in the macro `expect_locally` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: N warnings emitted

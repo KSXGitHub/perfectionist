@@ -909,6 +909,24 @@ pub fn synth_expect_message(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthDocComment)]` + `#[synth_doc_comment]` →
+/// `const _: () = { #[doc = ".."] pub struct Documented; };` with
+/// every token moved to the user-span of `synth_doc_comment`. The
+/// doc attribute is a token the expansion carries, where a `///` in a
+/// file is text a source-reading scan would have to find on disk.
+#[proc_macro_derive(SynthDocComment, attributes(synth_doc_comment))]
+pub fn synth_doc_comment(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_doc_comment")
+        .expect("`#[derive(SynthDocComment)]` requires a `#[synth_doc_comment]`");
+    let body = respan(
+        r#"#[doc = "a synthesised doc comment with a dash — here"] pub struct Documented;"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_const_block(body)
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream

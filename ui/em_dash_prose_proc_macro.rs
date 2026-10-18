@@ -12,10 +12,20 @@
 
 extern crate proc_macro_synth_binding;
 
-use proc_macro_synth_binding::SynthExpectMessage;
+use proc_macro_synth_binding::{SynthDocComment, SynthExpectMessage};
 
 #[derive(SynthExpectMessage)]
 #[synth_expect_message]
 struct UsesSynthExpectMessage;
+
+// A derive can emit a `#[doc]` attribute, which is what a `///` line
+// lowers to, so a doc comment with a dash in it is a thing a derive can
+// produce. The rule does not fire on one either, for a reason of its
+// own: both comment surfaces read the text of the files backing this
+// crate's modules, and an attribute the expansion carries is in no such
+// file.
+#[derive(SynthDocComment)]
+#[synth_doc_comment]
+struct UsesSynthDocComment;
 
 fn main() {}
