@@ -391,8 +391,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// typechecker, which is why a rename rendered on this answer alone is
 /// `MaybeIncorrect`.
 ///
-/// Every other position may or may not accept the change, a `let`, a
-/// call argument and a struct field among them, and which it is
+/// Every other position, a `let`, a call argument and a struct field
+/// among them, may or may not accept the change, and which it is
 /// remains the typechecker's answer, so the diagnostic stays with
 /// prose there.
 fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {

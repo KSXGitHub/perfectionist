@@ -34,8 +34,8 @@ use unicode_width::UnicodeWidthStr;
 /// the identifier itself (a `<T>` generic parameter has no other
 /// tokens), so the node's own `Span::in_external_macro` returns
 /// false. Walking up to the enclosing item and checking its
-/// `def_span` catches that case. The synthesised owner item's span
-/// carries the expansion's `SyntaxContext`. Regression
+/// `def_span` catches that case, because the synthesised owner item's
+/// span carries the expansion's `SyntaxContext`. Regression
 /// fixtures live in `ui/*_proc_macro.rs` with a minimal derive in
 /// `ui/auxiliary/proc_macro_synth_binding.rs`.
 pub(crate) fn hir_in_external_macro(cx: &LateContext<'_>, hir_id: HirId, span: Span) -> bool {

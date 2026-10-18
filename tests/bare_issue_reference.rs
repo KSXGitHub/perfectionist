@@ -171,10 +171,10 @@ fn no_suggestion_knobs_names_both_knobs() {
     );
 }
 
-/// On GitLab `suggest_pr_url` can never produce a suggestion, a
-/// bare `#NNN` always being an issue there, so with
-/// `suggest_issue_url` off the lint reaches the same help-only arm
-/// even though `suggest_pr_url` is on. The help must name only
+/// On GitLab a bare `#NNN` is always an issue, so `suggest_pr_url`
+/// can never produce a suggestion. With `suggest_issue_url` off the
+/// lint therefore reaches the help-only arm even though
+/// `suggest_pr_url` is on. The help must name only
 /// `suggest_issue_url`: telling the author to enable a knob that
 /// is already `true` would leave the diagnostic unchanged.
 #[test]
@@ -207,8 +207,8 @@ fn reference_form_appends_definition() {
 }
 
 /// The `bare_url` form drops the `#NNN` token and puts the URL in
-/// its place, in doc comments and, with `include_plain_comments`
-/// on, in plain line comments, whose shape comes from
+/// its place in doc comments. With `include_plain_comments` on it
+/// does the same in plain line comments, whose shape comes from
 /// `plain_comment_form` (`bare_url` by default).
 #[test]
 fn bare_url_form_substitutes_the_url_on_both_surfaces() {

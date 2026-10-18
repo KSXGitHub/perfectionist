@@ -1,7 +1,7 @@
 warning: ambiguous `#99`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: closes #99 under `doc_comment_form = "reference"`, but this block
+LL | /// Bad: closes #99. Under `doc_comment_form = "reference"`, this block
    |                 ^^^
    |
    = help: if `#99` is not an issue or pull request, enclose it in backticks so it renders as code
@@ -9,8 +9,8 @@ LL | /// Bad: closes #99 under `doc_comment_form = "reference"`, but this block
    = note: `#[warn(perfectionist::bare_issue_reference)]` on by default
 help: use a reference-style markdown link to the issue (ensure a `[#N]: URL` definition exists in the doc block)
    |
-LL - /// Bad: closes #99 under `doc_comment_form = "reference"`, but this block
-LL + /// Bad: closes [#99] under `doc_comment_form = "reference"`, but this block
+LL - /// Bad: closes #99. Under `doc_comment_form = "reference"`, this block
+LL + /// Bad: closes [#99]. Under `doc_comment_form = "reference"`, this block
    |
 
 warning: N warnings emitted

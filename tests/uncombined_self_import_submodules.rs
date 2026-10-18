@@ -1,8 +1,9 @@
 //! Regression test for the separate-file submodule gap: a source-layout
 //! rule running as a pre-expansion pass would leave out-of-line
 //! `mod foo;` modules `ModKind::Unloaded` at lint time, so their `use`
-//! statements were never inspected. Only the crate-root file and inline
-//! `mod { ... }` blocks were. `uncombined_self_import` runs as a late
+//! statements were never inspected. The scan reached only the
+//! crate-root file and inline `mod { ... }` blocks.
+//! `uncombined_self_import` runs as a late
 //! pass that re-parses every module source file, so each separate-file
 //! submodule is covered.
 //!

@@ -254,7 +254,7 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 meta
                     name="description"
-                    content="Catalogue of perfectionist's lints: a Dylint plugin adding stylistic and correctness lints for Rust projects.";
+                    content="Catalogue of the lints in perfectionist, a Dylint plugin adding stylistic and correctness lints for Rust projects.";
                 title { "perfectionist lints: " (git_ref) }
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);

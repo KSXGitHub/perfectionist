@@ -13,10 +13,9 @@ use std::sync::Arc;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Counts the lines of code in each source file of the crate, the
+    /// Counts the lines of code in each source file of the crate: the
     /// crate root and every `mod name;` that lives in a file of its
-    /// own, and flags a file with more than `max_lines` (default
-    /// `500`).
+    /// own. Flags a file with more than `max_lines` (default `500`).
     ///
     /// A line counts when it holds anything other than whitespace and
     /// comments, so blank lines, comment-only lines, doc comments, and

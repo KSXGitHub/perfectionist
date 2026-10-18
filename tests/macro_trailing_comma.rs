@@ -87,8 +87,8 @@ fn ignore_wins_over_extra_macros_for_the_same_macro() {
 /// Two coverage gaps in one fixture: a multi-segment `ignore`
 /// entry (only `extra_macros`'s multi-segment branch was
 /// previously exercised), and `parse_path`'s per-segment
-/// whitespace trim, since the literal `"  std::vec  "` should still
-/// match a `std::vec!(...)` invocation.
+/// whitespace trim, which is what lets the literal
+/// `"  std::vec  "` match a `std::vec!(...)` invocation.
 #[test]
 fn ignore_supports_qualified_path_and_whitespace_padding() {
     run(

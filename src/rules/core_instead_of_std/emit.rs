@@ -3,11 +3,10 @@
 //!
 //! The unit of decision is the token, not the path. `use core::fmt;`
 //! and `use core::{fmt::Display, ops::Add};` reach the pass as one, two,
-//! or more paths, HIR splitting a brace list into a `Use` item per
-//! leaf and visiting each leaf once per namespace its name resolves
-//! in, but all of them are written through a single `core` in the
-//! source, and
-//! that is the only token the fix touches. So the paths sharing a token
+//! or more paths, because HIR splits a brace list into a `Use` item
+//! per leaf and visits each leaf once per namespace its name resolves
+//! in. All of them are written through a single `core` in the source,
+//! and that is the only token the fix touches. So the paths sharing a token
 //! are collected into a [`Group`] and answered together: every one of
 //! them reachable through `std` earns the rewrite, and a single
 //! [`Point::Blocked`] withdraws it for the whole group, leaving the

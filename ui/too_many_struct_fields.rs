@@ -56,7 +56,8 @@ struct SecondHalf {
     field_6: u32,
 }
 
-// Bad: 11 fields, and a tuple struct is measured.
+// Bad: a tuple struct is measured like a named one, so its 11 fields
+// put it over the limit.
 struct Tuple(u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
 
 // Not flagged: an enum's variants are not measured.

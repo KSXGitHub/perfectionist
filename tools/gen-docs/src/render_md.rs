@@ -12,10 +12,11 @@
 //! `Field:`, `Type:` or `Choice:`, and carries nothing else. It
 //! doubles as a link target and a URL fragment, so the two things a
 //! heading may hold are the ones fixed for as long as the item
-//! exists: its name, and what it is. Its TOML type, whether it is
-//! optional, and the Rust identifier behind a renamed variant all vary
-//! independently of the item, so they go into a metadata list
-//! underneath, where changing them can't break an inbound link. The
+//! exists: its name, and what it is. Anything that varies
+//! independently of the item goes into a metadata list underneath,
+//! where changing it can't break an inbound link. Its TOML type,
+//! whether it is optional, and the Rust identifier behind a renamed
+//! variant all vary that way. The
 //! kind word doubles as a namespace, keeping a
 //! field and a same-named type from slugifying to one anchor.
 //!
