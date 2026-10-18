@@ -70,7 +70,7 @@ h1 {
 /* The catalogue h1 sits flush against the version banner. Its
    next DOM siblings are the nav toggle button and the sidebar
    <nav>, not the banner, so the normal h1↔banner margin collapse
-   doesn't happen, so zero both margins and no gap is left between. */
+   doesn't happen. Zero both margins so no gap is left between. */
 h1#catalogue {
   margin-bottom: 0;
 }

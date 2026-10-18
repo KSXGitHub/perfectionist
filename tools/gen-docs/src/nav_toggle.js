@@ -232,7 +232,7 @@
   // The overlay covers the page content (fully on phone-portrait, as a
   // left strip on phone-landscape / tablet). Without intervention, Tab
   // navigation could still reach the obscured content behind it, and
-  // assistive tech could still read it, both surprising for users who
+  // assistive tech could still read it. Both would surprise users who
   // see a modal-style drawer. Apply the `inert` attribute (HTML
   // standard, Baseline 2023) to every direct child of <body> except
   // the toggle and the sidebar while the drawer is open; restore on

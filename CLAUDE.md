@@ -667,8 +667,8 @@ drive a headless Chromium from a throwaway Playwright script:
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
 Every rule's documentation needs a section that explains the
-motivation, both the rustdoc on the `declare_tool_lint!` block and
-the planning file in `planned-rules/`.
+motivation. That means the rustdoc on the `declare_tool_lint!` block
+and the planning file in `planned-rules/`.
 Pick the heading based on whether the violation is objectively
 broken or a stylistic preference:
 

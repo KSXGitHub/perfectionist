@@ -14,11 +14,15 @@
   position: fixed;
   top: 0.6rem;
   right: 0.6rem;
-  /* Just below the nav drawer's z-index (toggle 100 / sidebar 99) so
-     the full-screen mobile nav overlay covers the gear while it's
-     open. `nav_toggle.js` also marks the gear `inert` then, but this
-     keeps it visually behind as well, and still well above the page's
-     static content. */
+  /* Two constraints fix this value. It must sit below the nav drawer
+     (toggle 100, sidebar 99), so the full-screen mobile overlay covers
+     the gear while the drawer is open. It must sit above the page's
+     static content (z-index 1), so the gear floats over the page the
+     rest of the time.
+
+     `nav_toggle.js` marks the gear `inert` while the drawer is open,
+     which stops interaction reaching it. This z-index is what stops it
+     being seen. */
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;
