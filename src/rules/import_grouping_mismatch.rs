@@ -44,8 +44,8 @@ declare_tool_lint! {
     ///
     /// Orthogonally to `style`, the `reexports` knob controls `pub`
     /// re-exports, meaning any `use` with an explicit visibility. Like
-    /// `style` it
-    /// is mandatory once the rule is enabled, and is one of: `grouped`,
+    /// `style` it is mandatory once the rule is enabled, and is one of:
+    /// `grouped`,
     /// which pulls every re-export into one contiguous leading block above
     /// the private imports, visibility outranking path and cfg gating;
     /// `split`, which breaks that block into two, submodule re-exports

@@ -15,8 +15,8 @@ pub(super) struct Config {
     /// Prelude module paths whose named imports are never flagged. An
     /// entry is the module path leading up to and including the
     /// prelude segment, and is **absolute**: an extern-crate path with
-    /// a leading `::`
-    /// (`"::diesel::prelude"`), or a crate-root path written
+    /// a leading `::` (`"::diesel::prelude"`), or a crate-root path
+    /// written
     /// `"crate::prelude"`. Because an entry matches the path up to *and
     /// including* the prelude segment, it must end with a
     /// `prelude_segment_names` segment. Matching is exact and syntactic:

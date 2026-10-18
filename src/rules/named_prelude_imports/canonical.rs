@@ -88,10 +88,10 @@ pub(super) fn resolve(
     // The distinct nameable canonical paths the name resolves to. An
     // unnameable component (a tuple/unit struct's value-namespace
     // constructor, an `impl`, and so on) drops out via [`use_path`]'s
-    // `None`. That is what leaves a unit struct, whose type and whose
-    // constructor are one definition, with the single struct path.
-    // Exactly one path means every resolved namespace agrees; more than
-    // one means the import spans
+    // `None`. A unit struct resolves in both namespaces, its type and
+    // its constructor, so dropping the constructor is what leaves it
+    // with the single struct path. Exactly one path means every
+    // resolved namespace agrees; more than one means the import spans
     // several modules and no single `use` reproduces it, so no rewrite
     // is offered rather than a wrong one.
     // A macro is never resolved: `#[macro_export]` lifts it to its
