@@ -18,7 +18,7 @@
 
   t.add('a name match shows the statement, unmarked', function () {
     // Nothing of the statement matched, so there is nothing to highlight
-    // in it — but it is still the line that says what the rule does.
+    // in it. But it is still the line that says what the rule does.
     var hit = only([entry({ name: 'bare_url' })], 'bare url')
     t.equal(hit.text, 'nothing of interest', 'the statement shows regardless')
     t.deepEqual(hit.textRanges, [], 'with no marks in it')
@@ -26,7 +26,7 @@
 
   t.add('the best-matching paragraph is the one shown', function () {
     // The tighter paragraph is listed first, so taking the last that
-    // matched would answer the other one — which is what makes this the
+    // matched would answer the other one, which is what makes this the
     // best rather than merely not the first.
     var hit = only(
       [
@@ -45,7 +45,7 @@
   t.add('a paragraph shows only where it is the best of the three', function () {
     // The name is what the query matched; the paragraph carries it too,
     // less well. The statement is the line that shows, as it does for
-    // any name match — a paragraph displaces it on its own score, not on
+    // any name match. A paragraph displaces it on its own score, not on
     // merely having matched.
     var hit = only(
       [

@@ -18,18 +18,18 @@ Read these first, in this order:
    specifies the lint's identifier, configuration, the precise
    trigger predicate ("What to lint"), suggested fixes, and an
    estimated difficulty. Don't second-guess the design without
-   first checking the rule file's existing examples and rationale
-   — the design has usually been argued over already in the PR
-   that produced the planning file. Weigh the design rather than
+   first checking the rule file's existing examples and rationale.
+   The design has usually been argued over already in the PR that
+   produced the planning file. Weigh the design rather than
    transcribe it, though; see
    [A planning file is a proposal, not a specification](#a-planning-file-is-a-proposal-not-a-specification).
-2. **`planned-rules/README.md`** — the index of all rules, plus
+2. **`planned-rules/README.md`**, the index of all rules, plus
    the
    [out-of-scope list](planned-rules/README.md#out-of-scope-cannot-be-linted-by-dylint)
    at the bottom. The index entry is the one-sentence summary;
    check that the rule you're implementing still says what you
    think it says.
-3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`** — applies
+3. **`planned-rules/IMPLEMENTATION_CONVENTIONS.md`**, which applies
    to every rule. Among the cross-cutting conventions it covers:
    - **Parser style.** Non-trivial string scanners (URLs,
      emails, format templates, markdown spans, serde-attribute
@@ -39,9 +39,9 @@ Read these first, in this order:
      input requires it to be exhausted, which is the distinction
      the conventions file spells out.
    - **Naming a lint after the anti-pattern.** A lint is named for
-     the violation it fires on — never the fix, the remedy, or the
-     preference — so it reads correctly under `#[deny(...)]` and
-     `#[allow(...)]`. Follow Clippy's idiom, and mirror a Clippy
+     the violation it fires on, never the fix, the remedy or the
+     preference, so that it reads correctly under `#[deny(...)]`
+     and `#[allow(...)]`. Follow Clippy's idiom, and mirror a Clippy
      lint's name only when the rule is a genuine *refinement* of it
      (not a contradiction or a complement). The name must claim no
      more than the trigger checks.
@@ -49,20 +49,20 @@ Read these first, in this order:
      `perfectionist` tool namespace via
      `rustc_session::declare_tool_lint!`. A per-rule `dylint.toml`
      table is *addressed* by its config key, so its header has to
-     be the namespaced name, quoted —
-     `["perfectionist::path_qualification_mismatch"]` — in a
+     be the namespaced name, quoted as
+     `["perfectionist::path_qualification_mismatch"]`, in a
      planning file's `## Configuration` fence exactly as in a
      consumer's `dylint.toml`; `#[allow(...)]` / `#[deny(...)]`
      likewise take the `perfectionist::`-qualified path rustc
      resolves. Where the rule is merely *named*, the unqualified
-     `path_qualification_mismatch` is correct — in prose, and in a
-     `[perfectionist]` `enable` / `disable` entry. See the
+     `path_qualification_mismatch` is correct, both in prose and in
+     a `[perfectionist]` `enable` / `disable` entry. See the
      conventions file for the per-context spelling.
 
-If the rule is one of several that share a helper — markdown
-exclusion, format-string parsing, URL discovery and unicode-width
-measurement are examples, not the whole set — check whether the
-helper already exists in the codebase before writing a new one.
+If the rule is one of several that share a helper, check whether
+the helper already exists in the codebase before writing a new
+one. Markdown exclusion, format-string parsing, URL discovery and
+unicode-width measurement are examples, not the whole set.
 Sibling-rule references in the planning files identify shared
 infrastructure.
 
@@ -73,8 +73,9 @@ proposal to evaluate, not a specification to fulfil.
 
 - **Its claims about reality may be wrong.** A planning file
   asserts what a HIR node exposes, what a span covers, what
-  `clippy_utils` already provides — examples, not the whole set.
-  Verify each such claim empirically before you build on it:
+  `clippy_utils` already provides, which are examples rather than
+  the whole set. Verify each such claim empirically before you
+  build on it:
   write the fixture, dump the AST or HIR, read the upstream
   source. Where a claim cannot be verified that way, leave it
   unclaimed rather than restate it in a doc or a comment.
@@ -104,8 +105,8 @@ has these consequences for the implementer:
    rule.** A planning file that bundles several independently-
    triggered checks under one banner is usually better
    implemented as several rules. If the sub-checks can be cleanly
-   separated — distinct trigger predicates, disjoint
-   configuration, no shared diagnostic — split the planning file
+   separated, with distinct trigger predicates, disjoint
+   configuration and no shared diagnostic, split the planning file
    into one rule per sub-check before you start. (Historical
    example: an early `single_letter_names` rule bundled four
    independently-configured checks for generics, `let` bindings,
@@ -117,8 +118,8 @@ has these consequences for the implementer:
    The file name matches the rule name (snake_case, no
    `perfectionist::` prefix). `CONFIG_KEY` is the full namespaced
    name (`perfectionist::<rule_name>`). The `Config` struct holds
-   only the fields the rule actually reads — fields nominally
-   "about" the rule but consumed by a different rule belong in
+   only the fields the rule actually reads. A field nominally
+   "about" the rule but consumed by a different rule belongs in
    that other rule's `Config`. If two rules genuinely share a
    helper function or type, factor it into `src/common.rs` (for
    trivial cross-rule utilities) or a dedicated
@@ -134,30 +135,30 @@ has these consequences for the implementer:
    `EarlyLintPass` / `LateLintPass` driver, and any process-wide
    state (`static PENDING_VIOLATIONS`, etc.). Common
    submodule names that have emerged:
-   - `config` — `Config` struct, default lists, in-memory rule state.
-   - `early` / `late` — the corresponding pass implementation when
+   - `config`: `Config` struct, default lists, in-memory rule state.
+   - `early` / `late`: the corresponding pass implementation when
      it doesn't fit alongside the driver.
-   - `emit` — diagnostic-emission helpers, one per violation shape.
-   - `queue` — the `PendingViolation` payload for rules that split
+   - `emit`: diagnostic-emission helpers, one per violation shape.
+   - `queue`: the `PendingViolation` payload for rules that split
      across pre-expansion and late passes.
-   - `scan` / `parser` — source-text walkers and `take_*` parsers.
-   - `ordering` / `triviality` — rule-specific algorithms.
+   - `scan` / `parser`: source-text walkers and `take_*` parsers.
+   - `ordering` / `triviality`: rule-specific algorithms.
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
-   over-advertises. Items in the crate-internal helper modules —
-   every `src/*.rs` beside `lib.rs` and `rules.rs` — should all be
-   `pub(crate)` (or tighter). Use `pub(super)` for items that are
-   only meant to leak one module level up — e.g. a rule's `Config`
-   struct that's read by the rule's flat `.rs` driver but nowhere
-   else.
+   over-advertises. Items in the crate-internal helper modules,
+   meaning every `src/*.rs` beside `lib.rs` and `rules.rs`, should
+   all be `pub(crate)` (or tighter). Use `pub(super)` for items that are
+   only meant to leak one module level up, such as a rule's
+   `Config` struct that's read by the rule's flat `.rs` driver but
+   nowhere else.
 
    When deciding between `src/common.rs` and a dedicated module:
    `common.rs` is for short, self-contained, single-concept
    helpers (`is_single_ascii_letter`, `binding_ident`). Anything
    that has its own invariants worth documenting in a module
-   docstring — a generic HIR walker, a per-character emit loop, a
-   path-set parser — earns its own file.
+   docstring earns its own file. A generic HIR walker, a
+   per-character emit loop and a path-set parser each do.
 
 ## Choose a collection by observable order
 
@@ -201,7 +202,7 @@ The shapes to avoid:
 
 - **A count over a list that can grow is a second copy of it.**
   "The convention has two consequences", "Six rules scan a slice of
-  markdown" — the number rots the moment the list gains a member.
+  markdown": the number rots the moment the list gains a member.
   Write "The convention has these consequences".
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
@@ -222,9 +223,9 @@ The shapes to avoid:
   a live `Config` struct drifts the moment that struct changes.
   Write it with obviously-fake names.
 - **Do not describe a lint as existing until it is registered.**
-  Shipped docs — `declare_tool_lint!` rustdoc and the `rules/*.md`
-  catalogue generated from it — must not name a lint that
-  `src/rule_index.rs` does not, or a reader who writes
+  Shipped docs must not name a lint that `src/rule_index.rs` does
+  not. Those are the `declare_tool_lint!` rustdoc and the
+  `rules/*.md` catalogue generated from it, or a reader who writes
   `#[expect(perfectionist::<that name>)]` for it is flagged by
   `perfectionist::unknown_perfectionist_lints`. Planning files are
   exempt; naming unimplemented siblings is what they are for.
@@ -234,17 +235,18 @@ The shapes to avoid:
 Some copies have to exist: a config field's default list is the only
 one a user can read, and the `RuleConfig` mirrors in `tests/`
 serialise config the test crate cannot reach. Keep those, say why
-they exist, and keep a default list complete — a partial one is
-useless.
+they exist, and keep a default list complete, since a partial one
+is useless.
 
 Some of these are mechanically checkable and worth a grep before
 committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
 name should be one the `rule_index!` invocation names. Both have
-standing exceptions — prose about a *linted* crate, planning files
-and this guide, the deliberate typos around
+standing exceptions, so read the hits rather than the count. Those
+exceptions are prose about a *linted* crate, planning files and
+this guide, the deliberate typos around
 `unknown_perfectionist_lints`, and `gen-docs`' unit tests, which
-invent lint names — so read the hits, not the count.
+invent lint names.
 
 ## Repeat the word; do not vary it
 
@@ -282,13 +284,13 @@ nothing else.
 
 Two shapes carry the fault:
 
-- **A positional reference** — "the case below", "`configure` above",
+- **A positional reference**: "the case below", "`configure` above",
   "the fixtures above", "the same shape spelled as a tuple". Insert an
   item and it points at the wrong one. A name is greppable and survives
   reordering, so "the counterpart of `into_extended`" beats "the
   counterpart of the above"; where the target is in another file, name
   the file.
-- **A dangling comparative** — a bare "likewise", "the same", "too",
+- **A dangling comparative**: a bare "likewise", "the same", "too",
   "either", "as well" or "ditto" whose antecedent sits in another item
   rather than in the passage holding it. Restate what it borrowed;
   a clause repeated costs less than the reference did.
@@ -297,10 +299,10 @@ These are *not* the fault, and a sweep that rewrites them makes the
 prose worse:
 
 - **A back-reference inside the same passage.** "two bindings of the
-  same path", "not `Copy` either" — the antecedent is in the sentence
+  same path", "not `Copy` either". The antecedent is in the sentence
   or the one before it, so the reader never leaves.
 - **A threshold.** "one above the default limit of 10", "exactly 15 is
-  not above the limit" — "above" is the number, not a position.
+  not above the limit". Here "above" is the number, not a position.
 - **Source order that is the subject.** "a `pub use` below a private
   import" is the violation `arbitrary_source_item_ordering` reports.
 - **Prose introducing what immediately follows.**
@@ -312,7 +314,7 @@ written beside its sibling and then read alone. Sweep them by searching
 those directories for a label line that also carries "the same", "too",
 "either", "as well", "likewise", "ditto", "above" or "below". Anchor the
 search on the label itself, or the output fills with the exceptions
-above — but anchor it on the label's word alone, since what follows it
+above. Anchor it on the label's word alone, though, since what follows it
 varies: a colon in most files, a comma or an em dash elsewhere, and
 sometimes nothing at all. An anchor that assumes one separator silently
 skips every file written with another. Then read each matching comment
@@ -334,20 +336,20 @@ the fixture's expected output with it.
 
 This rule applies the
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)'s
-test — ask what would make it go stale — to a reference rather than to
-a copied fact.
+test, which is to ask what would make it go stale, to a reference
+rather than to a copied fact.
 
 ## Shipped docs address the consumer, not the contributor
 
 A doc is *shipped* if a consumer reads it without cloning: `README.md`,
 `CONFIGURATION.md`, `CONTROLLING_RULES.md`, and everything
-`tools/gen-docs/` renders — a rule's `declare_tool_lint!` rustdoc, its
-`Config` field docs, and the docs on the types and variants those
-fields name. Everything else is contributor-only and may say whatever
+`tools/gen-docs/` renders, meaning a rule's `declare_tool_lint!`
+rustdoc, its `Config` field docs, and the docs on the types and
+variants those fields name. Everything else is contributor-only and may say whatever
 is useful: `planned-rules/`, this guide, `//!` docs, docs on items no
 `Config` field exposes, `tests/`, `tools/`.
 
-A shipped doc may name only what a consumer can reach — their code,
+A shipped doc may name only what a consumer can reach: their code,
 their `dylint.toml`, a registered lint, rustc, Clippy, a published
 crate. The recurring violations:
 
@@ -356,7 +358,7 @@ crate. The recurring violations:
 - **Unshipped behaviour.** "... is still pending" is the backlog, not
   the lint. Describe the trigger the rule *has*.
 - **A private Rust item.** `` [`Type::method`] `` is a valid rustdoc
-  link, so no `cargo doc` run flags it — but `gen-docs` has no
+  link, so no `cargo doc` run flags it. But `gen-docs` has no
   resolver, and the catalogue and the site render the brackets
   literally, where it reads as a typo. State the behaviour instead.
 - **A project the rule was distilled from.** A consumer has never
@@ -378,7 +380,7 @@ The first code span naming a published crate in a rule's shipped docs
 links to that crate's docs.rs root: `https://docs.rs/<crates.io name>`,
 never an item page, which a rename or a module move breaks. The
 crates.io spelling stands even where the link text is the underscored
-Rust path — `` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``.
+Rust path, as in `` [`command_extra::CommandExtra`](https://docs.rs/command-extra) ``.
 
 Later mentions of that crate on the same rendered page are plain, so a
 crate the `declare_tool_lint!` rustdoc links is plain in the
@@ -387,8 +389,8 @@ names is linked there. The lint's one-line description is plain
 wherever it falls: rustc prints it in a diagnostic, where a link is
 literal text.
 
-A code span names a crate when the crate is its leading path segment
-— `` `thiserror` ``, `` `clap::Parser` ``, `` `log::info!` ``. An
+A code span names a crate when the crate is its leading path
+segment: `` `thiserror` ``, `` `clap::Parser` ``, `` `log::info!` ``. An
 attribute span (`#[serde(...)]`), a bare macro name (`quote!`), a code
 fence, the standard library, and the rustc / Clippy / rustdoc lint
 namespaces name something else and stay plain.
@@ -430,8 +432,8 @@ property of the field, not of the type: the same type could back
 another field with a different default, so a default stated on the
 type (or one of its variants) is misattributed and goes stale the
 moment a second field reuses it. The field doc is also where readers
-look — `tools/gen-docs/` renders it under "Configuration", the
-section a reader scans for defaults.
+look, since `tools/gen-docs/` renders it under "Configuration",
+the section a reader scans for defaults.
 
 So a field doc states the default in the config-file value form, and
 the type / variant docs describe only what each value *means*:
@@ -448,20 +450,20 @@ enum FrobStyle {
 }
 ```
 
-The wrong placement — `Rounded`'s doc reading "… the default." or
-`FrobStyle`'s own doc reading "Defaults to `rounded`." — is the
-recurring mistake this convention exists to stop. It already had to
+The wrong placement is the recurring mistake this convention
+exists to stop: `Rounded`'s doc reading "… the default.", or
+`FrobStyle`'s own doc reading "Defaults to `rounded`.". It already had to
 be corrected once for `ReferenceScope::Crate` in
 <https://github.com/KSXGitHub/perfectionist/pull/218>. The
-`#[default]` *attribute* on a variant is fine — it is code
-expressing the `Default` impl, not prose claiming a default. Only
+`#[default]` *attribute* on a variant is fine, being code that
+expresses the `Default` impl rather than prose claiming a default. Only
 the prose is governed here.
 
 ## When the implementation is complete
 
-If a PR fully implements a rule — every sub-check, every
-configuration knob, every documented autofix — the planning file
-becomes documentation drift. Remove it:
+If a PR fully implements a rule, every sub-check and configuration
+knob and documented autofix included, the planning file becomes
+documentation drift. Remove it:
 
 1. **Delete the rule's markdown file** from `planned-rules/`.
 2. **Update `planned-rules/README.md`**: remove the rule's index
@@ -474,8 +476,8 @@ becomes documentation drift. Remove it:
    - Other rules' "Interaction with sibling rules" sections.
    - `planned-rules/IMPLEMENTATION_CONVENTIONS.md`, when the rule
      was an example of a convention.
-   - The README's index, beyond just the entry being removed —
-     some entries describe one rule by reference to another.
+   - The README's index, beyond just the entry being removed,
+     since some entries describe one rule by reference to another.
 
    Fix each reference by either pointing at the implementation
    source code (`src/rules/<rule_name>.rs`) or rewording the prose
@@ -533,28 +535,28 @@ When you add a new rule:
 After modifying any Rust code in this repository, install the
 necessary developer tools and run every task that `just all`
 performs. The recipe lives in the top-level `justfile`.
-The toolchain — `cargo-dylint`, `dylint-link`, and
-anything else the project requires — is provisioned by
-`just install-dev-tools`, which drops binaries into
+The toolchain is provisioned by `just install-dev-tools`, which
+covers `cargo-dylint`, `dylint-link` and anything else the project
+requires. It which drops binaries into
 `.dev-tools/bin` (already on `PATH` via the justfile). Run it
 once per fresh checkout, and again whenever `Cargo.lock` updates
 the pinned `dylint_linting` version.
 
 Treat `just all` as the gate before committing. Don't rely on
-running a single sub-recipe (e.g. only `cargo test`) — the
+running a single sub-recipe (e.g. only `cargo test`). The
 `self-lint` step runs perfectionist's own lints on its source and
 catches violations the other steps miss.
 
 If `just install-dev-tools` cannot complete for any reason (an
-extremely rare failure — sandboxed environments without network
-access, an upstream registry outage, an incompatible host
-toolchain), the workspace is not just missing `cargo-dylint`:
+extremely rare failure, such as a sandboxed environment without
+network access, an upstream registry outage or an incompatible
+host toolchain), the workspace is not just missing `cargo-dylint`:
 `.cargo/config.toml` also pins `dylint-link` as the linker, so
 every cargo-backed `just all` step (`build`, `doc`, `lint`,
 `test`) fails to link until it's present. In that case, override
 the linker for each cargo invocation the same way
-`install-dev-tools` does internally — pass
-`--config 'target."cfg(all())".linker="cc"'` to `cargo` — and
+`install-dev-tools` does internally, by passing
+`--config 'target."cfg(all())".linker="cc"'` to `cargo`, and
 skip the `self-lint` step entirely, since there's no
 `cargo-dylint` to drive it. Then read the in-tree rule catalogue
 under `rules/` and apply the rules manually to whatever code you
@@ -591,7 +593,8 @@ A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
 driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
-writing one — pasting the driver's real numbers in will not match.
+writing one, since pasting the driver's real numbers in will not
+match.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
 normalisation and explains how.
 
@@ -606,7 +609,7 @@ the page:
   `<script>` when CSS genuinely can't express the behaviour. When
   a script is necessary, render the JS-controlled element with the
   HTML `hidden` attribute and have the script clear it once its
-  handlers are wired up — that covers every "JS isn't running"
+  handlers are wired up. That covers every "JS isn't running"
   mode (browser scripting disabled, CSP-blocked inline scripts,
   ad-blocker-stripped tags, parse errors before the handler
   attaches). `<noscript>` only catches the "scripting disabled"
@@ -631,9 +634,9 @@ the page:
   relying on a recent feature (`view-timeline`, `@container`,
   `:has()`, scroll-driven animations, etc.), check caniuse against
   a several-year-old cutoff and provide a polyfill-free fallback
-  for older Firefox / Safari / mobile-Chromium engines — not just
-  `@supports`-gated paths, since those still leave older browsers
-  feature-less.
+  for older Firefox / Safari / mobile-Chromium engines, rather
+  than only `@supports`-gated paths, since those still leave older
+  browsers feature-less.
 
 ### Verifying rendering changes
 
@@ -645,9 +648,8 @@ drive a headless Chromium from a throwaway Playwright script:
 - Use Playwright's Chromium headlessly. If the environment
   already has Playwright and its Chromium binary available, point
   the launcher at them; otherwise install Playwright into a
-  temporary location — the standard
-  `npm i -D playwright && npx playwright install chromium` works —
-  and use that. Write a one-off `.mjs` that imports `chromium`
+  temporary location and use that; the standard
+  `npm i -D playwright && npx playwright install chromium` works. Write a one-off `.mjs` that imports `chromium`
   from `"playwright"`, launches it, loads `gh-pages/index.html` at
   the viewport sizes the change cares about, and dumps screenshots
   and/or `getBoundingClientRect` / `getComputedStyle` values.
@@ -659,17 +661,18 @@ drive a headless Chromium from a throwaway Playwright script:
 
 - Chromium only. For cross-engine concerns (Firefox / Safari
   support of a CSS feature), pair the screenshots with a caniuse
-  check — Chromium support is not proof a feature is safe to ship.
+  check, since Chromium support is not proof a feature is safe to
+  ship.
 
 ## Rationale section: "Why is this bad?" vs "Why restrict this?"
 
-Every rule's documentation — both the rustdoc on the
-`declare_tool_lint!` block and the planning file in
-`planned-rules/` — needs a section that explains the motivation.
+Every rule's documentation needs a section that explains the
+motivation, both the rustdoc on the `declare_tool_lint!` block and
+the planning file in `planned-rules/`.
 Pick the heading based on whether the violation is objectively
 broken or a stylistic preference:
 
-- **"Why is this bad?"** — use only when violating the rule
+- **"Why is this bad?"**: use only when violating the rule
   produces an objective defect: silently broken behaviour, a
   user-visible rendering bug, a typo that neutralises a
   suppression, data corruption, a security issue, or similar.
@@ -681,7 +684,7 @@ broken or a stylistic preference:
   anything) and `perfectionist::clap_help_markdown`
   (`src/rules/clap_help_markdown.rs`) (markdown leaks into the
   terminal `--help` output as literal syntax).
-- **"Why restrict this?"** — use for every other rule. Most lints
+- **"Why restrict this?"**: use for every other rule. Most lints
   in this catalogue enforce stylistic preferences (em-dash usage,
   ellipsis form, derive choice, module layout, doc-comment
   length, etc.). The practice they forbid is not wrong in any
@@ -708,12 +711,12 @@ Rules share crate-internal helpers: every `src/*.rs` beside
 `lib.rs` and `rules.rs` is one, and each carries a module
 docstring saying what it is for. The module-re-parsing helper
 (`src/module_reparse.rs`) is the one to know about before you
-start — it re-parses the crate's module source files from a
+start. It re-parses the crate's module source files from a
 shared `SourceMap` so a rule reaching separate-file submodules
 still sees `#[cfg(...)]` gates intact. It exists because this
-exact bug — a source-layout rule shipped as a pre-expansion
-`EarlyLintPass` silently skipping every separate-file submodule —
-has been written twice; before implementing any rule that reads
+exact bug has been written twice: a source-layout rule shipped as
+a pre-expansion `EarlyLintPass` silently skips every separate-file
+submodule. before implementing any rule that reads
 the *written layout* of items across module scopes, read
 [Reaching every module (source-layout rules)](planned-rules/IMPLEMENTATION_CONVENTIONS.md#reaching-every-module-source-layout-rules).
 The planning files document who depends on whom in their
@@ -747,7 +750,7 @@ mutation-check it before trusting it.
 
 Every commit in this repository follows the
 [Conventional Commits](https://www.conventionalcommits.org/)
-style — a `type(scope): subject` header with the type drawn from
+style: a `type(scope): subject` header with the type drawn from
 the usual set (`feat`, `fix`, `docs`, `chore`, `ci`, `refactor`,
 `style`, `build`, `test`, `perf`), an optional scope in
 parentheses, and a `!` after the type/scope for breaking changes
@@ -761,7 +764,7 @@ The subject is **one line**. The [`commit-msg`
 hook](.githooks/commit-msg) rejects any commit whose first paragraph
 spans more than one line, with no opt-out.
 
-Keep the subject at **72 characters or fewer** — the conventional
+Keep the subject at **72 characters or fewer**, the conventional
 hard cap; 50 is the ideal. GitHub's web UI truncates a longer
 subject, appends a `…`, and folds the overflow into the body behind
 another `…`, so the commit reads as a mangled title/body split. The
@@ -769,7 +772,7 @@ another `…`, so the commit reads as a mangled title/body split. The
 subject exceeds the cap (version-bump commits are exempt, but are
 short anyway); it measures characters, not bytes, so an accented or
 non-Latin subject is judged by what GitHub displays. Move any detail
-that does not fit into the commit body — a blank line after the
+that does not fit into the commit body: a blank line after the
 subject, then the rest.
 
 When a longer subject is genuinely warranted, set
@@ -783,9 +786,9 @@ apply.
 
 Never write a **bare** `#NNN` reference in a commit message. A
 reference is *bare* when a `#` followed by digits is not
-immediately preceded by an ASCII word char (`[0-9A-Za-z_]`) — the
-form GitHub autolinks against *this* repo, so a number meant for
-another project links to the wrong issue. Thus `#123`, `(#123)`,
+immediately preceded by an ASCII word char (`[0-9A-Za-z_]`). That
+is the form GitHub autolinks against *this* repo, so a number
+meant for another project links to the wrong issue. Thus `#123`, `(#123)`,
 `path/#123` are bare; `owner/repo#123`, `C#123`, `foo#123` are
 not. The [`commit-msg` hook](.githooks/commit-msg) rejects any
 commit containing one; install it on a fresh checkout with
@@ -798,14 +801,14 @@ Use an unambiguous form instead:
 - **Absolute URL:** `https://github.com/owner/repo/issues/123`
 
 To enumerate list items, number them without `#` ("item 1", "1.",
-"(1)") — "`#1`"/"`#2`" otherwise autolink as issue 1/2. The hook
+"(1)"), since "`#1`"/"`#2`" otherwise autolink as issue 1/2. The hook
 skips comment lines and the `git commit -v` diff, and ignores
 non-bare forms like `#123abc` / `#L123` / `#issuecomment-1`.
 
 ## `@handle` mentions in commit messages
 
-Never write a **bare** `@handle` in a commit message — always wrap it
-in backticks (`` `@foo` ``). Outside backticks GitHub autolinks `@foo`
+Never write a **bare** `@handle` in a commit message. Always wrap
+it in backticks (`` `@foo` ``). Outside backticks GitHub autolinks `@foo`
 as a user/team mention, which is wrong both ways: if you meant it as
 code (a `@scope/pkg`, a CLI flag), GitHub still reads it as a mention;
 if you meant a real account, every commit, comment, and rebase that
@@ -823,10 +826,11 @@ rendered by multiple services (crates.io, docs.rs, lib.rs, etc.)
 that don't share a common base for resolving relative paths. Keep
 new links there absolute.
 
-Every other markdown file in the repository — `CLAUDE.md`,
-`planned-rules/*.md`, and anything else committed alongside the
-source — is only rendered in contexts where relative paths
-resolve correctly (GitHub, local editors, agent tooling). Prefer
+Every other markdown file in the repository is only rendered in
+contexts where relative paths resolve correctly (GitHub, local
+editors, agent tooling). That covers `CLAUDE.md`,
+`planned-rules/*.md` and anything else committed alongside the
+source. Prefer
 relative links in those files; they survive repository renames and
 don't bake in a hosting URL.
 
@@ -880,8 +884,8 @@ works against its purpose.
 GitHub defines these, and their plain meanings apply: `[!NOTE]`,
 `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`. The one
 editorial rule worth stating is that `[!WARNING]` and
-`[!CAUTION]` mark an actual hazard — data loss, breakage, a
-security issue — never emphasis. A spec caveat is not a hazard,
+`[!CAUTION]` mark an actual hazard, such as data loss, breakage or
+a security issue, never emphasis. A spec caveat is not a hazard,
 and reserving those two is what keeps them worth reading.
 
 ### A blockquote is not always an alert
@@ -891,7 +895,7 @@ relies on that. Do not run a sweep that mechanically upgrades
 every `>` block to an alert; read each one and leave it as it
 stands. These kinds are worth naming:
 
-- **An aside** — a remark in the author's own voice, addressed to
+- **An aside**: a remark in the author's own voice, addressed to
   the reader. This is the one an alert improves; pick its type by
   the rules above.
 - **A sketch of emitted diagnostic text**, typically introduced

@@ -7,7 +7,7 @@
 // libraries under test ship to browsers years older than the Node that runs
 // them in CI, and nothing in `run.mjs` would catch a construct V8 accepts
 // today and an older engine rejects outright. Opening this page in one of
-// those engines does — which is why the page ships with the catalogue
+// those engines does, which is why the page ships with the catalogue
 // rather than waiting in a checkout: an old device can be pointed at a URL.
 //
 // It is the only file here that touches the DOM. The page around it is
@@ -41,7 +41,7 @@
   /**
    * Put a row into one of its states: the attribute tests.css reads, the
    * glyph a reader sees, and the name a screen reader hears in its place
-   * — the state is carried by each of them rather than by a class that
+   * The state is carried by each of them rather than by a class that
    * only CSS understands.
    * @param {HTMLElement} row
    * @param {HTMLElement} indicator
@@ -81,7 +81,7 @@
     total += cases.length
 
     // Every row goes in untested, and is run afterwards. Nothing is
-    // painted in between, so the state is not there to be watched — it is
+    // painted in between, so the state is not there to be watched. It is
     // there for when the reporter itself throws part way through, which
     // leaves the rows past that point reading `untested` on screen
     // instead of never appearing at all.
@@ -129,8 +129,8 @@
     }
   }
 
-  // A case file an engine rejects outright — the failure this page exists
-  // to find — is skipped whole, and registers nothing. The groups that did
+  // A case file an engine rejects outright is skipped whole, and registers
+  // nothing; that rejection is the failure this page exists to find. The groups that did
   // register would then report green for a suite that had silently shrunk,
   // so the page carries how many files it loaded and this holds the
   // registered groups to that count. A missing attribute reads as 0 and

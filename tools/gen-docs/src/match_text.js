@@ -18,8 +18,8 @@ var perfectionistMatchText = (function () {
    *
    * One character in, one character out, because every range handed back
    * indexes the folded string and is read against the original. Lower-
-   * casing is not length-preserving — `İ` comes back as two code units —
-   * so where it would grow the string the case is left alone. Such a
+   * casing is not length-preserving: `İ` comes back as two code units.
+   * So where it would grow the string the case is left alone. Such a
    * target then misses a query in another case, which beats a highlight
    * on text the reader never typed.
    * @param {string} text
@@ -169,7 +169,7 @@ var perfectionistMatchText = (function () {
    * Drop one of a doubled final consonant, which is what English put
    * there when the ending went on: `getting` leaves `gett`, and the word
    * behind it is `get`. An `ll`, `ss` or `zz` is the word's own doubling
-   * — `fall`, `pass` — and stays.
+   * in `fall` and `pass`, and stays.
    * @param {string} word
    * @returns {string}
    */
@@ -191,8 +191,8 @@ var perfectionistMatchText = (function () {
    * The stem a word shares with its variants: `cloning`, `cloned`,
    * `clones` and `clone` all come back `clon`, so a reader who types one
    * finds a lint named with another. The regular endings and nothing more
-   * — no dictionary, and no ending that rewrote the word rather than
-   * extending it, so `getter` stems to itself. Characters come off the end
+   * with no dictionary, and no ending that rewrote the word rather
+   * than extending it, so `getter` stems to itself. Characters come off the end
    * only, so a stem is always a prefix of its word, which `matchVariants`
    * is built on.
    * @param {string} word

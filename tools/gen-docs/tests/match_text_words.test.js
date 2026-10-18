@@ -4,7 +4,7 @@
 // Where a word begins and ends decides what the word-wise tiers can
 // place, and what any tier earns for where its runs opened. Asked of the
 // scanner directly, because a tier that disagreed with it would still
-// find something — just not the thing the reader aimed at.
+// find something, just not the thing the reader aimed at.
 // ============================================================================
 
 ;(function () {

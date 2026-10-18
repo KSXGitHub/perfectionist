@@ -4,7 +4,7 @@
    is its adjacent sibling `<nav>`, so the show/hide selector
    `.nav-toggle[aria-expanded="true"] + .nav-sidebar` is pure CSS.
    JS flips `aria-expanded` on click and (on narrow viewports)
-   locks body scroll while the drawer is open — that's what stops
+   locks body scroll while the drawer is open, which is what stops
    the mobile URL bar from collapsing under the overlay and
    dragging the supposedly-fixed sidebar with it.
 
@@ -13,7 +13,7 @@
    * `>= 1100px` (desktop / wide tablet landscape): the toggle is
      hidden and the nav is shown permanently as a left sidebar.
      Page contents shift right via `html { padding-left }`.
-   * `601px – 1099.98px` (tablet, phone landscape): the toggle
+   * `601px to 1099.98px` (tablet, phone landscape): the toggle
      opens the nav as a 280px overlay on top of the page, leaving
      the page visible behind. Width is big enough that a partial-
      overlay reads as a sidebar, not a covered-up page.
@@ -21,7 +21,7 @@
      full viewport. At narrow widths a 280px sidebar with the page
      visible behind would leave only a thin strip of page peeking
      out, and that strip's scroll-with-page behaviour is the exact
-     mobile-browser quirk we're working around in the JS — making
+     mobile-browser quirk we're working around in the JS. Making
      the overlay full-screen instead cuts the surface area where
      the quirk could manifest. The 600px line is the same
      phone/tablet boundary `table.index` uses to switch from

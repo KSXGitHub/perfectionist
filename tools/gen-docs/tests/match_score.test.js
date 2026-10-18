@@ -4,7 +4,7 @@
 // These numbers order results against each other and nothing else, so they
 // are expected to be re-tuned. What is pinned here is therefore the
 // relationships between them and the one arithmetic identity that has to
-// hold whatever they become — not the figures themselves.
+// hold whatever they become, rather than the figures themselves.
 // ============================================================================
 
 ;(function () {

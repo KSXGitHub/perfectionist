@@ -9,7 +9,7 @@
 //
 // The Rust template (see config_controls() in render.rs) emits the whole
 // section with the HTML `hidden` attribute; this file reveals it only after
-// the click handlers are wired up — the same "reveal once functional"
+// the click handlers are wired up, the same "reveal once functional"
 // contract the gear and hamburger follow (the
 // `[hidden] { display: none !important }` reset in style/base.css keeps
 // `hidden` authoritative against the section's own `display`). A browser too
@@ -24,14 +24,14 @@
 //
 // The buttons also reflect state: "Expand all" is highlighted while every
 // panel is open, "Collapse all" while every panel is closed, neither in a
-// mixed state. The highlight rides on `aria-pressed` — both the
+// mixed state. The highlight rides on `aria-pressed`, which is both the
 // accessibility signal (the pair become toggle buttons) and the CSS hook the
 // colour layer keys off. State is kept live by listening for the <details>
 // `toggle` event, which the browser fires whenever a panel's open state
 // changes (user click, the bulk buttons here, or find-in-page auto-expand).
 //
 // `toggle` does not bubble, so a single CAPTURING listener on the document
-// covers every panel — the capture phase reaches non-bubbling events from
+// covers every panel. The capture phase reaches non-bubbling events from
 // descendants. And because the browser fires one (asynchronous, per-element)
 // `toggle` event per panel, a bulk action over N panels fires N events;
 // rather than recompute N times, each event just requests a single recompute
@@ -56,7 +56,7 @@
 
   // The Configuration panels. A generated catalogue is static after render
   // (nothing adds or removes panels at runtime), so query once and reuse the
-  // NodeList everywhere rather than re-scanning the DOM per call — the same
+  // NodeList everywhere rather than re-scanning the DOM per call, the same
   // cache-the-query approach theme_toggle.js takes with its radios.
   var panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (document.querySelectorAll('details.config-details'))
 
@@ -75,8 +75,8 @@
   }
 
   // Reflect the current open/closed mix onto the two buttons. A single pass
-  // tracks whether every panel is open and whether every panel is closed —
-  // they can't both be true once there's at least one panel, and both are
+  // tracks whether every panel is open and whether every panel is closed.
+  // They can't both be true once there's at least one panel, and both are
   // false in a mixed state, so neither button highlights then.
   function reflectState() {
     var allOpen = true
@@ -99,8 +99,8 @@
 
   // Coalesce a burst of `toggle` events into one recompute per frame: the
   // first event in a frame queues the pass, the rest are no-ops until it
-  // runs. This keeps "Expand all" / "Collapse all" — which fire one event
-  // per panel — at a single pass instead of one per panel.
+  // runs. "Expand all" / "Collapse all" fire one event per panel, and
+  // this keeps them to a single pass instead of one pass per panel.
   var frame = 0
   function runReflect() {
     frame = 0
@@ -143,7 +143,7 @@
   //
   // Run it BEFORE revealing the section. scheduleReflect() is the only line
   // here that touches requestAnimationFrame, so if that API is missing the
-  // script throws at this point — leaving the section hidden rather than
+  // script throws at this point, leaving the section hidden rather than
   // revealing controls whose state-reflection can never run. That mirrors
   // the "reveal only once functional" contract the nav and theme toggles
   // follow (reveal is the last thing that happens, never before a still-

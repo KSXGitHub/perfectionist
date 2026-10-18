@@ -13,7 +13,7 @@ scan_code_spans = true
 
 # This crate keeps every module's `use` statements in one contiguous
 # block with no blank lines between them, with `pub` re-exports pulled
-# into two leading blocks — submodule re-exports above alias re-exports.
+# into two leading blocks: submodule re-exports sit above alias ones.
 # Under `single_block` the `order` and group-classification knobs are
 # ignored.
 ["perfectionist::import_grouping_mismatch"]
@@ -21,7 +21,7 @@ style = "single_block"
 reexports = "split"
 
 # `tools/gen-docs` parses `declare_tool_lint!` bodies with syn, whose
-# `Token![::]` macro takes a token literal in type position — there is no
+# `Token![::]` macro takes a token literal in type position. There is no
 # runtime expression for the surrounding macro to drop or duplicate, so the
 # exactly-once concern the rule guards against does not apply.
 ["perfectionist::impure_macro_arguments"]
@@ -52,7 +52,8 @@ max_lines = 97
 max_depth = 5
 
 # A ratchet: existing files are longer than this rule's default of 500
-# lines, the longest -- the markdown scanner -- at 839. This ceiling
+# lines, and the longest of them, the markdown scanner, runs to 839.
+# This ceiling
 # sits at that length so no new file may go longer; lower it as they
 # are split.
 ["perfectionist::overly_long_file"]

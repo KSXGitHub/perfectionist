@@ -172,7 +172,7 @@ var perfectionistMatchTiers = (function () {
       var end = wordEnd(haystack, at)
       var word = haystack.slice(at, end)
       // The target's word opens with the query's, once the ending the
-      // query's would drop is allowed for — `cloned` against `cloning`,
+      // query's would drop is allowed for: `cloned` against `cloning`,
       // and a word still being typed, three letters into `getter`.
       if (word.indexOf(stems[i]) !== 0) {
         return null
@@ -221,7 +221,7 @@ var perfectionistMatchTiers = (function () {
     var best = null
     // A stem is a prefix of every word it came from, so every haystack
     // word that could align with the query's first starts with that
-    // word's stem — which is one `indexOf` away.
+    // word's stem, which is one `indexOf` away.
     var at = haystack.indexOf(stems[0])
     while (at >= 0) {
       if (isWordStart(haystack, at)) {
@@ -250,7 +250,7 @@ var perfectionistMatchTiers = (function () {
 
   /**
    * Give each of the query's words a different word of the target to
-   * stand on, or `null` when they cannot all be housed — a query that
+   * stand on, or `null` when they cannot all be housed. A query that
    * says `core` twice needs a target that does.
    *
    * The search is exhaustive, which it can afford to be: this tier runs

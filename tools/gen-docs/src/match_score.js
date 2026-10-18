@@ -35,7 +35,7 @@ var perfectionistMatchScore = (function () {
    * What a character earns for where it sits, when it opens a run rather
    * than continuing one: most at the target's first character, less at a
    * word's, and only BASE anywhere else. Opening the name is not the same
-   * as opening a word inside it — without the difference, `n` would score
+   * as opening a word inside it; without the difference, `n` would score
    * `excessive_nesting` and `named_prelude_imports` alike.
    * @param {string} haystack  folded target
    * @param {number} index
@@ -71,16 +71,16 @@ var perfectionistMatchScore = (function () {
   function blend(raw, length, extent) {
     var quality = raw / idealScore(length)
     // `coverage` is the fraction of the target the query accounts for, and
-    // a query can now be longer than what it matched — a separator the
-    // target spells differently is a character the query carries and the
-    // target does not — so the ratio is held to a fraction.
+    // a query can now be longer than what it matched, because a separator
+    // the target spells differently is a character the query carries and
+    // the target does not, so the ratio is held to a fraction.
     var coverage = Math.min(1, length / Math.max(extent, 1))
     return QUALITY_WEIGHT * quality + COVERAGE_WEIGHT * coverage
   }
 
   // Two tiers placing the same characters in the same places earn the same
-  // total by different arithmetic — one character at a time against one
-  // multiplication per word — which doubles do not always agree on to the
+  // total by different arithmetic, one character at a time against one
+  // multiplication per word, which doubles do not always agree on to the
   // last bit. Far below the smallest difference the scoring can mean, so
   // it absorbs that noise and nothing else.
   var SCORE_EPSILON = 1e-9
@@ -89,9 +89,9 @@ var perfectionistMatchScore = (function () {
    * Whichever of two matches scores higher, where either may be absent. A
    * tie keeps the first, which is the stronger tier, so which tier
    * answers a tie is a rule and not a rounding. No query now tells the
-   * two apart — tiers that tie place the same characters, and the
-   * ranges they hand back agree — so this settles the order rather than
-   * any answer.
+   * two apart: tiers that tie place the same characters, and the ranges
+   * they hand back agree. So this settles the order rather than any
+   * answer.
    * @param {Match | null} left
    * @param {Match | null} right
    * @returns {Match | null}

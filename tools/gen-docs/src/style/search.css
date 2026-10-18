@@ -144,8 +144,8 @@ h2.index-heading {
   border: 1px solid;
   border-radius: 10px;
   box-sizing: border-box;
-  /* Keeps the results list's scrolling edge — and the close button parked
-     in the bottom corner — inside the rounded corners. */
+  /* Keeps the rounded corners around both the results list's scrolling
+     edge and the close button parked in the bottom corner. */
   overflow: hidden;
   /* The positioning context for `.search-close`. */
   position: relative;

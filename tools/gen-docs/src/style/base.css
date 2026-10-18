@@ -30,7 +30,7 @@ body {
    the page doesn't strand huge bands of empty whitespace on
    either side of the content. At the base 820px width, a 1920px
    monitor with the 280px sidebar leaves ~410px of empty gutter
-   on each side of the body — roughly half the body width again,
+   on each side of the body, roughly half the body width again,
    wasted. Two graduated tiers widen the body without going so
    far that paragraph line-length becomes uncomfortable: the
    index table, TOML/code blocks, and rule articles all benefit
@@ -48,7 +48,7 @@ body {
 }
 
 /* HTML spec says `[hidden]` always hides the element, but UA stylesheets
-   express that as `[hidden] { display: none }` — author rules with the
+   express that as `[hidden] { display: none }`, so author rules with the
    same (or lower) specificity but later in the cascade override it
    silently. The `.nav-toggle` rule's `display: flex` does exactly that,
    so without this reset the toggle would remain visible despite the
@@ -70,7 +70,7 @@ h1 {
 /* The catalogue h1 sits flush against the version banner. Its
    next DOM siblings are the nav toggle button and the sidebar
    <nav>, not the banner, so the normal h1↔banner margin collapse
-   doesn't happen — zero both margins so no gap is left in between. */
+   doesn't happen, so zero both margins and no gap is left between. */
 h1#catalogue {
   margin-bottom: 0;
 }

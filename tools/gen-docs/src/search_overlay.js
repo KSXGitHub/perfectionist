@@ -61,8 +61,8 @@
       return null
     }
     // The result blueprint's shape is checked once, here, rather than per
-    // result: it is fixed markup, so if it is wrong it is wrong every time —
-    // and failing now, before the reveal, leaves no dead button behind.
+    // result: it is fixed markup, so if it is wrong it is wrong every
+    // time, and failing now, before the reveal, leaves no dead button behind.
     if (!resultBlueprint.content.querySelector('.search-result')) {
       return null
     }
@@ -410,8 +410,8 @@
 
   close.addEventListener('click', closeOverlay)
 
-  // A click on the backdrop — anywhere in the overlay outside the dialog
-  // — dismisses it, the conventional gesture for a modal.
+  // A click on the backdrop, meaning anywhere in the overlay outside the
+  // dialog, dismisses it, the conventional gesture for a modal.
   overlay.addEventListener('click', function (event) {
     var target = event.target
     if (target instanceof Node && dialog.contains(target)) {
@@ -445,7 +445,7 @@
   // The magnifier's keyboard equivalent: one key that opens the overlay
   // from anywhere on the page and closes it again. `/` is what a reader
   // arriving from the rest of the Rust documentation already has in their
-  // fingers — rustdoc puts the caret in its own search box on it.
+  // fingers, since rustdoc puts the caret in its own search box on it.
   //
   // Where a `/` means a slash it stays one, so the key toggles everywhere
   // except inside text entry, where a query may want the character.
@@ -609,7 +609,7 @@
 
   // Following a result closes the overlay so the rule it lands on is
   // visible, and moves focus there so a keyboard reader keeps their place
-  // — the link they just activated is inside a now-hidden overlay, and
+  // because the link they just activated is inside a now-hidden overlay, and
   // focus would otherwise drop to <body>. Modifier-key clicks and
   // non-primary buttons are "open in a new tab" gestures and must leave
   // this page as it stands. Rule articles aren't focusable by default, so
@@ -635,7 +635,7 @@
       return
     }
     // Rule fragments are `#/rule/<name>`, whose `/` characters make them
-    // invalid CSS id selectors — `querySelector("#/rule/...")` would
+    // invalid CSS id selectors, so `querySelector("#/rule/...")` would
     // throw. `getElementById` matches the literal `id` and accepts them.
     var target = document.getElementById(decodeURIComponent(hash.slice('#'.length)))
     if (!target) {
@@ -649,7 +649,7 @@
   // rather than the visual one, translate the button by the visual
   // viewport's offset so it stays glued to the top of the visible area as
   // the URL bar collapses. The overlay
-  // itself is left alone — it is opened from a tap, and the on-screen
+  // itself is left alone. It is opened from a tap, and the on-screen
   // keyboard that follows shrinks the visual viewport, so pinning it to
   // that would shrink the dialog out from under the reader's fingers.
   if (window.visualViewport) {

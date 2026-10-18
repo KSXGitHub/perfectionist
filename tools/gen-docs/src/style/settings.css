@@ -15,9 +15,10 @@
   top: 0.6rem;
   right: 0.6rem;
   /* Just below the nav drawer's z-index (toggle 100 / sidebar 99) so
-     the full-screen mobile nav overlay covers the gear while it's open
-     — nav_toggle.js also marks the gear `inert` then, but this keeps it
-     visually behind too. Still well above the page's static content. */
+     the full-screen mobile nav overlay covers the gear while it's
+     open. `nav_toggle.js` also marks the gear `inert` then, but this
+     keeps it visually behind as well, and still well above the page's
+     static content. */
   z-index: 98;
   width: 2.5rem;
   height: 2.5rem;
@@ -104,7 +105,7 @@
 }
 
 /* The radio inputs keep their semantics (one exclusive choice, keyboard
-   arrow navigation, form labelling) but are visually removed — the
+   arrow navigation, form labelling) but are visually removed, since the
    visible control is the adjacent <label>. `clip` + 1px box is the
    standard visually-hidden recipe; `display: none` would drop the input
    from the tab/arrow order, and `opacity: 0` alone would leave it
@@ -145,7 +146,7 @@
 }
 
 /* The checked radio highlights its label (accent border / text / wash)
-   via a pure-CSS adjacent-sibling selector — the colours live in
+   via a pure-CSS adjacent-sibling selector; the colours live in
    light.css / dark.css. The radio is the label's previous sibling, so
    the highlight needs no JS. */
 
