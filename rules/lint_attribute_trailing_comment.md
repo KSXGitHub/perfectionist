@@ -11,15 +11,15 @@
 
 When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
 `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
-— on the same source line as the attribute's closing `]` —
-that documents *why* the level was chosen, lifts the comment
+on the same source line as the attribute's closing `]`,
+and that documents *why* the level was chosen, lifts the comment
 into the attribute's `reason = "..."` field and removes the
 original comment.
 
 Only the trailing placement counts: a same-line comment after
 `]` is unambiguously about the attribute. A comment on the
-*preceding* line is intentionally out of scope — it is just as
-often documentation for the next item as it is attribute
+*preceding* line is intentionally out of scope, being just as
+often documentation for the next item as attribute
 rationale, and a static check cannot tell the two apart.
 
 Doc comments (`///`, `//!`) and block comments (`/* ... */`)

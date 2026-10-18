@@ -4,7 +4,7 @@
 // `debug_assert!` argument is flagged as impure.
 //
 // `cfg!` is genuinely pure across the standard library, so this is a
-// hypothetical example — its purpose is to exercise the override.
+// hypothetical example, whose purpose is to exercise the override.
 
 #![feature(register_tool)]
 #![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]

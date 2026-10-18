@@ -1,4 +1,4 @@
-//! `perfectionist::core_instead_of_std` — flag an item named through
+//! `perfectionist::core_instead_of_std`: flag an item named through
 //! `core::` or `alloc::` in a crate that has settled on `std`, and
 //! suggest the `std::` spelling.
 //!
@@ -12,7 +12,7 @@
 //! **One token, several paths.** HIR lowers
 //! `use core::{fmt::Display, ops::Add};` into one `Use` item per leaf,
 //! and `walk_use` visits each leaf once per namespace its name resolves
-//! in — every visit carrying the *same* `core` token span. The fix
+//! in, every visit carrying the *same* `core` token span. The fix
 //! rewrites that one token, so the paths written through it have to be
 //! judged together: a leaf that must keep its `core` spelling vetoes
 //! the rewrite for its siblings. [`emit`] buffers the paths sharing a
@@ -20,9 +20,10 @@
 //!
 //! **The suffix has to name the same item.** Swapping only the crate
 //! segment is not sound on its own. `core::panic::PanicInfo` and
-//! `std::panic::PanicInfo` are different types — std's is a deprecated
-//! alias of `PanicHookInfo` — so the rewritten path is re-resolved and
-//! accepted only when it lands on the very same `DefId`.
+//! `std::panic::PanicInfo` are different types, std's being a
+//! deprecated alias of `PanicHookInfo`, so the rewritten path is
+//! re-resolved and accepted only when it lands on the very same
+//! `DefId`.
 
 use crate::rule_index::{Register, rule};
 use clippy_utils::paths::{PathNS, lookup_path};
@@ -50,8 +51,8 @@ declare_tool_lint! {
     /// exempted with `skip_paths`.
     ///
     /// This is the counterpart of `clippy::std_instead_of_core` and
-    /// `clippy::std_instead_of_alloc`, which push paths the other way —
-    /// towards the narrower crate — so that a library keeps compiling
+    /// `clippy::std_instead_of_alloc`, which push paths the other way,
+    /// towards the narrower crate, so that a library keeps compiling
     /// without `std`. Enable those two on a crate that is, or may become,
     /// `no_std`; enable this one on a crate that has settled on `std`.
     /// The two directions contradict each other, so no crate wants both.
@@ -59,8 +60,9 @@ declare_tool_lint! {
     /// Some paths are deliberately left alone. Nothing is flagged in a
     /// `#![no_std]` crate, where there is no `std::` to name. A path is
     /// left alone when its `std::` spelling would name a *different*
-    /// item — `core::panic::PanicInfo` is not `std::panic::PanicInfo` —
-    /// and so is a macro path, because `core::panic!` and `std::panic!`
+    /// item, `core::panic::PanicInfo` not being
+    /// `std::panic::PanicInfo`, and so is a macro path, because
+    /// `core::panic!` and `std::panic!`
     /// are genuinely different macros. A path produced by a macro
     /// expansion is left alone as well.
     ///
@@ -76,7 +78,7 @@ declare_tool_lint! {
     /// Everything public in `core` and `alloc` is reachable through
     /// `std`, so in a crate that will always link `std` the spellings are
     /// interchangeable, and which one a given line uses is usually an
-    /// accident — whichever crate the code was pasted from, or whichever
+    /// accident: whichever crate the code was pasted from, or whichever
     /// path an editor's auto-import happened to offer. Naming one crate
     /// root throughout keeps every `use` line starting with the same
     /// word, and keeps an `alloc::` path from requiring an
@@ -192,8 +194,8 @@ impl<'tcx> LateLintPass<'tcx> for CoreInsteadOfStd {
 impl CoreInsteadOfStd {
     /// Judge one path: its crate token, the name that token spells, and
     /// whether that path can move to `std`. `None` for a path the rule
-    /// has no opinion about at all — one not written through a covered
-    /// crate — which must *not* join a group, since a path the rule
+    /// has no opinion about at all, one not written through a covered
+    /// crate, which must *not* join a group, since a path the rule
     /// ignores does not veto its siblings' rewrite.
     fn classify(
         &self,
@@ -276,14 +278,14 @@ fn first_segment<'hir>(path: &Path<'hir>) -> Option<&'hir PathSegment<'hir>> {
 }
 
 /// Whether the path still names `def_id` once its crate segment reads
-/// `std` — the check that makes rewriting only that one segment sound.
+/// `std`, the check that makes rewriting only that one segment sound.
 /// It fails on a path whose suffix does not exist under `std` at all, on
 /// one that lands on a *different* item there
 /// (`core::panic::PanicInfo`), and, since `std` is then not among the
 /// crates in the compilation, on every path in a crate that does not
 /// link `std`.
 ///
-/// This resolution is expensive, so it runs last — only once a path has
+/// This resolution is expensive, so it runs last, only once a path has
 /// been established as a candidate in every cheaper respect.
 fn resolves_through_std(
     cx: &LateContext<'_>,

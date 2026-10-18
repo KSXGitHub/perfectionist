@@ -4,8 +4,8 @@
 // Skipped, and the suppression still resolves: the test driver
 // supplies a `[perfectionist] disable = ["impure_macro_arguments"]`
 // global config, so the rule's pass is never installed, while its
-// lint declaration registers either way. Nothing is reported — not
-// the rule, and not rustc's `unknown_lints` for the attribute below.
+// lint declaration registers either way. Nothing is reported, neither
+// the rule nor rustc's `unknown_lints` for the attribute below.
 
 #[allow(
     perfectionist::impure_macro_arguments,

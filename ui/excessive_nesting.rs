@@ -5,7 +5,7 @@
 
 fn work() {}
 
-// Bad: `for`, `if let`, `match`, `if` — 4 levels, 1 above the
+// Bad: `for`, `if let`, `match`, `if`, so 4 levels, 1 above the
 // default limit.
 fn four_levels(entries: &[Option<u8>], limit: u8) {
     for entry in entries {

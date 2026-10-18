@@ -3,7 +3,7 @@
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
 
-// Bad: this file has 10 lines of code, above the limit of 0 — the 3
+// Bad: this file has 10 lines of code, above the limit of 0: the 3
 // attribute lines above and the items below; its comments and blank
 // lines are free.
 

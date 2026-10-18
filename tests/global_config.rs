@@ -17,7 +17,7 @@ fn run(src_base: &str, dylint_toml_contents: &str) {
 
 /// `disable = ["<rule>"]` skips the rule's `register_pass` call, so
 /// the fixture's violation produces no diagnostic. Reuses the
-/// `impure_macro_arguments/disabled` fixture — it has no `.stderr`
+/// `impure_macro_arguments/disabled` fixture, which has no `.stderr`
 /// (no diagnostics expected) and otherwise triggers
 /// `impure_macro_arguments` at its default level.
 #[test]
@@ -66,7 +66,7 @@ fn disable_accepts_array_of_tables_form() {
 /// call site that suppresses the rule keeps resolving. Guarding
 /// `register_lint` the same way would turn every such
 /// `#[allow(perfectionist::<rule>)]` into an `unknown_lints` warning
-/// from rustc — the fixture carries one, and expects no output.
+/// from rustc. The fixture carries one, and expects no output.
 /// `allow_attributes` is turned off alongside it so that the
 /// fixture's own suppression is not itself a finding.
 #[test]

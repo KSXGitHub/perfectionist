@@ -32,7 +32,7 @@ pub(crate) trait Register {
     const DEFAULT_STATE: DefaultState;
 
     /// Add the rule's lint declaration to the store. Called for
-    /// every rule, whatever `dylint.toml` says about it — the lint
+    /// every rule, whatever `dylint.toml` says about it. The lint
     /// stays registered even where the pass does not install.
     fn register_lint(lint_store: &mut LintStore);
 
@@ -43,10 +43,10 @@ pub(crate) trait Register {
 
 /// Expand the rule list into the index.
 ///
-/// Each entry pairs the rule's name — the snake_case one it wears in
-/// `dylint.toml` and in `#[allow(perfectionist::...)]`, and the name
-/// of its `src/rules/<name>.rs` file — with the type to generate
-/// for it. Both are spelled out because `macro_rules!`
+/// Each entry pairs the rule's name with the type to generate for it.
+/// That name is the snake_case one it wears in `dylint.toml` and in
+/// `#[allow(perfectionist::...)]`, and the name of its
+/// `src/rules/<name>.rs` file. Both are spelled out because `macro_rules!`
 /// cannot case-convert an identifier.
 ///
 /// Entries are in ascending order, since [`is_registered_lint`]
@@ -68,9 +68,9 @@ macro_rules! rule_index {
             )+
         }
 
-        /// Every lint this plugin registers, unqualified — the name
-        /// as it appears after the `perfectionist::` prefix — in
-        /// ascending order.
+        /// Every lint this plugin registers, unqualified, as the name
+        /// appears after the `perfectionist::` prefix, in ascending
+        /// order.
         ///
         /// A sorted slice rather than a `LazyLock<HashSet>` or a
         /// `LazyLock<BTreeSet>`: at this size (a few dozen short
@@ -78,14 +78,14 @@ macro_rules! rule_index {
         /// bytes beats hashing, and beats a tree's pointer chase.
         /// The set is also swept end to end whenever an unknown name
         /// is reported, to find the closest registered name to
-        /// suggest — an order a slice already has and a `HashSet`
+        /// suggest, an order a slice already has and a `HashSet`
         /// does not. Being static, it costs no lazy initialisation
         /// and no allocation in the runs that never consult it.
         pub(crate) static LINT_NAMES: &[&str] = &[$( stringify!($rule_name) ),+];
 
         /// Register every rule: its lint declaration always, its
         /// pass where the rule resolves to active. Each rule is
-        /// registered on its own — no entry depends on another
+        /// registered on its own, so no entry depends on another
         /// having registered first.
         pub(crate) fn register_all(lint_store: &mut LintStore) {
             $(
@@ -164,8 +164,8 @@ fn register_rule<Rule: Register>(lint_store: &mut LintStore, name: &str) {
     }
 }
 
-/// Whether `name` — with the `perfectionist::` prefix already
-/// stripped — is a lint this plugin registers.
+/// Whether `name`, with the `perfectionist::` prefix already
+/// stripped, is a lint this plugin registers.
 pub(crate) fn is_registered_lint(name: &str) -> bool {
     LINT_NAMES.binary_search(&name).is_ok()
 }

@@ -43,7 +43,7 @@ pub(super) fn by_value_form(std_form: Symbol) -> Option<&'static str> {
 /// could take by value.
 ///
 /// The type is read unadjusted, so an autoref inserted for the
-/// `&mut self` signature does not hide an owned receiver -- and so a
+/// `&mut self` signature does not hide an owned receiver, and so a
 /// receiver that is genuinely a `&mut Command` keeps its reference and
 /// fails the check, the trait being implemented for the command rather
 /// than for a reference to one.
@@ -105,8 +105,8 @@ pub(super) fn resolves_to_an_inherent_command_method<'tcx>(
         return false;
     };
     // Rejected here rather than left to the self-type check below. That
-    // check does answer the same today -- resolution records the
-    // trait's own declaration, whose `impl_of_assoc` is `None` -- but
+    // check does answer the same today, resolution recording the
+    // trait's own declaration, whose `impl_of_assoc` is `None`, but
     // only because of which `DefId` resolution happens to record: a
     // trait impl's self type is `Command` just as the inherent impl's
     // is, so an impl-item `DefId` would pass it.
@@ -169,7 +169,7 @@ pub(super) enum Conversion {
 /// target type is circular and ambiguous; the counterpart fixes the
 /// target at `Stdio`, so the conversion always has somewhere to land.
 /// Every argument the std setter accepts, the converted call accepts
-/// too -- and `stdout(f.into())`, which is `E0283`, becomes valid as
+/// too, and `stdout(f.into())`, which is `E0283`, becomes valid as
 /// `with_stdout(f.into())`.
 pub(super) fn argument_conversion(
     cx: &LateContext<'_>,

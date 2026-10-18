@@ -20,8 +20,8 @@ declare_tool_lint! {
     /// silence a lint's output; the project's record of
     /// suppressions needs to know why each one exists.
     ///
-    /// The check is purely local — the attribute itself — and does
-    /// not depend on any inherited or ambient lint level.
+    /// The check is purely local, reading the attribute itself, and
+    /// does not depend on any inherited or ambient lint level.
     ///
     /// ### Why restrict this?
     ///
@@ -39,7 +39,7 @@ declare_tool_lint! {
     ///
     /// `clippy::allow_attributes_without_reason` (`restriction`, off
     /// by default) flags a missing `reason = "..."` on the same two
-    /// levels this rule does — `#[allow]` and `#[expect]` — and only
+    /// levels this rule does, `#[allow]` and `#[expect]`, and only
     /// those, so the trigger overlaps. This rule adds a quality floor
     /// Clippy lacks: `min_reason_length` (default 3) flags a
     /// content-free `reason = "ok"` that Clippy accepts, and a blank
@@ -86,7 +86,7 @@ struct Config {
     /// requirement but conveys nothing; the default floor of 3
     /// excludes those cases. Projects that want a higher bar (e.g.
     /// require a full sentence) can raise it. The lower bound is `1`
-    /// — `0` is rejected at parse time, since an empty literal is
+    /// and `0` is rejected at parse time, since an empty literal is
     /// already treated as a missing reason regardless of this knob.
     min_reason_length: NonZeroUsize,
 }
@@ -137,7 +137,7 @@ impl Register for rule::AllowAttributesWithoutReason {
 
 impl EarlyLintPass for AllowAttributesWithoutReason {
     /// `EarlyLintPass::check_attribute` runs once per syntactic
-    /// attribute in source — `cfg_attr` is not unwrapped before the
+    /// attribute in source, `cfg_attr` not being unwrapped before the
     /// callback. The walker below therefore reaches every silencing
     /// attribute exactly once: bare `#[allow]` / `#[expect]` directly,
     /// `cfg_attr`-wrapped ones via `walk_cfg_attr_inner`.
@@ -180,7 +180,7 @@ fn is_silencing_meta_item(meta_item: &MetaItem) -> bool {
 impl AllowAttributesWithoutReason {
     /// Recursively walk a meta-item that appears inside a
     /// `cfg_attr` argument list. `cfg_attr` accepts another
-    /// `cfg_attr` as its payload — `#[cfg_attr(<cfg_a>,
+    /// `cfg_attr` as its payload: `#[cfg_attr(<cfg_a>,
     /// cfg_attr(<cfg_b>, allow(<lints>)))]` is valid Rust and
     /// the inner `allow` still needs the same check.
     fn walk_cfg_attr_inner(&self, lint_context: &EarlyContext<'_>, meta_item: &MetaItem) {
@@ -230,8 +230,8 @@ impl AllowAttributesWithoutReason {
                     return;
                 };
                 let value_str = value.as_str();
-                // A blank literal — `reason = ""` or `reason = "   "`
-                // — carries no rationale; the autofix even emits one
+                // A blank literal, `reason = ""` or `reason = "   "`,
+                // carries no rationale; the autofix even emits one
                 // as its placeholder. Treat blanks as if the field
                 // were missing so the diagnostic message matches and
                 // the author is pointed at the literal that needs
@@ -263,7 +263,7 @@ impl AllowAttributesWithoutReason {
                 return false;
             }
         }
-        // Vacuously true for an attribute with zero lint names —
+        // Vacuously true for an attribute with zero lint names:
         // `#[allow()]` and the degenerate `#[allow(reason = "...")]`
         // both fall here. The attribute is syntactically valid but
         // silences nothing, so the rule has nothing to flag.
@@ -332,9 +332,9 @@ impl AllowAttributesWithoutReason {
 /// Emit the "missing reason" diagnostic without a code suggestion.
 /// Used when the source snippet is unavailable or when
 /// [`build_insertion`] cannot make sense of it. The reachable case is
-/// a `macro_rules!` attribute assembled from two source files — e.g.
+/// a `macro_rules!` attribute assembled from two source files, say
 /// `allow $lints` with the key in the macro definition and the list at
-/// an `include!`d call site — which leaves a span whose ends sit in
+/// an `include!`d call site, which leaves a span whose ends sit in
 /// different files, and `span_to_snippet` refuses those.
 fn emit_missing_field_no_sugg(lint_context: &EarlyContext<'_>, invocation_span: Span) {
     span_lint_and_then(
@@ -400,11 +400,11 @@ fn locate_outermost_parens(snippet: &str) -> Option<(usize, usize)> {
 ///
 /// Each argument-list layout maps to a different splice:
 ///
-/// - Single line, no trailing comma — insert `, reason = ""` right
+/// - Single line, no trailing comma: insert `, reason = ""` right
 ///   before the closing `)`.
-/// - Single line, trailing comma — insert ` reason = "",` right
+/// - Single line, trailing comma: insert ` reason = "",` right
 ///   before the closing `)`.
-/// - Multi-line — insert a new line `reason = "",` (matching the
+/// - Multi-line: insert a new line `reason = "",` (matching the
 ///   indentation of the preceding argument) immediately before the
 ///   line carrying the closing `)`. If the last argument lacks a
 ///   trailing comma, the edit also adds one at the end of that
@@ -456,7 +456,7 @@ fn build_insertion(snippet: &str) -> Option<Insertion> {
 
     if last_content_trimmed.ends_with(',') || last_content_trimmed.is_empty() {
         // Either the previous argument already carries a trailing
-        // comma, or the `(` line was empty — in both cases we can
+        // comma, or the `(` line was empty. In both cases we can
         // append our new line just before the `)` line without
         // touching the preceding content.
         let insertion = format!("{indent}reason = \"\",\n");

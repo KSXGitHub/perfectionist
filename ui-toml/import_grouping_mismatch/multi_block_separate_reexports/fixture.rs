@@ -31,7 +31,7 @@ use crate::config::Opts;
 
 struct Sep1;
 
-// Bad: visibility outranks path — a `pub use std::...` re-export joins
+// Bad: visibility outranks path, so a `pub use std::...` re-export joins
 // the leading block with a `pub use crate::...` re-export rather than the
 // std group, and both must sit above the private std import.
 pub use std::cmp::Ordering;
@@ -41,7 +41,7 @@ pub use crate::config::Cfg;
 struct Sep2;
 
 // Bad: a cfg-gated re-export stays in the leading re-export block, not
-// the trailing cfg block — visibility takes precedence over cfg gating —
+// the trailing cfg block, visibility taking precedence over cfg gating,
 // so it must move above the private std import.
 use std::mem::swap;
 #[cfg(unix)]

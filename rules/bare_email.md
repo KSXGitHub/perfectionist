@@ -94,19 +94,19 @@ Required form for compliant email addresses.
 
 - _Rust:_ `AngleBrackets`
 
-Wrap the address with `<` and `>` — `<user@example.com>`.
+Wrap the address with `<` and `>`, as `<user@example.com>`.
 
 ##### Choice: `"mailto"`
 
 - _Rust:_ `Mailto`
 
-Prefix the address with `mailto:` — `mailto:user@example.com`.
+Prefix the address with `mailto:`, as `mailto:user@example.com`.
 
 ##### Choice: `"both"`
 
 - _Rust:_ `Both`
 
-Combine both — `<mailto:user@example.com>`.
+Combine both, as `<mailto:user@example.com>`.
 
 ##### Choice: `"either"`
 
@@ -120,6 +120,6 @@ Accept any of the three wrapped forms (`<email>`,
 
 - _Rust:_ `Forbid`
 
-Forbid email addresses outright — no autofix, just a help
+Forbid email addresses outright, with no autofix, just a help
 note recommending the address be moved to an external file
 or removed entirely.

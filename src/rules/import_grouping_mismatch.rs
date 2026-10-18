@@ -25,12 +25,12 @@ declare_tool_lint! {
     /// Enforces a single project-wide *grouping* style for the run of
     /// `use` statements at the top of a module body. The rule is
     /// inactive by default; a project opts in and sets `style` to one of:
-    /// - `single_block` — every `use` sits in one contiguous block with
+    /// - `single_block`: every `use` sits in one contiguous block with
     ///   no blank lines between imports, except that `#[cfg(...)]`-gated
     ///   imports are carved into their own trailing block (one blank
     ///   line below the rest). Set `cfg_block_handling = "merge"` to keep
     ///   them in the one block.
-    /// - `multi_block` — imports are partitioned into ordered groups
+    /// - `multi_block`: imports are partitioned into ordered groups
     ///   separated by exactly one blank line. The group set, in order,
     ///   is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
     ///   internal (`crate` / `super` / `self`), then third-party (every
@@ -43,11 +43,12 @@ declare_tool_lint! {
     ///   is left to `cargo fmt`.
     ///
     /// Orthogonally to `style`, the `reexports` knob controls `pub`
-    /// re-exports — any `use` with an explicit visibility. Like `style` it
+    /// re-exports, meaning any `use` with an explicit visibility. Like
+    /// `style` it
     /// is mandatory once the rule is enabled, and is one of: `grouped`,
     /// which pulls every re-export into one contiguous leading block above
     /// the private imports, visibility outranking path and cfg gating;
-    /// `split`, which breaks that block into two — submodule re-exports
+    /// `split`, which breaks that block into two, submodule re-exports
     /// (`pub use child::Item;`, a multi-segment path) above alias
     /// re-exports (`pub use Item;` / `pub use Item as Alias;`, a
     /// single-segment path); or `by_path`, which gives re-exports no
@@ -60,7 +61,7 @@ declare_tool_lint! {
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. Neither
-    /// layout is wrong in the abstract — the violation is a mismatch
+    /// layout is wrong in the abstract. The violation is a mismatch
     /// with the project's configured `style`. Enforcing one keeps import
     /// blocks scanning uniformly and makes import diffs predictable.
     /// rustfmt's `group_imports` option can enforce the same shape, but
@@ -207,7 +208,7 @@ impl Register for rule::ImportGroupingMismatch {
         // the latter needs `Config: Default`, which would force defaults for
         // both. `config` instead returns `Ok(None)` when the table is absent
         // and `Err` when it is present but a mandatory field is missing or
-        // invalid — both are configuration errors we fail loudly on.
+        // invalid, and both are configuration errors we fail loudly on.
         let config = dylint_linting::config::<Config>(CONFIG_KEY)
             .unwrap_or_else(|error| {
                 panic!(
@@ -227,8 +228,8 @@ impl Register for rule::ImportGroupingMismatch {
         // until macro expansion, so a pre-expansion pass never sees them.
         // `check_crate` re-parses each module file instead (see
         // [`crate::module_reparse`]), reaching every submodule while keeping
-        // `#[cfg(...)]` gates intact — parsing does not strip cfg, the reason
-        // a pre-expansion pass would otherwise be needed.
+        // `#[cfg(...)]` gates intact, parsing not stripping cfg being the
+        // reason a pre-expansion pass would otherwise be needed.
         lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(ImportGroupingMismatch {
                 config: config.clone(),
@@ -241,15 +242,17 @@ impl Register for rule::ImportGroupingMismatch {
 /// ([`check`], [`render`]) read these fields directly.
 pub(super) struct UseStmt<'ast> {
     item: &'ast Item,
-    /// Group rank — see [`classify::rank`]. Smaller sorts earlier.
+    /// Group rank, as [`classify::rank`] computes it. Smaller sorts
+    /// earlier.
     pub(super) rank: usize,
     /// Verbatim source text from the first attribute (or the `use`
     /// keyword) through the trailing `;`, reproduced unchanged.
     pub(super) text: String,
-    /// Lowest byte position to replace — the start of the first
+    /// Lowest byte position to replace: the start of the first
     /// attribute, or of the `use` keyword when there are none.
     lo: BytePos,
-    /// Whether this `use` carries an explicit visibility — a re-export.
+    /// Whether this `use` carries an explicit visibility, making it a
+    /// re-export.
     /// Read by [`ImportGroupingMismatch::message`] to word a violation
     /// that involves the re-export block.
     is_reexport: bool,
@@ -269,7 +272,7 @@ struct Pending {
     /// replacement span instead would fall back to the crate root for an
     /// out-of-line `mod foo;`, whose item span lives in the parent file.
     anchor: Span,
-    /// Span the diagnostic points at and rewrites — the whole run.
+    /// Span the diagnostic points at and rewrites: the whole run.
     span: Span,
     /// Warning header, chosen per run by [`ImportGroupingMismatch::message`].
     message: &'static str,
@@ -337,18 +340,18 @@ impl ImportGroupingMismatch {
         // whose first segment names one of them imports a first-party
         // submodule, not a same-named crate, so `classify` slots it into
         // the internal group instead of third-party. Module items are
-        // order-independent, so the whole scope is collected up front —
+        // order-independent, so the whole scope is collected up front:
         // `mod foo;` may follow the `use foo::Bar;` that depends on it.
         //
         // Every `mod` is keyed syntactically, including a cfg-disabled
         // `#[cfg(FALSE)] mod foo` that the re-parse keeps but the build
-        // drops — unlike the inline-recursion guard below, which consults
+        // drops, unlike the inline-recursion guard below, which consults
         // `live_module_spans` to avoid *linting* a dead module. That guard
         // can't be mirrored here for an out-of-line `mod foo;` (it is
         // `Unloaded`, with no body span to match), and is not worth it: a
         // dead `mod foo` only misclassifies when a real dependency crate
         // is also named `foo` and an active `use foo::Bar` resolves to
-        // that crate — a collision this syntactic approximation, which
+        // that crate, a collision this syntactic approximation, which
         // does no name resolution, does not attempt to detect.
         let local_modules: HashSet<String> = items
             .iter()
@@ -377,7 +380,7 @@ impl ImportGroupingMismatch {
         // survived `#[cfg(...)]`-stripping to the compiled crate. The
         // re-parse keeps cfg-disabled modules (parsing does not strip
         // cfg), so without this guard a `#[cfg(test)] mod tests { ... }`
-        // excluded from a non-test build would be linted — and, having no
+        // excluded from a non-test build would be linted, and, having no
         // HIR node, could not be suppressed by a local `#[allow]`.
         // Out-of-line `mod foo;` modules are `ModKind::Unloaded` here;
         // their files are re-parsed in their own right by `check_crate`
@@ -406,7 +409,7 @@ impl ImportGroupingMismatch {
             return None;
         }
         // A `#[cfg(...)]` gates the import's *existence*, which is what
-        // the trailing cfg group is about — including one applied through
+        // the trailing cfg group is about, including one applied through
         // `#[cfg_attr(<cfg>, cfg(...))]`. A `cfg_attr` that applies any
         // other attribute leaves the import unconditionally present, so
         // it does not make a statement cfg-gated for grouping.
@@ -494,7 +497,7 @@ impl ImportGroupingMismatch {
         // statement that moved. A leading comment immediately above the
         // first statement is left in place by the rewrite but is stranded
         // above a *different* statement when the first one is reordered
-        // downward — under `multi_block`, or under `single_block` when a
+        // downward under `multi_block`, or under `single_block` when a
         // leading cfg-gated import is hoisted into the trailing block, or a
         // re-export below it is hoisted into the leading re-export
         // region.
@@ -559,12 +562,13 @@ impl ImportGroupingMismatch {
         })
     }
 
-    /// The warning header for a violating `run`. Under `single_block` the
-    /// wording depends on which of the separate blocks the run carries: a
-    /// leading `pub` re-export region — one `grouped` block, or two `split`
-    /// blocks (submodule re-exports then aliases) — and/or a trailing cfg
-    /// block. A run with neither is just blank lines splitting one block,
-    /// the same violation `merge` reports.
+    /// The warning header for a violating `run`. Under `single_block`
+    /// the wording depends on which of the separate blocks the run
+    /// carries: a leading `pub` re-export region, which is one
+    /// `grouped` block or two `split` blocks (submodule re-exports then
+    /// aliases), and/or a trailing cfg block. A run with neither is
+    /// just blank lines splitting one block, the same violation `merge`
+    /// reports.
     fn message(&self, run: &[UseStmt<'_>]) -> &'static str {
         match self.config.style {
             Style::MultiBlock => "imports are not partitioned into ordered groups",

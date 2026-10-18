@@ -49,8 +49,8 @@ mod banner;
 /// Clearing them is what makes the two kinds of test independent of
 /// each other. Serialising them on a mutex does not: `dylint_testing`
 /// scopes only `DYLINT_TOML` to one UI run, and sets the other two once,
-/// on the first UI test, without ever restoring them — so they are still
-/// set long after the lock [`crate::ui_test`] takes has been released.
+/// on the first UI test, without ever restoring them. They are therefore
+/// still set long after the lock [`crate::ui_test`] takes is released.
 const UI_HARNESS_VARS: &[&str] = &["DYLINT_LIBRARY_PATH", "DYLINT_LIBS", "DYLINT_TOML"];
 
 /// A `cargo` command rooted at `project_dir`, pointed at

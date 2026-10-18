@@ -1,6 +1,6 @@
 // `deny_extra` adds a project-specific macro to the deny set. The
 // `inner::their_macro!` invocation here matches the multi-segment
-// entry `inner::their_macro` — multi-segment entries tail-match the
+// entry `inner::their_macro`, multi-segment entries tail-matching the
 // invocation path, so it covers both `their_macro!` reached through
 // the `inner` module here and a third-party macro reached as
 // `somecrate::their_macro!`.

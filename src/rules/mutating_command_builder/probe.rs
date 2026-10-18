@@ -28,15 +28,15 @@ use rustc_span::Symbol;
 ///
 /// - Whether `Command` implements the trait. Answering means naming
 ///   the trait's other generic arguments, and where `Command` does not
-///   pin them -- `Into` and `TryInto` are the everyday cases -- the
+///   pin them, `Into` and `TryInto` being the everyday cases, the
 ///   answer comes back "no" for want of an inference.
 /// - What the method's receiver is. `self` and `&self` both reach the
 ///   owned command ahead of the inherent setter, and `&mut self` ties
 ///   with it and loses. Declining on the receiver shape alone would be
 ///   unsound, though, because an inherent `&self` method loses to a
 ///   trait `&mut self` one before the change and wins after. The sound
-///   refinement is narrower -- no inherent method of the name, and
-///   every candidate taking `&mut self` -- and what it would buy is
+///   refinement is narrower, needing no inherent method of the name
+///   and every candidate taking `&mut self`, and what it would buy is
 ///   `CommandExt::exec` and its neighbours, which this costs today.
 ///
 /// `is_method` is what keeps an associated function out, since its

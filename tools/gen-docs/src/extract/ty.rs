@@ -221,8 +221,8 @@ pub(crate) fn is_option(ty: &Type) -> bool {
 /// write arrays as `[a, b]`, integers without sign annotations, and
 /// strings without `char` / `&str` / `Cow` distinctions, so the
 /// labels echo that vocabulary. The translation is purely structural
-/// — no ad-hoc exceptions for specific field names — so adding a
-/// new built-in type means extending the match arms here.
+/// structural, with no ad-hoc exceptions for specific field names, so
+/// adding a new built-in type means extending the match arms here.
 ///
 /// - `bool` → `boolean`
 /// - `u*` / `usize` → `unsigned integer`
@@ -232,9 +232,9 @@ pub(crate) fn is_option(ty: &Type) -> bool {
 /// - `f32` / `f64` → `float`
 /// - `char` → `single-character string` (a TOML string of length
 ///   one, which is what `serde-toml` accepts for `char`). Stricter
-///   subtypes that refine `char` — currently `AsciiLetter` from
-///   `src/ascii_letter.rs`, whose own label is
-///   `single-letter string` — are looked up via [`SharedTypes`]
+///   subtypes that refine `char`, currently `AsciiLetter` from
+///   `src/ascii_letter.rs` with its own label
+///   `single-letter string`, are looked up via [`SharedTypes`]
 ///   rather than hard-coded here, so adding a new shared newtype
 ///   does not require editing this function.
 /// - `String` / `&str` / `OsString` / `PathBuf` / `Cow<...>` → `string`

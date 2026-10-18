@@ -16,8 +16,9 @@ use crate::url_scan::{DEFAULT_FORWARD_SCHEMES, take_url};
 /// substring within `text`; `ref_text` is that substring.
 ///
 /// `skips` are byte ranges (markdown code spans / blocks) where a URL
-/// is example text, not a live link, and must be ignored — empty for
-/// surfaces that aren't markdown (plain comments, string literals).
+/// is example text, not a live link, and must be ignored. It is empty
+/// for surfaces that aren't markdown (plain comments, string
+/// literals).
 pub(super) fn scan_text(
     text: &str,
     skips: &[SkipRange],
@@ -34,7 +35,7 @@ pub(super) fn scan_text(
         }
         // Word-boundary guard: a scheme starting mid-identifier
         // (`xhttps://`) is not a URL. Unlike `bare_url`, no guard
-        // against a preceding `<` / `[` is needed — a ref inside an
+        // against a preceding `<` / `[` is needed: a ref inside an
         // autolink or labelled link is still subject to pinning, so
         // wrapped URLs must be scanned too.
         if index > 0 {

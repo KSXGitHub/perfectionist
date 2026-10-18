@@ -72,7 +72,7 @@ impl Loader {
     }
 }
 
-// Bad: 6 calls — an `.await` mid-chain neither counts nor breaks it,
+// Bad: 6 calls, since an `.await` mid-chain neither counts nor breaks it,
 // so `load` below the `.await` joins the 5 above it.
 async fn through_await(loader: Loader) -> usize {
     loader
@@ -85,7 +85,7 @@ async fn through_await(loader: Loader) -> usize {
         .count()
 }
 
-// Bad: 6 calls — a `?` mid-chain neither counts nor breaks the chain,
+// Bad: 6 calls, since a `?` mid-chain neither counts nor breaks the chain,
 // so `trim` and `parse` below it join the 4 above.
 fn through_try(input: &str) -> Result<usize, std::num::ParseIntError> {
     let count = input
@@ -98,7 +98,7 @@ fn through_try(input: &str) -> Result<usize, std::num::ParseIntError> {
     Ok(count)
 }
 
-// Bad: 6 calls — `?` and `.await` do not break a chain.
+// Bad: 6 calls, since `?` and `.await` do not break a chain.
 async fn through_await_and_try(
     fetch: impl Future<Output = Result<String, ()>>,
 ) -> Result<usize, ()> {

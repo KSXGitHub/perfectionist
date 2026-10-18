@@ -19,7 +19,7 @@ impl LintAttributeTrailingComment {
     /// `outer_span` is the syntactic attribute's span (the one whose
     /// closing `]` the trailing comment follows). `invocation_span`
     /// is the inner `allow(...)` / `expect(...)` / `warn(...)` /
-    /// `deny(...)` / `forbid(...)` meta-item's span — the insertion
+    /// `deny(...)` / `forbid(...)` meta-item's span, the insertion
     /// target for the lifted `reason` field. For a bare
     /// `#[allow(...)]` the two are the same.
     ///
@@ -115,7 +115,7 @@ impl LintAttributeTrailingComment {
                     ],
                     // The comment's attachment to the attribute is
                     // unambiguous, but its prose was written as a
-                    // margin note, not as a `reason` value — the
+                    // margin note, not as a `reason` value, so the
                     // author may want to reword it before committing.
                     // `MaybeIncorrect` offers the rewrite without
                     // letting `cargo fix` apply it unreviewed.
@@ -128,8 +128,8 @@ impl LintAttributeTrailingComment {
 
 /// Build an absolute [`Span`] covering `[start, end)` byte offsets
 /// inside `source_file`. Inherits its [`rustc_span::SyntaxContext`]
-/// (and any `LocalDefId` parent) from `anchor` — typically the
-/// attribute's own span — so the resulting span participates in
+/// (and any `LocalDefId` parent) from `anchor`, typically the
+/// attribute's own span, so the resulting span participates in
 /// `report_in_external_macro: false` filtering and aligns with the
 /// other suggestion spans rather than collapsing to root.
 fn file_span(source_file: &SourceFile, start: usize, end: usize, anchor: Span) -> Span {

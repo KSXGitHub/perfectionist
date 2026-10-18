@@ -19,7 +19,7 @@ fn _doc_reference_good() {}
 fn _doc_code_span() {}
 
 /// URL fragments must not fire (host is `localhost` so the sibling
-/// `bare_url` lint stays quiet — only the `#NNN`-fragment guard is
+/// `bare_url` lint stays quiet, so only the `#NNN`-fragment guard is
 /// under test here):
 /// see https://localhost/issues/#999 and
 /// https://localhost/path?ref=#1000 for more.

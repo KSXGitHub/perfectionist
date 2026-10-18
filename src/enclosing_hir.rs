@@ -18,9 +18,9 @@ use rustc_span::Span;
 /// Walk the HIR once and, for each input span, return the deepest HIR
 /// node whose own span contains it. The returned vector has the same
 /// length and order as `target_spans`. A span not contained by any
-/// visited node — e.g. one inside a synthesised macro expansion whose
-/// enclosing item's span does not cover the call site — maps to
-/// [`hir::CRATE_HIR_ID`].
+/// visited node maps to [`hir::CRATE_HIR_ID`]. One inside a
+/// synthesised macro expansion whose enclosing item's span does not
+/// cover the call site is such a span.
 pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> Vec<hir::HirId> {
     walk(tcx, target_spans, false)
 }
@@ -32,10 +32,10 @@ pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> 
         reason = "this doc names the U+2026 glyph the comment-walking rules handle"
     )
 )]
-/// Like [`find_enclosing_hir_ids`], but a node's outer attributes —
-/// including the `#[doc]` attributes that `///` / `//!` / `/** */` doc
-/// comments lower to — count toward containment alongside the node's
-/// own span.
+/// Like [`find_enclosing_hir_ids`], but a node's outer attributes
+/// count toward containment alongside the node's own span. That
+/// includes the `#[doc]` attributes that `///` / `//!` / `/** */` doc
+/// comments lower to.
 ///
 /// This is what the comment-walking rules need. An item's own span
 /// starts at the item keyword, *after* its leading doc comment, so a
@@ -67,16 +67,16 @@ fn walk(tcx: TyCtxt<'_>, target_spans: &[Span], include_attr_spans: bool) -> Vec
 }
 
 /// Resolve each violation's primary span to its narrowest enclosing
-/// HIR node — in a single [`find_comment_anchor_hir_ids`] walk — then
+/// HIR node, in a single [`find_comment_anchor_hir_ids`] walk, then
 /// hand that node id, the span, and the payload to `emit`.
 ///
 /// The companion to [`find_enclosing_hir_ids`] for a rule that
-/// discovers its violations outside the HIR walk — by scanning comment
-/// text, or by walking a re-parsed module AST. Emitted unanchored, the
+/// discovers its violations outside the HIR walk, by scanning comment
+/// text or by walking a re-parsed module AST. Emitted unanchored, the
 /// lint-level builder would sit at the crate root, so only a
 /// crate-root `#![allow]` / `#![expect]` would apply. Anchoring each
-/// diagnostic at its enclosing node — and emitting through
-/// `clippy_utils::diagnostics::span_lint_hir_and_then` from `emit` —
+/// diagnostic at its enclosing node, and emitting through
+/// `clippy_utils::diagnostics::span_lint_hir_and_then` from `emit`,
 /// is what lets a per-item / per-field / per-module `#[allow]` /
 /// `#[expect]` resolve.
 pub(crate) fn emit_at_enclosing_hir<Payload>(
@@ -116,9 +116,9 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
     /// `//!` / `/** */` doc comment to the item it documents, whose own
     /// span begins after the comment.
     ///
-    /// Only the node kinds a doc comment can actually attach to —
-    /// items, trait / impl / foreign items, enum variants, struct
-    /// fields — route through here. Blocks, statements, locals,
+    /// Only the node kinds a doc comment can actually attach to route
+    /// through here: items, trait / impl / foreign items, enum
+    /// variants, struct fields. Blocks, statements, locals,
     /// expressions, and patterns never carry a doc comment, so they
     /// call [`Self::update`] directly and skip the per-node
     /// `hir_attrs` lookup.
@@ -155,7 +155,7 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
                 // source level (see [`comment_enclosure_width`]), not
                 // the last-visited one. A proc-macro `#[derive]`
                 // (e.g. `serde::Deserialize`) generates root-context
-                // HIR nodes — `visit_map` / `visit_seq` bodies — whose
+                // HIR nodes, `visit_map` / `visit_seq` bodies, whose
                 // spans cover the whole field list and are visited
                 // *after* the struct's fields. A depth/order tie-break
                 // would let those wider generated nodes steal the
@@ -186,13 +186,13 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
 /// Containment check that resolves macro hygiene before comparing byte
 /// ranges. A HIR item synthesised by a macro expansion can carry an
 /// `Item.span` whose byte positions point into the macro definition
-/// body (def-site), not into the call site — for example, the
-/// `pub const $name: $ty = $value;` template inside a `macro_rules!`
-/// block. A direct byte-range check against a pre-expansion target
+/// body (def-site), rather than into the call site. The `pub const
+/// $name: $ty = $value;` template inside a `macro_rules!` block is one
+/// such item. A direct byte-range check against a pre-expansion target
 /// span (which sits at the call site) misses such an item, so the
-/// `best[index]` slot lands on a *child* HIR node of the expanded
-/// item (one of the captures, which does carry a call-site span)
-/// rather than on the item itself.
+/// `best[index]` slot lands on a *child* HIR node of the expanded item
+/// (one of the captures, which does carry a call-site span) rather than
+/// on the item itself.
 ///
 /// `#[expect]` / `#[allow]` resolution walks HIR ancestry from the
 /// anchor up, so this child-node anchoring still surfaces attributes
@@ -200,7 +200,7 @@ impl<'a, 'tcx> EnclosingHirFinder<'a, 'tcx> {
 /// improvement (the diagnostic now anchors at the expanded item, not
 /// at one of its captures) rather than a fix for an observable bug.
 /// It also guards against future shapes where no descendant carries
-/// a call-site span — items the visitor doesn't recurse into, or
+/// a call-site span: items the visitor doesn't recurse into, or
 /// proc-macro expansions that set spans atypically.
 ///
 /// Resolving both spans through [`Span::source_callsite`] walks each
@@ -218,10 +218,11 @@ fn contains(item_span: Span, target: Span) -> bool {
 /// For comment anchoring: if `candidate` encloses `target`, return the
 /// byte width to tie-break on (smaller = tighter); otherwise `None`.
 ///
-/// Containment is checked the same hygiene-resolving way as [`contains`]
-/// — a direct byte check first, then a [`Span::source_callsite`] check
-/// so a `#[doc]` forwarded through a `macro_rules!` (whose span sits in
-/// the macro expansion) still matches the generated item it landed on.
+/// Containment is checked the same hygiene-resolving way as
+/// [`contains`]: a direct byte check first, then a
+/// [`Span::source_callsite`] check, so a `#[doc]` forwarded through a
+/// `macro_rules!` (whose span sits in the macro expansion) still
+/// matches the generated item it landed on.
 ///
 /// The width is measured at the level the match held: the candidate's
 /// own span for a direct match, or its `source_callsite` for a

@@ -3,9 +3,9 @@
 //! A construct nests when a reader indents for what is inside it: an
 //! `if` (with its `else if` arms at the same level and each `else`
 //! body inside), a `match` and the arms inside it, a `for` / `while` /
-//! `loop`, a closure, a `let ... else` body, and a free-standing block —
-//! a statement block, an `unsafe` block, or the block a `let`
-//! initialises from. The block that *is* a construct's body does not
+//! `loop`, a closure, a `let ... else` body, and a free-standing
+//! block, whether a statement block, an `unsafe` block, or the block a
+//! `let` initialises from. The block that *is* a construct's body does not
 //! nest again on its own: `if x { y }` is 1 level, not 2.
 //!
 //! The walk measures what the author wrote. A construct produced by a
@@ -114,8 +114,8 @@ impl<'tcx> Walker<'tcx> {
         self.path.pop();
     }
 
-    /// Visit an expression in body position — the `then` of an `if`, an
-    /// arm's body, a closure's body — where a block is the construct's
+    /// Visit an expression in body position, the `then` of an `if`, an
+    /// arm's body or a closure's body, where a block is the construct's
     /// own body rather than a nested one.
     fn visit_body_expr(&mut self, expr: &'tcx Expr<'tcx>) {
         let ExprKind::Block(block, None) = expr.kind else {
@@ -257,8 +257,8 @@ impl<'tcx> Visitor<'tcx> for Walker<'tcx> {
                 let body = self.tcx.hir_body(closure.body);
                 self.visit_closure(expr, closure.kind, body);
             }
-            // A block the compiler made — the `unsafe` block an `.await`
-            // polls in — is not one the reader indents for.
+            // A block the compiler made, the `unsafe` block an
+            // `.await` polls in, is not one the reader indents for.
             ExprKind::Block(block, _) if expr.span.desugaring_kind().is_some() => {
                 intravisit::walk_block(self, block);
             }

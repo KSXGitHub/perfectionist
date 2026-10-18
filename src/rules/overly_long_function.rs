@@ -33,7 +33,7 @@ declare_tool_lint! {
     /// function that runs past a screen is read in pieces, and the
     /// reader has to hold the pieces they have scrolled past. A cap on
     /// length is the plainest of the size measures, and the one that
-    /// catches a body that is long without being complex — a sequence
+    /// catches a body that is long without being complex: a sequence
     /// of straight-line steps, each of which would read better as a
     /// function named for what it does.
     ///

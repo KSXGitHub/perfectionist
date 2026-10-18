@@ -1,66 +1,66 @@
 warning: bare email address `security@example.com`
   --> $DIR/bare_email.rs:LL:CC
    |
-LL | // Bad: bare email in a plain line comment — report to security@example.com.
-   |                                                        ^^^^^^^^^^^^^^^^^^^^
+LL | // Bad: a plain line comment leaves an address bare: security@example.com.
+   |                                                      ^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(perfectionist::bare_email)]` on by default
 help: wrap in `<...>`
    |
-LL - // Bad: bare email in a plain line comment — report to security@example.com.
-LL + // Bad: bare email in a plain line comment — report to <security@example.com>.
+LL - // Bad: a plain line comment leaves an address bare: security@example.com.
+LL + // Bad: a plain line comment leaves an address bare: <security@example.com>.
    |
 help: or prefix with `mailto:`
    |
-LL | // Bad: bare email in a plain line comment — report to mailto:security@example.com.
-   |                                                        +++++++
+LL | // Bad: a plain line comment leaves an address bare: mailto:security@example.com.
+   |                                                      +++++++
 
 warning: bare email address `security@example.org`
   --> $DIR/bare_email.rs:LL:CC
    |
-LL | /* Bad: bare email in a block comment — security@example.org. */
-   |                                         ^^^^^^^^^^^^^^^^^^^^
-   |
-help: wrap in `<...>`
-   |
-LL - /* Bad: bare email in a block comment — security@example.org. */
-LL + /* Bad: bare email in a block comment — <security@example.org>. */
-   |
-help: or prefix with `mailto:`
-   |
-LL | /* Bad: bare email in a block comment — mailto:security@example.org. */
-   |                                         +++++++
-
-warning: bare email address `security@example.com`
-  --> $DIR/bare_email.rs:LL:CC
-   |
-LL | /// Bad: bare email in a doc comment — write to security@example.com.
+LL | /* Bad: a block comment leaves an address bare: security@example.org. */
    |                                                 ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /// Bad: bare email in a doc comment — write to security@example.com.
-LL + /// Bad: bare email in a doc comment — write to <security@example.com>.
+LL - /* Bad: a block comment leaves an address bare: security@example.org. */
+LL + /* Bad: a block comment leaves an address bare: <security@example.org>. */
    |
 help: or prefix with `mailto:`
    |
-LL | /// Bad: bare email in a doc comment — write to mailto:security@example.com.
+LL | /* Bad: a block comment leaves an address bare: mailto:security@example.org. */
    |                                                 +++++++
+
+warning: bare email address `security@example.com`
+  --> $DIR/bare_email.rs:LL:CC
+   |
+LL | /// Bad: a doc comment leaves an address bare: security@example.com.
+   |                                                ^^^^^^^^^^^^^^^^^^^^
+   |
+help: wrap in `<...>`
+   |
+LL - /// Bad: a doc comment leaves an address bare: security@example.com.
+LL + /// Bad: a doc comment leaves an address bare: <security@example.com>.
+   |
+help: or prefix with `mailto:`
+   |
+LL | /// Bad: a doc comment leaves an address bare: mailto:security@example.com.
+   |                                                +++++++
 
 warning: bare email address `security@example.org`
   --> $DIR/bare_email.rs:LL:CC
    |
-LL | /** Bad: bare email in a `/** */` doc-block comment — security@example.org. */
-   |                                                       ^^^^^^^^^^^^^^^^^^^^
+LL | /** Bad: a `/** */` doc-block leaves one bare: security@example.org. */
+   |                                                ^^^^^^^^^^^^^^^^^^^^
    |
 help: wrap in `<...>`
    |
-LL - /** Bad: bare email in a `/** */` doc-block comment — security@example.org. */
-LL + /** Bad: bare email in a `/** */` doc-block comment — <security@example.org>. */
+LL - /** Bad: a `/** */` doc-block leaves one bare: security@example.org. */
+LL + /** Bad: a `/** */` doc-block leaves one bare: <security@example.org>. */
    |
 help: or prefix with `mailto:`
    |
-LL | /** Bad: bare email in a `/** */` doc-block comment — mailto:security@example.org. */
-   |                                                       +++++++
+LL | /** Bad: a `/** */` doc-block leaves one bare: mailto:security@example.org. */
+   |                                                +++++++
 
 warning: N warnings emitted

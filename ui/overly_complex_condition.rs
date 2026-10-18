@@ -28,8 +28,8 @@ fn three_operators(first: bool, second: bool, third: bool, fourth: bool) {
     }
 }
 
-// Bad: 4 operators each — a `while` condition and a match guard are
-// both conditions the rule reads.
+// Bad: 4 operators each, since a `while` condition and a match guard
+// are both conditions the rule reads.
 fn other_heads(first: bool, second: bool, third: bool, fourth: bool, fifth: bool, value: u8) {
     while first || second || third || fourth || fifth {
         work();

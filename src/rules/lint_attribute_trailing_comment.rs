@@ -14,15 +14,15 @@ declare_tool_lint! {
     ///
     /// When a lint-level attribute (`#[allow]`, `#[expect]`, `#[warn]`,
     /// `#[deny]`, `#[forbid]`) carries a trailing `// ...` line comment
-    /// — on the same source line as the attribute's closing `]` —
-    /// that documents *why* the level was chosen, lifts the comment
+    /// on the same source line as the attribute's closing `]`,
+    /// and that documents *why* the level was chosen, lifts the comment
     /// into the attribute's `reason = "..."` field and removes the
     /// original comment.
     ///
     /// Only the trailing placement counts: a same-line comment after
     /// `]` is unambiguously about the attribute. A comment on the
-    /// *preceding* line is intentionally out of scope — it is just as
-    /// often documentation for the next item as it is attribute
+    /// *preceding* line is intentionally out of scope, being just as
+    /// often documentation for the next item as attribute
     /// rationale, and a static check cannot tell the two apart.
     ///
     /// Doc comments (`///`, `//!`) and block comments (`/* ... */`)
@@ -116,7 +116,7 @@ impl EarlyLintPass for LintAttributeTrailingComment {
         // original `#[cfg_attr(...)]`) followed by the synthesised
         // `<inner>` attribute(s). The trace's args are an opaque
         // `AttrItemKind::Parsed(CfgAttrTrace)` the public `Attribute`
-        // API can't walk, but its outer *span* is available — so we
+        // API can't walk, but its outer *span* is available, so we
         // stash it for the synth inner attribute to anchor its
         // comment search to, instead of its own narrower span.
         if attribute.has_name(sym::cfg_attr_trace) {
@@ -146,7 +146,7 @@ impl EarlyLintPass for LintAttributeTrailingComment {
             // One `cfg_attr` is the anchor for one adjacent comment. If
             // it expands to several lint-level synth attrs
             // (`#[cfg_attr(all(), allow(a), warn(b))]`), only the first
-            // to actually emit consumes the trace — otherwise each
+            // to actually emit consumes the trace. Otherwise each
             // would delete the same comment bytes and rustfix would
             // reject the overlapping edits. Gating on `emitted` keeps
             // the trace live when `check` declines (synth already has a

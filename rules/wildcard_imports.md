@@ -9,15 +9,15 @@
 
 ## What it does
 
-Flags glob (`*`) `use` statements — `use foo::bar::*;` — in module
-bodies. These exceptions are enabled by default, and each can
-be turned off individually:
+Flags glob (`*`) `use` statements, `use foo::bar::*;` among
+them, in module bodies. These exceptions are enabled by default,
+and each can be turned off individually:
 
-- `prelude` — a glob whose final non-glob path segment names a
+- `prelude`: a glob whose final non-glob path segment names a
   prelude module is allowed: `use rayon::prelude::*;`,
   `use diesel::prelude::*;`. The recognised names are configurable
   via `prelude_segment_names`.
-- `root_reexport` — a re-export glob (`pub use ...::*`) at the top
+- `root_reexport`: a re-export glob (`pub use ...::*`) at the top
   level of a module body is allowed: `pub use submodule::*;` in
   `lib.rs`.
 
@@ -42,7 +42,7 @@ those are exempt by default.
 Clippy's `wildcard_imports` (an allow-by-default `pedantic` lint)
 flags the same glob `use`s and, by default, exempts prelude
 imports, `pub use` re-exports, and `use super::*;` inside any
-module whose name contains `test` — overlapping this rule's
+module whose name contains `test`, overlapping this rule's
 exceptions. But all of those exemptions, together with the
 `allowed-wildcard-imports` path list, are coupled behind a single
 `warn-on-all-wildcard-imports` boolean: left at its default
@@ -50,7 +50,7 @@ exceptions. But all of those exemptions, together with the
 `use super::*;` inside `mod tests` is *not* flagged; set to `true`,
 every exemption drops at once, including the prelude one. There is
 no setting that keeps `prelude::*` exempt while flagging
-`use super::*;` in a `#[cfg(test)] mod tests` block — which is
+`use super::*;` in a `#[cfg(test)] mod tests` block, which is
 exactly this rule's headline case. This rule decouples them: the
 `prelude` and `root_reexport` exceptions toggle independently
 (with a configurable `prelude_segment_names` and the `allowed_paths`
@@ -127,7 +127,8 @@ exception. Defaults to `["prelude"]`.
 - _Optional_
 
 Module paths whose glob import is never flagged, regardless of the
-exceptions above — the path before the `::*` of a `use <path>::*`.
+exceptions above. It is the path before the `::*` of a
+`use <path>::*`.
 Each entry is **absolute**: an extern-crate path with a leading
 `::` (`"::rayon::iter"`, which exempts both `use rayon::iter::*;`
 and `use ::rayon::iter::*;`), or a crate-root path written

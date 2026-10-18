@@ -37,12 +37,12 @@ impl ThiserrorUsage {
     /// thiserror crate at any depth. Handles the three common shapes
     /// in one pass:
     ///
-    /// - `use thiserror::Error;` — outer prefix's first segment is
-    ///   `thiserror`, matches immediately.
-    /// - `use thiserror::{Error, ErrorKind};` — same as above; the
-    ///   nested children inherit the outer prefix, so we don't have
-    ///   to walk them.
-    /// - `use {thiserror::Error, std::io};` — top-level braced form
+    /// - `use thiserror::Error;`: the outer prefix's first segment is
+    ///   `thiserror`, which matches immediately.
+    /// - `use thiserror::{Error, ErrorKind};`: the outer prefix matches
+    ///   the same way, and the nested children inherit it, so we don't
+    ///   have to walk them.
+    /// - `use {thiserror::Error, std::io};`: a top-level braced form
     ///   with an empty outer prefix; recurse into the children and
     ///   flag if any child's prefix names a thiserror crate.
     pub(super) fn check_use(&self, cx: &EarlyContext<'_>, item: &Item, use_tree: &UseTree) {
@@ -59,13 +59,13 @@ impl ThiserrorUsage {
             .map(|segment| segment.ident.name)
             .find(|name| *name != kw::PathRoot);
         if let Some(name) = first {
-            // Direct match — `use thiserror::...`. Also match through
+            // Direct match on `use thiserror::...`. Also match through
             // `crate_aliases` so that `use te::Error;` after a sibling
             // `use thiserror as te;` is flagged on its own line, not
             // just on the rename.
             return self.thiserror_crates.contains(&name) || self.crate_aliases.contains_key(&name);
         }
-        // Empty outer prefix — recurse into nested children. (A
+        // Empty outer prefix, so recurse into nested children. (A
         // glob with an empty prefix is `use *;` and not valid Rust;
         // a simple with an empty prefix is also invalid. Only the
         // nested form needs handling here.)
@@ -103,8 +103,8 @@ impl ThiserrorUsage {
     }
 
     /// Inspect the attribute-list payload of a `#[cfg_attr(pred, ...)]`
-    /// — the slice after the predicate. Each payload entry is itself
-    /// an attribute shape; recognise nested `derive(...)` and
+    /// payload, the slice after the predicate. Each payload entry is
+    /// itself an attribute shape; recognise nested `derive(...)` and
     /// further nested `cfg_attr(...)` and recurse.
     fn check_cfg_attr_payload(&self, cx: &EarlyContext<'_>, items: &[MetaItemInner]) -> bool {
         let mut found = false;

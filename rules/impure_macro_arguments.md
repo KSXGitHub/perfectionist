@@ -35,7 +35,7 @@ debug_assert_eq!(map.insert(key, value), None, "duplicate");
 In debug builds the call runs and the assertion holds. In
 release builds `debug_assertions` is off, the body folds to
 `if false { ... }`, and the argument expressions are *not*
-evaluated — `insert` never runs and the map ends the function
+evaluated: `insert` never runs and the map ends the function
 in a state the author did not intend. The bug only surfaces
 under `--release`.
 
@@ -55,7 +55,7 @@ curated set of shapes known to satisfy the property and
 treats everything else as impure. A `const fn` call, a
 `Result::map` chain over a pure base, or `vec.fold(...)` is
 therefore impure under this rule unless its shape is
-recognised — the lint cannot prove side-effect-freedom in
+recognised. The lint cannot prove side-effect-freedom in
 general, only spot it. The trade-off favours flagging
 side-effect-free expressions over silently passing a real
 hazard. The set is narrower than the functional-programming
@@ -82,7 +82,7 @@ evaluates the same way regardless of how many times the
 macro touches it, so binding it to a `let` would only force
 the comparison to run in release builds for no benefit; the
 same logic applies to `env!("HOME")` inside
-`debug_assert_eq!(...)` — there is nothing to evaluate at
+`debug_assert_eq!(...)`, where there is nothing to evaluate at
 runtime.
 
 ## Example
@@ -152,7 +152,7 @@ entry is a bare method identifier (no `()`, no receiver). A
 pure postfix when the method takes no arguments. Add a
 project-local method here only when it is genuinely safe
 for the surrounding macro to drop or duplicate the call
-(the rule's working definition of *pure*) — typically an
+(the rule's working definition of *pure*), typically an
 `O(1)` side-effect-free getter that the lint's syntactic
 classification can't otherwise see.
 
@@ -165,9 +165,8 @@ Method names to drop from the pure-method list, even if they
 appear in the built-in defaults or in `extra_pure_methods`.
 Empty by default; checked after the merge, so this knob always
 wins. Useful for opting back into linting on a default entry
-the project does not consider pure — for example, removing
-`as_ref` for a project that wraps it in an impure
-implementation.
+the project does not consider pure, say removing `as_ref` for a
+project that wraps it in an impure implementation.
 
 ### Field: `extra_pure_macros`
 
@@ -178,7 +177,7 @@ Macro names added to the built-in pure-macro list. Each
 entry is matched against the invocation's final path segment
 (so `my_crate::const_str` matches by the `"const_str"` tail).
 A pure-macro call passed as an argument to another macro is
-treated as a pure atom — the rule does not propose binding
+treated as a pure atom, so the rule does not propose binding
 it to a `let`. Use this knob for project-specific macros
 whose expansion is a compile-time constant (a literal, a
 `&'static str`, a `bool`); their inclusion satisfies the
@@ -214,7 +213,7 @@ plus `deny_extra`). Every other macro is silently accepted.
 
 Flag every function-like or array-like invocation that carries
 an impure top-level argument, regardless of any built-in
-classification — unless the invocation matches an `allow_extra`
+classification, unless the invocation matches an `allow_extra`
 entry. The built-in allow set is deliberately ignored in this
 mode; project exceptions go in `allow_extra`.
 
@@ -224,6 +223,6 @@ mode; project exceptions go in `allow_extra`.
 
 Curated deny set plus curated allow set, both extensible via
 `deny_extra` / `allow_extra`. Macros classified by neither are
-flagged — flagging unrecognised macros is deliberate so the
+flagged. Flagging unrecognised macros is deliberate so the
 rule remains useful in projects that depend on uncatalogued
 proc macros.

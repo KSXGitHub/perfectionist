@@ -56,7 +56,7 @@ pub fn install(manifest: &PackageManifest, store: &Store) {}
 
 When a backticked word names a *foreign* symbol that merely
 shares its name with an in-scope item, rewriting `` `Foo` `` to
-`` [`Foo`] `` links to the *local* item — a wrong reference that
+`` [`Foo`] `` links to the *local* item, a wrong reference that
 still compiles. The rule therefore only suggests the link
 rather than applying it automatically. For an external target,
 write an explicit reference link instead:
@@ -73,9 +73,10 @@ Configure via `dylint.toml` under `["perfectionist::bare_identifier_reference"]`
 
 Identifiers the rule never suggests linking, even when they
 resolve in scope. Empty by default. Use this for a name a doc
-comment deliberately mentions without wanting a cross-reference
-— a historical type kept for context, or a word that happens to
-collide with an in-scope item but is meant as prose.
+comment deliberately mentions without wanting a
+cross-reference: a historical type kept for context, or a word
+that happens to collide with an in-scope item but is meant as
+prose.
 
 ### Field: `reference_scope`
 
@@ -164,8 +165,8 @@ Every name reached through a `use` is left alone.
 
 Also items from within that module's own subtree (e.g. reached
 through `use self::child::Item`), but still not names that reach
-outside the module — `use super::...`, `use crate::...`, and
-imports from other crates.
+outside the module, meaning `use super::...`, `use crate::...`,
+and imports from other crates.
 
 ##### Choice: `"crate"`
 
@@ -173,9 +174,10 @@ imports from other crates.
 
 Any item defined anywhere in the current crate (first-party), but
 nothing from another crate. A project's own items are where
-documentation drifts — a rename leaves a stale mention — while the
-standard library and third-party crates are stable and outside the
-project's control, so a bare mention of them is low risk.
+documentation drifts, a rename leaving a stale mention, while
+the standard library and third-party crates are stable and
+outside the project's control, so a bare mention of them is low
+risk.
 
 ##### Choice: `"third_party"`
 
@@ -190,5 +192,5 @@ worth checking but the frozen standard library is not.
 
 - _Rust:_ `Anywhere`
 
-Any name that resolves in scope, however it got there — including
-the standard library.
+Any name that resolves in scope, however it got there, the
+standard library included.

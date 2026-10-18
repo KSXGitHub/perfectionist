@@ -54,7 +54,7 @@ pub enum SomethingElse {
 }
 
 // Bad: name does not end in `Error`, but the type implements
-// `std::error::Error` — caught by the trait-impl branch of the
+// `std::error::Error`, caught by the trait-impl branch of the
 // "looks like an error" predicate.
 pub enum BadlyNamed {
     Variant,
@@ -83,8 +83,8 @@ pub struct NotEnumWrapperError(pub u32);
 
 // Good: borrowed enum wrapper. The single field has type `&'static
 // ParseKind`, whose `kind()` is `ty::Ref`, not `ty::Adt`. The
-// sum-like predicate is intentionally narrow — it only matches a
-// direct enum ADT as the wrapped type — so this struct is not
+// sum-like predicate is intentionally narrow, matching only a
+// direct enum ADT as the wrapped type, so this struct is not
 // classified as sum-like and is silently skipped. (Downstream
 // callers can still deref-and-match against the underlying enum
 // if they want to; the predicate just doesn't try to peer through

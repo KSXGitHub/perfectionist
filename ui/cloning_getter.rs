@@ -101,7 +101,7 @@ impl Person {
         self.scores.to_vec()
     }
 
-    // Good: not a getter — the body does more than copy a field.
+    // Good: not a getter, since the body does more than copy a field.
     fn shouted(&self) -> String {
         self.first_name.to_uppercase()
     }
@@ -168,13 +168,13 @@ impl Person {
         self.clone_url.clone()
     }
 
-    // Good: not a getter — it takes an argument, even though the body
-    // copies a field and nothing else.
+    // Good: not a getter, since it takes an argument, even though the
+    // body copies a field and nothing else.
     fn first_name_or(&self, _fallback: &str) -> String {
         self.first_name.clone()
     }
 
-    // Good: not a getter — it takes an argument.
+    // Good: not a getter, since it takes an argument.
     fn name_or(&self, fallback: &str) -> String {
         if self.first_name.is_empty() { fallback.to_owned() } else { self.first_name.clone() }
     }
@@ -208,7 +208,7 @@ impl Holder {
     }
 
     // Bad: a `Box<T>` is owned storage for one `T`, so what a caller
-    // borrows is the `T` -- `&str`, never `&Box<str>`.
+    // borrows is the `T`, so `&str` and never `&Box<str>`.
     fn boxed(&self) -> Box<str> {
         self.boxed.clone()
     }

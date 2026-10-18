@@ -70,7 +70,7 @@ fn empty_hosts_disables_all_scanning() {
 }
 
 /// A self-hosted instance registered with a `kind` is scanned under
-/// that forge's URL shape — here a `gitlab`-shaped host that is not in
+/// that forge's URL shape, here a `gitlab`-shaped host that is not in
 /// the built-in table.
 #[test]
 fn self_hosted_host_is_scanned() {

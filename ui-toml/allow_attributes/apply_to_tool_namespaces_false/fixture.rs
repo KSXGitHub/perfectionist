@@ -6,19 +6,19 @@
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, reason = "ui fixture")]
 
-// Bad — `clippy::*` is always rewriteable.
+// Bad: `clippy::*` is always rewriteable.
 #[allow(clippy::too_many_arguments, reason = "matches upstream signature")]
 fn clippy_still_rewritten() {}
 
-// Bad — `rustdoc::*` is always rewriteable.
+// Bad: `rustdoc::*` is always rewriteable.
 #[allow(rustdoc::broken_intra_doc_links, reason = "links resolve downstream")]
 fn rustdoc_still_rewritten() {}
 
-// Bad — a built-in lint is always rewriteable.
+// Bad: a built-in lint is always rewriteable.
 #[allow(non_snake_case, reason = "external API uses camelCase")]
 fn builtin_still_rewritten() {}
 
-// Good — `perfectionist::*` is left alone when tool namespaces are off.
+// Good: `perfectionist::*` is left alone when tool namespaces are off.
 #[allow(perfectionist::single_letter_function_param, reason = "math convention")]
 fn perfectionist_left_alone(x: i32) -> i32 {
     x

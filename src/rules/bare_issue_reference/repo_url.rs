@@ -1,12 +1,13 @@
-//! Parse a repository URL — in any form a user is likely to clone or
-//! paste — into the canonical web base `https://{host}/{owner}/{repo}`
+//! Parse a repository URL, in any form a user is likely to clone or
+//! paste, into the canonical web base
+//! `https://{host}/{owner}/{repo}`
 //! that `bare_issue_reference` builds issue / PR links from.
 //!
 //! These input shapes are accepted:
 //!
-//! * an HTTP(S) URL — `https://host/owner/repo[.git]`
-//! * an `ssh://` URL — `ssh://[user@]host[:port]/owner/repo[.git]`
-//! * the scp-like shorthand — `[user@]host:owner/repo[.git]`
+//! * an HTTP(S) URL: `https://host/owner/repo[.git]`
+//! * an `ssh://` URL: `ssh://[user@]host[:port]/owner/repo[.git]`
+//! * the scp-like shorthand: `[user@]host:owner/repo[.git]`
 //!
 //! The `git@` userinfo, any `:port`, an optional `.git` suffix, and
 //! surrounding slashes are all dropped. An HTTP(S) input keeps its own

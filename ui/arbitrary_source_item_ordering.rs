@@ -104,7 +104,7 @@ mod trailing_cfg_imports {
 }
 
 // Good: being excused, a gated import does not close the leading section
-// either — the `pub mod` below it is still in the right place.
+// either, so the `pub mod` below it is still in the right place.
 mod cfg_import_does_not_pin {
     #[cfg(unix)]
     use std::os::unix::ffi::OsStrExt;

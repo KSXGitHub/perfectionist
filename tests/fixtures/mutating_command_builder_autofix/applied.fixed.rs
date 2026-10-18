@@ -3,7 +3,7 @@
 // between the pair: `applied.rs` holds the shapes as written and
 // `applied.fixed.rs` as the fixer leaves them, and the test compares
 // the fixer's output against the latter byte for byte, so the two files
-// have to differ by exactly the rewrite and by nothing else -- this
+// have to differ by exactly the rewrite and by nothing else, so this
 // header included.
 //
 // What that test asserts is the rule's own decision, not the
@@ -73,8 +73,8 @@ pub fn boxed_chain() {
         .status();
 }
 
-// Every link at once. Only the head is flagged -- each later one takes
-// the `&mut Command` the previous returned -- but they move together,
+// Every link at once. Only the head is flagged, each later one taking
+// the `&mut Command` the previous returned, but they move together,
 // for the reason `shadowed_next_link` shows. The trailing `status`
 // takes `&mut self` and autorefs from the owned command, which is the
 // form a person writes.

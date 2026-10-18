@@ -110,7 +110,7 @@ fn does_not_flag_external_test_module() {
 /// A `mod tests;` gated by a *compound* cfg that still implies test
 /// (`#[cfg(all(test, unix))]`) is an external test-module declaration
 /// just like a bare `#[cfg(test)]`, so it must be recognised as test
-/// and stay neutral — never re-flagged as inline test code living in a
+/// and stay neutral, never re-flagged as inline test code living in a
 /// production file. This is the false positive of
 /// <https://github.com/KSXGitHub/perfectionist/issues/187>: a `use`
 /// in the test file would otherwise count as production and the
@@ -141,8 +141,9 @@ fn does_not_flag_external_module_gated_by_compound_cfg() {
     );
 }
 
-/// A compound cfg that does *not* imply test — `#[cfg(any(test,
-/// unix))]` — gates real production code: the item is compiled in a
+/// A compound cfg that does *not* imply test, such as
+/// `#[cfg(any(test, unix))]`, gates real production code: the item is
+/// compiled in a
 /// non-test `unix` build too, so it is not test-only. The rule must
 /// descend into such a module and count its body as production, never
 /// charge it against the inline-test budget. With the `any`/`all`
@@ -184,8 +185,8 @@ fn does_not_flag_production_module_gated_by_any_test_cfg() {
 /// Nested composition: `#[cfg(all(any(test, unix), unix))]` gates real
 /// production code. The inner `any(test, unix)` does *not* imply test
 /// (it holds on a non-test `unix` build), so neither does the enclosing
-/// `all(...)` — the module is production and must be descended into, not
-/// charged against the inline-test budget. This locks in the nested
+/// `all(...)`, so the module is production and must be descended into
+/// rather than charged against the inline-test budget. This locks in the nested
 /// case the `entry_implies_test` docstring claims: before the fix, both
 /// `all` and `any` reduced with `.any(... mentions test)`, so the inner
 /// `any(test, unix)` was read as test-only and propagated up through the
@@ -300,7 +301,7 @@ fn exempts_all_test_crate_root() {
 }
 
 /// A file whose only production item is produced by a *user* macro
-/// expansion must still fail the all-test exemption — the expanded
+/// expansion must still fail the all-test exemption. The expanded
 /// production item is counted (charged to the macro's call-site file),
 /// so an over-budget inline test block there is flagged.
 #[test]
@@ -361,7 +362,7 @@ fn help_names_the_actual_inline_module() {
 
 /// A small integration-test body with a top-level `use` and helper
 /// `fn` (both counted as production, which defeats the all-test-file
-/// exemption) followed by 60 `#[test] fn`s — well over the inline
+/// exemption) followed by 60 `#[test] fn`s, well over the inline
 /// budget. Reused by the flat and subdirectory layout tests below.
 fn integration_test_body() -> String {
     let mut body = String::from("use std::cmp::max;\n\nfn helper() -> i32 {\n    max(1, 0)\n}\n\n");
@@ -376,7 +377,7 @@ fn integration_test_body() -> String {
 /// Integration tests live in their own crate under `tests/`, which a
 /// `--all-targets` run hands the rule too. Their top-level `#[test]`
 /// functions are the target itself, not unit tests misplaced inside a
-/// production file, so the rule must not flag them — even when the
+/// production file, so the rule must not flag them, even when the
 /// test footprint dwarfs the inline budget and the file also carries
 /// top-level `use`s and helper `fn`s the rule would otherwise count as
 /// production.
@@ -447,8 +448,9 @@ fn does_not_flag_integration_test_named_main() {
 
 /// Positive control for the integration-test cases above: the same body
 /// in a `src/`-rooted module *is* over budget and flagged. Without it,
-/// those negatives could pass vacuously — a missing warning is otherwise
-/// indistinguishable from the rule never running on the crate.
+/// those negatives could pass vacuously, a missing warning being
+/// otherwise indistinguishable from the rule never running on the
+/// crate.
 #[test]
 fn flags_equivalent_body_in_src_module() {
     let (_temp, stderr, success) = run_project_with_config(
@@ -517,7 +519,7 @@ fn external_only_flags_inline_tests() {
 /// `inline_max_fraction_of_file` adds a relative cap on top of the
 /// always-active absolute one. The fixture's inline tests sit well
 /// under the default 50-line `inline_max_lines`, so only the fraction
-/// can flag them — and the diagnostic uses the fraction-specific
+/// can flag them, and the diagnostic uses the fraction-specific
 /// wording rather than the line-count one.
 #[test]
 fn inline_max_fraction_of_file_flags_a_short_but_test_heavy_file() {

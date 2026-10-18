@@ -1,16 +1,16 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! A rule that inspects the *source-level* layout of items — the
-//! blank-line grouping of a module's `use` statements, say, or the
-//! text of its doc comments — hits a wall in a pre-expansion
-//! `EarlyLintPass`: an out-of-line `mod foo;` module is
+//! A rule that inspects the *source-level* layout of items hits a
+//! wall in a pre-expansion `EarlyLintPass`. The blank-line grouping of
+//! a module's `use` statements and the text of its doc comments are
+//! two such layouts: an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` there (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
 //! separate-file submodule.
 //!
 //! Running in a `LateLintPass` and re-parsing each module file instead
-//! reaches every submodule while keeping `#[cfg(...)]` gates intact —
-//! parsing does not strip cfg, unlike the post-expansion AST, which is
+//! reaches every submodule while keeping `#[cfg(...)]` gates intact.
+//! Parsing does not strip cfg, unlike the post-expansion AST, which is
 //! why the pre-expansion pass existed in the first place.
 //!
 //! [`parse_crate_module_files`] is the re-parse itself;
@@ -46,24 +46,25 @@ pub(crate) type SpanRange = (BytePos, BytePos);
 ///
 /// `live_module_spans` is the body [`SpanRange`] of every module live in
 /// the compiled crate (each inline `mod m { ... }` and out-of-line
-/// `mod foo;`). A re-parse keeps cfg-disabled modules — parsing does not
-/// strip cfg — so a caller walking the re-parsed AST must consult this
-/// set before descending into an inline module, or it would lint a
+/// `mod foo;`). A re-parse keeps cfg-disabled modules, parsing not
+/// stripping cfg, so a caller walking the re-parsed AST must consult
+/// this set before descending into an inline module, or it would lint a
 /// `#[cfg(FALSE)] mod m { ... }` (e.g. `#[cfg(test)] mod tests`) that is
 /// not part of the build. The result is a tuple rather than a named
 /// struct because a struct field of type [`Vec<Crate>`] makes rustdoc's
 /// auto-trait synthesis overflow on the AST's recursive type graph.
 ///
 /// The throwaway [`ParseSess`] shares the real [`SourceMap`], so every
-/// span in the returned ASTs — and any suggestion built from them —
+/// span in the returned ASTs, and any suggestion built from them,
 /// points at the real files. Its [`DiagCtxt`] is wired to a
 /// [`SilentEmitter`], so a file that does not parse as a standalone
 /// module is skipped rather than surfacing parse errors.
 ///
 /// Re-parsing is scoped to files that actually back a module in the HIR
 /// module tree, which excludes `include!` fragments, `include_str!`-ed
-/// `.rs` data, and proc-macro-synthesised modules — none of which should
-/// be re-parsed and flagged as if the user wrote them as a module.
+/// `.rs` data, and proc-macro-synthesised modules, none of which
+/// should be re-parsed and flagged as if the user wrote them as a
+/// module.
 pub(crate) fn parse_crate_module_files(
     lint_context: &LateContext<'_>,
 ) -> (Vec<Crate>, HashSet<SpanRange>) {
@@ -116,7 +117,7 @@ pub(crate) fn parse_crate_module_files(
 /// The on-disk source files that back a module in this crate's HIR
 /// module tree, keyed by [`FileName`].
 ///
-/// This is the set of files the user actually wrote as Rust modules —
+/// This is the set of files the user actually wrote as Rust modules:
 /// the crate root and every out-of-line `mod foo;` file. It deliberately
 /// excludes everything that lands in the source map without being a
 /// module the user authored: `include_str!` / `include_bytes!` data
@@ -125,7 +126,7 @@ pub(crate) fn parse_crate_module_files(
 /// proc-macro-synthesised `<proc-macro source>` modules.
 ///
 /// Every rule that tokenizes the local crate's files as Rust must
-/// filter the source map through this set — whether it goes through
+/// filter the source map through this set, whether it goes through
 /// the shared [`crate::comment_walk::walk_local_comments`] walker or
 /// runs its own token loop. Otherwise a bare `http(s)://` URL inside
 /// an `include_str!`-ed YAML file lexes as a `//` line comment and
@@ -148,7 +149,7 @@ pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<File
 /// Re-parse every on-disk source file that backs a module in the crate's
 /// HIR module tree, calling `handle` once with each successfully-parsed
 /// module as a standalone [`Crate`]. Within a single file, only that
-/// file's own items are present — an out-of-line `mod foo;` it declares
+/// file's own items are present. An out-of-line `mod foo;` it declares
 /// is `ModKind::Unloaded` in a fresh parse, but `foo`'s file appears in
 /// the source map in its own right and is handled by its own `handle`
 /// call, so a caller's walk stays within one file at a time.
@@ -162,8 +163,8 @@ pub(crate) fn crate_module_files(lint_context: &LateContext<'_>) -> HashSet<File
 /// The module tree is enumerated from the crate root and the crate's
 /// *free* items, so a `mod` declared at module scope (nested to any
 /// depth) is covered, but an out-of-line module declared inside a
-/// function body — a `#[path]`-only construct, since a body `mod foo;`
-/// does not otherwise resolve to a file — is not.
+/// function body is not. Such a module is a `#[path]`-only construct,
+/// since a body `mod foo;` does not otherwise resolve to a file.
 pub(crate) fn for_each_module_file(cx: &LateContext<'_>, mut handle: impl FnMut(&Crate)) {
     let (crates, _live_module_spans) = parse_crate_module_files(cx);
     for krate in &crates {
@@ -192,12 +193,12 @@ fn record_module_file(
 }
 
 /// Re-parse a module's source file from its already-loaded text. Returns
-/// `None` (silently discarding buffered diagnostics — `parse_psess` is
-/// wired to a [`SilentEmitter`]) when the file does not parse as a
+/// `None` (silently discarding buffered diagnostics, `parse_psess`
+/// being wired to a [`SilentEmitter`]) when the file does not parse as a
 /// standalone module. The shared source map already holds this file and
 /// deduplicates by name, so the parser reuses the loaded [`SourceFile`]
-/// (preserving the real spans) and the passed source text is ignored —
-/// hence the empty string, which avoids both a disk re-read and a clone
+/// (preserving the real spans) and the passed source text is ignored.
+/// Hence the empty string, which avoids both a disk re-read and a clone
 /// of the whole file.
 fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
     // Load-bearing: a `SourceFile` without in-memory source makes the

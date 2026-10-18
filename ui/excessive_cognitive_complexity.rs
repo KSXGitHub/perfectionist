@@ -9,7 +9,7 @@
 
 fn work() {}
 
-// Bad: one `match` with a loop and a nested branch inside — 16 with
+// Bad: one `match` with a loop and a nested branch inside, so 16 with
 // the default limit of 15.
 fn over_the_limit(kind: u8, items: &[u8], flag: bool) -> u32 {
     let mut total = 0;
@@ -125,7 +125,7 @@ fn built_from_a_macro(flag: bool) {
     branchy!(flag);
 }
 
-// Bad: a method body is measured like a free function's — 16.
+// Bad: a method body is measured like a free function's, so 16.
 struct Machine;
 
 impl Machine {

@@ -15,18 +15,18 @@ use rustc_span::{Span, Symbol};
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a getter — an inherent method taking `&self` whose whole
+    /// Flags a getter, an inherent method taking `&self` whose whole
     /// body is one field of `self` copied out through `clone`,
-    /// `to_owned`, `to_string`, `to_vec`, `to_path_buf`, or
-    /// `to_os_string` — and asks for the borrowed form instead: `&str`
+    /// `to_owned`, `to_string`, `to_vec`, `to_path_buf` or
+    /// `to_os_string`, and asks for the borrowed form instead: `&str`
     /// for a `String` field, `&Path` for a `PathBuf`, `&OsStr` for an
     /// `OsString`, `&CStr` for a `CString`, `&[T]` for a `Vec<T>`,
     /// whatever the inner type borrows as under an `Option` or a `Box`,
     /// and `&T` otherwise.
     ///
     /// The call has to reproduce the field's own type for a borrow to
-    /// serve in its place. So a `Copy` field is left alone — returning
-    /// it by value is the borrowed form's equal — and so is a call that
+    /// serve in its place. So a `Copy` field is left alone, returning
+    /// it by value being the borrowed form's equal, and so is a call that
     /// renders the field rather than copying it, such as `to_string` on
     /// a numeric field, where no borrow of the field is a `String`.
     ///
@@ -142,11 +142,11 @@ struct Config {
     /// a getter whatever this says, so every entry here speaks only
     /// about the names left over. Each takes one of four forms:
     ///
-    /// - `*` — every other name is a getter.
-    /// - `prefix_*` — every other name starting with `prefix_` is a
+    /// - `*`: every other name is a getter.
+    /// - `prefix_*`: every other name starting with `prefix_` is a
     ///   getter.
-    /// - `!*` — no other name is a getter.
-    /// - `!prefix_*` — no other name starting with `prefix_` is a
+    /// - `!*`: no other name is a getter.
+    /// - `!prefix_*`: no other name starting with `prefix_` is a
     ///   getter.
     ///
     /// The first entry is `*` or `!*`, which says what every other name

@@ -139,7 +139,7 @@ fn reference_scope_crate_drops_a_dependency() {
 }
 
 /// `reference_scope = "third_party"` flags the same dependency
-/// reference (`Reach::ThirdPartyCrate`) alongside the first-party one —
+/// reference (`Reach::ThirdPartyCrate`) alongside the first-party one,
 /// the only behavioural difference from `crate`.
 #[test]
 fn reference_scope_third_party_flags_a_dependency() {

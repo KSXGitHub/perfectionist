@@ -14,14 +14,14 @@ use std::path::{Component, Path};
 
 /// Cargo's crate-name prefix for a build script. Cargo names the
 /// build-script target `build-script-<file stem>`, which reaches rustc
-/// as `--crate-name build_script_<file stem>` — `build_script_build`
-/// for the default `build.rs`, `build_script_mk` for a `build = "mk.rs"`
-/// package. Keying off the prefix rather than the file name is what
-/// covers the renamed case.
+/// as `--crate-name build_script_<file stem>`, so `build_script_build`
+/// for the default `build.rs` and `build_script_mk` for a package whose
+/// `build` key names `mk.rs`. Keying off the prefix rather than the
+/// file name is what covers the renamed case.
 ///
 /// This is a convention, not a stability guarantee, and it is the
 /// weaker of [`classify`]'s two signals: Cargo could name build-script
-/// crates something else, and a library may carry the prefix itself —
+/// crates something else, and a library may carry the prefix itself:
 /// `build-script-cfg` and `build_script_file_gen` are published. The
 /// crate root decides where it can; the prefix answers what is left.
 const BUILD_SCRIPT_CRATE_NAME_PREFIX: &str = "build_script_";
@@ -29,13 +29,13 @@ const BUILD_SCRIPT_CRATE_NAME_PREFIX: &str = "build_script_";
 /// Which Cargo target the crate under compilation is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CargoTarget {
-    /// An integration test — a crate rooted in `tests/`.
+    /// An integration test, a crate rooted in `tests/`.
     IntegrationTest,
-    /// A benchmark — a crate rooted in `benches/`.
+    /// A benchmark, a crate rooted in `benches/`.
     Benchmark,
-    /// An example — a crate rooted in `examples/`.
+    /// An example, a crate rooted in `examples/`.
     Example,
-    /// A build script — `build.rs`, or whatever `Cargo.toml`'s `build`
+    /// A build script: `build.rs`, or whatever `Cargo.toml`'s `build`
     /// key names.
     BuildScript,
     /// The package's library or one of its binaries: the code the
@@ -46,7 +46,7 @@ pub(crate) enum CargoTarget {
 impl CargoTarget {
     /// Whether the whole crate is test code. An integration test and a
     /// benchmark are compiled under `cfg(test)` and exist only to
-    /// exercise the library, so every item in them is test code —
+    /// exercise the library, so every item in them is test code,
     /// unlike a library's own unit-test build, where `#[cfg(test)]` is
     /// what separates the test items from the production ones.
     ///
@@ -59,7 +59,7 @@ impl CargoTarget {
     }
 
     /// Whether the crate is one of Cargo's separate non-library
-    /// targets — an integration test, benchmark, or example.
+    /// targets: an integration test, benchmark, or example.
     pub(crate) fn is_separate_target(self) -> bool {
         matches!(
             self,
@@ -100,15 +100,15 @@ fn classify(crate_name: &str, root: Option<&Path>) -> CargoTarget {
 /// than a separate target's: `lib.rs` or `main.rs` directly under a
 /// `src`, or anything under that `src`'s `bin` subdirectory.
 ///
-/// Matching Cargo's layouts is what tells `src/bin/tests/main.rs` — a
-/// binary whose own name happens to match a target directory — from
+/// Matching Cargo's layouts is what tells `src/bin/tests/main.rs`, a
+/// binary whose own name happens to match a target directory, from
 /// `src/tests/it.rs`, an integration test that a `[[test]] path = ...`
 /// entry put under `src/`. Scanning for a bare `src` component would
 /// read both as the package's own, and would also let a checkout under
 /// a directory called `src` swallow every target below it.
 fn is_package_source(root: &Path) -> bool {
     // Anchor on the *last* `src`, so an ancestor that happens to be
-    // named `src` — a checkout under `~/src`, a `WORKDIR /src` — does
+    // named `src`, a checkout under `~/src` or a `WORKDIR /src`, does
     // not move the anchor off the package's own.
     let components: Vec<_> = root.components().map(Component::as_os_str).collect();
     let Some(src) = components

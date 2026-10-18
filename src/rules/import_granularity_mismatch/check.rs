@@ -22,7 +22,7 @@ pub(super) fn is_compliant(
 
 /// `item` style: every statement imports exactly one flat leaf, so its
 /// top-level tree is a plain path (`Simple`) or a glob (`Glob`). A brace
-/// group (`Nested`) carries more than one leaf — or redundant braces —
+/// group (`Nested`) carries more than one leaf, or redundant braces,
 /// and must be split. The one exception is the irreducible single
 /// `self` (`use a::b::{self}`): it is one leaf, and `self` cannot be
 /// written without braces, so no item-style rewrite can remove them.
@@ -77,7 +77,7 @@ fn is_module_shaped(stmt: &StmtInfo) -> bool {
 }
 
 /// `crate` style: every statement is maximally collapsed, descends from
-/// a single crate root, and no two statements share a root — except a
+/// a single crate root, and no two statements share a root, except a
 /// root imported as a bare crate item, which can't be folded with its
 /// own deeper imports without an unsafe synthesised `self` (see below).
 fn crate_compliant(self_merge: Option<SelfMerge>, stmts: &[&StmtInfo]) -> bool {
@@ -107,7 +107,7 @@ fn crate_compliant(self_merge: Option<SelfMerge>, stmts: &[&StmtInfo]) -> bool {
     // `use foo;` binds `foo` in every namespace it exists in, so it is
     // not interchangeable with the module-only `self`. There is no safe
     // one-`use`-per-root shape, so such a root is left split across
-    // statements rather than flagged — the same reasoning that keeps
+    // statements rather than flagged, the same reasoning that keeps
     // `is_collapsed` from folding `{thing, thing::Opts}` inside a single
     // brace. See <https://github.com/KSXGitHub/perfectionist/issues/186>.
     let bare_item_roots: HashSet<&str> = stmts

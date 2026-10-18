@@ -10,13 +10,14 @@ use std::collections::HashSet;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Counts the distinct method calls in one expression chain —
-    /// `a.b().c().d()` is three — and flags the chain when the count
-    /// is above `max_calls` (default `5`).
+    /// Counts the distinct method calls in one expression chain, so
+    /// that `a.b().c().d()` is three, and flags the chain when the
+    /// count is above `max_calls` (default `5`).
     ///
     /// Only method calls on the chain's spine count: the receiver of
     /// each call, down to the value the chain starts from. A run of the
-    /// same method — `.arg("-v").arg("build").arg(path)` — counts once,
+    /// same method counts once, as in
+    /// `.arg("-v").arg("build").arg(path)`,
     /// so a builder is measured by its distinct calls. A `?` or an
     /// `.await` between two calls neither counts nor breaks the chain.
     /// A field access (`self.items.iter()` starts at `self.items`) and
@@ -31,7 +32,7 @@ declare_tool_lint! {
     /// Where a chain stops being readable is a matter of taste, and a
     /// codebase written around iterator pipelines will disagree with
     /// one written around named intermediates. The rule is therefore
-    /// inactive by default — enable it per crate by adding to
+    /// inactive by default. Enable it per crate by adding to
     /// `dylint.toml`:
     ///
     /// ```toml
@@ -92,14 +93,14 @@ const CONFIG_KEY: &str = "perfectionist::overly_long_method_chain";
 /// spare.
 const DEFAULT_MAX_CALLS: usize = 5;
 
-/// What to do. The count is a stand-in for the real complaint -- the
-/// chain's intermediate values have no names -- so the help asks for a
-/// name rather than for a shorter chain, and says what the name should
-/// be about. Naming the remedy after the cut (`an intermediate
+/// What to do. The count is a stand-in for the real complaint, which
+/// is that the chain's intermediate values have no names, so the help
+/// asks for a name rather than for a shorter chain, and says what the
+/// name should be about. Naming the remedy after the cut (`an intermediate
 /// result`) would hand the reader the very name the rule is trying to
 /// prevent.
-const NAMING_HELP: &str = "give a stage a name — bind it to a `let`, or move a run of stages \
-                           into a function — named for the value it produces, not for the \
+const NAMING_HELP: &str = "give a stage a name: bind it to a `let`, or move a run of stages \
+                           into a function, named for the value it produces, not for the \
                            stages it replaces";
 
 /// How to tell the fix did not work, in the shape `overly_long_file`
@@ -142,7 +143,7 @@ pub struct OverlyLongMethodChain {
 impl_lint_pass!(OverlyLongMethodChain => [OVERLY_LONG_METHOD_CHAIN]);
 
 impl Register for rule::OverlyLongMethodChain {
-    /// Off by default — enable it in `dylint.toml` via the crate-wide
+    /// Off by default. Enable it in `dylint.toml` via the crate-wide
     /// `[perfectionist] enable = ["overly_long_method_chain"]` (or the
     /// `[[perfectionist.enable]]` array-of-tables form).
     const DEFAULT_STATE: DefaultState = DefaultState::Inactive;

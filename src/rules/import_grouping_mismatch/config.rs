@@ -91,16 +91,17 @@ pub(super) struct Config {
     // read only when the rule is enabled (see `register_pass`), so a
     // disabled rule never needs any of it.
     /// The grouping style to enforce: `single_block` or `multi_block`. It
-    /// has no default — a project enabling the rule states which layout
-    /// it wants — so it must be set when the rule is enabled.
+    /// has no default, a project enabling the rule stating which layout
+    /// it wants, so it must be set when the rule is enabled.
     pub(super) style: Style,
     /// How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
-    /// Like `style` it has no default — a project enabling the rule states
-    /// how it wants re-exports laid out — so it must be set when the rule
-    /// is enabled. `grouped` pulls every re-export into one contiguous
+    /// Like `style` it has no default, a project enabling the rule
+    /// stating how it wants re-exports laid out, so it must be set when
+    /// the rule is enabled. `grouped` pulls every re-export into one contiguous
     /// leading block above all private imports; `split` breaks that block
-    /// into two — submodule re-exports (`pub use child::Item;`) above alias
-    /// re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
+    /// into two, submodule re-exports (`pub use child::Item;`) above
+    /// alias re-exports (`pub use Item;` / `pub use Item as Alias;`);
+    /// `by_path`
     /// gives re-exports no dedicated block at all, classifying each by its
     /// path like a private import.
     pub(super) reexports: ReexportGrouping,
@@ -110,9 +111,9 @@ pub(super) struct Config {
     pub(super) order: Vec<Group>,
     /// How `#[cfg(...)]`-gated imports are grouped. Defaults to
     /// `trailing`: a cfg-gated import forms its own trailing block under
-    /// both styles. Set `merge` to keep cfg-gated imports with the rest —
-    /// in their natural path group under `multi_block`, or in the single
-    /// block under `single_block`.
+    /// both styles. Set `merge` to keep cfg-gated imports with the
+    /// rest, in their natural path group under `multi_block` or in the
+    /// single block under `single_block`.
     #[serde(default)]
     pub(super) cfg_block_handling: CfgBlockHandling,
 }
@@ -136,7 +137,7 @@ impl Config {
     }
 
     /// Whether re-exports are pulled into their own leading region rather
-    /// than classified by path — true for `grouped` and `split`, false
+    /// than classified by path, true for `grouped` and `split`, false
     /// for `by_path`. A re-export in such a region outranks its cfg gating,
     /// so it never joins the trailing cfg block.
     pub(super) fn separates_reexports(&self) -> bool {
@@ -144,7 +145,7 @@ impl Config {
     }
 
     /// Rank of the `std` / `internal` / `thirdparty` group `group`
-    /// within the configured `order` — its zero-based position, used to
+    /// within the configured `order`, its zero-based position, used to
     /// compare two statements' groups. A group absent from `order`
     /// (only possible with a partial user-supplied list) sorts after
     /// every listed group but before the trailing cfg group.

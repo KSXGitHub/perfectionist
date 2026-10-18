@@ -4,8 +4,8 @@
 //! - The rule's headline case, `#[cfg(test)] mod tests { use super::*; }`,
 //!   is cfg-gated. It is only part of the compiled crate under the
 //!   unit-test target, so it is reachable only by re-parsing each module
-//!   file in a late pass while consulting `live_module_spans` — the same
-//!   trap the sibling `import_grouping_mismatch` rule documents.
+//!   file in a late pass while consulting `live_module_spans`, the
+//!   same trap the sibling `import_grouping_mismatch` rule documents.
 //! - A glob in a separate-file `mod foo;` submodule, which a
 //!   pre-expansion `EarlyLintPass` would skip entirely (the file is
 //!   `ModKind::Unloaded` until macro expansion).
@@ -28,9 +28,9 @@ const SEPARATE_GLOB: &str = "use std::collections::*;\n";
 
 /// The rule's reason for existing: AI-generated code routinely opens a
 /// unit-test module with `use super::*;`, and this rule is meant to flag
-/// exactly that. This is the canonical motivating fixture — a single
+/// exactly that. This is the canonical motivating fixture, a single
 /// `#[cfg(test)] mod tests { use super::*; }` with the default
-/// configuration — kept on its own so the headline case has an explicit,
+/// configuration, kept on its own so the headline case has an explicit,
 /// minimal spec that can't be weakened by an unrelated change to the
 /// bundled test below.
 #[test]
@@ -57,7 +57,7 @@ fn flags_the_motivating_use_super_glob_in_unit_tests() {
 }
 
 /// Under `--all-targets` the unit-test target is compiled, so the
-/// `#[cfg(test)] mod tests { use super::*; }` is live and flagged — and
+/// `#[cfg(test)] mod tests { use super::*; }` is live and flagged, and
 /// the glob in the separate-file submodule is flagged too.
 #[test]
 fn flags_cfg_test_glob_and_separate_file() {

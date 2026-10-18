@@ -3,7 +3,7 @@
 //! A chain is rewritten whole or not at all, and that is the whole of
 //! why it is safe. Each later link took the `&mut Command` the previous
 //! one returned, so renaming only the head leaves the rest calling
-//! std's setters against a receiver that is now owned -- which is how a
+//! std's setters against a receiver that is now owned. That is how a
 //! by-value method of the author's own comes to be found before the
 //! inherent one, compiling, with nothing in the diff to show it.
 //! Renaming every link takes that name out of play.
@@ -20,8 +20,8 @@
 //! rewrite is built, for every link of the chain rather than the head
 //! alone. And `CommandExtra` has to be imported before a rewrite is
 //! built, so a competing `with_*` in scope for `Command` leaves two
-//! applicable candidates and the renamed call is `E0034` -- an error
-//! the fixer reverts, rather than something that quietly resolves
+//! applicable candidates and the renamed call is `E0034`, an error
+//! the fixer reverts rather than something that quietly resolves
 //! elsewhere.
 
 use super::probe::finds_a_trait_method;
@@ -57,8 +57,8 @@ pub(super) enum Rewrite {
     Withhold {
         /// What stopped the rewrite.
         reason: String,
-        /// Whether `reason` is the landing's own hazard -- the
-        /// trailing call re-resolving -- which the diagnostic states
+        /// Whether `reason` is the landing's own hazard, the
+        /// trailing call re-resolving, which the diagnostic states
         /// itself and would otherwise state twice.
         is_the_landing: bool,
     },
@@ -125,7 +125,7 @@ fn edits<'tcx>(cx: &LateContext<'tcx>, call: &'tcx Expr<'tcx>, inputs: &Inputs) 
         }
         let Some(by_value_form) = setter::by_value_form(method.ident.name) else {
             // Not a setter, so it ends the chain and takes the owned
-            // command by autoref, as a hand-written call would -- but
+            // command by autoref, as a hand-written call would, but
             // only where nothing else of that name is found first.
             let name = method.ident.name;
             if finds_a_trait_method(cx, parent, name) {

@@ -9,9 +9,10 @@
 
 ## What it does
 
-Counts the lines of code in each source file of the crate — the
-crate root and every `mod name;` that lives in a file of its own
-— and flags a file with more than `max_lines` (default `500`).
+Counts the lines of code in each source file of the crate, the
+crate root and every `mod name;` that lives in a file of its
+own, and flags a file with more than `max_lines` (default
+`500`).
 
 A line counts when it holds anything other than whitespace and
 comments, so blank lines, comment-only lines, doc comments, and
@@ -19,10 +20,10 @@ the lines a block comment spans are free. An inline
 `mod name { ... }` is part of the file that holds it, not a file
 of its own.
 
-A file of test code — a `mod tests;` behind `#[cfg(test)]`, or
-any file of an integration-test or benchmark target — is
-measured like any other; set `exempt_tests` to leave it
-alone.
+A file of test code is measured like any other, whether a
+`mod tests;` behind `#[cfg(test)]` or any file of an
+integration-test or benchmark target; set `exempt_tests` to
+leave it alone.
 
 ## Why restrict this?
 

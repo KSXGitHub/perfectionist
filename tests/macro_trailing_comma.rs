@@ -21,7 +21,7 @@ struct RuleConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     // A single-entry map gets serialised by `toml` as a top-level
-    // table keyed by `LINT_NAME` — the same shape `dylint_linting`'s
+    // table keyed by `LINT_NAME`, the same shape `dylint_linting`'s
     // `config_or_default` reads from `dylint.toml`. The `::` in the
     // key is quoted automatically.
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
@@ -87,7 +87,7 @@ fn ignore_wins_over_extra_macros_for_the_same_macro() {
 /// Two coverage gaps in one fixture: a multi-segment `ignore`
 /// entry (only `extra_macros`'s multi-segment branch was
 /// previously exercised), and `parse_path`'s per-segment
-/// whitespace trim — the literal `"  std::vec  "` should still
+/// whitespace trim, since the literal `"  std::vec  "` should still
 /// match a `std::vec!(...)` invocation.
 #[test]
 fn ignore_supports_qualified_path_and_whitespace_padding() {

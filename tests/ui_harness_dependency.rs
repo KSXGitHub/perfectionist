@@ -4,9 +4,9 @@
 //! reaches `DYLINT_TOML` directly.
 //!
 //! While the dependency is absent the compiler enforces that on its
-//! own. This test covers the step that would quietly undo it — the
-//! dependency restored to a manifest, say by a merge resolved against
-//! a branch predating its removal — and says why it was moved, where
+//! own. This test covers the step that would quietly undo it, the
+//! dependency restored to a manifest by a merge resolved against
+//! a branch predating its removal, and says why it was moved, where
 //! the compiler would only stop reporting an unknown crate.
 
 use std::fs;
@@ -175,9 +175,9 @@ fn every_dependency_form_that_reaches_the_harness_is_found() {
 /// would pass just as happily on a function that always reports a hit.
 ///
 /// The `[workspace.dependencies]` entry names the harness on purpose.
-/// That table is a catalogue rather than a dependency list — nothing
+/// That table is a catalogue rather than a dependency list: nothing
 /// reaches a member's extern prelude until the member opts in with
-/// `workspace = true` — so an entry no member claims must not be
+/// `workspace = true`, so an entry no member claims must not be
 /// reported.
 #[test]
 fn a_manifest_without_the_harness_reports_nothing() {

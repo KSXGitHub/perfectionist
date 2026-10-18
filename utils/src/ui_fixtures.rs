@@ -10,8 +10,9 @@
 //! space on each rendered suggestion line that inserts a blank line,
 //! and a blank line at the very end. compiletest can rewrite all of
 //! that, but only through per-file `// normalize-stderr-test` header
-//! directives — each a regex applied to the driver's actual output
-//! before it is diffed against the committed `.stderr`. Rather than
+//! directives. Each directive is a regex applied to the driver's
+//! actual output before it is diffed against the committed `.stderr`.
+//! Rather than
 //! commit those directives into every fixture,
 //! [`copy_fixtures_with_directives`] injects them into a temporary
 //! copy at test time.
@@ -77,14 +78,14 @@ impl FixtureCopy {
 }
 
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
-/// [`TempDir`] — reproducing `relative` inside it — and prepend
+/// [`TempDir`], reproducing `relative` inside it, then prepend
 /// [`NORMALIZE_STDERR_DIRECTIVES`] to every `.rs` that has a sibling
 /// `.stderr`. The returned guard's `FixtureCopy::path` is the
 /// `src_base` the UI harness reads, and the guard has to outlive the
 /// run, which is why [`crate::ui_test`] holds it alongside the test.
 ///
 /// Only `.rs` files paired with a `.stderr` are touched, so `auxiliary/`
-/// crates and `include!`-ed sources are copied verbatim — the injected
+/// crates and `include!`-ed sources are copied verbatim. The injected
 /// directives on the paired fixture already rewrite that fixture's whole
 /// output, wherever a span originates.
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
@@ -97,8 +98,8 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     // onto itself and truncate it, or onto whatever `..` reaches. So
     // every component of the fixture path has to be an ordinary name,
     // which also rejects the two arguments being passed the wrong way
-    // round — how that path is actually reached, `CARGO_MANIFEST_DIR`
-    // being absolute.
+    // round. That is how such a path is actually reached,
+    // `CARGO_MANIFEST_DIR` being absolute.
     assert!(
         manifest_dir.is_absolute(),
         "the manifest dir must be absolute, got {manifest_dir:?}",

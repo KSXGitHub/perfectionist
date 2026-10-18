@@ -8,7 +8,7 @@
 )]
 
 // Under `style = "single_block"` with `cfg_block_handling = "merge"`:
-// cfg-gated imports are not separated. Every import — cfg-gated or not —
+// cfg-gated imports are not separated. Every import, cfg-gated or not,
 // belongs in one contiguous block with no blank lines.
 
 // Bad: a blank line carves the cfg-gated import into its own block;

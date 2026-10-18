@@ -50,7 +50,7 @@ fn library_and_binary_roots_are_recognised() {
 }
 
 /// The default `build.rs` and a `build = "mk.rs"` rename, plus
-/// the absence of a crate root — a build script is recognised by
+/// the absence of a crate root. A build script is recognised by
 /// Cargo's crate-name prefix, not by where its root sits.
 #[test]
 fn build_scripts_are_recognised_by_crate_name() {

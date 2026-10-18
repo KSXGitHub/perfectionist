@@ -10,7 +10,7 @@
 ## What it does
 
 Flags bare `#NNN` issue / pull-request references in doc
-comments (`///`, `//!`) — and, when opted in, in plain `//`
+comments (`///`, `//!`) and, when opted in, in plain `//`
 line comments. The autofix rewrites the reference; the
 `doc_comment_form` knob selects the shape (inline
 `[#123](URL)`, reference `[#123]`, a bare URL, or a `<URL>`
@@ -20,8 +20,8 @@ A bare `#NNN` is deeply ambiguous: it might be an issue, a
 pull request, a colour like `#123`, or any other numbered
 item, so no suggestion is ever `MachineApplicable`. The
 `suggest_issue_url` / `suggest_pr_url` knobs choose which link
-target(s) the autofix offers — each `MaybeIncorrect` — and
-with neither enabled the lint is help-only. The author can
+target(s) the autofix offers, each `MaybeIncorrect`. With
+neither enabled the lint is help-only. The author can
 also resolve the ambiguity by enclosing the token in backticks
 (so it reads as code) or by using a spelling without a leading
 `#`.
@@ -44,8 +44,8 @@ and any other markdown engine.
 ```
 
 **Prefer:** (with
-`repository = "https://github.com/owner/repo"` — `forge`
-is detected from the host), picking the issue link for one
+`repository = "https://github.com/owner/repo"`, so that
+`forge` is detected from the host), picking the issue link for one
 and the pull-request link for the other:
 
 ```rust,ignore
@@ -62,8 +62,8 @@ Configure via `dylint.toml` under `["perfectionist::bare_issue_reference"]`. Eve
 - _Type:_ `Forge`
 - _Optional_
 
-Git-hosting service the repository is on — one of `github`,
-`gitlab`, `gitea` — which fixes the issue / PR path layout.
+Git-hosting service the repository is on, one of `github`,
+`gitlab` or `gitea`, which fixes the issue / PR path layout.
 When unset, it is detected from the `repository` host: the
 public instances (`github.com`, `gitlab.com`, `codeberg.org`,
 `gitea.com`) and the conventional self-hosted subdomains
@@ -111,8 +111,8 @@ Doc-comment fix form: `inline` for `[#N](URL)`, `reference`
 for the two-piece `[#N]` + `[#N]: URL` form (the definition is
 appended to the doc block; in a `/** */` block doc comment only
 the `#N` token is rewritten and the definition is left to the
-author). Defaults to `inline`. Ignored for plain-comment fixes
-— those follow `plain_comment_form` instead.
+author). Defaults to `inline`. Ignored for plain-comment
+fixes, which follow `plain_comment_form` instead.
 
 ### Field: `include_plain_comments`
 
@@ -173,7 +173,7 @@ Markdown-link shape produced by the autofix inside doc comments.
 
 - _Rust:_ `Inline`
 
-`[#123](URL)` — the URL is inlined. Keeps `#123` as the
+`[#123](URL)`: the URL is inlined. Keeps `#123` as the
 visible link text.
 
 ##### Choice: `"reference"`
@@ -190,7 +190,7 @@ can't be placed safely, so there the fix rewrites only the
 
 - _Rust:_ `BareUrl`
 
-`https://.../issues/123` — the bare URL replaces the `#123`
+`https://.../issues/123`: the bare URL replaces the `#123`
 token outright (the `#123` text is not kept). NB: in a doc
 comment the sibling `perfectionist::bare_url` lint then flags
 the substituted URL; pick `bracketed_url` for a form it
@@ -200,7 +200,7 @@ accepts.
 
 - _Rust:_ `BracketedUrl`
 
-`<https://.../issues/123>` — a markdown autolink replaces the
+`<https://.../issues/123>`: a markdown autolink replaces the
 `#123` token outright. `bare_url` accepts this form.
 
 #### Type: `PlainForm`
@@ -215,8 +215,8 @@ URL shape used inside plain `//` comments when
 Substitute the URL itself (`https://...`), unwrapped.
 Many editors auto-detect a bare URL as clickable. NB: the
 sibling `perfectionist::bare_url` lint, whose default also
-scans regular comments, will then flag the substituted URL —
-pick `bracketed_url` to produce a form both rules accept.
+scans regular comments, will then flag the substituted URL.
+Pick `bracketed_url` to produce a form both rules accept.
 
 ##### Choice: `"bracketed_url"`
 

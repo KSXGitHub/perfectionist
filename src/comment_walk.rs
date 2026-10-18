@@ -3,10 +3,10 @@
 //!
 //! Each of them needs to scan one or both of two distinct surfaces:
 //!
-//! - **Doc-comment blocks** — `///` / `//!` line runs and `/** ... */`
+//! - **Doc-comment blocks**: `///` / `//!` line runs and `/** ... */`
 //!   block doc comments, each block treated as a single markdown
 //!   fragment with `///` prefixes stripped.
-//! - **Plain comments** — `//` line runs and `/* ... */` block
+//! - **Plain comments**: `//` line runs and `/* ... */` block
 //!   comments, scanned as text (no markdown awareness).
 //!
 //! The walker iterates the source files of the local crate via
@@ -98,9 +98,9 @@ impl CommentChunk<'_> {
     /// Map a contiguous rendered byte `range` to its source [`Span`],
     /// but only when the whole range lies within a single rendered line.
     /// Returns `None` for a range that crosses the synthesised `\n`
-    /// between two joined `///` lines — splicing the `///` prefix bytes
-    /// of the next line into the span would make any autofix built from
-    /// it corrupt the source. `clap_help_markdown` uses the precise
+    /// between two joined `///` lines, since splicing the `///` prefix
+    /// bytes of the next line into the span would make any autofix
+    /// built from it corrupt the source. `clap_help_markdown` uses the precise
     /// single-line span both as the diagnostic anchor and as the
     /// replacement span for its code-span autofix, and declines the
     /// autofix when this returns `None`.
@@ -132,8 +132,8 @@ impl CommentChunk<'_> {
 /// walked (see [`crate_module_files`]); `include_str!` / `include_bytes!`
 /// data files, `include!` fragments, and proc-macro-synthesised modules
 /// are skipped. A bare `http(s)://` URL inside an included YAML file
-/// otherwise lexes as a `//` line comment and would be flagged — and
-/// autofix-rewritten — as if it were a Rust comment
+/// otherwise lexes as a `//` line comment and would be flagged, and
+/// autofix-rewritten, as if it were a Rust comment
 /// (<https://github.com/KSXGitHub/perfectionist/issues/179>).
 ///
 /// Takes a [`LateContext`] both to reach the HIR module tree for that
@@ -312,7 +312,7 @@ fn gather_line_plain_comments<'a>(
 /// Build a [`CommentChunk`] for a `/** ... */` (outer) or
 /// `/*! ... */` (inner) block doc comment. The two share every
 /// downstream concern but differ in their three-byte opening
-/// delimiter — and the opening byte length is what anchors every
+/// delimiter, and the opening byte length is what anchors every
 /// per-line source offset, so picking the wrong delimiter
 /// silently misaligns diagnostic spans.
 fn build_block_doc_comment<'a>(
@@ -490,7 +490,7 @@ fn render_block_comment(
         let line_content = raw_line.strip_suffix('\n').unwrap_or(raw_line);
         let line_content = line_content.strip_suffix('\r').unwrap_or(line_content);
         // For block comments, strip a leading run of whitespace
-        // followed by a single `*` and an optional space — the
+        // followed by a single `*` and an optional space, the
         // standard rustdoc-style block-comment continuation
         // prefix. When the leading non-space byte isn't `*`, the
         // line wasn't using the convention, so we keep its

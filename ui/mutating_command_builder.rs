@@ -32,7 +32,7 @@ fn every_setter(dir: &Path) {
 // Bad: the stdio setters, both ways round. std takes anything
 // `Into<Stdio>` where the by-value form takes a concrete `Stdio`, so an
 // argument that is already a `Stdio` renames straight across, and one
-// that is merely convertible needs `.into()` — which the diagnostic
+// that is merely convertible needs `.into()`, which the diagnostic
 // says. The convertible one is also where the `.into()` advice meets
 // the receiver line, the pair having no other home.
 fn stdio_setters(file: std::fs::File) {
@@ -224,7 +224,7 @@ struct Builder {
 
 impl Builder {
     // Not flagged: the field sits behind `&mut self`, so the by-value
-    // form cannot take it — `E0507`, cannot move out of a place behind
+    // form cannot take it: `E0507`, cannot move out of a place behind
     // a mutable reference. The type alone does not separate this case
     // from `into_extended`.
     fn extend(&mut self) {
@@ -317,7 +317,7 @@ fn through_closure(command: &mut Command) {
 }
 
 // Not flagged: `Command::new` is not a setter, and the spawning methods
-// have no by-value counterpart — they take `&mut self` legitimately.
+// have no by-value counterpart, taking `&mut self` legitimately.
 fn spawning() {
     Command::new("ls").status().ok();
     Command::new("ls").output().ok();

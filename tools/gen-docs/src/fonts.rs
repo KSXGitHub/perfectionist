@@ -2,18 +2,18 @@
 //!
 //! The page renders its prose in Cantarell, falling back to a downloaded
 //! font file when the reader's system lacks it (see `style/base.css`).
-//! That file — and the SIL OFL 1.1 license text it must ship under — are
+//! That file, and the SIL OFL 1.1 license text it must ship under, are
 //! deliberately *not* committed to this repository; they live in the
 //! sibling KSXGitHub/perfectionist-binary-assets repo. This module:
 //!
 //! 1. downloads each file in [`DOWNLOADS`] into a local cache directory
-//!    ([`cache_dir`] — never `gh-pages/`), but only if it isn't cached
+//!    ([`cache_dir`], never `gh-pages/`), but only if it isn't cached
 //!    already, so the build hits the network just once and then works
 //!    offline, and
 //! 2. links the cached files into the output directory beside `index.html`
 //!    ([`install_into`]) so the stylesheet's relative `url(...)` resolves
-//!    — hard-linking first (cache and output normally share a filesystem)
-//!    and falling back to a byte copy across filesystems.
+//!    by hard-linking first (cache and output normally share a
+//!    filesystem) and falling back to a byte copy across filesystems.
 
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
@@ -26,8 +26,9 @@ use std::process::Command;
 /// under in the cache and the output (for the font it must match the name
 /// `base.css` references in `url(...)`); `url` is where it is fetched from
 /// on a cache miss. Both the variable Cantarell font and the OFL license
-/// text it ships under are listed — OFL requires the license to accompany
-/// every redistributed copy, and the rendered site is one such copy.
+/// text it ships under are listed, OFL requiring the license to
+/// accompany every redistributed copy, and the rendered site is one
+/// such copy.
 pub(crate) const DOWNLOADS: &[(&str, &str)] = &[
     (
         "cantarell.otf",
@@ -55,8 +56,8 @@ pub(crate) fn cache_dir(root: &Path) -> PathBuf {
 /// [`cache_dir`] with the [`CACHE_DIR_ENV`] lookup already done, so the
 /// choice it makes is testable without mutating the process
 /// environment. A test that set the var instead would race every
-/// sibling test that reads one -- `std::env::temp_dir`, which several of
-/// them call -- which is why `std::env::set_var` is `unsafe`.
+/// sibling test that reads one, `std::env::temp_dir` being the one
+/// several of them call, which is why `std::env::set_var` is `unsafe`.
 fn cache_dir_from(root: &Path, configured: Option<OsString>) -> PathBuf {
     match configured {
         Some(dir) => PathBuf::from(dir),
@@ -68,8 +69,8 @@ fn cache_dir_from(root: &Path, configured: Option<OsString>) -> PathBuf {
 /// the ones that aren't there yet. Presence is the whole check: a file
 /// already in the cache is taken as-is (the offline / no-network path).
 /// Downloads land via an atomic rename, so a cached file is always a
-/// complete one — an interrupted fetch leaves no half-written entry for a
-/// later run to mistake for cached.
+/// complete one: an interrupted fetch leaves no half-written entry for
+/// a later run to mistake for cached.
 pub(crate) fn ensure_cached(cache_dir: &Path, downloads: &[(&str, &str)]) -> Result<(), String> {
     std::fs::create_dir_all(cache_dir).map_err(|error| {
         format!(
@@ -88,9 +89,10 @@ pub(crate) fn ensure_cached(cache_dir: &Path, downloads: &[(&str, &str)]) -> Res
 }
 
 /// Link each cached download into `out_dir` so it lands beside
-/// `index.html`. Hard-links first — the cache and the output directory
-/// normally share a filesystem, so this avoids duplicating the bytes —
-/// and falls back to a byte copy when hard-linking isn't possible (e.g.
+/// `index.html`. Hard-links first, since the cache and the output
+/// directory normally share a filesystem, so this avoids duplicating
+/// the bytes, and falls back to a byte copy when hard-linking isn't
+/// possible (e.g.
 /// the output is on a different mount). Assumes [`ensure_cached`] has
 /// already populated the cache directory.
 pub(crate) fn install_into(
@@ -103,7 +105,7 @@ pub(crate) fn install_into(
         let dest = out_dir.join(filename);
         // `hard_link` fails if the destination already exists, and a
         // stale copy from a previous run would otherwise shadow the
-        // fresh cache — remove it first. `copy` would overwrite, but
+        // fresh cache, so remove it first. `copy` would overwrite, but
         // clearing unconditionally keeps both branches identical.
         if let Err(error) = std::fs::remove_file(&dest)
             && error.kind() != std::io::ErrorKind::NotFound
@@ -134,8 +136,8 @@ pub(crate) fn install_into(
 fn download(url: &str, dest: &Path) -> Result<(), String> {
     let temp = dest.with_extension("download");
     // Shell out to `curl`, matching how the rest of this tool reaches
-    // external commands (`git` in main.rs) and how CI installs rustup —
-    // no HTTP/TLS crate is pulled into the workspace for one fetch.
+    // external commands (`git` in main.rs) and how CI installs rustup.
+    // No HTTP/TLS crate is pulled into the workspace for one fetch.
     let status = "curl"
         .pipe(Command::new)
         .with_arg("--proto")

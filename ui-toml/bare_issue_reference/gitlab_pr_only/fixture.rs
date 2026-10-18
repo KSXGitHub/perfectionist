@@ -1,4 +1,4 @@
-/// Bad: closes #77 — on GitLab a bare `#77` is always an issue, so
+/// Bad: closes #77, and on GitLab a bare `#77` is always an issue, so
 /// `suggest_pr_url = true` yields nothing and, with
 /// `suggest_issue_url` off, no suggestion is offered at all. The help
 /// names only `suggest_issue_url`: advising `suggest_pr_url` here

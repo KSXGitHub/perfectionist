@@ -27,8 +27,8 @@ use std::io::stdin;
 
 struct Sep1;
 
-// Bad: all three blocks present — a leading re-export block, the single
-// private block, and a trailing cfg block — but interleaved here.
+// Bad: all three blocks present, a leading re-export block, the single
+// private block and a trailing cfg block, but interleaved here.
 use std::cmp::Ordering;
 pub use crate::config::Opts;
 #[cfg(unix)]

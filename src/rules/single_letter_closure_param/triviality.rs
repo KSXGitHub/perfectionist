@@ -5,8 +5,8 @@
 //! branches. A closure qualifies when [`single_expression_body`]
 //! returns `Some` *and* either of the following holds:
 //!
-//! - the enclosing call's callee — recovered via
-//!   [`parent_call_callee_name`] — is on the rule's configured
+//! - the enclosing call's callee, recovered via
+//!   [`parent_call_callee_name`], is on the rule's configured
 //!   trivial-callback method set, or
 //! - the body is a trivial wrapper around one of the closure's
 //!   parameters (field access, method call, one-argument call,
@@ -22,8 +22,8 @@ use rustc_hir::def::Res;
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
-/// If `body.value` is a single expression — either directly or
-/// wrapped in a block with no statements — return that
+/// If `body.value` is a single expression, either directly or
+/// wrapped in a block with no statements, return that
 /// expression. Otherwise return `None`.
 pub(super) fn single_expression_body<'hir>(
     body: &'hir hir::Body<'hir>,
@@ -85,7 +85,7 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 ///
 /// Macro calls are accepted unconditionally on the basis that
 /// the body's expression span lies entirely inside a single
-/// macro invocation written by the user — the source text is a
+/// macro invocation written by the user: the source text is a
 /// one-liner whose role is unambiguous from the call site, in
 /// the same spirit as the other shapes. The post-expansion HIR
 /// of `vec![param]`, `dbg!(param)`, `format!("{param}")`, etc.

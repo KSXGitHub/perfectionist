@@ -7,7 +7,7 @@
 // `pub(crate)` must be flagged. The `pub` enum is flagged for the
 // same reason it is under the default mode. A `pub(super)` enum
 // nested two modules deep has a `Restricted` scope below the crate
-// root, so it stays silent — `"pub_crate"` does not promote
+// root, so it stays silent: `"pub_crate"` does not promote
 // stricter visibilities.
 
 pub(crate) enum CrateLocalError {
@@ -21,7 +21,7 @@ pub enum AlsoFlaggedError {
 mod outer {
     pub(super) mod inner {
         // `pub(super)` here points at `outer`, not at the crate
-        // root, so the scope is `outer`'s module def-id — strictly
+        // root, so the scope is `outer`'s module def-id, strictly
         // narrower than `pub(crate)`.
         pub(super) enum DeepError {
             Variant,

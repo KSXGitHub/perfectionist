@@ -80,8 +80,8 @@ fn gitlab_host_is_detected() {
 
 /// An scp-like SSH clone URL (`git@host:owner/repo.git`) is parsed
 /// into the canonical `https://github.com/owner/repo` web base, so
-/// the GitHub forge is detected and the issue / PR links resolve —
-/// the `git@` userinfo and `.git` suffix are dropped.
+/// the GitHub forge is detected and the issue / PR links resolve.
+/// The `git@` userinfo and `.git` suffix are dropped.
 #[test]
 fn ssh_url_is_parsed() {
     run(
@@ -96,7 +96,7 @@ fn ssh_url_is_parsed() {
 /// The negative counterpart to [`gitlab_host_is_detected`]:
 /// `repository` is set, but to a self-hosted host the lint can't
 /// classify, and `forge` is omitted. With no detectable forge and
-/// no fallback, the lint can't build a URL — so it degrades to
+/// no fallback, the lint can't build a URL, so it degrades to
 /// help-only, telling the author to set `forge`.
 #[test]
 fn unrecognised_host_without_forge_is_help_only() {
@@ -171,8 +171,8 @@ fn no_suggestion_knobs_names_both_knobs() {
     );
 }
 
-/// On GitLab `suggest_pr_url` can never produce a suggestion — a
-/// bare `#NNN` is always an issue there — so with
+/// On GitLab `suggest_pr_url` can never produce a suggestion, a
+/// bare `#NNN` always being an issue there, so with
 /// `suggest_issue_url` off the lint reaches the same help-only arm
 /// even though `suggest_pr_url` is on. The help must name only
 /// `suggest_issue_url`: telling the author to enable a knob that
@@ -207,8 +207,8 @@ fn reference_form_appends_definition() {
 }
 
 /// The `bare_url` form drops the `#NNN` token and puts the URL in
-/// its place, in doc comments and — with `include_plain_comments`
-/// on — in plain line comments, whose shape comes from
+/// its place, in doc comments and, with `include_plain_comments`
+/// on, in plain line comments, whose shape comes from
 /// `plain_comment_form` (`bare_url` by default).
 #[test]
 fn bare_url_form_substitutes_the_url_on_both_surfaces() {

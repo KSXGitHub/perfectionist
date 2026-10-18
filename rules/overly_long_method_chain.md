@@ -9,13 +9,14 @@
 
 ## What it does
 
-Counts the distinct method calls in one expression chain —
-`a.b().c().d()` is three — and flags the chain when the count
-is above `max_calls` (default `5`).
+Counts the distinct method calls in one expression chain, so
+that `a.b().c().d()` is three, and flags the chain when the
+count is above `max_calls` (default `5`).
 
 Only method calls on the chain's spine count: the receiver of
 each call, down to the value the chain starts from. A run of the
-same method — `.arg("-v").arg("build").arg(path)` — counts once,
+same method counts once, as in
+`.arg("-v").arg("build").arg(path)`,
 so a builder is measured by its distinct calls. A `?` or an
 `.await` between two calls neither counts nor breaks the chain.
 A field access (`self.items.iter()` starts at `self.items`) and
@@ -30,7 +31,7 @@ Test code is measured like any other code; set
 Where a chain stops being readable is a matter of taste, and a
 codebase written around iterator pipelines will disagree with
 one written around named intermediates. The rule is therefore
-inactive by default — enable it per crate by adding to
+inactive by default. Enable it per crate by adding to
 `dylint.toml`:
 
 ```toml

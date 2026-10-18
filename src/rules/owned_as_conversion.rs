@@ -31,7 +31,7 @@ declare_tool_lint! {
     ///    `OsString`, `&CStr` for a `CString`, `&[T]` for a `Vec<T>`,
     ///    whatever the inner type borrows as under an `Option` or a
     ///    `Box`, and `&T` otherwise.
-    /// 2. **The return type is one that owns what it holds** — a
+    /// 2. **The return type is one that owns what it holds**: a
     ///    `String`, a `Vec<T>`, a `PathBuf`, an `OsString`, a
     ///    `CString`, a `Box<T>`, a `Cow<'_, B>`, one of the standard
     ///    maps, sets or queues, a tuple or array of any of those, or
@@ -45,7 +45,7 @@ declare_tool_lint! {
     /// `Option<String>` holding `None` and a `Cow<'_, str>` holding a
     /// borrow each own nothing, and both return types are reported.
     /// Neither lets a caller see what the call cost. std reads a `Cow`
-    /// the same way — `OsStr`, `Path` and `CStr` each name their
+    /// the same way: `OsStr`, `Path` and `CStr` each name their
     /// `Cow`-returning conversion `to_string_lossy`.
     ///
     /// Left alone:
@@ -75,7 +75,7 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::wrong_self_convention` checks the same three prefixes
-    /// against the method's *receiver* — whether `as_*` takes `&self`.
+    /// against the method's *receiver*, whether `as_*` takes `&self`.
     /// It does not look at the return type or at what the body costs, so
     /// an `as_*` that takes `&self` and then allocates satisfies it.
     ///
@@ -93,8 +93,8 @@ declare_tool_lint! {
     /// promises more than cost: it promises to consume, so
     /// `perfectionist::unconsumed_into_conversion` measures one that does
     /// not. A name that is none of the three and that the getter rule
-    /// does not read as a getter — one naming no field, with nothing in
-    /// `getter_name_patterns` admitting it — is left alone by all of
+    /// does not read as a getter, one naming no field with nothing in
+    /// `getter_name_patterns` admitting it, is left alone by all of
     /// them.
     ///
     /// ### Example

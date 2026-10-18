@@ -1,9 +1,9 @@
 //! Which functions the per-function size and complexity rules
 //! measure, decided once for all of them.
 //!
-//! Each of those rules is handed every body a crate has — closures,
-//! macro-generated functions, test helpers — and measures the same
-//! subset: a function or method the author wrote, and only test code
+//! Each of those rules is handed every body a crate has, closures,
+//! macro-generated functions and test helpers included, and measures
+//! the same subset: a function or method the author wrote, and only test code
 //! when the rule's `exempt_tests` is off. A closure is part of
 //! the function that contains it; a function produced by a macro is
 //! nothing the author can split; and test code is exempt on request
@@ -16,7 +16,7 @@ use rustc_lint::LateContext;
 use rustc_span::{Span, Symbol};
 
 /// A function the rule measures: what to call it in the diagnostic and
-/// where to anchor the diagnostic — its signature.
+/// where to anchor the diagnostic, which is its signature.
 pub(crate) struct MeasuredFn {
     pub(crate) name: Symbol,
     pub(crate) kind_label: &'static str,

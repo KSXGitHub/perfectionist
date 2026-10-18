@@ -4,7 +4,7 @@
 // The counterpart has to exist in the `command-extra` the crate
 // resolved. This fixture builds against 1.0.0, which does not have
 // `with_envs`, so `Command::envs` has nothing here to be renamed to
-// and the rule stays silent on it — where the sweep in
+// and the rule stays silent on it, where the sweep in
 // `ui/mutating_command_builder.rs`, built against 1.2.0, flags it.
 //
 // The calls that do fire are here to keep the silence attributable to

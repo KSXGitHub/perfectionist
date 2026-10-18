@@ -27,7 +27,7 @@ fn configure(command: &mut Command) {
 
 // Bad: a macro invocation wrapping the head alone. `$expression:expr`
 // keeps the caller's spans, so the chain is rewritten as usual, but the
-// `&mut ` goes in front of the invocation -- written inside it, the
+// `&mut ` goes in front of the invocation. Written inside it, the
 // tail would be called on a `Command` where `configure` wants the
 // borrow.
 macro_rules! passthrough {
@@ -121,7 +121,7 @@ mod shadowed_trailing_call {
 // Bad, and no rewrite: the trailing call's receiver turns from a
 // `&mut Command` into a `Command`, and the `&` autoref step comes
 // before the `&mut` one, so `Logged::status` is found ahead of
-// `Command::status` -- and a blanket impl means nothing has to be
+// `Command::status`, and a blanket impl means nothing has to be
 // written about `Command` at all.
 mod shadowed_by_a_borrow {
     use command_extra::CommandExtra;
@@ -399,7 +399,7 @@ mod partial_rename_would_move_a_call {
 
 // Bad, over a binding, and the diagnostic has to say that `status`
 // would move. The rewrite is deferred for the receiver, so nothing
-// withholds a rename here -- but the reader following the advice by
+// withholds a rename here, but the reader following the advice by
 // hand walks into that re-resolution, and only this line warns them.
 mod defers_and_moves {
     use command_extra::CommandExtra;
@@ -425,8 +425,8 @@ mod defers_and_moves {
 // Not flagged with a rename: a `$method:ident` fragment carries the
 // caller's token, so the call is the macro's and the method name the
 // author's. A rename rendered at that token would be written over
-// every other use of the fragment in the body -- here the
-// `stringify!` -- which compiles and changes the argument the command
+// every other use of the fragment in the body, here the
+// `stringify!`, which compiles and changes the argument the command
 // is run with. The diagnostic stands; only the edit is withheld.
 macro_rules! name_and_pass {
     ($method:ident) => {
@@ -441,7 +441,7 @@ fn method_name_from_the_caller() {
 // Bad: the rewrite is withheld for the argument's destructor, and the
 // chain's next call is one a trait in scope also declares. The advice
 // still says to rename, so the hazard that rename walks into has to be
-// said as well -- withholding the edit is not withholding the warning.
+// said as well, since withholding the edit is not withholding the warning.
 mod withheld_and_moves_a_later_call {
     use command_extra::CommandExtra;
     use std::ffi::OsStr;

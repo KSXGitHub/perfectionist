@@ -71,7 +71,7 @@ fn shadowing(seed: u32) -> u32 {
 }
 
 // Bad: closure parameters and `for` / `if let` / match-arm bindings
-// count the same as a `let` — sixteen in all.
+// count the same as a `let`, so sixteen in all.
 fn every_binding_shape(items: &[(u32, u32)], maybe: Option<u32>) -> u32 {
     let mut total = 0;
     for (left, right) in items {

@@ -40,7 +40,7 @@ declare_tool_lint! {
     /// The opinion is opt-in: some projects deliberately use exhaustive
     /// error enums to force downstream consumers to handle every new
     /// variant, and binary crates have no SemVer surface to protect.
-    /// The rule is therefore inactive by default — enable it per
+    /// The rule is therefore inactive by default. Enable it per
     /// crate by adding to `dylint.toml`:
     ///
     /// ```toml
@@ -53,8 +53,8 @@ declare_tool_lint! {
     /// `clippy::exhaustive_enums` and `clippy::exhaustive_structs`
     /// (`restriction`, off by default) require `#[non_exhaustive]` on
     /// *every* exported enum / struct. This rule scopes that same
-    /// requirement to **error types** — those whose name ends in
-    /// `Error` or that implement `std::error::Error` — because adding
+    /// requirement to **error types**, those whose name ends in
+    /// `Error` or that implement `std::error::Error`, because adding
     /// a variant to an error type downstream code matches on is the
     /// breaking change `#[non_exhaustive]` exists to absorb, while
     /// demanding it on all exported types is usually too broad. Enable
@@ -132,7 +132,7 @@ struct Config {
     /// Empty by default; checked after the merge with the
     /// built-ins, so this knob always wins. Use it when a project
     /// deliberately does not want the `Error` suffix to trigger
-    /// the by-name branch — types that implement
+    /// the by-name branch. Types that implement
     /// `std::error::Error` are still flagged via the trait branch.
     ignore_suffixes: Vec<String>,
 }
@@ -182,7 +182,7 @@ impl ExhaustiveErrorEnums {
 impl_lint_pass!(ExhaustiveErrorEnums => [EXHAUSTIVE_ERROR_ENUMS]);
 
 impl Register for rule::ExhaustiveErrorEnums {
-    /// Off by default — enable it in `dylint.toml` via the crate-wide
+    /// Off by default. Enable it in `dylint.toml` via the crate-wide
     /// `[perfectionist] enable = ["exhaustive_error_enums"]` (or the
     /// `[[perfectionist.enable]]` array-of-tables form).
     const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
@@ -229,7 +229,7 @@ impl<'tcx> LateLintPass<'tcx> for ExhaustiveErrorEnums {
 }
 
 /// An item is "externally reachable" when its effective visibility at
-/// the `Reexported` level is `Public` — i.e., a downstream crate can
+/// the `Reexported` level is `Public`, i.e. a downstream crate can
 /// see it directly or through the public re-export tree. A `pub` item
 /// declared inside a non-`pub` module is *not* externally reachable
 /// even though its declared visibility is `Public`, so adding a variant
@@ -255,7 +255,7 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
 /// resolved type is an `enum` ADT. `tcx.type_of(..)` already
 /// follows transparent type aliases, so `pub struct FooError(pub
 /// MyAlias)` where `type MyAlias = MyEnum;` is correctly classified
-/// as sum-like — the SemVer-surface concern is identical to a
+/// as sum-like, the SemVer-surface concern being identical to a
 /// direct `pub struct FooError(pub MyEnum)`.
 ///
 /// Projection types (associated types like `<T as Trait>::Item`)
@@ -263,7 +263,7 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
 /// associated type that happens to resolve to an enum is not
 /// classified as sum-like. Adding normalization (via
 /// `tcx.normalize_erasing_regions`) would close that gap but
-/// hasn't been needed in practice — drop a follow-up if a
+/// hasn't been needed in practice. Drop a follow-up if a
 /// real-world wrapper hits this case.
 fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     let fields = data.fields();

@@ -21,7 +21,7 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Forbids markdown-specific constructs in a doc comment that
-    /// clap's derive macros consume as `--help` text — HTML tags,
+    /// clap's derive macros consume as `--help` text: HTML tags,
     /// inline / reference / intra-doc links, code blocks, code spans,
     /// and headings. The rule fires on the doc comment of a struct or
     /// enum deriving [`clap::Parser`](https://docs.rs/clap), `Args`,
@@ -29,12 +29,12 @@ declare_tool_lint! {
     /// comments of their fields and variants.
     ///
     /// A `ValueEnum`'s own type-level doc comment is left alone: unlike
-    /// its variant docs — clap's per-value help — it never reaches
-    /// `--help`.
+    /// its variant docs, which are clap's per-value help, it never
+    /// reaches `--help`.
     ///
-    /// Bold, italics, and lists are not flagged by default — clap
-    /// renders them as their literal characters, which usually reads
-    /// cleanly — but are available through the `extra_constructs` knob.
+    /// Bold, italics, and lists are not flagged by default, clap
+    /// rendering them as their literal characters, which usually reads
+    /// cleanly. They are available through the `extra_constructs` knob.
     ///
     /// The lint stays silent on a node that overrides its help text
     /// with a plain string (`#[arg(help = "...")]`,
@@ -44,8 +44,8 @@ declare_tool_lint! {
     /// the markdown will appear verbatim in the terminal.
     ///
     /// A project that never wants a doc comment to become `--help` text
-    /// at all — preferring an explicit override on every command,
-    /// argument, and value — can opt into the stricter
+    /// at all, preferring an explicit override on every command,
+    /// argument, and value, can opt into the stricter
     /// `require_help_override` mode. It flags every clap-derived doc
     /// comment that reaches `--help` without such an override, markdown
     /// or not, and reports each as a single missing-override finding
@@ -58,7 +58,7 @@ declare_tool_lint! {
     /// markdown processor. The raw text is shown verbatim in the
     /// terminal `--help` output. Writing `` [`PathBuf`] `` produces a
     /// docs.rs link in HTML output but shows literally as
-    /// `` [`PathBuf`] `` in the terminal — a classic two-audience leak.
+    /// `` [`PathBuf`] `` in the terminal, a classic two-audience leak.
     /// The doc comment serves both `cargo doc` readers and `--help`
     /// readers, and markdown that helps the former actively degrades
     /// the latter.
@@ -171,7 +171,7 @@ impl<'tcx> LateLintPass<'tcx> for ClapHelpMarkdown {
                     // Stricter mode: every help-bound doc comment must be
                     // replaced by an explicit override, so flag each node
                     // once at its opening `///` line. This supersedes the
-                    // markdown scan — an override silences that concern
+                    // markdown scan, an override silencing that concern
                     // anyway, and `first_lines` holds exactly the
                     // doc-commented, unoverridden nodes.
                     if doc_nodes.first_lines.contains(&offset) {
@@ -225,7 +225,7 @@ impl ClapHelpMarkdown {
             // restricts the walk to on-disk module files, the comment
             // text comes from those files via `walk_local_comments`, and
             // a `///` doc comment cannot be derive-synthesised onto a
-            // user-uneditable span — so this rule is not in the vulnerable
+            // user-uneditable span, so this rule is not in the vulnerable
             // class. The span is built with `SyntaxContext::root()`, so
             // `report_in_external_macro` never spuriously fires either.
             let precise = chunk.span_for_range(found.range.clone());
@@ -254,8 +254,8 @@ impl ClapHelpMarkdown {
 /// machine-applicably.
 ///
 /// Only a single-backtick fence whose content holds no backtick is
-/// rewritten. A multi-backtick fence (`` `` `code` `` ``) — used
-/// precisely to embed a backtick in the content — would, after stripping
+/// rewritten. A multi-backtick fence (`` `` `code` `` ``), used
+/// precisely to embed a backtick in the content, would, after stripping
 /// only the outer fence, leave a stray backtick behind that re-triggers
 /// the lint; those keep the help-only suggestion instead. Per CommonMark,
 /// one space on each side is dropped when the span both opens and closes
@@ -278,12 +278,13 @@ fn code_span_autofix(span_text: &str) -> Option<String> {
 ///
 /// A single-line span is used, not the whole (possibly multi-line) doc
 /// block: [`emit_at_enclosing_hir`] resolves each diagnostic to the
-/// documented node through that node's per-line `#[doc]` attribute spans,
-/// and a target spanning several `///` lines is contained by none of them
-/// — it would fall back to the crate root and defeat a per-field
-/// `#[allow]`. Falls back to the whole-block span only for a doc comment
-/// with no content at all (`///` with nothing after it), which cannot
-/// carry markdown and is a degenerate case regardless.
+/// documented node through that node's per-line `#[doc]` attribute
+/// spans, and a target spanning several `///` lines is contained by
+/// none of them, so it would fall back to the crate root and defeat a
+/// per-field `#[allow]`. Falls back to the whole-block span
+/// only for a doc comment with no content at all (`///` with nothing
+/// after it), which cannot carry markdown and is a degenerate case
+/// regardless.
 fn first_doc_line_span(chunk: &CommentChunk<'_>) -> Span {
     chunk
         .lines

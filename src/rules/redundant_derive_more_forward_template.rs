@@ -27,7 +27,7 @@ declare_tool_lint! {
     ///
     /// A formatting derive on a container with exactly one field
     /// forwards to that field, so a template that does nothing but
-    /// name that field says nothing the derive does not — written
+    /// name that field says nothing the derive does not, written
     /// inline (`#[display("{_0}")]`,
     /// `#[display("{the_only_field}")]`) or as an argument naming that
     /// field (`#[display("{}", _0)]`), on a struct or on a
@@ -37,8 +37,8 @@ declare_tool_lint! {
     /// anyway.
     ///
     /// Each of `derive_more`'s formatting derives is read through its
-    /// own helper attribute — `Display` through `#[display(...)]`,
-    /// `LowerHex` through `#[lower_hex(...)]`, and so on — but the
+    /// own helper attribute, `Display` through `#[display(...)]` and
+    /// `LowerHex` through `#[lower_hex(...)]`, yet the
     /// trait a template forwards to comes from the *placeholder*, not
     /// from the attribute's name. So `#[lower_hex("{_0}")]` stays
     /// unflagged: a bare `{}` forwards to `Display`, which is not
@@ -51,12 +51,12 @@ declare_tool_lint! {
     ///
     /// A stray positional index warns without an autofix.
     /// `#[display("{1}", _0)]` forwards to the field regardless of the
-    /// index, so it is redundant — but `{1}` names an argument that was
+    /// index, so it is redundant. But `{1}` names an argument that was
     /// never supplied, so the fix (delete, or supply the argument) is
     /// left to the author.
     ///
     /// Beyond that the rule is silent wherever deleting the attribute
-    /// would change the generated impl — among them an adorned
+    /// would change the generated impl, among them an adorned
     /// placeholder such as `#[display("{_0:>8}")]`, a variant under any
     /// enum-level template, an argument that is not a bare field name
     /// (`#[display("{}", self.0)]`), a `bound(...)` written beside the
@@ -73,7 +73,7 @@ declare_tool_lint! {
     /// This is a stylistic preference, not a correctness issue: the
     /// attribute compiles to exactly the code the derive emits without
     /// it. It is the same shape of dead weight as an unused import or
-    /// a needless borrow — it restates what the compiler already does,
+    /// a needless borrow: it restates what the compiler already does,
     /// and a reader has to read the whole template before concluding
     /// it changes nothing.
     ///
@@ -160,8 +160,8 @@ impl<'tcx> LateLintPass<'tcx> for RedundantDeriveMoreForwardTemplate {
             .map(|violation| (violation.anchor, violation))
             .collect();
         emit_at_enclosing_hir(cx.tcx, anchored, |hir_id, _anchor, violation| {
-            // A container the compiled crate does not contain — one
-            // behind a false `#[cfg(...)]`, which the re-parse keeps —
+            // A container the compiled crate does not contain, one
+            // behind a false `#[cfg(...)]` that the re-parse keeps,
             // has no HIR node to anchor at, so the walk falls back to
             // the crate root. Reporting it there would flag code that
             // is not built and could not be silenced by an `#[allow]`
@@ -186,13 +186,13 @@ const DERIVE_MORE_CRATES: &[&str] = &["derive_more", "derive_more_impl"];
 /// tell `derive_more::Display` from another crate's `Display` derive
 /// declaring a `display` helper attribute. `parse_display::Display` is
 /// one, and its `#[display("{field}")]` is required rather than
-/// redundant — deleting it does not compile — so a rule that offers a
-/// deletion has to establish that `derive_more` is what generated the
-/// impl.
+/// redundant, since deleting it does not compile, so a rule that
+/// offers a deletion has to establish that `derive_more` is what
+/// generated the impl.
 ///
 /// Asking whether a `derive_more` derive *expanded here* is what makes
-/// that check mean something. The weaker question — whether the crate
-/// is in the dependency graph — is answered "yes" for any crate with
+/// that check mean something. The weaker question, whether the crate
+/// is in the dependency graph, is answered "yes" for any crate with
 /// `derive_more` anywhere in its transitive closure, including one that
 /// never names it, so it would leave a `parse_display` crate exposed.
 ///
@@ -249,8 +249,8 @@ fn emit(cx: &LateContext<'_>, hir_id: hir::HirId, violation: &Violation) {
             }
             // A stray positional index (`{1}`): redundant as written, but
             // the index names an argument that was never supplied, so it
-            // may be a forgotten one. Warn without an autofix — the fix
-            // is the author's to choose, delete or supply.
+            // may be a forgotten one. Warn without an autofix, since the
+            // fix is the author's to choose, delete or supply.
             Fix::WarnOnly => {
                 diagnostic.note(
                     "the positional index names no supplied argument, so this template \

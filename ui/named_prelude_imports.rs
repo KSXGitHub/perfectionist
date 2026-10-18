@@ -37,7 +37,7 @@ mod renamed {
 }
 
 // Bad: a brace list flags each leaf in turn. The fix rebuilds the whole
-// tree, so it is offered once — on the first leaf — and both entries
+// tree, so it is offered once, on the first leaf, and both entries
 // land back under the prefix they now share.
 mod braced {
     use crate::prelude::{A, helper};
@@ -90,8 +90,8 @@ mod module_ok {
 // A name re-exported into a prelude in two namespaces from two different
 // modules: the type `Dual` (a braced struct, type namespace only) and the
 // function `Dual` (value namespace). The import pulls in both, so no single
-// `use` reproduces it — the leaf is still flagged, but with a `help`, not a
-// machine-applicable rewrite that would silently drop one namespace.
+// `use` reproduces it. The leaf is still flagged, but with a `help`, not
+// a machine-applicable rewrite that would silently drop one namespace.
 pub mod type_home {
     pub struct Dual {
         pub field: u8,
@@ -151,8 +151,8 @@ mod mixed_cherry {
 // `use` around these names is skipped as macro-generated while the
 // names themselves are the caller's own tokens. Each then heads a
 // statement of its own, and its span holds one entry rather than a
-// whole path — pasting a canonical path over `A` would rewrite the
-// macro call, not the import it expands to.
+// whole path, so pasting a canonical path over `A` would rewrite the
+// macro call rather than the import it expands to.
 macro_rules! cherry_pick {
     ($($entry:tt)*) => {
         use crate::prelude::{$($entry)*};

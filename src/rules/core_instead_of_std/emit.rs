@@ -3,9 +3,10 @@
 //!
 //! The unit of decision is the token, not the path. `use core::fmt;`
 //! and `use core::{fmt::Display, ops::Add};` reach the pass as one, two,
-//! or more paths — HIR splits a brace list into a `Use` item per leaf,
-//! and visits each leaf once per namespace its name resolves in — but
-//! all of them are written through a single `core` in the source, and
+//! or more paths, HIR splitting a brace list into a `Use` item per
+//! leaf and visiting each leaf once per namespace its name resolves
+//! in, but all of them are written through a single `core` in the
+//! source, and
 //! that is the only token the fix touches. So the paths sharing a token
 //! are collected into a [`Group`] and answered together: every one of
 //! them reachable through `std` earns the rewrite, and a single
@@ -23,14 +24,14 @@ use rustc_span::{Span, Symbol};
 pub(super) enum Point {
     /// The path names an item that `std` reaches by the same suffix, so
     /// swapping the crate token moves it without changing what it means.
-    /// The span is the path's last segment — where the `help` lands when
-    /// the group as a whole cannot be rewritten — and the [`HirId`] is
+    /// The span is the path's last segment, where the `help` lands when
+    /// the group as a whole cannot be rewritten, and the [`HirId`] is
     /// the node the path belongs to, so that an `#[allow(...)]` around
     /// it still applies however late the group is flushed.
     Rewritable { hir_id: HirId, span: Span },
     /// The path has to keep its crate token: `std` does not reach the
     /// item by this suffix, or `skip_paths` exempts it. Nothing is
-    /// reported for the path itself — it is not a violation — but it
+    /// reported for the path itself, which is not a violation, but it
     /// vetoes the rewrite of the token it shares with its siblings.
     Blocked,
 }

@@ -11,14 +11,14 @@
 
 Enforces a single project-wide import-granularity style, chosen
 via `style`:
-- `crate` — one `use` per crate root, with every shared prefix
+- `crate`: one `use` per crate root, with every shared prefix
   collapsed into nested braces
   (`use std::{collections::HashMap, io::Read};`).
-- `module` (default) — one `use` per leaf module; items from the
+- `module` (default): one `use` per leaf module; items from the
   same module are merged into one braced list while sibling
   modules sit on their own lines
   (`use std::collections::{BTreeMap, HashMap};`).
-- `item` — one `use` per leaf path
+- `item`: one `use` per leaf path
   (`use std::collections::BTreeMap;`).
 
 The names map one-to-one onto rustfmt's unstable
@@ -28,12 +28,13 @@ visibility, and carry matching attributes are merged; the three
 `respect_*` knobs tighten or loosen that grouping.
 
 Under `crate` style a name that is both an item and a module
-(`use crate::thing;` next to `use crate::thing::T;`) has two valid
-one-`use` shapes — the `self`-fold `crate::thing::{self, T}` and
-the sibling-split `crate::{thing, thing::T}` — that bind different
-namespaces. By default neither single-statement form is flagged
-and both are offered when a merge is forced; the optional
-`self_merge` knob (`fold` / `split`) picks one and enforces it.
+(`use crate::thing;` next to `use crate::thing::T;`) has two
+valid one-`use` shapes that bind different namespaces: the
+`self`-fold `crate::thing::{self, T}` and the sibling-split
+`crate::{thing, thing::T}`. By default neither single-statement
+form is flagged and both are offered when a merge is forced; the
+optional `self_merge` knob (`fold` / `split`) picks one and
+enforces it.
 
 Globs (`use foo::*`) are governed by `perfectionist::wildcard_imports`,
 not by this rule: a top-level glob is left alone under `item`.
@@ -41,7 +42,7 @@ not by this rule: a top-level glob is left alone under `item`.
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. None of
-the three shapes is wrong in the abstract — the violation is a
+the three shapes is wrong in the abstract. The violation is a
 mismatch with the project's configured `style`. Enforcing one
 keeps `use` blocks scanning uniformly and makes import diffs
 predictable. rustfmt can enforce the same shape, but only on the
@@ -104,7 +105,7 @@ Configure via `dylint.toml` under `["perfectionist::import_granularity_mismatch"
 - _Type:_ `Style`
 - _Optional_
 
-Import-granularity style to enforce. Defaults to `module` — the
+Import-granularity style to enforce. Defaults to `module`, the
 shape that scales best as a `use` block grows. Set `crate` to
 collapse every crate root into one nested `use`, or `item` to
 put every imported name on its own line.
@@ -147,8 +148,8 @@ Defaults to `true`. Set `false` to allow such a `use` to merge.
 
 Under `style = "crate"`, force one shape when a path segment
 names both an item and a module (`use crate::thing;` next to
-`use crate::thing::T;`). Unset by default — the two shapes are
-not interchangeable, so the rule flags neither single-statement
+`use crate::thing::T;`). Unset by default, since the two shapes
+are not interchangeable, so the rule flags neither single-statement
 form and offers both as `MaybeIncorrect` when a merge is forced.
 Set `fold` to always enforce `use crate::thing::{self, T};`, or
 `split` to always enforce `use crate::{thing, thing::T};`;
@@ -190,7 +191,7 @@ line, e.g. `use std::collections::BTreeMap;`.
 #### Type: `SelfMerge`
 
 How to resolve a path segment that names **both** an item and a
-module under `crate` style — `use crate::thing;` next to
+module under `crate` style: `use crate::thing;` next to
 `use crate::thing::T;`. The two one-`use`-per-root shapes are not
 interchangeable, so unless this knob is set the rule offers both and
 the author picks. Only consulted under `style = "crate"`.
@@ -199,7 +200,7 @@ the author picks. Only consulted under `style = "crate"`.
 
 - _Rust:_ `Fold`
 
-Always enforce the `self`-fold `use crate::thing::{self, T};` —
+Always enforce the `self`-fold `use crate::thing::{self, T};`,
 the shape rustfmt's `imports_granularity = "Crate"` produces. The
 sibling-split form is flagged and rewritten to it.
 

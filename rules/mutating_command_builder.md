@@ -9,9 +9,9 @@
 
 ## What it does
 
-Flags a setter called on an *owned* command — `arg`, `args`,
-`env`, `envs`, `env_remove`, `env_clear`, `current_dir`,
-`stdin`, `stdout`, `stderr` — and names the
+Flags a setter called on an *owned* command, one of `arg`,
+`args`, `env`, `envs`, `env_remove`, `env_clear`,
+`current_dir`, `stdin`, `stdout` or `stderr`, and names the
 [`command_extra::CommandExtra`](https://docs.rs/command-extra)
 counterpart that takes `self` instead of `&mut self`. Any
 command the trait covers counts: `std::process::Command`, a
@@ -19,13 +19,13 @@ command the trait covers counts: `std::process::Command`, a
 [`tokio::process`](https://docs.rs/tokio)'s and
 [`async_process`](https://docs.rs/async-process)'s.
 
-A receiver it could not take ownership of — a `&mut Command`, or
-a field reached through one — is left alone. So is a crate that
-neither depends on `command-extra` nor belongs to a workspace
-declaring it; `command_extra_dependency` sets how far the lint
-looks for that declaration. Where `command-extra` is in the
-build at all, a chain is left alone unless every setter in it
-has a counterpart there — the by-value forms arrived over
+A receiver it could not take ownership of is left alone, whether
+a `&mut Command` or a field reached through one. So is a crate
+that neither depends on `command-extra` nor belongs to a
+workspace declaring it; `command_extra_dependency` sets how far
+the lint looks for that declaration. Where `command-extra` is in
+the build at all, a chain is left alone unless every setter in
+it has a counterpart there. The by-value forms arrived over
 several releases, and a chain is ported whole or not at all.
 
 A fix is applied where the whole change is known: a chain is
@@ -88,8 +88,8 @@ lint will name its methods. Without the crate somewhere in
 reach, the diagnostic would name something the author cannot
 write. Defaults to `workspace`: a workspace that has settled on
 the crate has settled for its members, so a member that has not
-inherited it yet is told all the same — what it is missing is a
-line in a manifest. Narrow it to `crate` where the members are
+inherited it yet is told all the same, what it is missing being
+a line in a manifest. Narrow it to `crate` where the members are
 deliberately not uniform, or widen it to `unchecked` to hear
 from everywhere, including where the method named cannot be
 written yet.

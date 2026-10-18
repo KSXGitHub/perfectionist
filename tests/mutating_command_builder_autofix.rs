@@ -10,7 +10,7 @@
 //! expression's type. The rename alone turns `&mut Command` into
 //! `Command`, which the context may reject, and which can redirect a
 //! later call in the same chain to an extension trait of the author's
-//! own -- compiling, and invisible in the diff. Prefixing `&mut ` hands
+//! own, compiling and invisible in the diff. Prefixing `&mut ` hands
 //! the context the type it expects, so it and every following method
 //! resolve as they did before. What is left after that is checkable.
 //!
@@ -38,8 +38,8 @@ use text_block_macros::text_block_fnl;
 /// fixtures need and [`fixture_cargo_toml`] does not carry. Passing
 /// `Cargo.toml` as a source overwrites the generated copy, since
 /// [`build_project_with_config`] inserts the sources after its own
-/// entries -- appending to that copy rather than restating it keeps the
-/// package, lib and workspace stanzas in one place.
+/// entries, so appending to that copy rather than restating it keeps
+/// the package, lib and workspace stanzas in one place.
 fn cargo_toml(package: &str) -> String {
     format!(
         "{}\n[dependencies]\ncommand-extra = \"1.2.0\"\n",
@@ -61,7 +61,7 @@ const NOT_APPLIED: &str = include_str!("fixtures/mutating_command_builder_autofi
 
 /// Sibling rules would rewrite the same lines on their own account,
 /// which would make "did the fixer touch this line?" answer the wrong
-/// question -- and any error one of them introduced would be blamed on
+/// question, and any error one of them introduced would be blamed on
 /// this rule by the headline assertion below.
 const CONFIG: &str = text_block_fnl! {
     "[perfectionist]"

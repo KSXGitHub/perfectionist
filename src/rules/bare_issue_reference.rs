@@ -17,7 +17,7 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags bare `#NNN` issue / pull-request references in doc
-    /// comments (`///`, `//!`) — and, when opted in, in plain `//`
+    /// comments (`///`, `//!`) and, when opted in, in plain `//`
     /// line comments. The autofix rewrites the reference; the
     /// `doc_comment_form` knob selects the shape (inline
     /// `[#123](URL)`, reference `[#123]`, a bare URL, or a `<URL>`
@@ -27,8 +27,8 @@ declare_tool_lint! {
     /// pull request, a colour like `#123`, or any other numbered
     /// item, so no suggestion is ever `MachineApplicable`. The
     /// `suggest_issue_url` / `suggest_pr_url` knobs choose which link
-    /// target(s) the autofix offers — each `MaybeIncorrect` — and
-    /// with neither enabled the lint is help-only. The author can
+    /// target(s) the autofix offers, each `MaybeIncorrect`. With
+    /// neither enabled the lint is help-only. The author can
     /// also resolve the ambiguity by enclosing the token in backticks
     /// (so it reads as code) or by using a spelling without a leading
     /// `#`.
@@ -51,8 +51,8 @@ declare_tool_lint! {
     /// ```
     ///
     /// **Prefer:** (with
-    /// `repository = "https://github.com/owner/repo"` — `forge`
-    /// is detected from the host), picking the issue link for one
+    /// `repository = "https://github.com/owner/repo"`, so that
+    /// `forge` is detected from the host), picking the issue link for one
     /// and the pull-request link for the other:
     ///
     /// ```rust,ignore
@@ -71,7 +71,7 @@ const CONFIG_KEY: &str = "perfectionist::bare_issue_reference";
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum DocForm {
-    /// `[#123](URL)` — the URL is inlined. Keeps `#123` as the
+    /// `[#123](URL)`: the URL is inlined. Keeps `#123` as the
     /// visible link text.
     #[default]
     Inline,
@@ -81,13 +81,13 @@ enum DocForm {
     /// can't be placed safely, so there the fix rewrites only the
     /// `#123` token and leaves the definition to the author.
     Reference,
-    /// `https://.../issues/123` — the bare URL replaces the `#123`
+    /// `https://.../issues/123`: the bare URL replaces the `#123`
     /// token outright (the `#123` text is not kept). NB: in a doc
     /// comment the sibling `perfectionist::bare_url` lint then flags
     /// the substituted URL; pick `bracketed_url` for a form it
     /// accepts.
     BareUrl,
-    /// `<https://.../issues/123>` — a markdown autolink replaces the
+    /// `<https://.../issues/123>`: a markdown autolink replaces the
     /// `#123` token outright. `bare_url` accepts this form.
     BracketedUrl,
 }
@@ -100,8 +100,8 @@ enum PlainForm {
     /// Substitute the URL itself (`https://...`), unwrapped.
     /// Many editors auto-detect a bare URL as clickable. NB: the
     /// sibling `perfectionist::bare_url` lint, whose default also
-    /// scans regular comments, will then flag the substituted URL —
-    /// pick `bracketed_url` to produce a form both rules accept.
+    /// scans regular comments, will then flag the substituted URL.
+    /// Pick `bracketed_url` to produce a form both rules accept.
     #[default]
     BareUrl,
     /// Substitute `<https://...>`. The angle-bracket delimiter gives
@@ -114,8 +114,8 @@ enum PlainForm {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 struct Config {
-    /// Git-hosting service the repository is on — one of `github`,
-    /// `gitlab`, `gitea` — which fixes the issue / PR path layout.
+    /// Git-hosting service the repository is on, one of `github`,
+    /// `gitlab` or `gitea`, which fixes the issue / PR path layout.
     /// When unset, it is detected from the `repository` host: the
     /// public instances (`github.com`, `gitlab.com`, `codeberg.org`,
     /// `gitea.com`) and the conventional self-hosted subdomains
@@ -143,8 +143,8 @@ struct Config {
     /// for the two-piece `[#N]` + `[#N]: URL` form (the definition is
     /// appended to the doc block; in a `/** */` block doc comment only
     /// the `#N` token is rewritten and the definition is left to the
-    /// author). Defaults to `inline`. Ignored for plain-comment fixes
-    /// — those follow `plain_comment_form` instead.
+    /// author). Defaults to `inline`. Ignored for plain-comment
+    /// fixes, which follow `plain_comment_form` instead.
     doc_comment_form: DocForm,
     /// When `true`, also lint plain `//` line comments. The
     /// autofix in plain comments uses `plain_comment_form`'s URL
@@ -187,7 +187,8 @@ pub struct BareIssueReference {
 }
 
 /// Resolve the `repository` config value to its canonical web base.
-/// `None` when unset — the lint then runs help-only. **Panics** when
+/// `None` when unset, in which case the lint runs help-only.
+/// **Panics** when
 /// it is set but unparseable, so a malformed URL fails loudly at
 /// launch rather than silently disabling the autofix and leaving the
 /// author to wonder why no link is suggested.
@@ -219,7 +220,7 @@ impl BareIssueReference {
 
     /// The forge whose path layout to use: the explicit `forge` if
     /// set, otherwise one detected from the repository's host. `None`
-    /// when neither yields a recognised forge — there is no fallback,
+    /// when neither yields a recognised forge. There is no fallback,
     /// so the rule never prefers one service.
     fn effective_forge(&self) -> Option<Forge> {
         self.forge
@@ -227,9 +228,9 @@ impl BareIssueReference {
     }
 
     /// Suggested issue URL for `number`. `None` (so: help-only)
-    /// unless `repository` is set — it carries the owner/repo path
-    /// the link needs — and a forge is known (explicit or detected
-    /// from the host).
+    /// unless a forge is known (explicit or detected from the host)
+    /// and `repository` is set, since that carries the owner/repo
+    /// path the link needs.
     fn issue_url(&self, number: &str) -> Option<String> {
         let base = self.repo_web_base.as_deref()?;
         let forge = self.effective_forge()?;
@@ -296,7 +297,7 @@ impl Forge {
         }
     }
 
-    /// Detect the forge from a repository URL's host — both the
+    /// Detect the forge from a repository URL's host, both the
     /// public instances and the conventional `gitlab.*` / `github.*`
     /// / `gitea.*` / `forgejo.*` self-hosted subdomains. Returns
     /// `None` for a host that gives no such hint, so it needs an
@@ -376,8 +377,8 @@ struct EmitOptions {
     suggest_issue: bool,
     suggest_pr: bool,
     /// Whether `suggest_pr_url` is capable of producing a suggestion
-    /// on the effective forge at all — see
-    /// [`BareIssueReference::hash_can_mean_pr`]. Distinct from
+    /// on the effective forge at all, which
+    /// [`BareIssueReference::hash_can_mean_pr`] answers. Distinct from
     /// `suggest_pr`, which also folds in the knob's own value; the
     /// "no knob enabled" help needs the two apart so it doesn't
     /// advise turning on a knob that cannot help.
@@ -399,15 +400,15 @@ impl<'tcx> LateLintPass<'tcx> for BareIssueReference {
                 }
             }
             CommentSurface::PlainBlock => {
-                // Out of scope per the plan — `bare_issue_reference`
+                // Out of scope per the plan: `bare_issue_reference`
                 // deliberately doesn't scan plain block comments.
             }
         });
         let options = EmitOptions {
             suggest_issue: self.suggest_issue_url,
-            // On GitLab a bare `#NNN` always denotes an issue — merge
-            // requests are written `!NNN` — so the PR suggestion never
-            // applies to it, whatever `suggest_pr_url` says.
+            // On GitLab a bare `#NNN` always denotes an issue, merge
+            // requests being written `!NNN`, so the PR suggestion
+            // never applies to it, whatever `suggest_pr_url` says.
             suggest_pr: self.suggest_pr_url && self.hash_can_mean_pr(),
             hash_can_mean_pr: self.hash_can_mean_pr(),
             doc_form: self.doc_comment_form,
@@ -575,7 +576,7 @@ fn emit_issue_ref(
                     // suggestion here. On GitLab `suggest_pr_url` is
                     // inert whatever its value, so listing it would
                     // send the author after a setting that changes
-                    // nothing — and, when it is already `true`, would
+                    // nothing, and, when it is already `true`, would
                     // repeat this very diagnostic verbatim.
                     diag.help(if hash_can_mean_pr {
                         "enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml \

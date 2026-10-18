@@ -16,14 +16,14 @@ fn flat() {
     work();
 }
 
-// Bad: 1 level — a single `if`.
+// Bad: 1 level, a single `if`.
 fn one_if(ready: bool) {
     if ready {
         work();
     }
 }
 
-// Bad: 2 levels — an `if` inside an `if`.
+// Bad: 2 levels, an `if` inside an `if`.
 fn nested_if(first: bool, second: bool) {
     if first {
         if second {
@@ -32,7 +32,7 @@ fn nested_if(first: bool, second: bool) {
     }
 }
 
-// Bad: 1 level — `else if` stays at the outer `if`'s level, and
+// Bad: 1 level, since `else if` stays at the outer `if`'s level, and
 // the `else` body is inside that level too.
 fn else_if_chain(value: u8) {
     if value == 0 {
@@ -44,7 +44,7 @@ fn else_if_chain(value: u8) {
     }
 }
 
-// Bad: 2 levels — an `if` inside an `else if` body.
+// Bad: 2 levels, an `if` inside an `else if` body.
 fn if_inside_else_if(value: u8, ready: bool) {
     if value == 0 {
         work();
@@ -55,14 +55,14 @@ fn if_inside_else_if(value: u8, ready: bool) {
     }
 }
 
-// Bad: 1 level — an `if let` is a level like any `if`.
+// Bad: 1 level, an `if let` being a level like any `if`.
 fn if_let(input: Option<u8>) {
     if let Some(_value) = input {
         work();
     }
 }
 
-// Bad: 1 level — a let chain binds a pattern like a bare `if let`
+// Bad: 1 level, since a let chain binds a pattern like a bare `if let`
 // does, so the path names it `if let` and the suggestion is `let ...
 // else`.
 fn if_let_chain(input: Option<u8>, ready: bool) {
@@ -73,7 +73,7 @@ fn if_let_chain(input: Option<u8>, ready: bool) {
     }
 }
 
-// Bad: 2 levels — an `if` inside an `if` that has an `else` cannot
+// Bad: 2 levels, and an `if` inside an `if` that has an `else` cannot
 // become `&&`, so the suggestion falls back to the general advice.
 fn if_in_if_with_else(first: bool, second: bool) {
     if first {
@@ -85,8 +85,8 @@ fn if_in_if_with_else(first: bool, second: bool) {
     }
 }
 
-// Bad: 1 level — a `match`; its arms are inside it, not levels of
-// their own.
+// Bad: 1 level, a `match`, whose arms are inside it rather than
+// levels of their own.
 fn matching(value: u8) {
     match value {
         0 => work(),
@@ -96,7 +96,7 @@ fn matching(value: u8) {
     }
 }
 
-// Bad: 2 levels — an `if` inside an arm's block body.
+// Bad: 2 levels, an `if` inside an arm's block body.
 fn if_in_arm(value: u8, ready: bool) {
     match value {
         0 => {
@@ -108,7 +108,7 @@ fn if_in_arm(value: u8, ready: bool) {
     }
 }
 
-// Bad: 2 levels — an `if` in an arm guard sits under the `match` just
+// Bad: 2 levels, since an `if` in an arm guard sits under the `match` just
 // as one in an arm body does, but a guard must evaluate to `bool`, so
 // such an `if` always has an `else` and never draws the arm-guard
 // suggestion.
@@ -119,7 +119,7 @@ fn if_in_arm_guard(value: u8, ready: bool) {
     }
 }
 
-// Bad: 2 levels — `for` around an `if`.
+// Bad: 2 levels, a `for` around an `if`.
 fn for_loop(items: &[u8]) {
     for item in items {
         if *item > 1 {
@@ -128,28 +128,28 @@ fn for_loop(items: &[u8]) {
     }
 }
 
-// Bad: 1 level — the `if` a `while` lowers to is not a level.
+// Bad: 1 level, the `if` a `while` lowers to not being a level.
 fn while_loop(mut count: u8) {
     while count > 0 {
         count -= 1;
     }
 }
 
-// Bad: 1 level — `while let` is a `while`.
+// Bad: 1 level, `while let` being a `while`.
 fn while_let(mut items: impl Iterator<Item = u8>) {
     while let Some(_item) = items.next() {
         work();
     }
 }
 
-// Bad: 1 level — a bare `loop`.
+// Bad: 1 level, a bare `loop`.
 fn bare_loop() {
     loop {
         break;
     }
 }
 
-// Bad: 2 levels — a closure is a level, and the `if` inside it
+// Bad: 2 levels, a closure being a level and the `if` inside it
 // another.
 fn closure(items: &[u8]) -> Vec<u8> {
     items
@@ -158,14 +158,14 @@ fn closure(items: &[u8]) -> Vec<u8> {
         .collect()
 }
 
-// Bad: 1 level — a free-standing block.
+// Bad: 1 level, a free-standing block.
 fn scoped_block() {
     {
         work();
     }
 }
 
-// Bad: 1 level — the block a `let` initialises from.
+// Bad: 1 level, the block a `let` initialises from.
 fn let_block() -> u8 {
     let value = {
         work();
@@ -174,13 +174,13 @@ fn let_block() -> u8 {
     value
 }
 
-// Bad: 1 level — an `unsafe` block.
+// Bad: 1 level, an `unsafe` block.
 fn unsafe_block() -> u8 {
     let value = unsafe { core::mem::transmute::<u8, u8>(1) };
     value
 }
 
-// Bad: 1 level — the body of a `let ... else`.
+// Bad: 1 level, the body of a `let ... else`.
 fn let_else(input: Option<u8>) -> u8 {
     let Some(value) = input else {
         return 0;
@@ -194,15 +194,15 @@ fn question_mark(input: Result<u8, ()>) -> Result<u8, ()> {
     Ok(value)
 }
 
-// Bad: 1 level — an `async` body is not a level; the `if` inside
-// it is one.
+// Bad: 1 level, since an `async` body is not a level and the `if`
+// inside it is one.
 async fn awaiting(ready: impl Future<Output = bool>) {
     if ready.await {
         work();
     }
 }
 
-// Bad: 2 levels — an `async` closure is one the author wrote, so
+// Bad: 2 levels, since an `async` closure is one the author wrote, so
 // it is a level like any other closure, and the `if` inside it is
 // another.
 fn async_closure(ready: bool) {
@@ -213,8 +213,8 @@ fn async_closure(ready: bool) {
     };
 }
 
-// Bad: 1 level — an `async` block is not a level, so only the `if`
-// counts.
+// Bad: 1 level, since an `async` block is not a level and only the
+// `if` counts.
 fn async_block(ready: bool) -> impl Future<Output = ()> {
     async move {
         if ready {
@@ -223,8 +223,8 @@ fn async_block(ready: bool) -> impl Future<Output = ()> {
     }
 }
 
-// Bad: 1 level — the `if` written as a macro argument counts; the
-// expansion does not.
+// Bad: 1 level, since the `if` written as a macro argument counts and
+// the expansion does not.
 fn branch_in_macro_argument(ready: bool) {
     println!("{}", if ready { 1 } else { 0 });
 }
@@ -262,7 +262,7 @@ fn let_else_from_a_local_macro(input: Option<u8>) {
 // Not flagged: a nested function is measured on its own, so nothing
 // inside `inner` counts toward `outer`.
 fn outer() {
-    // Bad: 1 level — measured on its own, not as part of `outer`.
+    // Bad: 1 level, measured on its own rather than as part of `outer`.
     fn inner(ready: bool) {
         if ready {
             work();
@@ -271,7 +271,7 @@ fn outer() {
     inner(true);
 }
 
-// Bad: 1 level — a method body is measured like a free function's.
+// Bad: 1 level, a method body being measured like a free function's.
 struct Counter;
 
 impl Counter {

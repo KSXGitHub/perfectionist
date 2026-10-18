@@ -1,12 +1,12 @@
-//! [`GetterNamePatterns`] — `cloning_getter`'s `getter_name_patterns`
+//! [`GetterNamePatterns`], `cloning_getter`'s `getter_name_patterns`
 //! list: [`NamePattern`]s under two rules of this rule's own.
 //!
 //! **The list opens with `*` or `!*`.** Every name it is asked about
 //! is then covered by at least its first entry, so the list always has
 //! an answer and a reader never has to know a default to work out what
 //! one says. `["!*", "get_*"]` reads as "nothing, then `get_*` back",
-//! and the alternative it is not — `["get_*"]`, resting on an unstated
-//! baseline — cannot be written.
+//! and the alternative it is not, `["get_*"]` resting on an unstated
+//! baseline, cannot be written.
 //!
 //! **No entry names a conversion prefix.** The rule answers for `as_*`,
 //! `to_*` and `into_*` in a clause above the list, so an entry naming
@@ -22,8 +22,8 @@
 use crate::name_pattern::{NamePattern, verdict};
 
 /// TOML-flavoured type label for [`GetterNamePatterns`], surfaced by
-/// `tools/gen-docs` in the per-rule field-type column. Sourced here —
-/// next to the type definition — so the label is the type's own
+/// `tools/gen-docs` in the per-rule field-type column. Sourced here,
+/// next to the type definition, so the label is the type's own
 /// property rather than a hard-coded match arm in the doc generator.
 ///
 /// It is spelled as an array because the type deserialises from one;

@@ -14,8 +14,8 @@ use rustc_span::{Symbol, kw};
 /// Scan an ordered sequence of items for adjacent module + item
 /// imports to fold. Each entry is `Some(item)` for an item in source
 /// order, or `None` for an intervening non-item statement (a `let`,
-/// an expression) that breaks adjacency. A non-`use` item — or a `use`
-/// from a macro expansion — also breaks the window.
+/// an expression) that breaks adjacency. A non-`use` item, or a `use`
+/// from a macro expansion, also breaks the window.
 pub(super) fn scan<'ast>(
     cx: &LateContext<'_>,
     entries: impl Iterator<Item = Option<&'ast Item>>,
@@ -138,8 +138,9 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
     let rest_segments = &real_segments(&tree.prefix)[module.len()..];
     match &tree.kind {
         UseTreeKind::Simple(rename) => {
-            // `use module::rest` — rest must be non-empty (otherwise
-            // `tree` is the module itself, not an item under it).
+            // `use module::rest`, where rest must be non-empty
+            // (otherwise `tree` is the module itself, not an item
+            // under it).
             if rest_segments.is_empty() {
                 return None;
             }
@@ -169,7 +170,8 @@ fn item_tail_under(tree: &UseTree, module: &[Symbol]) -> Option<String> {
 /// Emit the fold suggestion: replace `first`'s tree with
 /// `module::{self, tail}` and delete `second`'s whole statement.
 /// `module_tree` is whichever of the two statements is the module
-/// import — its prefix renders the `module` path (raw-identifier aware).
+/// import, whose prefix renders the `module` path (raw-identifier
+/// aware).
 /// `first` is always a `use` item (the caller checked), so its own tree
 /// is recovered here rather than threaded through a separate argument.
 fn emit_fold(

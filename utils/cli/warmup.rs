@@ -45,9 +45,9 @@ fn main() -> ExitCode {
     let warmup_project_dir = root.join("target").join("integration-fixtures-warmup");
 
     // Start the fixture fresh so the warmup is reproducible. A
-    // missing dir is fine — that's the expected state on a clean
-    // checkout — but any other I/O error would leave stale files
-    // around, so fail loudly.
+    // missing dir is fine, being the expected state on a clean
+    // checkout. Any other I/O error would leave stale files around,
+    // so fail loudly.
     match std::fs::remove_dir_all(&warmup_project_dir) {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}

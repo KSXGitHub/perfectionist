@@ -15,7 +15,7 @@ use rustc_span::Span;
 /// `context_label` is the trailing phrase in the message, e.g.
 /// `"comment"` or `` "`panic!` message" ``. `span_for` maps a
 /// `(byte_offset_within_text, character_utf8_length)` pair into the
-/// [`Span`] of the offending character in source — different callers
+/// [`Span`] of the offending character in source. Different callers
 /// resolve this differently (a source-file-relative position for the
 /// comment scanner, a `BytePos`-arithmetic offset from a literal span
 /// for the panic-message scanner).
@@ -67,8 +67,8 @@ fn emit_flagged_char<Cx>(
 
 /// HIR-anchored counterpart of [`emit_flagged_char`], for a rule that
 /// runs in a late pass and emits at the enclosing HIR node of the
-/// comment it scanned — resolved by
-/// [`crate::enclosing_hir::emit_at_enclosing_hir`] — so a per-item /
+/// comment it scanned, resolved by
+/// [`crate::enclosing_hir::emit_at_enclosing_hir`], so a per-item /
 /// per-module `#[allow]` / `#[expect]` resolves, not just a crate-root
 /// `#![allow]`.
 pub(crate) fn emit_flagged_char_hir(
@@ -119,7 +119,7 @@ fn flagged_char_applicability(character: char) -> Applicability {
 /// scan as plain text.
 ///
 /// Recognises plain (`"..."`) and raw (`r"..."`, `r#"..."#`, ...)
-/// strings. Byte / C-string forms are excluded — the helper is for
+/// strings. Byte / C-string forms are excluded, the helper being for
 /// rules that operate on display strings.
 pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usize)> {
     let bytes = snippet.as_bytes();
@@ -161,8 +161,9 @@ pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usiz
 /// Recognises `\xNN` (4 bytes), `\u{...}` (variable length), and any
 /// single-character escape (`\n`, `\t`, `\r`, `\0`, `\"`, `\\`, `\'`,
 /// the line-continuation `\<newline>`, ...). The returned slice is the
-/// verbatim source spelling of the escape, escapes are not decoded —
-/// callers that need the decoded character derive it from the slice.
+/// verbatim source spelling of the escape, escapes are not decoded,
+/// and callers that need the decoded character derive it from the
+/// slice.
 ///
 /// The "cooked" qualifier is load-bearing: in a *raw* string literal a
 /// backslash is an ordinary character, so running this scanner over a

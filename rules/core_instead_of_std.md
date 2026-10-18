@@ -16,8 +16,8 @@ segment to `std`. `alloc::` paths are covered too unless
 exempted with `skip_paths`.
 
 This is the counterpart of `clippy::std_instead_of_core` and
-`clippy::std_instead_of_alloc`, which push paths the other way —
-towards the narrower crate — so that a library keeps compiling
+`clippy::std_instead_of_alloc`, which push paths the other way,
+towards the narrower crate, so that a library keeps compiling
 without `std`. Enable those two on a crate that is, or may become,
 `no_std`; enable this one on a crate that has settled on `std`.
 The two directions contradict each other, so no crate wants both.
@@ -25,8 +25,9 @@ The two directions contradict each other, so no crate wants both.
 Some paths are deliberately left alone. Nothing is flagged in a
 `#![no_std]` crate, where there is no `std::` to name. A path is
 left alone when its `std::` spelling would name a *different*
-item — `core::panic::PanicInfo` is not `std::panic::PanicInfo` —
-and so is a macro path, because `core::panic!` and `std::panic!`
+item, `core::panic::PanicInfo` not being
+`std::panic::PanicInfo`, and so is a macro path, because
+`core::panic!` and `std::panic!`
 are genuinely different macros. A path produced by a macro
 expansion is left alone as well.
 
@@ -42,7 +43,7 @@ This is a stylistic preference, not a correctness issue.
 Everything public in `core` and `alloc` is reachable through
 `std`, so in a crate that will always link `std` the spellings are
 interchangeable, and which one a given line uses is usually an
-accident — whichever crate the code was pasted from, or whichever
+accident: whichever crate the code was pasted from, or whichever
 path an editor's auto-import happened to offer. Naming one crate
 root throughout keeps every `use` line starting with the same
 word, and keeps an `alloc::` path from requiring an
@@ -75,7 +76,7 @@ Configure via `dylint.toml` under `["perfectionist::core_instead_of_std"]`. Ever
 
 Whether an `alloc::` path is a violation alongside a `core::`
 one. Set it to `false` in a crate that keeps its `alloc::` paths
-on purpose — one tracking `core` cleanliness against a possible
+on purpose, tracking `core` cleanliness against a possible
 `no_std` future while the `alloc` dependency is permanent.
 Defaults to `true`.
 
@@ -85,7 +86,7 @@ Defaults to `true`.
 - _Optional_
 
 Paths that are never flagged, each written as the absolute
-extern-crate path it is — with the leading `::` and every
+extern-crate path it is, with the leading `::` and every
 segment spelled out, as in `"::core::mem::transmute"`. Only a
 `::core::` or `::alloc::` entry can ever match, and matching is
 exact and syntactic against the path as written, with no

@@ -68,7 +68,7 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// **Avoid:** 4 levels — `for`, `if let`, `match`, `if`
+    /// **Avoid:** 4 levels, from `for`, `if let`, `match` and `if`
     ///
     /// ```rust,ignore
     /// for entry in entries {
@@ -85,8 +85,8 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** 2 levels — a `let ... else` guard in place of the
-    /// `if let`, an arm guard in place of the `if`
+    /// **Prefer:** 2 levels, with a `let ... else` guard in place of
+    /// the `if let` and an arm guard in place of the `if`
     ///
     /// ```rust,ignore
     /// for entry in entries {
@@ -99,7 +99,7 @@ declare_tool_lint! {
     /// }
     /// ```
     ///
-    /// **Prefer:** the same body, cut where it has a name of its own —
+    /// **Prefer:** the same body, cut where it has a name of its own.
     /// `report_or_descend` is named for what it does and takes three
     /// values, none of them the loop's state. That leaves 2 levels on
     /// each side of the cut.

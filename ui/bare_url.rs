@@ -1,17 +1,17 @@
-// Bad: bare URL in a plain line comment — see https://example.com for details.
+// Bad: a plain line comment leaves a URL bare: https://example.com here.
 // Good: <https://example.com> wrapped explicitly.
 
-/* Bad: bare URL in a block comment — https://example.org. */
+/* Bad: a block comment leaves a URL bare: https://example.org. */
 /* Good: <https://example.org>. */
 
-/// Bad: bare URL in a doc comment — see https://example.com for details.
+/// Bad: a doc comment leaves a URL bare: https://example.com here.
 fn _doc_bad() {}
 
-/** Bad: bare URL in a `/** */` doc-block comment — https://example.org. */
+/** Bad: a `/** */` doc-block leaves a URL bare: https://example.org. */
 fn _doc_block_bad() {}
 
 mod _inner_doc_block {
-    /*! Bad: bare URL in an inner `/*! */` doc-block — https://example.com. */
+    /*! Bad: an inner `/*! */` doc-block leaves one bare: https://example.com. */
 }
 
 /// Good: <https://example.com> wrapped explicitly.
@@ -20,8 +20,8 @@ fn _doc_good_wrapped() {}
 /// Good: [the example site](https://example.com) as a labelled link.
 fn _doc_good_labelled() {}
 
-/// Inside a code span: `https://example.com` should not fire — the
-/// markdown code-span detection suppresses it (the host is not in
+/// Inside a code span: `https://example.com` should not fire, since
+/// the markdown code-span detection suppresses it (the host is not in
 /// the default `skip_hosts`, so a skip here proves the span logic).
 fn _doc_code_span_skip() {}
 
@@ -55,19 +55,19 @@ fn _doc_skip_host_case_insensitive() {}
 /// URL already inside an HTML attribute: <a href="https://example.com">click</a>.
 fn _doc_html_attribute_skip() {}
 
-// URL with trailing dot: https://example.org. — should be `MaybeIncorrect`.
+// URL with trailing dot: https://example.org. Should be `MaybeIncorrect`.
 fn _plain_trailing_dot() {}
 
 // A finding anchors to the nearest documentable HIR node. Items and
 // impl items are covered above; trait items and foreign items are
 // separate arms of that walk.
 trait _DocumentedTrait {
-    /// Bad: bare URL on a trait item — https://example.com/trait.
+    /// Bad: a trait item leaves a URL bare: https://example.com/trait.
     fn documented_method(&self);
 }
 
 extern "C" {
-    /// Bad: bare URL on a foreign item — https://example.com/foreign.
+    /// Bad: a foreign item leaves a URL bare: https://example.com/foreign.
     fn documented_foreign();
 }
 

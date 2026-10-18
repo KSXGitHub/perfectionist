@@ -1,4 +1,4 @@
-// A function-scope `#[expect]` should fulfil — the late pass finds
+// A function-scope `#[expect]` should fulfil, since the late pass finds
 // the deepest enclosing HIR node for each violation and emits the
 // diagnostic there, so a per-function suppression behaves correctly.
 // The crate-level case is exercised by the `expect_at_crate_root`

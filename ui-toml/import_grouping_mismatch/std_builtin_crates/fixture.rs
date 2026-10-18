@@ -26,7 +26,7 @@ mod clap {
     pub struct Parser;
 }
 
-// Bad: a blank line splits the std group — `proc_macro` and `test` join
+// Bad: a blank line splits the std group, and `proc_macro` and `test` join
 // `std`, so the three belong in one contiguous block with no blank.
 use std::time::Duration;
 

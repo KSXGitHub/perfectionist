@@ -10,8 +10,9 @@
 ## What it does
 
 Flags an inherent `to_*` method taking `&self` and nothing else
-that hands back a borrow — `&T`, or an `Option` or `Result` of
-one — and does nothing to earn it: the body is a field of
+that hands back a borrow, whether `&T` or an `Option` or
+`Result` of one, and does nothing to earn it: the body is a
+field of
 `self`, a borrow of one, or a single `as_*` view of one. It
 asks for the `as_*` prefix instead.
 
@@ -22,7 +23,7 @@ every one.
 
 Left alone:
 
-- Any other body — a call, a `match`, a statement before the
+- Any other body: a call, a `match`, a statement before the
   tail expression. A costly one is what `to_` is for, and a free
   one written that way is missed rather than guessed at.
 - A `to_*` with another parameter, which is converting
@@ -31,8 +32,8 @@ Left alone:
 - A method produced by a macro.
 
 What no reading of the body can tell is a free borrow from one
-whose author means to make it cost later — std names
-`CStr::to_bytes` with `to_` for that reason — so that case takes
+whose author means to make it cost later, std naming
+`CStr::to_bytes` with `to_` for that reason, so that case takes
 an `#[expect(...)]`.
 
 ## Why restrict this?
@@ -40,7 +41,7 @@ an `#[expect(...)]`.
 This is a stylistic preference, not a correctness issue. The
 Rust API Guidelines sort the three conversion prefixes by what
 they cost: `as_` is the free one, `to_` the expensive one.
-Either may hand back a borrow — `Path::to_str` validates UTF-8
+Either may hand back a borrow: `Path::to_str` validates UTF-8
 and returns `Option<&str>`, and the guidelines say outright
 that calling that one `as_str` would be wrong. It is the
 reverse they leave no room for: a `to_*` that costs nothing,
@@ -50,7 +51,7 @@ have had for free.
 ## Interaction with Clippy
 
 `clippy::wrong_self_convention` checks the same three prefixes
-against the method's *receiver* — whether `to_*` takes `&self`.
+against the method's *receiver*, whether `to_*` takes `&self`.
 It does not look at what the body costs, so a `to_*` that takes
 `&self` and only borrows satisfies it.
 

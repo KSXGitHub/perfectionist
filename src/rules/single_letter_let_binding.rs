@@ -34,7 +34,7 @@ declare_tool_lint! {
     /// allow-list spanning several kinds at once (bindings,
     /// parameters, item names). This rule governs `let` bindings
     /// alone, with its own exempt set. Enabling both is redundant
-    /// for `let` bindings — choose per-kind control here, or
+    /// for `let` bindings, so choose per-kind control here, or
     /// `min_ident_chars` for the one-knob sweep.
     ///
     /// ### Example

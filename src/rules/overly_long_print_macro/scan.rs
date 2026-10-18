@@ -6,7 +6,7 @@
 //! [`crate::literal_scan::take_string_escape`] parser so a `\\n`
 //! (escaped backslash, then the letter `n`) is never mistaken for the
 //! `\n` newline escape it folds. The rewrite is byte-for-byte
-//! output-preserving — every folded `\n` keeps its newline and the
+//! output-preserving: every folded `\n` keeps its newline and the
 //! trailing `\<newline><indent>` continuation strips exactly the
 //! source newline and indentation it introduced.
 
@@ -25,7 +25,7 @@ const INDENT_STEP: &str = "    ";
 
 /// Build the `(call_span, replacement)` for the wrapped,
 /// continuation-folded form, or `None` if the invocation should be
-/// left alone — its start line is within `max_line_width`, the
+/// left alone because its start line is within `max_line_width`, the
 /// template has no foldable interior `\n`, or a span could not be
 /// resolved to source text.
 pub(super) fn build_fold_suggestion(
@@ -88,8 +88,8 @@ pub(super) fn build_fold_suggestion(
     // template is itself a top-level token tree (`find_template_literal`
     // only ever selects a lone `TokenTree::Token`, never a nested group)
     // at or before it in source order. So `comma_at >= template_hi`: the
-    // insertion above leaves the `[..template_hi]` prefix — and therefore
-    // both template offsets computed below — untouched.
+    // insertion above leaves the `[..template_hi]` prefix untouched,
+    // and therefore both template offsets computed below.
     let template_lo = (template_span.lo().0.checked_sub(open_span.hi().0)?) as usize;
     let template_hi = (template_span.hi().0.checked_sub(open_span.hi().0)?) as usize;
     let before_template = inner.get(..template_lo)?;
@@ -103,7 +103,7 @@ pub(super) fn build_fold_suggestion(
 
 /// Fold every *interior* `\n` newline escape in a cooked literal body
 /// into the `\n\<newline><indent>` continuation form, returning the
-/// rewritten body — or `None` if nothing was folded.
+/// rewritten body, or `None` if nothing was folded.
 ///
 /// A `\n` is folded only when the source text immediately after it is
 /// neither end-of-body (a trailing `\n` needs no fold) nor a literal
@@ -111,7 +111,7 @@ pub(super) fn build_fold_suggestion(
 /// byte-equivalence: the `\<newline>` continuation strips the newline
 /// *and all leading whitespace* of the next source line, so folding
 /// `"a\n  b"` would silently swallow the two spaces of the second
-/// fragment. An escape such as `\t` is safe — its leading `\` is not
+/// fragment. An escape such as `\t` is safe: its leading `\` is not
 /// whitespace, so the continuation stops there and the escape
 /// survives.
 fn fold_template_body(body: &str, continuation_indent: &str) -> Option<String> {

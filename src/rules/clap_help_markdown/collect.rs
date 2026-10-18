@@ -6,7 +6,7 @@
 //! `#[derive(...)]` attribute is consumed during macro expansion and is
 //! gone by the late pass. Re-parsing keeps the written `#[derive(...)]`,
 //! `#[arg(...)]`, and doc-comment attributes intact and reaches every
-//! module file — including separate-file `mod foo;` submodules an
+//! module file, including separate-file `mod foo;` submodules an
 //! `EarlyLintPass` would miss.
 //!
 //! The result maps the source byte offset of each documented node's
@@ -43,11 +43,11 @@ pub(super) struct DocNodes {
     /// Byte offset of *each* `///` line of a node → its [`NodeState`].
     /// Keyed per line because an interleaved non-doc attribute splits a
     /// node's `///` run into several [`crate::comment_walk`] blocks, one
-    /// per consecutive run, each keyed by its own first line's offset —
+    /// per consecutive run, each keyed by its own first line's offset,
     /// so recording only the first would leave a later run's markdown
     /// unscanned. The markdown scan looks each block up here.
     pub(super) by_line: HashMap<u32, NodeState>,
-    /// Byte offset of the *first* `///` line of each node — exactly one
+    /// Byte offset of the *first* `///` line of each node, exactly one
     /// entry per node. The `require_help_override` check anchors its
     /// single per-node diagnostic here, so a node whose `///` run is
     /// split across several blocks is still flagged just once (at its
@@ -56,7 +56,7 @@ pub(super) struct DocNodes {
 }
 
 impl DocNodes {
-    /// No clap-bound, doc-commented, non-overridden node exists — so
+    /// No clap-bound, doc-commented, non-overridden node exists, so
     /// neither check has anything to do. `by_line` being empty implies
     /// `first_lines` is too (a node contributes to both or to neither).
     pub(super) fn is_empty(&self) -> bool {
@@ -68,7 +68,7 @@ impl DocNodes {
 /// container a clap help source. Matched by name (the re-parse runs
 /// before name resolution), which catches `clap::Parser`, an imported
 /// `Parser`, and a same-name re-export (`pub use clap::Parser;`); a
-/// derive renamed through `use clap::Parser as P;` is not caught — the
+/// derive renamed through `use clap::Parser as P;` is not caught, the
 /// same accepted limitation the sibling `perfectionist::unordered_derives`
 /// and `perfectionist::thiserror_usage` rules carry.
 const CLAP_DERIVES: &[&str] = &[
@@ -87,8 +87,9 @@ const CLAP_ATTR_NAMESPACES: &[&str] = &["clap", "arg", "command", "value"];
 /// Build the doc-node map for every clap-derived container in `crates`.
 ///
 /// The override-key set is clap's own fixed set ([`super::config::OVERRIDE_KEYS`]),
-/// interned once here rather than threaded from configuration — a project
-/// cannot add to or remove from clap's help-text override vocabulary.
+/// interned once here rather than threaded from configuration, since a
+/// project cannot add to or remove from clap's help-text override
+/// vocabulary.
 pub(super) fn collect_doc_nodes(
     crates: &[Crate],
     live_module_spans: &HashSet<SpanRange>,
@@ -135,7 +136,7 @@ fn walk_items(
             // Descend into inline `mod { ... }` bodies, but only those
             // live in the compiled crate. A re-parse keeps cfg-disabled
             // inline modules, which have no HIR node and so could not be
-            // silenced by a local `#[allow]` — the guard the
+            // silenced by a local `#[allow]`, which is the guard the
             // `import_grouping_mismatch` reference implementation documents.
             ItemKind::Mod(_, _, ModKind::Loaded(items, _, spans))
                 if live_module_spans.contains(&(spans.inner_span.lo(), spans.inner_span.hi())) =>
@@ -155,7 +156,7 @@ fn record_fields(data: &VariantData, override_keys: &BTreeSet<Symbol>, nodes: &m
 
 /// Record one documented node, keyed by the start offset of every `///`
 /// line it carries. A node with no doc comment, or one whose help text
-/// is overridden by an explicit attribute, contributes nothing — the
+/// is overridden by an explicit attribute, contributes nothing: the
 /// former has no comment block to flag, the latter is deliberately
 /// silent.
 ///
@@ -175,7 +176,7 @@ fn record_node(attrs: &[Attribute], override_keys: &BTreeSet<Symbol>, nodes: &mu
         .map(|attr| attr.span.lo().0)
         .peekable();
     // Ascending because `attrs` is in source order, so the first is the
-    // node's opening `///` line — the anchor `first_lines` records.
+    // node's opening `///` line, the anchor `first_lines` records.
     let Some(&first_line) = doc_los.peek() else {
         return;
     };
@@ -219,7 +220,7 @@ fn has_verbatim(attrs: &[Attribute]) -> bool {
 
 /// Collect the inner meta items of every `#[clap(...)]` / `#[arg(...)]`
 /// / `#[command(...)]` / `#[value(...)]` attribute on the node, looking
-/// through any `#[cfg_attr(<cfg>, clap(...))]` gate — the form a crate
+/// through any `#[cfg_attr(<cfg>, clap(...))]` gate, the form a crate
 /// uses to keep its clap attributes behind a `cli` feature. Gate
 /// handling has to match the derive detector's ([`has_clap_derive`]),
 /// or a gated `#[clap(help = "...")]` is missed and the doc comment is
@@ -238,7 +239,7 @@ fn clap_namespace_items(attrs: &[Attribute]) -> Vec<MetaItemInner> {
 /// comment into `--help` text: a `Parser` / `CommandFactory` (and the
 /// legacy `Clap`) type's doc becomes the command's `about` / `long_about`.
 /// Used to keep a `ValueEnum` container doc in scope when the enum *also*
-/// derives one of these — an unusual but representable combination.
+/// derives one of these, an unusual but representable combination.
 const COMMAND_ABOUT_DERIVES: &[&str] = &["Parser", "CommandFactory", "Clap"];
 
 /// Whether the node's attributes derive a clap help-source trait,
@@ -248,7 +249,7 @@ fn has_clap_derive(attrs: &[Attribute]) -> bool {
 }
 
 /// Whether an enum's own (type-level) doc comment can reach `--help`. A
-/// `ValueEnum`'s does not — clap reads its argument help from the field
+/// `ValueEnum`'s does not: clap reads its argument help from the field
 /// that *uses* the enum, and its per-value help from the variant docs, so
 /// the enum-level doc is rustdoc-only. If the enum *also* derives a
 /// command-producing trait (`Parser` / `CommandFactory`, or the legacy
@@ -258,8 +259,8 @@ fn enum_container_doc_reaches_help(attrs: &[Attribute]) -> bool {
     !derives_any(&derives, &["ValueEnum"]) || derives_any(&derives, COMMAND_ABOUT_DERIVES)
 }
 
-/// Whether any of `names` — final path segments, as
-/// [`crate::derive_list::derive_names`] yields them — is among the
+/// Whether any of `names`, final path segments as
+/// [`crate::derive_list::derive_names`] yields them, is among the
 /// node's derives.
 fn derives_any(derives: &HashSet<Symbol>, names: &[&str]) -> bool {
     derives

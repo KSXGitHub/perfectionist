@@ -33,7 +33,7 @@ struct UninlinedPositional(String);
 
 // Good: `derive_more` resolves a bare field name to the field, but wraps
 // any other expression as `&(...)` and infers no bound from it, so
-// deleting these would rewrite the generated body — and, on a generic
+// deleting these would rewrite the generated body and, on a generic
 // container, add a bound the expression form never contributed.
 #[derive(Display)]
 #[display("{}", self.0)]
@@ -227,8 +227,8 @@ struct Braced(String);
 #[display("{0}", _0)]
 struct ExplicitPositional(String);
 
-// Bad: `{1}` forwards to the sole argument all the same — derive_more's
-// transparent path throws the index away — so this is redundant and
+// Bad: `{1}` forwards to the sole argument all the same, derive_more's
+// transparent path throwing the index away, so this is redundant and
 // compiles identically to the bare derive. But the index names an
 // argument that was never supplied, so the rule warns without an autofix:
 // the fix could be to delete the attribute or to supply the argument.
@@ -262,8 +262,8 @@ enum UnitVariant {
 }
 
 // Good: the container may not be in the compiled crate at all, and one
-// that is not has no HIR node to anchor a finding at — an `#[allow]` on
-// the item could not silence one.
+// that is not has no HIR node to anchor a finding at, so an `#[allow]`
+// on the item could not silence one.
 #[cfg(any())]
 #[derive(Display)]
 #[display("{_0}")]

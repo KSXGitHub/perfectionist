@@ -48,8 +48,8 @@ fn check_empty_config_doc(source_path: &Path, attrs: &[Attribute], fields: &[Con
 }
 
 /// Locate the rule's `Config` struct and its `CONFIG_KEY` constant
-/// and bundle them — along with any project-local types the fields
-/// reference — into a [`ConfigDoc`].
+/// and bundle them, along with any project-local types the fields
+/// reference, into a [`ConfigDoc`].
 ///
 /// Every rule must declare both halves; a rule with no configurable
 /// knobs uses an empty `Config {}`. Panics, naming the file, when a
@@ -97,7 +97,7 @@ pub(crate) fn extract_config(
     // A container `#[serde(default)]` fills every missing field from a
     // default, so all the struct's fields are optional. Without it, a
     // field that is neither `Option<...>` nor individually defaulted is
-    // required — the syntactic signal for a "Mandatory configuration on
+    // required, the syntactic signal for a "Mandatory configuration on
     // opt-in rules" direction field such as `import_grouping_mismatch`'s `style`.
     let container_default = serde_has_default(&config_struct.attrs);
 

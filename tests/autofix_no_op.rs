@@ -3,13 +3,14 @@
 //!
 //! ## What this actually tests
 //!
-//! Not `derive_more`'s behaviour — that would be a tautology. The
+//! Not `derive_more`'s behaviour, which would be a tautology. The
 //! subject is *this crate's trigger*, and `derive_more` is only the
 //! oracle it is judged against. Each case is compiled, then run through
 //! `cargo dylint --fix`, so the rule itself decides what gets deleted
 //! and its own suggestion span performs the deletion. Whatever the fixer
-//! touched must then expand to byte-identical generated code — same
-//! body, same `where` clause — and still compile. A trigger that grows
+//! touched must then expand to byte-identical generated code, the
+//! same body and the same `where` clause, and still compile. A trigger
+//! that grows
 //! to cover a new shape is therefore checked automatically; nothing here
 //! restates a hand-maintained list of what the rule is believed to do.
 //!
@@ -48,7 +49,7 @@ use std::process::Command;
 
 /// `(name, as the user writes it, with the attribute deleted by hand)`.
 ///
-/// The second form is *not* the expected fix — the fixer produces that
+/// The second form is *not* the expected fix; the fixer produces that
 /// itself. It is only used to ask whether a shape the rule declined was
 /// one it could safely have fixed.
 type Case = (&'static str, &'static str, &'static str);
@@ -220,7 +221,7 @@ const CASES: &[Case] = &[
         r#"#[derive(derive_more::Display)] pub struct S(pub u32);"#,
     ),
     // Warn-only: `{1}` forwards to the sole argument (transparent path),
-    // so hand-deletion is a no-op — but the rule offers no autofix, so
+    // so hand-deletion is a no-op, but the rule offers no autofix, so
     // the fixer must leave it untouched. See `WARN_ONLY`.
     (
         "warn_only_stray_index",
@@ -263,7 +264,7 @@ const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
     "display_variant_under_wrapping",
 ];
 
-/// Shapes the rule *flags* but deliberately offers no autofix for — a
+/// Shapes the rule *flags* but deliberately offers no autofix for: a
 /// stray positional index (`{1}`) that may name a forgotten argument.
 /// The fixer must leave them untouched (there is no suggestion to
 /// apply); that they are warned is asserted by the UI `.stderr`, not
@@ -312,7 +313,7 @@ fn autofix_never_changes_the_generated_code() {
         } else if before[*name] == deleted[*name] && !ACCEPTED_MISSED_DIAGNOSTICS.contains(name) {
             failures.push(format!(
                 "{name}: the rule left this alone, but deleting the attribute changes \
-                 nothing — either flag it or record it as a deliberate miss",
+                 nothing; either flag it or record it as a deliberate miss",
             ));
         }
     }
@@ -454,8 +455,9 @@ fn count(line: &str, brace: char) -> isize {
 }
 
 /// Reduce an expanded module to just the code the derive generated:
-/// drop the echoed helper attribute, which differs by construction —
-/// the whole point is that it is gone — and collapse whitespace so the
+/// drop the echoed helper attribute, which differs by construction
+/// because the whole point is that it is gone, and collapse whitespace
+/// so the
 /// pretty-printer's line wrapping cannot masquerade as a difference.
 fn normalise(expanded: &str) -> String {
     const HELPERS: &[&str] = &[

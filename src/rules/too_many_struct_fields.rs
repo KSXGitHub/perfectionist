@@ -106,7 +106,7 @@ const DEFAULT_MAX_FIELDS: usize = 10;
 
 /// What to do. "Related" on its own is not a criterion a reader can
 /// apply, so the help says what the group's name has to be about, and
-/// rules out the name a mechanical split reaches for -- one that says
+/// rules out the name a mechanical split reaches for: one that says
 /// where the field list was cut rather than what the group is.
 const NAMING_HELP: &str = "group the fields that belong together into a struct named for what \
                            the group is, not for where the field list was cut";
@@ -179,7 +179,7 @@ impl<'tcx> LateLintPass<'tcx> for TooManyStructFields {
             VariantData::Unit(..) => 0,
         };
         // No `hir_in_external_macro` guard, though the diagnostic span
-        // below is `def_span` -- the `struct Name` header -- and so is
+        // below is `def_span`, the `struct Name` header, and so is
         // narrower than the field list that produced the violation.
         // Both halves of the proc-macro gap are already closed: an
         // expansion from another crate is filtered by

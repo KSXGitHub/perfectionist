@@ -10,15 +10,16 @@
 ## What it does
 
 Flags `#[allow(<lints>)]` when every named lint fires
-deterministically — a built-in rustc lint (not on the exempt
+deterministically: a built-in rustc lint (not on the exempt
 list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
 lint such as `perfectionist::*`. Such a suppression can be
 resolved two ways:
 
-1. **Remove** it — when the lint can no longer fire at the site
+1. **Remove** it where the lint can no longer fire at the site
    (a dead suppression, e.g. `clippy::too_many_arguments` left on
    a function that has since shed its arguments).
-2. **Replace** it with `#[expect]` — when the lint still fires and
+2. **Replace** it with `#[expect]` where the lint still fires
+   and
    you want the suppression to report itself the moment it stops.
 
 If the attribute also names a lint the rule leaves alone (an
@@ -28,7 +29,7 @@ resolved; the rest stay under `#[allow]`.
 Crate- and module-level scopes (`#![allow(...)]`, and outer
 `#[allow(...)]` on a `mod` item) are left alone by default,
 because a `cfg`-conditional body inside the scope may fire the
-lint in one configuration and not another — set
+lint in one configuration and not another. Set
 `apply_to_outer_scopes = true` to opt in.
 
 ## Why restrict this?
@@ -39,8 +40,9 @@ A suppression often outlives the problem it suppressed.
 issue is resolved, so a project accumulates stale `#[allow]`
 attributes that no longer apply. `#[expect]` emits
 `unfulfilled_lint_expectations` the moment the named lint stops
-triggering at the site — exactly when the suppression becomes
-dead — so routine compilation tells the author to remove it.
+triggering at the site, which is exactly when the suppression
+becomes dead, so routine compilation tells the author to remove
+it.
 Every `#[expect]` is also a self-test that the lint *does* fire
 at the site, so a future refactor that inadvertently fixes the
 issue is observed rather than hidden.
@@ -116,6 +118,6 @@ because `cfg`-conditional bodies inside the scope are common.
 
 When false, only `clippy::*`, `rustdoc::*`, and built-in lints
 are rewritten; other tool namespaces (`perfectionist::*` and
-similar) are left alone. Default `true` — a tool namespace's
+similar) are left alone. Default `true`: a tool namespace's
 lints are assumed to fire deterministically like a built-in, so
 `perfectionist::*` (and similar) are rewritten by default.

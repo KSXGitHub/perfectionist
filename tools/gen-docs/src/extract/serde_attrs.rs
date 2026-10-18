@@ -9,7 +9,7 @@ use syn::{Attribute, Expr, ExprLit, Lit, Meta, Token};
 /// `serde(...)` attribute on the item. Returns the first match in
 /// source order; an attribute whose body fails to parse is silently
 /// skipped, since this generator runs against rule sources that the
-/// compiler has already accepted — a parse failure here means the
+/// compiler has already accepted: a parse failure here means the
 /// attribute uses a form (e.g. `serde(deny_unknown_fields)`) that
 /// the generator simply doesn't surface.
 pub(crate) fn serde_str_attr(attrs: &[Attribute], key: &str) -> Option<String> {
@@ -35,7 +35,7 @@ pub(crate) fn serde_str_attr(attrs: &[Attribute], key: &str) -> Option<String> {
     None
 }
 
-/// Whether the item carries a serde `default` directive — the bare
+/// Whether the item carries a serde `default` directive, the bare
 /// flag `#[serde(default)]` or `#[serde(default = "path")]`. On a
 /// container it means any missing field is filled from a default; on a
 /// field it means that one field is. Used to tell a required config
@@ -75,7 +75,7 @@ pub(crate) fn serde_has_default(attrs: &[Attribute]) -> bool {
 /// An unrecognised style prints a warning to stderr and falls
 /// through to the identifier as written. Warning rather than
 /// panicking, on the principle that a wrong doc page is less bad
-/// than a broken doc-generation build — but the warning makes the
+/// than a broken doc-generation build, but the warning makes the
 /// gap loud enough that the rule author notices.
 pub(crate) fn apply_rename_all(style: &str, name: &str) -> String {
     match style {
