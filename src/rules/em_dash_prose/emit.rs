@@ -17,14 +17,13 @@ use rustc_span::Span;
 /// Why a dash in running prose is worth a warning. Stated once, since
 /// it reads the same for every dash the rule flags.
 const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
-                            to work out, and marks a sentence carrying more than one thought";
+                            to work out, and marks a sentence carrying more than one idea";
 
 /// What to do about it. Replaced wholesale by the `help`
 /// configuration field.
-const RESTRUCTURE_HELP: &str = "restructure the sentence so each clause carries one thought, rather than putting a \
-     different mark where the dash was: make it two sentences, or use the mark that states the \
-     relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a \
-     dependent clause)";
+const RESTRUCTURE_HELP: &str = "one idea per sentence: split any sentence a reader would have to read twice. A comma, \
+     colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader \
+     is still left to untangle them";
 
 pub(super) fn emit_dash(
     lint_context: &LateContext<'_>,

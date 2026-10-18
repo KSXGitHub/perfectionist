@@ -4,8 +4,8 @@ warning: em dash `—` in comment
 LL | // Bad: a line comment with an em dash — and a clause after it.
    |                                        ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
 warning: en dash `–` in comment
@@ -14,8 +14,8 @@ warning: en dash `–` in comment
 LL | // Bad: a line comment with an en dash – and a clause after it.
    |                                        ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: ASCII `--` used as an em dash in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -23,8 +23,8 @@ warning: ASCII `--` used as an em dash in comment
 LL | // Bad: a line comment with ASCII hyphens -- and a clause after it.
    |                                           ^^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -32,8 +32,8 @@ warning: em dash `—` in comment
 LL | /* Bad: a block comment with an em dash — and a clause after it. */
    |                                         ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -41,8 +41,8 @@ warning: em dash `—` in comment
 LL |  * Bad: the first line of a block comment with an em dash — here.
    |                                                           ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -50,8 +50,8 @@ warning: em dash `—` in comment
 LL |  * Bad: a later line of a block comment with an em dash — here.
    |                                                         ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -59,8 +59,8 @@ warning: em dash `—` in doc comment
 LL | /// Bad: a doc comment with an em dash — and a clause after it.
    |                                        ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -68,8 +68,8 @@ warning: em dash `—` in doc comment
 LL | /// Bad: the first line of a doc comment with an em dash — here.
    |                                                          ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -77,8 +77,8 @@ warning: em dash `—` in doc comment
 LL | /// Bad: a later line of a doc comment with an em dash — here.
    |                                                        ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -86,8 +86,8 @@ warning: em dash `—` in doc comment
 LL | /** Bad: a `/** */` doc comment with an em dash — and a clause. */
    |                                                 ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -95,8 +95,8 @@ warning: em dash `—` in doc comment
 LL | /// > An alert carries a remark — and a clause after it.
    |                                 ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -104,8 +104,8 @@ warning: em dash `—` in doc comment
 LL |     //! Bad: an inner doc comment with an em dash — and a clause.
    |                                                   ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -113,7 +113,7 @@ warning: em dash `—` in comment
 LL |     // > A line comment is not markdown — and holds no quotation.
    |                                         ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
 warning: N warnings emitted

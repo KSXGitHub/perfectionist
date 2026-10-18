@@ -52,10 +52,9 @@ declare_tool_lint! {
     /// a colon or a sentence break each state it instead.
     ///
     /// The dash is a symptom more than the fault. A sentence that
-    /// reaches for one is usually carrying more than one thought, so
-    /// the mark is where the strain shows rather than what causes it,
-    /// and giving each thought a clause of its own is what makes the
-    /// passage read easily.
+    /// reaches for one is usually carrying more than one idea, so the
+    /// mark is where the strain shows rather than what causes it, and
+    /// one idea per sentence is what makes the passage read easily.
     ///
     /// ### Example
     ///

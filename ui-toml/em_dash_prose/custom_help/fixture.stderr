@@ -4,7 +4,7 @@ warning: em dash `—` in comment
 LL | // Bad: the help text in the diagnostic comes from the knob — not the default.
    |                                                             ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: see the house style guide at docs/style.md
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 

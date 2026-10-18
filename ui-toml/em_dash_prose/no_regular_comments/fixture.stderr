@@ -4,8 +4,8 @@ warning: em dash `—` in doc comment
 LL | /// Bad: a doc comment is still scanned, and this em dash — fires.
    |                                                           ^
    |
-   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one thought
-   = help: restructure the sentence so each clause carries one thought, rather than putting a different mark where the dash was: make it two sentences, or use the mark that states the relationship (a colon for an elaboration, a semicolon for parallel statements, a comma for a dependent clause)
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
 warning: N warnings emitted

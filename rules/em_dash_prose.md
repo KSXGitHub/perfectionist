@@ -37,10 +37,9 @@ relationship the sentence never states. A comma, a semicolon,
 a colon or a sentence break each state it instead.
 
 The dash is a symptom more than the fault. A sentence that
-reaches for one is usually carrying more than one thought, so
-the mark is where the strain shows rather than what causes it,
-and giving each thought a clause of its own is what makes the
-passage read easily.
+reaches for one is usually carrying more than one idea, so the
+mark is where the strain shows rather than what causes it, and
+one idea per sentence is what makes the passage read easily.
 
 ## Example
 
@@ -130,7 +129,7 @@ Unicode dashes whatever this is set to.
 - _Optional_
 
 Replacement for the diagnostic's help text, which otherwise
-asks for the sentence to be restructured. Set it to point at a
-house style guide, or to write the instruction in another
+asks for one idea per sentence. Set it to point at a house
+style guide, or to write the instruction in another
 language. Unset by default, and the note saying what a dash
 leaves the reader to work out stays in place either way.

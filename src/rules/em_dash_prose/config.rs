@@ -38,8 +38,8 @@ struct Config {
     /// Unicode dashes whatever this is set to.
     flag_pseudo_em_dash: bool,
     /// Replacement for the diagnostic's help text, which otherwise
-    /// asks for the sentence to be restructured. Set it to point at a
-    /// house style guide, or to write the instruction in another
+    /// asks for one idea per sentence. Set it to point at a house
+    /// style guide, or to write the instruction in another
     /// language. Unset by default, and the note saying what a dash
     /// leaves the reader to work out stays in place either way.
     help: Option<String>,
