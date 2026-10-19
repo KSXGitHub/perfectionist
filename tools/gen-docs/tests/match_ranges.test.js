@@ -23,7 +23,7 @@
   })
 
   t.add('a verbatim match falls back to the first occurrence', function () {
-    // Neither occurrence opens a word — each finishes one — so the
+    // Neither occurrence opens a word, each finishing one, so the
     // earliest stands.
     var hit = t.found(m.matchPhrase('ite', 'bite_site'), '`ite` appears')
     t.deepEqual(hit.ranges, [[1, 4]], 'the earliest occurrence is the one taken')

@@ -3,7 +3,7 @@
 //
 // `excerpt` is the one thing the library offers that matches nothing. A
 // rule's prose paragraph runs to several hundred characters and a list of
-// those is unreadable, so a result shows a window around the match — with
+// those is unreadable, so a result shows a window around the match, with
 // the ranges shifted onto it, and the ones that fall outside dropped rather
 // than left pointing past its end.
 // ============================================================================
@@ -42,7 +42,7 @@
   t.add('a match near either end still fills the window', function () {
     var text = 'the quick brown fox jumps over the lazy dog'
     // The lead-in would run the window past the text, so it is clamped to
-    // the end — which is what keeps a window this side of the text as
+    // the end, which is what keeps a window this side of the text as
     // long as one in the middle of it.
     var tail = m.excerpt(text, [[40, 43]], 20)
     t.greater(tail.text.length, 20, 'the window is as long as it would be anywhere else')

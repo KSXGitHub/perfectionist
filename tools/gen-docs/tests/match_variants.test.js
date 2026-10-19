@@ -73,7 +73,7 @@
 
   t.add('how the query spaces its words does not change what they earn', function () {
     // This tier never matches a target character against a separator, so
-    // the query's own are not charged for — which is what keeps a reader
+    // the query's own are not charged for, which is what keeps a reader
     // who has typed `cloned ` from scoring below one who stopped at
     // `cloned`. Two spellings of the same two words therefore score alike
     // where a tier charged for them would separate the spellings.

@@ -49,7 +49,7 @@
   })
 
   t.add("a word reaches the target's variants here too", function () {
-    // The same reading as the tier above it: the target's word has to
+    // The same reading as the variants tier: the target's word has to
     // open with the query's once the ending the query's would drop is
     // allowed for, so a plural still finds its singular out of order.
     t.ok(m.matchFuzzy('std cores', 'core_instead_of_std'), '`cores` reaches `core`')
@@ -57,8 +57,8 @@
 
   t.add('how the query spaces these words does not change what they earn', function () {
     // Nothing is matched against a separator here either, so the query's
-    // own are not charged for — the same rule as the tier above, and the
-    // same reason.
+    // own are not charged for, by the same rule as the variants tier and
+    // for the same reason.
     var one = t.found(m.matchFuzzy('std core', 'core_instead_of_std'), 'one space')
     var three = t.found(m.matchFuzzy('std   core', 'core_instead_of_std'), 'three spaces')
     t.equal(one.score, three.score, 'a delimiter is not content, so it costs nothing')

@@ -11,8 +11,8 @@ var perfectionistMatchAdmit = (function () {
   // ---- Admission ----------------------------------------------------------
 
   // How many of a match's runs may begin inside a word. A reader typing a
-  // name from memory opens words wherever they like — that is what finds
-  // `bare_url` for `bur` — but a run beginning inside a word is a letter
+  // name from memory opens words wherever they like, which is what finds
+  // `bare_url` for `bur`. But a run beginning inside a word is a letter
   // that landed where it happened to occur rather than where the reader
   // aimed it. One of those is a slip of the fingers, and keeping it is
   // what still finds `excessive_nesting` for `excessive_nestng`. Two is
@@ -39,7 +39,7 @@ var perfectionistMatchAdmit = (function () {
    * is aimed when it opens a word, and also when it finishes one and
    * holds more of that word than it skipped: `error` is the back five of
    * `thiserror`'s nine, so a reader who types it has typed one of the
-   * words that identifier ran together — where one who types the `e` that
+   * words that identifier ran together, where one who types the `e` that
    * `single` ends in has typed a letter that happens to fall last.
    * @param {string} haystack
    * @param {Span} range
@@ -89,7 +89,7 @@ var perfectionistMatchAdmit = (function () {
 
   /**
    * The better of two matches, counting one worth showing above one that
-   * is not — between tiers and between two placements of one tier alike.
+   * is not, between tiers and between two placements of one tier alike.
    * Within a tier that matters because an earlier coincidence would
    * otherwise cost a target its real match: `nic` scores the same inside
    * `unicode` as it does finishing `panic`, so choosing by score alone

@@ -2,7 +2,7 @@
 // rank.js: which rules a query finds.
 //
 // A rule has three kinds of text and a query may reach it through any of
-// them. These cases are about whether it is reached at all — by its name,
+// them. These cases are about whether it is reached at all: by its name,
 // by its statement, by one of its paragraphs, or not at all.
 // ============================================================================
 

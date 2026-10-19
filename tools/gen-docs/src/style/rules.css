@@ -243,7 +243,7 @@ article.rule h4 {
 }
 
 /* The auto-generated Configuration "Types" label is also an `<h4>`,
-   but it's a section label, not a heading — keep it small, grey, and
+   but it's a section label rather than a heading, so keep it small, grey, and
    uppercase. Scoped to the generated `.config-types` class so it no
    longer captures author `####` headings (issue #178). */
 article.rule h4.config-types {

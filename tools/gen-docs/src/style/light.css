@@ -1,4 +1,4 @@
-/* Light theme — the default colour layer.
+/* Light theme: the default colour layer.
  *
  * This file (and its dark counterpart, dark.css) carries the colours
  * extracted out of the structural stylesheets (base.css, nav.css,
@@ -9,10 +9,10 @@
  * No CSS custom properties are used: every value is a literal colour,
  * so the page themes correctly on engines that predate `var()`
  * (maximising backward compatibility). The cost is that dark.css
- * repeats each colour under the two dark tiers — see that file.
+ * repeats each colour under the two dark tiers; see that file.
  *
  * Override tiers:
- *   1. Default Light — these rules. They are the lowest-priority colour
+ *   1. Default Light: these rules. They are the lowest-priority colour
  *      layer; with neither a system-preference media query nor the
  *      override attribute, the page is Light.
  *   2. System preference and 3. explicit override both live in dark.css

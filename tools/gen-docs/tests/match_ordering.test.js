@@ -21,7 +21,7 @@
       t.found(m.matchFuzzy('bur', 'bare_url'), 'scattered characters'),
       t.found(m.matchPhrase('are', 'bare_url'), 'a mid-word phrase'),
       // A query longer than the target it matched, which is the only way
-      // coverage — the fraction of the target the query accounts for —
+      // coverage, the fraction of the target the query accounts for,
       // comes out above one. Padded far enough that the clamp holding it
       // to a fraction is the whole of what keeps the score below one.
       t.found(m.matchFuzzy('b' + new Array(60).join('_') + 'l', 'bl'), 'a query of mostly padding'),
@@ -48,7 +48,7 @@
 
   t.add('opening the name beats opening a word inside it', function () {
     // Both of these open a word, so both were once perfect on quality,
-    // and the shorter one won on coverage alone — which put the name that
+    // and the shorter one won on coverage alone, which put the name that
     // merely contains the letter above the one that starts with it.
     t.greater(
       t.found(m.matchFuzzy('n', 'named_prelude_imports'), 'starts with `n`').score,
