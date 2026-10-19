@@ -129,10 +129,9 @@ fn while_let(mut items: impl Iterator<Item = u8>, ready: bool, more: bool) {
     }
 }
 
-// Bad: 1 operator rather than 2, since a nested `if`'s branches are code this
-// condition selects between, not part of what it tests, and the nested
-// head is counted as the condition it is rather than a second time
-// here.
+// Bad: 1 operator. A nested `if`'s branches are code this condition
+// selects between, not part of what it tests, and the nested head is
+// counted as the condition it is rather than a second time here.
 fn nested_if(first: bool, second: bool, third: bool, fourth: bool) {
     if first && (if second { third } else { fourth }) {
         work();

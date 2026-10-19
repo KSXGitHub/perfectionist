@@ -23,9 +23,8 @@ pub(super) struct Insertion {
 /// - **Inline** (`)` shares its line with the last argument, in
 ///   `allow(foo)` and the wrapped `allow(\n    foo)` alike): splice
 ///   before the closing `)`. `, reason = "<escaped>"` when the last
-///   arg has
-///   no trailing comma, ` reason = "<escaped>",` when it does, and a
-///   bare `reason = "<escaped>"` into an empty `allow()`.
+///   arg has no trailing comma, ` reason = "<escaped>",` when it does,
+///   and a bare `reason = "<escaped>"` into an empty `allow()`.
 /// - **New line** (`)` alone on its own line, `allow(\n    foo,\n)`):
 ///   insert a `reason = "<escaped>",` line immediately before the
 ///   `)` line, matching the indentation of the preceding argument.

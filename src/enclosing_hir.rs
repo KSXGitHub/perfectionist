@@ -40,7 +40,7 @@ pub(crate) fn find_enclosing_hir_ids(tcx: TyCtxt<'_>, target_spans: &[Span]) -> 
 /// starts at the item keyword, *after* its leading doc comment, so a
 /// `…` inside `/// …` is not contained by the documented item's span
 /// and plain [`find_enclosing_hir_ids`] would resolve it to the
-/// enclosing module / crate. Folding each node's attribute spans in
+/// enclosing module / crate. Folding each node's doc-comment spans in
 /// re-attaches the doc comment to the item it documents, so a per-item
 /// / per-field / per-variant `#[allow]` / `#[expect]` resolves. A plain
 /// `//` / `/* */` comment carries no attribute, so it still anchors at

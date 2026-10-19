@@ -68,13 +68,12 @@ impl<'ast> Visitor<'ast> for AliasCollector<'_> {
                 walk_use_tree_for_aliases(self.rule, use_tree, &[], self.phase);
             }
             ItemKind::ExternCrate(orig, ident) => {
-                // `extern crate thiserror;` leaves `orig` as `None`
-                // and `ident` as `thiserror`;
-                // `extern crate thiserror as te;`
-                // leaves `orig` as `Some(thiserror)` and `ident` as
-                // `te`. Only relevant during the crate-alias pass; the
-                // leaf-alias
-                // pass relies on the already-populated map without
+                // `extern crate thiserror;` leaves `orig` as `None` and
+                // `ident` as `thiserror`;
+                // `extern crate thiserror as te;` leaves `orig` as
+                // `Some(thiserror)` and `ident` as `te`. Only relevant
+                // during the crate-alias pass; the leaf-alias pass
+                // relies on the already-populated map without
                 // re-inserting.
                 if matches!(self.phase, CollectPhase::CrateAliases) {
                     let original = orig.unwrap_or(ident.name);
