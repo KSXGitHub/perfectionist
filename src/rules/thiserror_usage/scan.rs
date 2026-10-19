@@ -19,7 +19,7 @@ use rustc_span::{Symbol, kw};
 /// `crate_aliases` (crate renames), the second fills `aliases` (leaf
 /// names), expanding crate-aliased first segments through the
 /// already-complete `crate_aliases` map. Two passes make source
-/// order irrelevant — a `use thiserror as te;` rename and a
+/// order irrelevant: a `use thiserror as te;` rename and a
 /// dependent `use te::Error;` may appear in either order.
 pub(super) fn collect_aliases(rule: &mut ThiserrorUsage, krate: &Crate) {
     // Reset state. dylint currently constructs a fresh pass per
@@ -51,7 +51,7 @@ enum CollectPhase {
 /// visitor (rather than a hand-rolled `ItemKind::Mod`-only recursion)
 /// ensures that `use thiserror::...` and
 /// `extern crate thiserror as ...;` items nested inside function
-/// bodies, blocks, `impl`s, or trait items are recorded — the rule's
+/// bodies, blocks, `impl`s, or trait items are recorded. The rule's
 /// `check_item` callback still visits those inner items individually
 /// for diagnostic emission, but the alias scan must happen up front
 /// so that a bare `#[derive(Error)]` in any scope can be resolved
@@ -68,11 +68,12 @@ impl<'ast> Visitor<'ast> for AliasCollector<'_> {
                 walk_use_tree_for_aliases(self.rule, use_tree, &[], self.phase);
             }
             ItemKind::ExternCrate(orig, ident) => {
-                // `extern crate thiserror;` — `orig` is `None`,
-                // `ident` is `thiserror`. `extern crate thiserror as te;`
-                // — `orig` is `Some(thiserror)`, `ident` is `te`. Only
-                // relevant during the crate-alias pass; the leaf-alias
-                // pass relies on the already-populated map without
+                // `extern crate thiserror;` leaves `orig` as `None` and
+                // `ident` as `thiserror`;
+                // `extern crate thiserror as te;` leaves `orig` as
+                // `Some(thiserror)` and `ident` as `te`. Only relevant
+                // during the crate-alias pass; the leaf-alias pass
+                // relies on the already-populated map without
                 // re-inserting.
                 if matches!(self.phase, CollectPhase::CrateAliases) {
                     let original = orig.unwrap_or(ident.name);
@@ -103,8 +104,8 @@ fn walk_use_tree_for_aliases(
         }
         // `kw::SelfLower` at position 0 of a *nested child's* prefix
         // (`use thiserror::{self};` / `use thiserror::{self as te};`)
-        // names the parent itself — semantically equivalent to `use
-        // thiserror;` / `use thiserror as te;`. Drop the segment so
+        // names the parent itself, being semantically equivalent to
+        // `use thiserror;` / `use thiserror as te;`. Drop the segment so
         // the nested form joins the parent path and falls into the
         // single-segment crate-alias branch below.
         //
@@ -121,7 +122,7 @@ fn walk_use_tree_for_aliases(
     match &tree.kind {
         UseTreeKind::Simple(rename) => match phase {
             CollectPhase::CrateAliases => {
-                // `use thiserror as te;` / `use thiserror;` —
+                // `use thiserror as te;` / `use thiserror;`, a
                 // single-segment path naming a thiserror crate root.
                 // Record the local name as a crate-level alias so a
                 // later `te::Error` derive (or `use te::Error;`) can
@@ -133,9 +134,10 @@ fn walk_use_tree_for_aliases(
             }
             CollectPhase::LeafAliases => {
                 // `use thiserror::Error;` / `use thiserror::Error as
-                // X;` — direct leaf match. `use te::Error;` after a
-                // sibling `use thiserror as te;` — same shape after
-                // first-segment expansion through `crate_aliases`.
+                // X;` is a direct leaf match. `use te::Error;` after
+                // a sibling `use thiserror as te;` has the same shape
+                // after first-segment expansion through
+                // `crate_aliases`.
                 let matches_direct = path_matches_thiserror(&rule.thiserror_paths, &path);
                 let matches_via_alias = !matches_direct
                     && match path.split_first() {

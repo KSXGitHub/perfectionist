@@ -10,8 +10,8 @@
 //!
 //! The justfile invokes this binary with
 //! `cargo --config 'target."cfg(all())".linker="cc"'` so a fresh
-//! checkout — where `dylint-link` (the workspace's linker per
-//! `.cargo/config.toml`) is not yet on PATH — can still compile it.
+//! checkout, where `dylint-link` (the workspace's linker per
+//! `.cargo/config.toml`) is not yet on PATH, can still compile it.
 
 use cargo_toml::Manifest;
 use clap::{Parser, Subcommand};

@@ -28,7 +28,7 @@ pub(super) struct ThiserrorUsage {
     /// Recognised paths split into segment lists (e.g.
     /// `[[thiserror, Error]]`).
     pub(super) thiserror_paths: Vec<Vec<Symbol>>,
-    /// First segments of every recognised path — the crate names a
+    /// First segments of every recognised path, the crate names a
     /// `use` statement must start with to be flagged.
     pub(super) thiserror_crates: BTreeSet<Symbol>,
     /// Identifiers that, anywhere in the crate, name a recognised

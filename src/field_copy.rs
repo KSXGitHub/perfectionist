@@ -7,8 +7,8 @@
 //! cannot fall between two of them or be reported by both.
 //!
 //! The recognised shape is narrow on purpose: an inherent method
-//! taking `&self` and nothing else, whose body — once statement-free
-//! blocks are unwrapped — is exactly `self.<field>.<copying method>()`
+//! taking `&self` and nothing else, whose body, once statement-free
+//! blocks are unwrapped, is exactly `self.<field>.<copying method>()`
 //! producing the field's own type. A call that renders the field
 //! (`to_string` on a number), one that returns a `Copy` value, and one
 //! that clones a refcounted handle are none of them a copy a borrow
@@ -163,8 +163,8 @@ pub(crate) fn field_copy_of<'tcx>(
     // and `&Rc<T>` does not serve in its place: a caller that keeps the
     // handle has to own one. Measuring it would also make the rule
     // depend on spelling, since the same clone written
-    // `Rc::clone(&self.field)` -- the form `clippy::clone_on_ref_ptr`
-    // asks for -- is a call rather than a method call and never reaches
+    // `Rc::clone(&self.field)`, the form `clippy::clone_on_ref_ptr`
+    // asks for, is a call rather than a method call and never reaches
     // this far.
     if is_refcounted_handle(cx, field_ty) {
         return None;

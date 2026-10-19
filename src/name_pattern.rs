@@ -1,4 +1,4 @@
-//! [`NamePattern`] — a small pattern language for selecting item names
+//! [`NamePattern`], a small pattern language for selecting item names
 //! in configuration. One ordered list of these stands in for the
 //! several booleans and rosters a rule would otherwise carry: each of
 //! those decides one part of the same question, and a consumer has to
@@ -13,8 +13,8 @@
 //! means.
 //!
 //! The language carries no policy: every well-formed entry parses. A
-//! rule that has to forbid some of them — because a clause of its own
-//! already answers for those names, say — wraps [`NamePattern`] in a
+//! rule that has to forbid some of them, because a clause of its own
+//! already answers for those names, wraps [`NamePattern`] in a
 //! newtype and rejects them there, reading the parsed value through
 //! [`NamePattern::prefix`]. `crate::getter_name_patterns` is the worked
 //! example.
@@ -27,8 +27,8 @@
 use rustc_lexer::{is_id_continue, is_ident};
 
 /// TOML-flavoured type label for [`NamePattern`], surfaced by
-/// `tools/gen-docs` in the per-rule field-type column. Sourced here —
-/// next to the type definition — so the label is the type's own
+/// `tools/gen-docs` in the per-rule field-type column. Sourced here,
+/// next to the type definition, so the label is the type's own
 /// property rather than a hard-coded match arm in the doc generator.
 #[expect(
     dead_code,
@@ -39,8 +39,8 @@ pub(crate) const TOML_LABEL: &str = "name-pattern string";
 /// One entry of a rule's name-pattern list: a set of names, and the
 /// verdict the entry carries for a name in it.
 ///
-/// Parsed from one of four written forms — `*`, `prefix_*`, `!*`,
-/// `!prefix_*` — with anything else rejected at config-parse time.
+/// Parsed from one of four written forms, `*`, `prefix_*`, `!*` and
+/// `!prefix_*`, with anything else rejected at config-parse time.
 #[derive(Debug)]
 pub(crate) struct NamePattern {
     /// Whether the leading `!` was present, which flips the entry's
@@ -147,7 +147,7 @@ fn take_scope(input: &str) -> Result<Scope, ScopeError> {
 }
 
 /// Take the `*` that closes every form. Returns the remainder, which
-/// the caller requires to be empty — that is what rejects
+/// the caller requires to be empty. That is what rejects
 /// `prefix_*_suffix`, `prefix_**` and `prefix_*_*` alike.
 fn take_wildcard(input: &str) -> Option<((), &str)> {
     input.strip_prefix('*').map(|rest| ((), rest))
@@ -219,8 +219,8 @@ impl ScopeError {
 /// covering the name says, or `None` where no entry covers it and the
 /// caller's own fallthrough decides.
 ///
-/// Scanning from the back is the list's whole semantics — a later
-/// entry overrides an earlier one — so it lives here rather than at
+/// Scanning from the back is the list's whole semantics, a later
+/// entry overriding an earlier one, so it lives here rather than at
 /// each call site, where a forward scan would read the same and mean
 /// first-match-wins.
 ///

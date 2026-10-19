@@ -34,8 +34,8 @@ pub(super) enum Landing {
     /// the chain would resolve somewhere new. Carries that call's
     /// name, which is the part a reader has to check.
     MovesALaterCall(Symbol),
-    /// Anywhere else -- a `let`, a call argument, a struct field --
-    /// or a position a macro's own body supplied.
+    /// Anywhere else, such as a `let`, a call argument or a struct
+    /// field, or a position a macro's own body supplied.
     Unknown,
 }
 
@@ -141,7 +141,7 @@ pub(super) fn violation(cx: &LateContext<'_>, violation: Violation) {
                     // The advice still says to rename, so the reader
                     // walks into the re-resolution the rendered form
                     // is withheld for. Withholding the edit is not
-                    // withholding the warning -- except where the
+                    // withholding the warning, except where the
                     // reason is that warning already.
                     if !is_the_landing && let Landing::MovesALaterCall(next) = landing {
                         diagnostic.help(moves_a_later_call(next));
@@ -218,14 +218,14 @@ fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
         );
     }
     if landing == Landing::Unknown {
-        // One line for both reasons a position does not take the
-        // value -- it is not such a position, or a macro wrote it --
-        // since two lines read as competing answers where a macro uses
-        // one written expression twice, both uses carrying the same
-        // span. It claims neither that the change reaches further nor
-        // that the rename settles it: over a discarded value the
-        // rename is the whole change, and beside the lines above it is
-        // not.
+        // One line for both reasons a position does not take the value,
+        // whether because it is not such a position or because a macro
+        // wrote it, since two lines read as competing answers where a
+        // macro uses one written expression twice, both uses carrying
+        // the same span. It claims neither that the change reaches
+        // further nor that the rename settles it: over a discarded
+        // value the rename is the whole change, and beside the lines
+        // above it is not.
         diagnostic.help(
             "whether the change reaches further depends on what the \
              surrounding code does with this call's value",

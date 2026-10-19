@@ -12,16 +12,16 @@
 Flags a function or method parameter taken by shared reference
 (`&str`, `&Path`, `&OsStr`, `&CStr`, `&[T]`) whose *only* use in
 the body is to produce its owned counterpart (`String`,
-`PathBuf`, `OsString`, `CString`, `Vec<T>`) — via `to_owned`,
+`PathBuf`, `OsString`, `CString`, `Vec<T>`) through `to_owned`,
 `to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `clone`,
 `into`, or `String::from(..)` and friends. Such a parameter
 should take the owned form directly.
 
 Only the conservative single-use case is flagged: the
 parameter must be referenced exactly once, that use must be the
-conversion, and the conversion must execute unconditionally — no
-`if` / `match` / loop, closure, or short-circuiting `&&` / `||`
-may sit between it and the enclosing function. This is
+conversion, and the conversion must execute unconditionally, so
+no `if` / `match` / loop, closure, or short-circuiting `&&` /
+`||` may sit between it and the enclosing function. This is
 deliberately conservative: even the always-executed `if`
 condition and `match` scrutinee positions count as
 disqualifying, not just the branch arms.
@@ -46,7 +46,7 @@ cheaper for the best caller.
 `clippy::needless_pass_by_value` (`pedantic`, off by default)
 covers the *opposite* direction: a by-value parameter that is
 never consumed should be taken by reference. `clippy::ptr_arg`
-(`style`, on by default) is orthogonal — it rewrites a
+(`style`, on by default) is orthogonal: it rewrites a
 `&String` / `&Vec<T>` / `&PathBuf` parameter to the more
 permissive `&str` / `&[T]` / `&Path`. Neither moves a borrowed
 parameter to its owned form, so enabling all three gives full
@@ -112,5 +112,5 @@ crate. An `examples/` crate is not covered. Defaults to `true`.
 - _Type:_ `boolean`
 - _Optional_
 
-Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
-`build` key names — is exempt. Defaults to `true`.
+Whether a build script, `build.rs` or whatever `Cargo.toml`'s
+`build` key names, is exempt. Defaults to `true`.

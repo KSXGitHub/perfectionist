@@ -95,8 +95,8 @@
 
   t.add('a match once made is not lost to the next keystroke', function () {
     // Typing `cloned_getter` out passes through `cloned ` and `cloned g`,
-    // where little of the query has landed yet. The score may dip — it
-    // is an ordering, and orderings move — but the rule must not leave
+    // where little of the query has landed yet. The score may dip, since
+    // it is an ordering and orderings move, but the rule must not leave
     // the list and come back, which is the one thing a reader reads as
     // the search being broken.
     var full = 'cloned_getter'

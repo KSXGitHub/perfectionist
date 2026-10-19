@@ -24,7 +24,7 @@ at every substitution.
 
 `clippy::min_ident_chars` (`restriction`, off by default)
 flags short identifiers in many positions, but **explicitly
-skips const generic parameters** — its visitor returns early
+skips const generic parameters**: its visitor returns early
 on `GenericParamKind::Const`, so it never flags
 `<const N: usize>`. This rule covers exactly that gap, so the
 two are complementary rather than redundant: enable both to

@@ -10,8 +10,9 @@
 //!   editions, so an `allowed_paths` entry uses the `::`-led form and
 //!   matches either spelling of the `use`.
 //! - A **crate-root** path uses the `crate` keyword (`crate::internals`)
-//!   and *no* leading `::` — `::crate` is not valid syntax. A crate-root
-//!   entry is therefore written exactly as the `use` writes it.
+//!   and *no* leading `::`, since `::crate` is not valid syntax. A
+//!   crate-root entry is therefore written exactly as the `use` writes
+//!   it.
 //!
 //! `self::` / `super::` paths are relative, never absolute, and so are
 //! never valid `allowed_paths` entries.
@@ -31,19 +32,20 @@ pub(crate) fn canonical_key(joined_path: &str) -> String {
 
 /// Validate that a configured `allowed_paths` entry is a well-formed
 /// absolute path: either `crate::...` or `::<extern crate>::...`. Returns an
-/// error message for an entry that names an impossible path — a `::`-led
-/// keyword (`::crate`, `::self`, `::super`), a relative `self::` / `super::`
-/// path, or a bare extern path missing its leading `::`.
+/// error message for an entry that names an impossible path: a
+/// `::`-led keyword (`::crate`, `::self`, `::super`), a relative
+/// `self::` / `super::` path, or a bare extern path missing its
+/// leading `::`.
 pub(crate) fn validate_absolute(entry: &str) -> Result<(), String> {
     let pieces: Vec<&str> = entry.split("::").map(str::trim).collect();
     // `entry` begins with `::` exactly when its first split piece is empty.
     let leading_root = pieces.first() == Some(&"");
     let first_segment = pieces.iter().copied().find(|piece| !piece.is_empty());
     let valid = match (leading_root, first_segment) {
-        // `::extern::...` — the first segment must be an ordinary crate
-        // name, not a path keyword.
+        // `::extern::...`, where the first segment must be an ordinary
+        // crate name rather than a path keyword.
         (true, Some(segment)) => !is_path_keyword(segment),
-        // `crate::...` — crate-root absolute, written without a leading `::`.
+        // `crate::...`, crate-root absolute, written without a leading `::`.
         (false, Some("crate")) => true,
         _ => false,
     };

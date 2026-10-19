@@ -42,8 +42,8 @@ var perfectionistMatch = (function () {
     }
     // Every tier is tried, because a greedy subsequence scan does not
     // always find the best match (`ab` against `a_xab` takes `a` at 0 and
-    // `b` at 4, missing the contiguous `ab` at 3) — which is why that
-    // scan is the last of them rather than the only method.
+    // `b` at 4, missing the contiguous `ab` at 3). That is why the
+    // subsequence scan is the last tier rather than the only method.
     var found = matchVerbatim(needle, haystack)
     found = betterAdmitted(found, matchRespaced(needle, haystack), haystack)
     found = betterAdmitted(found, matchVariants(needle, haystack), haystack)

@@ -45,7 +45,7 @@ pub(super) fn desired_order(
             // prefix name, find the first not-yet-used entry
             // that matches and append it. An entry that appears
             // in the prefix list but not in the user's derive
-            // is silently skipped — the prefix is "preferred
+            // is silently skipped: the prefix is "preferred
             // ordering", not "required to be present".
             for prefix_name in prefix {
                 for (index, entry) in entries.iter().enumerate() {

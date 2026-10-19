@@ -66,7 +66,7 @@ impl Person {
 
     // Not flagged: what an `async fn` signature names is the opaque
     // future, which carries the receiver's lifetime however the body
-    // behaves -- here it neither borrows nor copies.
+    // behaves, and here it neither borrows nor copies.
     async fn into_awaited_age(&self) -> u32 {
         self.age
     }
@@ -99,7 +99,7 @@ impl<'a> Borrowed<'a> {
         self.name
     }
 
-    // Bad: this one IS tied to the receiver — elided to `&'_ self`.
+    // Bad: this one IS tied to the receiver, elided to `&'_ self`.
     fn into_owned_ref(&self) -> &str {
         &self.owned
     }

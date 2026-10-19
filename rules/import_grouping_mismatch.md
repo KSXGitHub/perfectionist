@@ -12,12 +12,12 @@
 Enforces a single project-wide *grouping* style for the run of
 `use` statements at the top of a module body. The rule is
 inactive by default; a project opts in and sets `style` to one of:
-- `single_block` — every `use` sits in one contiguous block with
+- `single_block`: every `use` sits in one contiguous block with
   no blank lines between imports, except that `#[cfg(...)]`-gated
   imports are carved into their own trailing block (one blank
   line below the rest). Set `cfg_block_handling = "merge"` to keep
   them in the one block.
-- `multi_block` — imports are partitioned into ordered groups
+- `multi_block`: imports are partitioned into ordered groups
   separated by exactly one blank line. The group set, in order,
   is std (`std` / `core` / `alloc` / `proc_macro` / `test`),
   internal (`crate` / `super` / `self`), then third-party (every
@@ -30,15 +30,16 @@ inactive by default; a project opts in and sets `style` to one of:
   is left to `cargo fmt`.
 
 Orthogonally to `style`, the `reexports` knob controls `pub`
-re-exports — any `use` with an explicit visibility. Like `style` it
-is mandatory once the rule is enabled, and is one of: `grouped`,
-which pulls every re-export into one contiguous leading block above
-the private imports, visibility outranking path and cfg gating;
-`split`, which breaks that block into two — submodule re-exports
-(`pub use child::Item;`, a multi-segment path) above alias
-re-exports (`pub use Item;` / `pub use Item as Alias;`, a
-single-segment path); or `by_path`, which gives re-exports no
-dedicated block, classifying each by its path like a private import.
+re-exports, meaning any `use` with an explicit visibility. Like
+`style` it is mandatory once the rule is enabled, and is one of:
+`grouped`, which pulls every re-export into one contiguous
+leading block above the private imports, visibility outranking
+path and cfg gating; `split`, which breaks that block into two,
+submodule re-exports (`pub use child::Item;`, a multi-segment
+path) above alias re-exports (`pub use Item;` /
+`pub use Item as Alias;`, a single-segment path); or `by_path`,
+which gives re-exports no dedicated block, classifying each by
+its path like a private import.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of
@@ -47,7 +48,7 @@ Whether items within each `use` are merged or split is the job of
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. Neither
-layout is wrong in the abstract — the violation is a mismatch
+layout is wrong in the abstract. The violation is a mismatch
 with the project's configured `style`. Enforcing one keeps import
 blocks scanning uniformly and makes import diffs predictable.
 rustfmt's `group_imports` option can enforce the same shape, but
@@ -174,8 +175,8 @@ Configure via `dylint.toml` under `["perfectionist::import_grouping_mismatch"]`.
 - _Mandatory_
 
 The grouping style to enforce: `single_block` or `multi_block`. It
-has no default — a project enabling the rule states which layout
-it wants — so it must be set when the rule is enabled.
+has no default, since a project enabling the rule states which
+layout it wants; it must therefore be set when the rule is enabled.
 
 ### Field: `reexports`
 
@@ -183,14 +184,15 @@ it wants — so it must be set when the rule is enabled.
 - _Mandatory_
 
 How `pub` re-exports are grouped: `grouped`, `split`, or `by_path`.
-Like `style` it has no default — a project enabling the rule states
-how it wants re-exports laid out — so it must be set when the rule
-is enabled. `grouped` pulls every re-export into one contiguous
-leading block above all private imports; `split` breaks that block
-into two — submodule re-exports (`pub use child::Item;`) above alias
-re-exports (`pub use Item;` / `pub use Item as Alias;`); `by_path`
-gives re-exports no dedicated block at all, classifying each by its
-path like a private import.
+Like `style` it has no default, since a project enabling the rule
+states how it wants re-exports laid out; it must therefore be set
+when the rule is enabled. `grouped` pulls every re-export into
+one contiguous leading block above all private imports; `split`
+breaks that block into two, submodule re-exports
+(`pub use child::Item;`) above
+alias re-exports (`pub use Item;` / `pub use Item as Alias;`);
+`by_path` gives re-exports no dedicated block at all,
+classifying each by its path like a private import.
 
 ### Field: `order`
 
@@ -207,9 +209,9 @@ The order the groups appear in, top to bottom. Defaults to
 
 How `#[cfg(...)]`-gated imports are grouped. Defaults to
 `trailing`: a cfg-gated import forms its own trailing block under
-both styles. Set `merge` to keep cfg-gated imports with the rest —
-in their natural path group under `multi_block`, or in the single
-block under `single_block`.
+both styles. Set `merge` to keep cfg-gated imports with the
+rest, in their natural path group under `multi_block` or in the
+single block under `single_block`.
 
 ### Types
 

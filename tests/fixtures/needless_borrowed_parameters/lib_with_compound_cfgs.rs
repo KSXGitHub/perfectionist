@@ -17,8 +17,8 @@ fn disjunction(disjunction_param: &str) -> String {
 // for "a condition that is false in every build here" without drawing
 // an `unexpected_cfgs` warning.
 //
-// `not(all(not(test), docsrs))` holds in a non-test build too — the
-// conjunction is false either way — so it is production code.
+// `not(all(not(test), docsrs))` holds in a non-test build too, the
+// conjunction being false either way, so it is production code.
 #[cfg(not(all(not(test), docsrs)))]
 fn negated_conjunction(negated_conjunction_param: &str) -> String {
     negated_conjunction_param.to_owned()

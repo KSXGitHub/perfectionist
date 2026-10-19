@@ -11,16 +11,16 @@
 
 Enforces a project-wide ordering of trait names inside a single
 `#[derive(...)]` list. The `style` knob selects the ordering:
-- `alphabetical` (default) — every trait name must be in
+- `alphabetical` (default): every trait name must be in
   ASCII-case-insensitive alphabetical order.
-- `prefix_then_alphabetical` — the configured `prefix` list of
+- `prefix_then_alphabetical`: the configured `prefix` list of
   traits goes first, in the listed order; remaining traits are
   sorted alphabetically after.
 
 Trait matching is by the final path segment, so
 [`serde::Deserialize`](https://docs.rs/serde) is matched as
 `Deserialize`. The lint does not police how derives are
-partitioned across multiple `#[derive(...)]` lines — that's a
+partitioned across multiple `#[derive(...)]` lines, which is a
 layout decision left to the author.
 
 A `cfg`-gated derive written as
@@ -39,7 +39,7 @@ for enforcing one.
 
 The opinion is opt-in: a project that doesn't want to commit
 to a single ordering shouldn't have to set anything. The rule
-is therefore inactive by default — enable it per crate by
+is therefore inactive by default. Enable it per crate by
 adding to `dylint.toml`:
 
 ```toml

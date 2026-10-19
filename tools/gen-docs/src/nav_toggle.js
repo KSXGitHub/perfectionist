@@ -2,11 +2,11 @@
 // Why this file is necessary at all (i.e., why CSS-only doesn't work).
 //
 // Mobile browsers have two independent "viewports":
-//   * Layout viewport — the virtual canvas derived from
+//   * Layout viewport: the virtual canvas derived from
 //     `<meta name="viewport" content="width=device-width">`. Its size does
 //     NOT change with URL-bar dynamics, pinch-zoom, or the on-screen
 //     keyboard.
-//   * Visual viewport — what the user actually sees right now. Shrinks /
+//   * Visual viewport: what the user actually sees right now. Shrinks /
 //     grows when the URL bar collapses, when you pinch-zoom, when the
 //     keyboard opens.
 //
@@ -24,7 +24,7 @@
 //     against, lets us override it, or queries the visual viewport's
 //     offset.
 //   * `overflow: hidden` on body/html doesn't even reliably stop
-//     scrolling on iOS — a well-known cross-browser gap.
+//     scrolling on iOS, a well-known cross-browser gap.
 //
 // So this script does work that falls in three categories:
 //
@@ -41,12 +41,12 @@
 //      stays glued to the visible area for the duration of the
 //      menu interaction. (Bonus: same pattern is also the only
 //      cross-browser way to stop background scroll behind a modal
-//      on iOS — `overflow: hidden` is famously broken there, so
+//      on iOS, where `overflow: hidden` is famously broken, so
 //      this is two CSS bugs avoided for the price of one
 //      workaround.)
 //
 //   2. Visual Viewport API offset compensation on the toggle while
-//      the drawer is closed. Same root cause — translate the
+//      the drawer is closed, for the same root cause. Translate the
 //      toggle by `visualViewport.offsetTop`/`offsetLeft` so it
 //      stays at the top of the visible area on browsers that
 //      mis-anchor `position: fixed`.
@@ -77,7 +77,7 @@
 //      inside the sidebar while the drawer is open as a fallback.
 //      AT-exposure suppression on those older browsers degrades to
 //      what we get for free from the static index table near the
-//      top of the page — i.e. the page still has a navigation
+//      top of the page, so the page still has a navigation
 //      affordance, just not a modal-isolated one.
 //
 //   5. Focus management on open and close. Opening the drawer
@@ -94,7 +94,7 @@
 //      animations (`view-timeline` / `animation-timeline`) could
 //      do this declaratively, but they're not yet available across
 //      the project's reader baseline. The IntersectionObserver
-//      fallback is a UX nicety, not load-bearing — if it doesn't
+//      fallback is a UX nicety rather than load-bearing. If it doesn't
 //      run, the hamburger just stays visible throughout, which is
 //      harmless.
 //
@@ -107,13 +107,13 @@
 //      resize while the drawer happens to be open.
 //
 // `position: fixed` is still the right CSS primitive. This file
-// doesn't replace it — it stabilises the viewport that
+// doesn't replace it. It stabilises the viewport that
 // `position: fixed` resolves against (category A) and implements
 // the behaviours CSS doesn't reach (category B).
 //
 // C. The consequence of needing JS at all. Because A and B mean
 //    the button only works when this script runs successfully, we
-//    also have to hide the button when it *doesn't* — otherwise a
+//    also have to hide the button when it *doesn't*. Otherwise a
 //    CSP-blocked inline script, a stripped script tag, or a parse
 //    error before the handlers attach all leave a visible-but-
 //    inert hamburger on the page. The Rust template renders the
@@ -144,10 +144,10 @@
   // ---- Hamburger fade ---------------------------------------------------
   //
   // Hide the hamburger while the catalogue's <h1> is on screen. Default
-  // is visible — if this branch never runs (browser lacks
+  // is visible. If this branch never runs (browser lacks
   // IntersectionObserver) the hamburger just stays revealed throughout,
-  // which is harmless. (If the WHOLE script doesn't run — CSP block,
-  // stripped tag, parse error — the `hidden` attribute the Rust
+  // which is harmless. (If the WHOLE script doesn't run, whether by
+  // CSP block, stripped tag or parse error, the `hidden` attribute the Rust
   // template emits keeps the button invisible; that case is category
   // C in the file header, not this branch's responsibility.) The earlier
   // draft observed `table.index` instead, but on phone-height viewports
@@ -168,7 +168,7 @@
   // See category A item 2 in the file header: translate the toggle by
   // the visual viewport's offset so it stays glued to the visible area
   // on browsers that anchor `position: fixed` to the layout viewport.
-  // The same compensation has to apply to the sidebar — if the user
+  // The same compensation has to apply to the sidebar. If the user
   // scrolled before tapping the toggle, `visualViewport.offsetTop` is
   // already non-zero by the time the drawer opens, and the
   // `position: fixed; top: 0` sidebar would render above the visible
@@ -232,7 +232,7 @@
   // The overlay covers the page content (fully on phone-portrait, as a
   // left strip on phone-landscape / tablet). Without intervention, Tab
   // navigation could still reach the obscured content behind it, and
-  // assistive tech could still read it — both surprising for users who
+  // assistive tech could still read it. Both would surprise users who
   // see a modal-style drawer. Apply the `inert` attribute (HTML
   // standard, Baseline 2023) to every direct child of <body> except
   // the toggle and the sidebar while the drawer is open; restore on
@@ -304,7 +304,7 @@
   // listener goes on the document because there is no backdrop element
   // to put it on: the drawer is a bare `position: fixed` panel, not a
   // dialog inside a full-viewport overlay. `setBackgroundInert` is no
-  // obstacle — the HTML standard has hit-testing in an inert subtree
+  // obstacle. The HTML standard has hit-testing in an inert subtree
   // act as if `pointer-events: none` were set, so the click lands on
   // <body> and bubbles from there.
   //
@@ -327,8 +327,8 @@
   // ---- Focus trap fallback ----------------------------------------------
   //
   // `setBackgroundInert` above is the primary defence against Tab
-  // escape into obscured page content, but `inert` is Baseline 2023 —
-  // older browsers silently ignore `el.inert = true` and would let Tab
+  // escape into obscured page content, but `inert` is Baseline 2023,
+  // so older browsers silently ignore `el.inert = true` and would let Tab
   // wander off the last sidebar link into the still-focusable page
   // behind. Wrap focus inside the sidebar with a keydown listener as a
   // belt-and-suspenders fallback: on a Tab outside the sidebar (e.g.
@@ -400,11 +400,11 @@
       return
     }
     // Rule fragments are `#/rule/<name>`, whose `/` characters make
-    // them invalid CSS id selectors — `querySelector("#/rule/...")`
+    // them invalid CSS id selectors, so `querySelector("#/rule/...")`
     // would throw. Resolve the raw id with getElementById instead,
     // which matches the literal `id` attribute and accepts slashes.
     // decodeURIComponent throws on malformed percent-encoding; we let
-    // that propagate rather than swallow it — an uncaught throw inside
+    // that propagate rather than swallow it, since an uncaught throw inside
     // this click handler only aborts the handler, and surfacing the
     // error aids debugging.
     var id = decodeURIComponent(hash.slice('#'.length))
@@ -443,8 +443,8 @@
   // ---- Reveal the toggle -----------------------------------------------
   //
   // Everything above this line set up the behaviour the button needs to
-  // actually work — IntersectionObserver fade, Visual Viewport API
-  // sync, click handler, focus management, inert plumbing, breakpoint
+  // actually work: the IntersectionObserver fade, Visual Viewport API
+  // sync, click handler, focus management, inert plumbing and breakpoint
   // recovery. Now that those are wired up, drop the `hidden` attribute
   // the Rust template emits, so the button appears in the page exactly
   // when it's functional. If any of the above threw before reaching

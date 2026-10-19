@@ -1,6 +1,6 @@
 /// Bad: bare email under `style = "both"` should emit a single
 /// `MachineApplicable` suggestion that both wraps the address in
-/// angle brackets and prefixes it with `mailto:` —
+/// angle brackets and prefixes it with `mailto:`. The address is
 /// security@example.net.
 fn _bare_email_both_style() {}
 

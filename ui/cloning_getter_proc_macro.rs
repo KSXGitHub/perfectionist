@@ -13,7 +13,7 @@
 // shape on a minimal `#[synth_cloning_getter]` attribute. The
 // synthesised method is named for the field it reads, so the rule's
 // field-match clause admits the name and the guard is the only thing
-// left stopping the diagnostic -- without that, the fixture would pass
+// left stopping the diagnostic. Without that, the fixture would pass
 // whether the guard were there or not.
 
 #![allow(dead_code, unused, reason = "ui fixture")]

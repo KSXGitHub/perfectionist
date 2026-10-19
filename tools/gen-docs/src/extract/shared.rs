@@ -18,7 +18,7 @@
 //!   that happens to declare an internal `TOML_LABEL` constant does
 //!   not leak it into the shared-types table;
 //! - a file contributes a mapping only when it declares exactly one
-//!   struct alongside the `TOML_LABEL` constant — a file with more
+//!   struct alongside the `TOML_LABEL` constant. A file with more
 //!   than one struct is skipped because there is no way to tell
 //!   which struct the label is for.
 
@@ -47,7 +47,7 @@ impl SharedTypes {
     /// a `TOML_LABEL` constant, or when every candidate file fails
     /// the one-struct convention; downstream callers treat the
     /// table as additive context, so an empty discovery is
-    /// indistinguishable from "no shared newtype defined" — exactly
+    /// indistinguishable from "no shared newtype defined", exactly
     /// what we want when no such type exists.
     pub(crate) fn discover(src_dir: &Path) -> Self {
         let mut labels = HashMap::new();
@@ -78,8 +78,8 @@ impl SharedTypes {
 
     /// Look up the TOML label for `ident`, if `ident` names a
     /// shared newtype discovered by [`Self::discover`]. Returns
-    /// `None` for builtin types and for unknown idents alike — the
-    /// caller distinguishes the two paths via
+    /// `None` for builtin types and for unknown idents alike, the
+    /// caller distinguishing the two paths via
     /// [`super::ty::is_builtin_type`].
     pub(crate) fn label_for(&self, ident: &str) -> Option<&str> {
         self.labels.get(ident).map(String::as_str)
@@ -97,7 +97,7 @@ impl SharedTypes {
 
 /// Pull a single `(struct ident, TOML label)` pairing out of a
 /// parsed `.rs` file, or `None` when the file doesn't fit the
-/// convention. The convention is enforced lazily — multiple structs
+/// convention. The convention is enforced lazily: multiple structs
 /// or no `TOML_LABEL` const at all both reduce to "no contribution"
 /// rather than a panic, so an unrelated `src/*.rs` helper (e.g.
 /// `src/common.rs` with its many internal struct definitions) is

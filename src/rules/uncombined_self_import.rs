@@ -1,5 +1,5 @@
-//! `perfectionist::uncombined_self_import` — fold a module import and an
-//! adjacent item import from that module into a single
+//! `perfectionist::uncombined_self_import`: fold a module import and
+//! an adjacent item import from that module into a single
 //! `use module::{self, item};`.
 //!
 //! The rule is inactive by default; a project opts in via
@@ -7,8 +7,8 @@
 //!
 //! Module layout:
 //!
-//! - [`render`] — `use`-tree rendering helpers.
-//! - [`combined`] — the adjacency fold.
+//! - [`render`]: `use`-tree rendering helpers.
+//! - [`combined`]: the adjacency fold.
 //!
 //! The rule runs as a [`LateLintPass`] that **re-parses each of the
 //! crate's module source files** via [`crate::module_reparse`]. A
@@ -38,8 +38,8 @@ mod render;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Folds two adjacent `use` statements — one importing a module
-    /// and one importing an item from that same module — into a
+    /// Folds two adjacent `use` statements, one importing a module
+    /// and one importing an item from that same module, into a
     /// single `use module::{self, item};`. The rule is inactive by
     /// default; a project opts in via `[perfectionist].enable`.
     ///
@@ -59,7 +59,7 @@ declare_tool_lint! {
     /// namespaces an import brings into scope: folding a bare
     /// `use module;` into `{self, ...}` imports only the module,
     /// while the bare form imports every namespace named `module`
-    /// (type, value, macro) — a difference that matters only in the
+    /// (type, value, macro), a difference that matters only in the
     /// rare case where a value or macro shares the module's name in
     /// the same parent.
     ///
@@ -70,7 +70,7 @@ declare_tool_lint! {
     /// `use module::{self};` and unwraps it to `use module;`. It
     /// matches only the single-item `{self}` form, so it never
     /// touches the multi-item `{self, item}` groups this rule
-    /// produces. The two are mirror images — pick one direction and
+    /// produces. The two are mirror images, so pick one direction and
     /// do not enable both.
     ///
     /// ### Example
@@ -128,7 +128,7 @@ impl Register for rule::UncombinedSelfImport {
 /// The rule discovers violations by re-parsing source files (see
 /// [`UncombinedSelfImport::check_crate`]), outside the HIR walk, so
 /// emission is deferred and routed through [`span_lint_hir_and_then`] at
-/// the enclosing node — that is what lets a per-module / per-item
+/// the enclosing node. That is what lets a per-module / per-item
 /// `#[allow]` / `#[expect]` resolve, instead of only a crate-root one.
 pub(super) struct Pending {
     /// Resolves the lint-level anchor: the violating `use` item's own
@@ -196,8 +196,8 @@ fn emit_pending(cx: &LateContext<'_>, hir_id: HirId, pending: Pending) {
 }
 
 /// Walks one re-parsed module file, scanning each scope that holds a
-/// source-ordered run of items — the file root, every inline `mod { ... }`
-/// body, and every block. Out-of-line `mod foo;` modules are
+/// source-ordered run of items: the file root, every inline
+/// `mod { ... }` body, and every block. Out-of-line `mod foo;` modules are
 /// `ModKind::Unloaded` in a fresh parse, but their files are re-parsed in
 /// their own right by [`UncombinedSelfImport::check_crate`], so this walk
 /// stays within a single file.

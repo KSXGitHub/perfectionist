@@ -11,8 +11,8 @@ pub(super) struct Comment {
     pub(super) text: String,
     /// Range of bytes whose removal makes the comment disappear from
     /// source: the run of horizontal whitespace after the closing
-    /// `]` plus the `// ...` text. Excludes the line terminator —
-    /// including a trailing `\r` of a `\r\n` ending — so applying the
+    /// `]` plus the `// ...` text. Excludes the line terminator,
+    /// including a trailing `\r` of a `\r\n` ending, so applying the
     /// fix never rewrites the line's ending.
     pub(super) delete_start: usize,
     pub(super) delete_end: usize,
@@ -28,7 +28,7 @@ pub(super) struct Comment {
 /// `//` comment between `]` and the next newline, if the only
 /// content there is a doc-comment marker (`///`, `//!`), or if the
 /// matched comment normalises to empty (a bare `//`, whitespace, or
-/// an all-decoration divider) — an empty comment carries no
+/// an all-decoration divider), an empty comment carrying no
 /// rationale worth lifting.
 pub(super) fn find_trailing_comment(source: &str, attr_hi: usize) -> Option<Comment> {
     let bytes = source.as_bytes();
@@ -83,7 +83,7 @@ fn is_horizontal_whitespace(byte: u8) -> bool {
 /// rustc treats `//!` as an inner doc comment and a *three-slash*
 /// `///` (third slash not followed by another `/`) as an outer doc
 /// comment. A `////` run with four or more slashes is a regular
-/// comment again — the same classification rustc_lexer uses.
+/// comment again, the same classification rustc_lexer uses.
 fn is_doc_comment_prefix(rest_after_slashes: &[u8]) -> bool {
     match rest_after_slashes {
         [b'!', ..] => true,
@@ -104,7 +104,7 @@ fn is_doc_comment_prefix(rest_after_slashes: &[u8]) -> bool {
 /// vacuous reason.
 ///
 /// The input `content` is expected to start with `//`. It is not the
-/// raw line — trailing `\r` and similar line-terminator bytes are
+/// raw line, trailing `\r` and similar line-terminator bytes being
 /// already removed by the caller.
 fn normalise_comment_text(content: &str) -> String {
     let after_slashes = content.strip_prefix("//").unwrap_or(content);
@@ -116,7 +116,7 @@ fn normalise_comment_text(content: &str) -> String {
     }
     if run > 0 {
         // A run that fills the entire trimmed slice is an
-        // all-decoration line — `//-----------` or `//=== ` (the
+        // all-decoration line, `//-----------` or `//=== ` (the
         // trailing whitespace was already stripped by `trim_matches`).
         // It carries no rationale, so return empty and let
         // `find_trailing_comment` treat it as a no-match.

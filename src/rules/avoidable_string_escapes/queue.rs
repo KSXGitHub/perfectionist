@@ -10,7 +10,7 @@
 use rustc_span::Span;
 
 pub(super) struct PendingViolation {
-    /// Span of the string literal — both the diagnostic anchor and the
+    /// Span of the string literal, both the diagnostic anchor and the
     /// region the suggestion replaces.
     pub(super) span: Span,
     /// The raw-string replacement for `span`.

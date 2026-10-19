@@ -27,7 +27,7 @@
     t.equal(
       r.prose('something to Avoid: this'),
       'something to Avoid: this',
-      'only an opening one goes — mid-paragraph it is prose'
+      'only an opening one goes: mid-paragraph it is prose'
     )
   })
 })()

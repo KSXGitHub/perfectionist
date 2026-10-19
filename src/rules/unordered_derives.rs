@@ -19,16 +19,16 @@ declare_tool_lint! {
     ///
     /// Enforces a project-wide ordering of trait names inside a single
     /// `#[derive(...)]` list. The `style` knob selects the ordering:
-    /// - `alphabetical` (default) — every trait name must be in
+    /// - `alphabetical` (default): every trait name must be in
     ///   ASCII-case-insensitive alphabetical order.
-    /// - `prefix_then_alphabetical` — the configured `prefix` list of
+    /// - `prefix_then_alphabetical`: the configured `prefix` list of
     ///   traits goes first, in the listed order; remaining traits are
     ///   sorted alphabetically after.
     ///
     /// Trait matching is by the final path segment, so
     /// [`serde::Deserialize`](https://docs.rs/serde) is matched as
     /// `Deserialize`. The lint does not police how derives are
-    /// partitioned across multiple `#[derive(...)]` lines — that's a
+    /// partitioned across multiple `#[derive(...)]` lines, which is a
     /// layout decision left to the author.
     ///
     /// A `cfg`-gated derive written as
@@ -47,7 +47,7 @@ declare_tool_lint! {
     ///
     /// The opinion is opt-in: a project that doesn't want to commit
     /// to a single ordering shouldn't have to set anything. The rule
-    /// is therefore inactive by default — enable it per crate by
+    /// is therefore inactive by default. Enable it per crate by
     /// adding to `dylint.toml`:
     ///
     /// ```toml
@@ -160,7 +160,7 @@ impl UnorderedDerives {
 impl_lint_pass!(UnorderedDerives => [UNORDERED_DERIVES]);
 
 impl Register for rule::UnorderedDerives {
-    /// Off by default — enable it in `dylint.toml` via the crate-wide
+    /// Off by default. Enable it in `dylint.toml` via the crate-wide
     /// `[perfectionist] enable = ["unordered_derives"]` (or the
     /// `[[perfectionist.enable]]` array-of-tables form).
     const DEFAULT_STATE: DefaultState = DefaultState::Inactive;
@@ -187,7 +187,7 @@ impl EarlyLintPass for UnorderedDerives {
         // still named `cfg_attr` with the `derive(...)` un-applied
         // inside its argument list. A post-expansion pass would never
         // see either, since the derive tokens are consumed during
-        // expansion — that is also why `attribute_calls` has to unwrap
+        // expansion. That is also why `attribute_calls` has to unwrap
         // the `cfg_attr` form here rather than waiting for the
         // synthesised `derive` attribute (which never materialises
         // pre-expansion).
@@ -243,8 +243,8 @@ impl UnorderedDerives {
         // comments that's exactly the shape rustfmt produces, so
         // `MachineApplicable` is safe and matches the planning spec.
         // If the derive spans multiple lines or contains inline
-        // comment tokens between entries — where the apply would
-        // visibly flatten the list or drop user comments — downgrade
+        // comment tokens between entries, where the apply would
+        // visibly flatten the list or drop user comments, downgrade
         // to `MaybeIncorrect` so `cargo fix` does not silently squash
         // the formatting; the suggestion still surfaces in IDE
         // diagnostics for manual review. Derive entries are paths

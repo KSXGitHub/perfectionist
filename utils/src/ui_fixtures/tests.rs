@@ -5,7 +5,7 @@
 use super::copy_fixtures_with_directives;
 
 /// `Path::join` discards its base when the argument is absolute, so
-/// an absolute fixture path resolves onto the manifest directory —
+/// an absolute fixture path resolves onto the manifest directory,
 /// where the copy would read and write the same files.
 #[test]
 #[should_panic(expected = "every component of the fixture path must be an ordinary name")]

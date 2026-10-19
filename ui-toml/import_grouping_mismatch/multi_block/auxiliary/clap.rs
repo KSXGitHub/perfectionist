@@ -1,8 +1,8 @@
 // force-host
 // no-prefer-dynamic
 //
-// A miniature stand-in for `clap_derive`. Each derive is inert — it
-// emits no tokens, leaving the annotated struct / enum untouched — and
+// A miniature stand-in for `clap_derive`. Each derive is inert: it
+// emits no tokens, leaving the annotated struct / enum untouched. Each
 // declares the same helper-attribute set (`clap`, `command`, `arg`,
 // `value`, `group`) the real derives do, so a fixture can write
 // `#[arg(help = "...")]` / `#[command(about = "...")]` /

@@ -58,8 +58,8 @@ impl ExpectedTree {
 }
 
 /// Result of comparing the on-disk directory against the expected
-/// state. The success branch is empty by design — the CLI prints
-/// its own success message — so callers don't have to thread a
+/// state. The success branch is empty by design, the CLI printing
+/// its own success message, so callers don't have to thread a
 /// rule count through the type.
 pub(crate) enum CheckOutcome {
     Clean,
@@ -69,7 +69,7 @@ pub(crate) enum CheckOutcome {
 /// Outcome summary for the `write-md` subcommand. The CLI prints
 /// these counts so a reader of the build log can tell at a glance
 /// whether anything actually changed. Every field counts *changes
-/// to disk*, not files emitted — a rule whose existing on-disk
+/// to disk*, not files emitted: a rule whose existing on-disk
 /// body already matches the rendered output is not counted in
 /// `rules_changed`, and the index is `index_changed: false` even
 /// though the renderer produced its bytes.
@@ -89,7 +89,7 @@ pub(crate) fn check_rules_dir(
 
     let mut report = String::new();
 
-    // Surface missing and mismatched files first — those are the
+    // Surface missing and mismatched files first, those being the
     // failures most often caused by a rule author forgetting to run
     // `write-md`. Orphans come last because they're informational:
     // the regeneration step will delete them.

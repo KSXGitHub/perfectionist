@@ -9,8 +9,8 @@
 
 ## What it does
 
-Folds two adjacent `use` statements — one importing a module
-and one importing an item from that same module — into a
+Folds two adjacent `use` statements, one importing a module
+and one importing an item from that same module, into a
 single `use module::{self, item};`. The rule is inactive by
 default; a project opts in via `[perfectionist].enable`.
 
@@ -30,7 +30,7 @@ The autofix is `MaybeIncorrect` whenever it narrows the
 namespaces an import brings into scope: folding a bare
 `use module;` into `{self, ...}` imports only the module,
 while the bare form imports every namespace named `module`
-(type, value, macro) — a difference that matters only in the
+(type, value, macro), a difference that matters only in the
 rare case where a value or macro shares the module's name in
 the same parent.
 
@@ -41,7 +41,7 @@ default) is the opposite policy: it flags a sole
 `use module::{self};` and unwraps it to `use module;`. It
 matches only the single-item `{self}` form, so it never
 touches the multi-item `{self, item}` groups this rule
-produces. The two are mirror images — pick one direction and
+produces. The two are mirror images, so pick one direction and
 do not enable both.
 
 ## Example

@@ -2,8 +2,8 @@
 // no-prefer-dynamic
 //
 // A miniature stand-in for `derive_more`'s formatting derives. Each
-// derive is inert — it emits no tokens, leaving the annotated struct /
-// enum untouched — and declares the same helper-attribute set the real
+// derive is inert: it emits no tokens, leaving the annotated struct /
+// enum untouched. Each declares the same helper-attribute set the real
 // derives do, so a fixture can write `#[display("{_0}")]`,
 // `#[lower_hex("{_0:x}")]`, `#[debug("{_0:?}")]`, ... and still
 // compile. The crate is named `derive_more` (from this file name), so

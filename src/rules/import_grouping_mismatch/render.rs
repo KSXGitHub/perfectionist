@@ -18,7 +18,7 @@ use super::UseStmt;
 /// `single_block` run with one rank keeps source order while a
 /// `multi_block` run keeps `cargo fmt`'s inner order. Adjacent
 /// statements are then separated by one blank line across a rank step
-/// and none within a rank — which, for a one-rank `single_block` run,
+/// and none within a rank, which, for a one-rank `single_block` run,
 /// collapses to one contiguous block.
 pub(super) fn replacement(pad: &str, stmts: &[UseStmt<'_>]) -> String {
     let mut ordered: Vec<&UseStmt<'_>> = stmts.iter().collect();

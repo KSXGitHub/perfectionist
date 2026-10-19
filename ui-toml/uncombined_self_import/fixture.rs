@@ -54,14 +54,14 @@ mod pub_matching {
     pub use crate::defs::inner::Baz;
 }
 
-// Mismatched attributes break the fold — no diagnostic.
+// Mismatched attributes break the fold, so no diagnostic.
 mod attr_mismatch {
     use crate::defs::inner;
     #[allow(unused_imports, reason = "uncombined_self_import mismatched-attrs fixture")]
     use crate::defs::inner::Baz;
 }
 
-// Mismatched visibility breaks the fold — no diagnostic.
+// Mismatched visibility breaks the fold, so no diagnostic.
 mod vis_mismatch {
     pub use crate::defs::inner;
     use crate::defs::inner::Baz;
@@ -87,7 +87,7 @@ fn block_scope() {
     use crate::defs::inner::Baz;
 }
 
-// An intervening item breaks adjacency — no fold.
+// An intervening item breaks adjacency, so no fold.
 mod non_adjacent {
     use crate::defs::inner;
     struct Separator;

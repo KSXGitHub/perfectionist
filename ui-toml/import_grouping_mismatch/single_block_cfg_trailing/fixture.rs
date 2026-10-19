@@ -10,7 +10,7 @@
 // Under `style = "single_block"`, `cfg_block_handling` defaults to
 // `trailing`: the non-cfg imports stay in one contiguous block and every
 // `#[cfg(...)]`-gated import is hoisted into a single trailing block one
-// blank line below. Path origin is irrelevant — only the cfg gate moves
+// blank line below. Path origin is irrelevant: only the cfg gate moves
 // an import.
 
 // Bad: a cfg-gated import sits inside the main block. The fix keeps the

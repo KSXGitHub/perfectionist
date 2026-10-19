@@ -17,15 +17,15 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Flags `#[allow(<lints>)]` when every named lint fires
-    /// deterministically — a built-in rustc lint (not on the exempt
+    /// deterministically: a built-in rustc lint (not on the exempt
     /// list), a `clippy::*` / `rustdoc::*` lint, or a tool-namespaced
     /// lint such as `perfectionist::*`. Such a suppression can be
     /// resolved two ways:
     ///
-    /// 1. **Remove** it — when the lint can no longer fire at the site
+    /// 1. **Remove** it where the lint can no longer fire at the site
     ///    (a dead suppression, e.g. `clippy::too_many_arguments` left on
     ///    a function that has since shed its arguments).
-    /// 2. **Replace** it with `#[expect]` — when the lint still fires and
+    /// 2. **Replace** it with `#[expect]` where the lint still fires and
     ///    you want the suppression to report itself the moment it stops.
     ///
     /// If the attribute also names a lint the rule leaves alone (an
@@ -35,7 +35,7 @@ declare_tool_lint! {
     /// Crate- and module-level scopes (`#![allow(...)]`, and outer
     /// `#[allow(...)]` on a `mod` item) are left alone by default,
     /// because a `cfg`-conditional body inside the scope may fire the
-    /// lint in one configuration and not another — set
+    /// lint in one configuration and not another. Set
     /// `apply_to_outer_scopes = true` to opt in.
     ///
     /// ### Why restrict this?
@@ -46,8 +46,9 @@ declare_tool_lint! {
     /// issue is resolved, so a project accumulates stale `#[allow]`
     /// attributes that no longer apply. `#[expect]` emits
     /// `unfulfilled_lint_expectations` the moment the named lint stops
-    /// triggering at the site — exactly when the suppression becomes
-    /// dead — so routine compilation tells the author to remove it.
+    /// triggering at the site, which is exactly when the suppression
+    /// becomes dead, so routine compilation tells the author to remove
+    /// it.
     /// Every `#[expect]` is also a self-test that the lint *does* fire
     /// at the site, so a future refactor that inadvertently fixes the
     /// issue is observed rather than hidden.
@@ -107,7 +108,7 @@ const DEFAULT_EXEMPT_LINTS: &[&str] = &[
 
 /// Clippy lint *group* names. A group fires only if some member lint
 /// fires, so `#[expect(clippy::<group>)]` is unfulfilled wherever no
-/// member triggers — the same non-determinism [`DEFAULT_EXEMPT_LINTS`]
+/// member triggers, the same non-determinism [`DEFAULT_EXEMPT_LINTS`]
 /// guards against. Unlike rustc's bare groups (`unused`, etc.), these are
 /// not in the [`LintStore`] snapshot (clippy is not loaded during a
 /// `cargo dylint` run), so they are listed explicitly.
@@ -148,7 +149,7 @@ struct Config {
     apply_to_outer_scopes: bool,
     /// When false, only `clippy::*`, `rustdoc::*`, and built-in lints
     /// are rewritten; other tool namespaces (`perfectionist::*` and
-    /// similar) are left alone. Default `true` — a tool namespace's
+    /// similar) are left alone. Default `true`: a tool namespace's
     /// lints are assumed to fire deterministically like a built-in, so
     /// `perfectionist::*` (and similar) are rewritten by default.
     apply_to_tool_namespaces: bool,
@@ -175,7 +176,7 @@ pub struct AllowAttributes {
     /// only if it is in this set; anything else is an unknown name that
     /// might belong to a procedural plugin that fires conditionally, so
     /// it is left under `#[allow]`. Lint *group* names (`unused`,
-    /// `nonstandard_style`, and similar) are deliberately absent — a
+    /// `nonstandard_style`, and similar) are deliberately absent: a
     /// group fires if *any* member fires, the same non-deterministic
     /// shape the exempt list guards against, so groups are never
     /// rewritten.
@@ -209,8 +210,8 @@ impl AllowAttributes {
 impl_lint_pass!(AllowAttributes => [ALLOW_ATTRIBUTES]);
 
 impl Register for rule::AllowAttributes {
-    /// Active by default. The rewrite is conservative — it only fires
-    /// when every named lint is known to fire deterministically — so a
+    /// Active by default. The rewrite is conservative, firing only
+    /// when every named lint is known to fire deterministically, so a
     /// baseline policy is not presumptuous.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
@@ -227,9 +228,9 @@ impl Register for rule::AllowAttributes {
 }
 
 /// Collect every registered lint whose printed name carries no tool
-/// prefix — the built-in rustc lints. `clippy::*` / `rustdoc::*` /
-/// `perfectionist::*` lints are recognised structurally by their path
-/// prefix instead, so they are filtered out here.
+/// prefix: those are the built-in rustc lints. `clippy::*` /
+/// `rustdoc::*` / `perfectionist::*` lints are recognised structurally
+/// by their path prefix instead, so they are filtered out here.
 fn collect_builtin_lint_names(lint_store: &LintStore) -> HashSet<String> {
     lint_store
         .get_lints()
@@ -354,7 +355,8 @@ impl AllowAttributes {
             }
         }
 
-        // Nothing deterministic to act on — leave the attribute as-is.
+        // Nothing deterministic to act on, so leave the attribute
+        // as-is.
         if rewriteable.is_empty() {
             return;
         }
@@ -369,17 +371,18 @@ impl AllowAttributes {
             return;
         }
 
-        // Mixed: act on the rewriteable lints only — drop them, or split
-        // them into a separate `#[expect]`. The textual rewrite needs the
-        // source snippet to place the new attribute (bare vs inside a
-        // `cfg_attr` arg list) and to copy the `reason` verbatim. Either
-        // can be unavailable when a `macro_rules!` attribute is assembled
-        // from two source files — e.g. `reason = $reason` with the key in
-        // the macro definition and the literal at an `include!`d call
-        // site — which leaves a span whose ends sit in different files,
-        // and `span_to_snippet` refuses those. Flag the site without a
-        // structured suggestion rather than risk a rewrite that drops the
-        // reason or injects `#[..]` inside a `cfg_attr`.
+        // Mixed: act on the rewriteable lints only, either dropping
+        // them or splitting them into a separate `#[expect]`. The
+        // textual rewrite needs the source snippet to place the new
+        // attribute (bare vs inside a `cfg_attr` arg list) and to copy
+        // the `reason` verbatim. Either can be unavailable when a
+        // `macro_rules!` attribute is assembled from two source files,
+        // say `reason = $reason` with the key in the macro definition
+        // and the literal at an `include!`d call site, which leaves a
+        // span whose ends sit in different files, and `span_to_snippet`
+        // refuses those. Flag the site without a structured suggestion
+        // rather than risk a rewrite that drops the reason or injects
+        // `#[..]` inside a `cfg_attr`.
         let reason_recoverable = reason.is_none() || reason_snippet.is_some();
         match container {
             Some(container) if reason_recoverable => self.emit_split(
@@ -408,7 +411,7 @@ impl AllowAttributes {
             return self.builtin_lints.contains(name);
         }
         // Tool-namespaced. `clippy` and `rustdoc` ship deterministic
-        // lints and are always rewriteable — except their lint *groups*
+        // lints and are always rewriteable, except their lint *groups*
         // (`clippy::pedantic`, `rustdoc::all`, etc.), which fire only if
         // some member fires, exactly the non-determinism the bare-name
         // branch excludes for rustc groups. Every other tool namespace
@@ -426,7 +429,7 @@ impl AllowAttributes {
     /// rewriteable, offering the two resolutions a deterministic
     /// suppression has. The lint might still fire here (so `#[expect]`
     /// keeps the suppression and makes it self-clean) or might be long
-    /// dead (so the suppression should go) — the rule can't tell which,
+    /// dead (so the suppression should go). The rule can't tell which,
     /// so both are `MaybeIncorrect` hints for the author to choose.
     fn emit_simple(
         &self,
@@ -451,11 +454,12 @@ impl AllowAttributes {
             ident_span,
             "this `#[allow]` stays silent even after its lint stops firing",
             |diag| {
-                // Resolution 1: remove the suppression — correct when the
-                // lint can no longer fire here. Only a bare attribute can
-                // be deleted outright; the inner `allow` of a `cfg_attr`
-                // can't go without dropping its `cfg` wrapper, so removal
-                // is left to the author in that case.
+                // Resolution 1: remove the suppression, which is
+                // correct when the lint can no longer fire here. Only a
+                // bare attribute can be deleted outright; the inner
+                // `allow` of a `cfg_attr` can't go without dropping its
+                // `cfg` wrapper, so removal is left to the author in
+                // that case.
                 if let Some(Container::Bare { span, .. }) = container {
                     diag.span_suggestion(
                         *span,
@@ -521,7 +525,7 @@ impl AllowAttributes {
 }
 
 impl Container {
-    /// The span the suggestions replace — the whole bare attribute, or
+    /// The span the suggestions replace: the whole bare attribute, or
     /// the inner `allow(...)` item of a `cfg_attr`.
     fn span(&self) -> Span {
         match *self {

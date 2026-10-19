@@ -16,9 +16,9 @@ use std::collections::BTreeSet;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Counts the distinct names a function or method body binds —
+    /// Counts the distinct names a function or method body binds,
     /// through `let`, `if let`, `while let`, `let ... else`, `for`,
-    /// match arms, and the parameters of closures it contains — and
+    /// match arms, and the parameters of closures it contains, then
     /// flags the body when the count is above `max_bindings`.
     ///
     /// A name counts once however many times it is bound, so
@@ -201,7 +201,7 @@ impl<'tcx> Visitor<'tcx> for BindingCollector<'tcx> {
     fn visit_local(&mut self, local: &'tcx hir::LetStmt<'tcx>) {
         // Lowering an `async fn` re-binds each parameter inside the
         // coroutine body as `let <param> = <param>;`, reusing the
-        // parameter's own pattern — author-written span and all — so the
+        // parameter's own pattern, author-written span and all, so the
         // binding clears every guard in `visit_pat` below. The
         // function's own parameters are not counted, in an `async fn` as
         // anywhere else, so drop the whole statement.
@@ -212,9 +212,9 @@ impl<'tcx> Visitor<'tcx> for BindingCollector<'tcx> {
     }
 
     fn visit_pat(&mut self, pat: &'tcx Pat<'tcx>) {
-        // A binding the compiler makes up for a desugaring — the `iter`
-        // of a `for` loop, the `val` and `residual` of a `?` — carries a
-        // dummy span rather than an expansion span.
+        // A binding the compiler makes up for a desugaring, the `iter`
+        // of a `for` loop or the `val` and `residual` of a `?`, carries
+        // a dummy span rather than an expansion span.
         if let PatKind::Binding(_, _, ident, _) = pat.kind
             && !ident.span.from_expansion()
             && !ident.span.is_dummy()

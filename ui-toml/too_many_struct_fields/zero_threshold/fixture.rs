@@ -21,10 +21,10 @@ struct Three {
     field_3: u32,
 }
 
-// Bad: 2 fields — a tuple struct's fields count.
+// Bad: 2 fields, a tuple struct's fields counting.
 struct Pair(u32, u32);
 
-// Bad: 1 field — a generic struct is measured like any other.
+// Bad: 1 field, a generic struct being measured like any other.
 struct Wrapper<Value> {
     value: Value,
 }
@@ -40,7 +40,7 @@ union Bits {
     unsigned: u32,
 }
 
-// Bad: 1 field — a struct declared inside a function is measured.
+// Bad: 1 field, a struct declared inside a function being measured.
 fn holder() {
     struct Local {
         field_1: u32,

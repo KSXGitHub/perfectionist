@@ -30,7 +30,7 @@ use clap::Parser;
 
 struct Sep1;
 
-// Good: std, third-party, internal — matching the custom order.
+// Good: std, third-party, internal, matching the custom order.
 use std::io::stdin;
 
 use clap::Subcommand;

@@ -26,14 +26,14 @@ declare_tool_lint! {
     ///
     /// Enforces a single project-wide import-granularity style, chosen
     /// via `style`:
-    /// - `crate` — one `use` per crate root, with every shared prefix
+    /// - `crate`: one `use` per crate root, with every shared prefix
     ///   collapsed into nested braces
     ///   (`use std::{collections::HashMap, io::Read};`).
-    /// - `module` (default) — one `use` per leaf module; items from the
+    /// - `module` (default): one `use` per leaf module; items from the
     ///   same module are merged into one braced list while sibling
     ///   modules sit on their own lines
     ///   (`use std::collections::{BTreeMap, HashMap};`).
-    /// - `item` — one `use` per leaf path
+    /// - `item`: one `use` per leaf path
     ///   (`use std::collections::BTreeMap;`).
     ///
     /// The names map one-to-one onto rustfmt's unstable
@@ -43,12 +43,13 @@ declare_tool_lint! {
     /// `respect_*` knobs tighten or loosen that grouping.
     ///
     /// Under `crate` style a name that is both an item and a module
-    /// (`use crate::thing;` next to `use crate::thing::T;`) has two valid
-    /// one-`use` shapes — the `self`-fold `crate::thing::{self, T}` and
-    /// the sibling-split `crate::{thing, thing::T}` — that bind different
-    /// namespaces. By default neither single-statement form is flagged
-    /// and both are offered when a merge is forced; the optional
-    /// `self_merge` knob (`fold` / `split`) picks one and enforces it.
+    /// (`use crate::thing;` next to `use crate::thing::T;`) has two
+    /// valid one-`use` shapes that bind different namespaces: the
+    /// `self`-fold `crate::thing::{self, T}` and the sibling-split
+    /// `crate::{thing, thing::T}`. By default neither single-statement
+    /// form is flagged and both are offered when a merge is forced; the
+    /// optional `self_merge` knob (`fold` / `split`) picks one and
+    /// enforces it.
     ///
     /// Globs (`use foo::*`) are governed by `perfectionist::wildcard_imports`,
     /// not by this rule: a top-level glob is left alone under `item`.
@@ -56,7 +57,7 @@ declare_tool_lint! {
     /// ### Why restrict this?
     ///
     /// This is a stylistic preference, not a correctness issue. None of
-    /// the three shapes is wrong in the abstract — the violation is a
+    /// the three shapes is wrong in the abstract. The violation is a
     /// mismatch with the project's configured `style`. Enforcing one
     /// keeps `use` blocks scanning uniformly and makes import diffs
     /// predictable. rustfmt can enforce the same shape, but only on the
@@ -168,7 +169,7 @@ struct Pending {
     /// The span used to resolve the lint-level anchor: the first `use`
     /// statement of the group, always contained by its own HIR node.
     anchor: Span,
-    /// The span the diagnostic points at and rewrites — the whole run of
+    /// The span the diagnostic points at and rewrites: the whole run of
     /// merged statements.
     span: Span,
     violation: Violation,
@@ -184,7 +185,7 @@ enum Violation {
     /// where a bare item shares a module's name: the `self`-fold
     /// (`thing::{self, T}`) and the sibling-split (`{thing, thing::T}`).
     /// The two shapes are not interchangeable, so both are offered and
-    /// the human picks — hence the `MaybeIncorrect` applicability the
+    /// the human picks, hence the `MaybeIncorrect` applicability the
     /// caller attaches in that case. When `self_merge` is set the
     /// ambiguity is resolved to the configured shape and only that one
     /// candidate is offered.
@@ -265,7 +266,7 @@ impl<'tcx> LateLintPass<'tcx> for ImportGranularityMismatch {
 struct UseEntry<'ast> {
     item: &'ast Item,
     info: StmtInfo,
-    /// Source text of every attribute, in order — reproduced verbatim
+    /// Source text of every attribute, in order, reproduced verbatim
     /// onto each rendered statement.
     attrs: Vec<String>,
     /// Source text of the non-doc attributes only (`#[cfg(...)]`,
@@ -281,7 +282,7 @@ struct UseEntry<'ast> {
     /// A doc-commented statement (under `respect_doc_comments`) is never
     /// merged with a neighbour.
     force_singleton: bool,
-    /// Lowest byte position to replace — the start of the first
+    /// Lowest byte position to replace: the start of the first
     /// attribute, or of the `use` keyword when there are none.
     lo: BytePos,
 }
@@ -520,7 +521,7 @@ impl ImportGranularityMismatch {
             // only that one candidate. The rewrite changes which
             // namespaces a name binds when it folds a bare item into
             // `self` or raises a `self` to a bare item, so it is
-            // `MaybeIncorrect` in that case — the project asserts a
+            // `MaybeIncorrect` in that case: the project asserts a
             // preference, not a proof of equivalence. See
             // <https://github.com/KSXGitHub/perfectionist/issues/206>.
             (Style::Crate, Some(SelfMerge::Fold)) => {

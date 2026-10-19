@@ -61,7 +61,7 @@ fn _skip_repeat_form() {
     let _ = vec![0; 4];
 }
 
-// Skipped: empty body — nothing to add or remove.
+// Skipped: empty body, so nothing to add or remove.
 fn _skip_empty() {
     let _: Vec<i32> = vec![];
     let _: &str = concat!();
@@ -77,9 +77,9 @@ fn _skip_uncurated() {
 }
 
 // Skipped: the first top-level token shares its line with the opening
-// delimiter — the visual-indent shape rustfmt produces, and rustfmt's
-// `trailing_comma = "Vertical"` does not add a trailing comma to that
-// shape (and actively strips any that gets added). The two tools have
+// delimiter. That is the visual-indent shape rustfmt produces, and
+// rustfmt's `trailing_comma = "Vertical"` does not add a trailing comma
+// to that shape (and actively strips any that gets added). The two tools have
 // to agree, so the lint skips it. The first three cases are single
 // multi-line elements; the fourth is a multi-element list whose first
 // element happens to start on the opening-delimiter line, locking in

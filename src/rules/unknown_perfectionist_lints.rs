@@ -167,7 +167,7 @@ fn help_for(candidate: &str) -> Option<String> {
     if let Some(non_ascii) = candidate.chars().find(|character| !character.is_ascii()) {
         let codepoint = u32::from(non_ascii);
         // A combining mark would otherwise land on the quote and a
-        // zero-width character would render as nothing at all —
+        // zero-width character would render as nothing at all,
         // both defeating the point of naming the character. rustc
         // escapes it the same way: its `uncommon_codepoints` reads
         // `identifier contains an uncommon character: '\u{951}'`.

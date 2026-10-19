@@ -6,8 +6,8 @@
 //!
 //! The walk decides whether a literal contains *only* escapes that a
 //! raw string would express verbatim (`\"`, `\\`, `\'`). A single
-//! escape outside that set — `\n`, `\t`, `\xNN`, `\u{...}`, line
-//! continuations — makes the whole literal ineligible. The generic
+//! escape outside that set makes the whole literal ineligible,
+//! whether `\n`, `\t`, `\xNN`, `\u{...}` or a line continuation. The generic
 //! "take any backslash escape" step is the crate-internal
 //! [`crate::literal_scan::take_string_escape`]; this module layers the
 //! eligible-escape recognition on top.
@@ -25,7 +25,7 @@ pub(super) struct ScanResult {
 
 /// Walk the body of a cooked string literal (everything between the
 /// surrounding quotes) and classify each escape. Returns `None` if
-/// the body contains any non-raw escape — `\n`, `\t`, `\r`, `\0`,
+/// the body contains any non-raw escape: `\n`, `\t`, `\r`, `\0`,
 /// `\xNN`, `\u{...}`, line continuations, or any other backslash
 /// sequence that is not listed in the configured `eligible_escapes`.
 pub(super) fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
@@ -58,7 +58,7 @@ pub(super) fn scan_body(body: &str, eligible: &[String]) -> Option<ScanResult> {
 
 /// Take a prefix of `input` that matches one of the configured
 /// eligible escape sequences. Each entry is matched literally
-/// against the input — no decoding, no normalisation. Entries
+/// against the input, with no decoding and no normalisation. Entries
 /// reach this function only after [`is_supported_eligible_entry`]
 /// has accepted them, so they are non-empty by construction.
 fn take_escape_eliminable<'a>(input: &'a str, eligible: &[String]) -> Option<(&'a str, &'a str)> {
@@ -123,13 +123,13 @@ pub(super) fn minimal_hash_count(decoded: &str) -> usize {
 }
 
 /// A supported `eligible_escapes` entry is one of the three Rust
-/// escapes that self-decode — that is, whose decoded character is
+/// escapes that self-decode, meaning those whose decoded character is
 /// exactly the byte that follows the backslash: `\"`, `\\`, `\'`.
 /// [`eliminable_decoded`]'s contract is "strip the leading backslash",
 /// which only holds for these three. Every other valid Rust escape
 /// (`\n`, `\t`, `\r`, `\0`, `\xNN`, `\u{...}`) decodes to a
 /// different character, so accepting it here would let the autofix
-/// silently corrupt strings — e.g. `eligible_escapes = ["\\n"]`
+/// silently corrupt strings: `eligible_escapes = ["\\n"]`
 /// would rewrite a newline-containing literal to one containing the
 /// letter `n`.
 ///

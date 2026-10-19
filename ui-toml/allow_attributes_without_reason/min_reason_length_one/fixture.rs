@@ -12,20 +12,20 @@
     reason = "fixture targets `allow_attributes_without_reason`; the trailing/leading comments are documentation, not rationales to lift",
 )]
 
-// Good — even a one-character `reason` is accepted.
+// Good: even a one-character `reason` is accepted.
 #[allow(dead_code, reason = "x")]
 fn one_char_reason() {}
 
-// Bad — presence is still enforced.
+// Bad: presence is still enforced.
 #[allow(dead_code)]
 fn no_reason() {}
 
-// Bad — empty literal counts as missing regardless of the
+// Bad: an empty literal counts as missing regardless of the
 // length floor.
 #[allow(dead_code, reason = "")]
 fn empty_reason() {}
 
-// Bad — whitespace-only literal also counts as missing,
+// Bad: a whitespace-only literal also counts as missing,
 // regardless of the length floor.
 #[allow(dead_code, reason = "   ")]
 fn whitespace_only_reason() {}

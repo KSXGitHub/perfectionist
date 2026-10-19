@@ -8,12 +8,12 @@
 //!
 //! A definition path is not always a path the importer may *write*.
 //! Two ways it is not, each of which produced a rewrite that does not
-//! compile before this module weighed them — and which are answered
+//! compile before this module weighed them, and which are answered
 //! differently, because they are wrong to different depths:
 //!
 //! - **The defining crate need not be linked here.** `std`'s prelude
 //!   re-exports items defined in `alloc`, so `use std::prelude::v1::Vec;`
-//!   has the definition path `alloc::vec::Vec` — and `alloc` is not in
+//!   has the definition path `alloc::vec::Vec`, and `alloc` is not in
 //!   the extern prelude of an ordinary crate. Any facade crate
 //!   re-exporting from a private sibling behaves the same way. The
 //!   module named is still the right one, so the path is offered and
@@ -52,8 +52,8 @@ pub(super) struct Canonical {
     ///   names, so that crate is linked here (see the module docs).
     ///
     /// Each is a promise the rule can keep. A path failing either is
-    /// still offered — it names the right module — just without the
-    /// promise that applying it compiles.
+    /// still offered, since it names the right module, just without
+    /// the promise that applying it compiles.
     pub(super) nameable: bool,
 }
 
@@ -88,8 +88,9 @@ pub(super) fn resolve(
     // The distinct nameable canonical paths the name resolves to. An
     // unnameable component (a tuple/unit struct's value-namespace
     // constructor, an `impl`, and so on) drops out via [`use_path`]'s
-    // `None`, which is what leaves a unit struct — type plus constructor
-    // — with the single struct path. Exactly one path means every
+    // `None`. A unit struct resolves in both namespaces, its type and
+    // its constructor, so dropping the constructor is what leaves it
+    // with the single struct path. Exactly one path means every
     // resolved namespace agrees; more than one means the import spans
     // several modules and no single `use` reproduces it, so no rewrite
     // is offered rather than a wrong one.
@@ -145,8 +146,8 @@ fn root_as_written(canonical: &str, rooted: bool) -> String {
 /// rewritten `use` already spells, which is therefore linked here.
 ///
 /// Anything else is a crate this compilation can see only because
-/// something else depends on it — reachable through the re-export the
-/// importer wrote, but not necessarily by name.
+/// something else depends on it, reachable through the re-export the
+/// importer wrote but not necessarily by name.
 fn crate_is_linked(canonical: &str, written_root: Option<&str>) -> bool {
     let root = canonical.split("::").next().unwrap_or(canonical);
     root == "crate" || written_root == Some(root)

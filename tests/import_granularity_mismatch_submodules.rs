@@ -2,8 +2,8 @@
 //! <https://github.com/KSXGitHub/parallel-disk-usage/issues/431>: with
 //! the rule running as a pre-expansion pass, out-of-line `mod foo;`
 //! modules were still `ModKind::Unloaded` at lint time, so their `use`
-//! statements were never inspected — only the crate-root file and inline
-//! `mod { ... }` blocks were.
+//! statements were never inspected. The scan reached only the
+//! crate-root file and inline `mod { ... }` blocks.
 //!
 //! These tests materialise a real Cargo project on disk (so the
 //! separate-file module is loaded the way a normal build loads it) and

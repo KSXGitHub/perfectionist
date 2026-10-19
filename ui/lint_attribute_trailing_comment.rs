@@ -58,7 +58,7 @@ fn trailing_cfg_attr() {}
 
 // Bad: `cfg_attr` expanding to *two* synth lint-level attrs
 // shares a single trailing comment. The rule lifts the comment
-// onto the first synth attr only — emitting a suggestion for
+// onto the first synth attr only, since emitting a suggestion for
 // every synth would produce overlapping `delete_span`s on the
 // shared comment that rustfix cannot apply.
 #[cfg_attr(all(), allow(dead_code), allow(unused_variables))] // shared rationale
@@ -89,8 +89,8 @@ fn bare_trailing_comment_ignored() {}
 #[allow(dead_code)] //----------
 fn divider_trailing_comment_ignored() {}
 
-// Good: a comment on the line *above* the attribute is out of scope
-// — only same-line trailing comments are lifted, never a comment
+// Good: a comment on the line *above* the attribute is out of
+// scope: only same-line trailing comments are lifted, never a comment
 // that might instead be documenting the item below.
 // documentation for the function, not the attribute
 #[allow(dead_code)]

@@ -14,8 +14,8 @@
 //! postfixes for a curated / configured set of pure-getter
 //! methods).
 //!
-//! The predicate is a hand-rolled token-stream walker — see the
-//! rationale in `planned-rules/impure-macro-arguments.md`'s
+//! The predicate is a hand-rolled token-stream walker. The
+//! rationale is in `planned-rules/impure-macro-arguments.md`'s
 //! implementation notes. The walker is `take_*`-style per
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
 
@@ -44,7 +44,7 @@ pub(super) struct PurityContext<'a> {
 /// signals that the invocation is not a comma-separated argument list
 /// and the rule skips the whole call.
 ///
-/// `=>` is ordinary content here — match-arm syntax inside `matches!`
+/// `=>` is ordinary content here. Match-arm syntax inside `matches!`
 /// shows up as a top-level fat arrow but is meaningful to the macro,
 /// not a separator. The walker passes it through unchanged so each
 /// argument's [`looks_like_expression`] check can skip it as a
@@ -81,27 +81,27 @@ pub(super) fn split_top_level_arguments(stream: &TokenStream) -> Option<Vec<Vec<
 ///    `debug_assert_op_expr!(a, ==, b)` is not an expression at all;
 ///    suggesting a `let` binding for it is nonsensical, so the rule
 ///    skips the argument.
-/// 2. A top-level token that signals a DSL pattern — `=>` (match-arm
-///    separator inside `matches!`, `impl_lint_pass!`-style
-///    `Type => [LINT_NAMES]` DSLs); `=`, `+=`, `-=`, ...
-///    (assignment-shaped matchers like `make_const!(NAME = '█')` or
-///    `bump!(items += 1)`); a top-level `:` (`name: type`
-///    ascription-shaped matchers); `->` (`link!("src" -> "dst")`-style
-///    arrow matchers); the `in` keyword
-///    (`for_each!(x in iter, ...)`-style matchers) — fails the check.
+/// 2. A top-level token that signals a DSL pattern fails the check.
+///    Those tokens are `=>` (match-arm separator inside `matches!`,
+///    `impl_lint_pass!`-style `Type => [LINT_NAMES]` DSLs); `=`,
+///    `+=`, `-=`, ... (assignment-shaped matchers like
+///    `make_const!(NAME = '█')` or `bump!(items += 1)`); a top-level
+///    `:` (`name: type` ascription-shaped matchers); `->`
+///    (`link!("src" -> "dst")`-style arrow matchers); and the `in`
+///    keyword (`for_each!(x in iter, ...)`-style matchers).
 ///    `name = value` is technically a valid Rust assignment expression
 ///    of unit type, but in macro-argument position the macro author
 ///    overwhelmingly chose the `=` as a structural marker; the let-bind
 ///    rewrite the rule would propose is meaningless for the macro's
 ///    matcher arm. The same reasoning extends to `->`, `in`, and the
-///    compound-assignment family — in the shapes the rule observes,
+///    compound-assignment family: in the shapes the rule observes,
 ///    none of these tokens form a single Rust expression standalone.
 ///    `==`, by contrast, is a real Rust binary operator
 ///    (`debug_assert!(a == b)` is the motivating pure shape) and is
 ///    intentionally absent from this list.
 ///
 ///    The trade-off is asymmetric. `->` and `in` *can* legitimately
-///    appear inside a real Rust expression — `->` in a closure return
+///    appear inside a real Rust expression: `->` in a closure return
 ///    type (`|x: u32| -> u32 { x + 1 }`), `in` in a `for`-loop
 ///    expression (`for x in iter { ... }`). Both are impure
 ///    expressions the rule would otherwise flag; with the markers in
@@ -126,7 +126,7 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
     }
     // A single brace-delimited argument is a block expression in
     // Rust, but in macro-argument position it's overwhelmingly the
-    // outer carrier for a DSL body — `json!({"k": "v"})`,
+    // outer carrier for a DSL body: `json!({"k": "v"})`,
     // `hashmap!({"k" => v})`, and similar. Descend one level and
     // look for DSL markers that wouldn't appear at the top level of
     // a real Rust block. If any are present, the argument is not
@@ -160,14 +160,14 @@ pub(super) fn looks_like_expression(argument: &[TokenTree]) -> bool {
 /// (an attribute-annotated `let` binding inside a real block) is
 /// still treated as a Rust block.
 ///
-/// Known false-positive shapes — block-statement-starting tokens
-/// other than `let` that legitimately introduce a top-level `:`
-/// — are not currently whitelisted:
+/// Some block-statement-starting tokens other than `let`
+/// legitimately introduce a top-level `:`. Those known
+/// false-positive shapes are not currently whitelisted:
 ///
 /// - `const NAME: type = expr;` and `static NAME: type = expr;`
 ///   item declarations inside the block.
 /// - Labelled loops and blocks (`'a: loop { ... }`,
-///   `'a: { ... }`) at the brace's immediate top level — the
+///   `'a: { ... }`) at the brace's immediate top level, where the
 ///   lifetime token is followed by `:` in the same position as
 ///   a DSL key.
 ///
@@ -275,7 +275,7 @@ fn is_dsl_marker(token: &Token) -> bool {
 /// operand is pure, plus `.method()` postfixes when the method
 /// name is in `pure_methods` (curated pure-getter set, extensible
 /// via `dylint.toml`). The classification is recursive on operands.
-/// Anything outside that grammar is impure — including most
+/// Anything outside that grammar is impure, including most
 /// `const fn` calls, generic method calls, and other "morally pure"
 /// expressions the walker cannot prove side-effect-free.
 pub(super) fn is_pure_expression(tokens: &[TokenTree], ctx: PurityContext<'_>) -> bool {
@@ -299,7 +299,7 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
         // Each element is recursively pure; empty parens are the
         // canonical pure value.
         //
-        // The match is restricted to `Delimiter::Parenthesis` —
+        // The match is restricted to `Delimiter::Parenthesis`.
         // `Delimiter::Invisible` (capture-wrapping delimiters
         // introduced by macro expansion) falls through to the
         // bottom `_ => None` arm. That's correct here: the rule
@@ -317,7 +317,7 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
         // Each element is recursively pure; the repeat form
         // requires both halves to be pure. The indexing suffix
         // `base[index]` is handled separately by
-        // `take_pure_suffixes` — it never reaches this arm because
+        // `take_pure_suffixes`. It never reaches this arm because
         // an indexed expression starts with the base path, not the
         // bracket.
         TokenTree::Delimited(_, _, Delimiter::Bracket, inner) => {
@@ -342,7 +342,7 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
             // `!expr` (logical / bitwise not). Side-effect-free over
             // a pure operand for the same reason `*expr` is: the
             // trait impl is overridable, but the rule classifies by
-            // syntactic shape rather than semantics — the binary
+            // syntactic shape rather than semantics. The binary
             // operators in `take_pure_binary_operator` are accepted
             // on the same basis. Without this arm, `debug_assert!(!ready)`
             // and `debug_assert!(!state.is_full())` would be flagged
@@ -353,7 +353,7 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
             // `!` and the path's final segment names a curated
             // pure macro (`concat!`, `env!`, `include_str!`, ...),
             // the whole `name!(...)` / `name![...]` is a pure
-            // atom — the expansion is a compile-time constant and
+            // atom: the expansion is a compile-time constant and
             // the macro itself does not evaluate any runtime user
             // expression (`stringify!` takes a token sequence and
             // `cfg!` takes a cfg predicate, but neither evaluates
@@ -364,7 +364,7 @@ fn take_pure_atom<'a>(tokens: &'a [TokenTree], ctx: PurityContext<'_>) -> Option
             TokenKind::Ident(name, _) => {
                 Some(take_path_and_optional_macro_call(name, rest, ctx.macros))
             }
-            // Leading `::` — must be followed by an ident.
+            // Leading `::`, which must be followed by an ident.
             TokenKind::PathSep => take_atom_path_after_sep(rest, ctx.macros),
             _ => None,
         },
@@ -408,7 +408,7 @@ fn is_pure_array_inner(stream: &TokenStream, ctx: PurityContext<'_>) -> bool {
 /// Split a bracket-delimited stream at the first top-level `;`,
 /// the array-repeat separator. Returns `None` if the stream has
 /// no top-level `;`, more than one top-level `;`, or any top-level
-/// `,` (the repeat form is `[expr; count]` exactly — a comma at
+/// `,` (the repeat form is `[expr; count]` exactly, so a comma at
 /// the top level signals a malformed mixture with array-literal
 /// syntax).
 fn split_array_repeat(stream: &TokenStream) -> Option<(Vec<TokenTree>, Vec<TokenTree>)> {
@@ -577,7 +577,7 @@ fn take_pure_suffixes<'a>(mut tokens: &'a [TokenTree], ctx: PurityContext<'_>) -
                 // `.ident` (field access), `.0` (tuple index), or
                 // `.method()` (zero-arg pure-getter call) when the
                 // method name is in the configured pure-methods
-                // set. Postfix `.await` is *not* a field access —
+                // set. Postfix `.await` is *not* a field access:
                 // it's `ExprKind::Await`, which the rule docs list as
                 // impure. Reject the `await` keyword explicitly
                 // so `future.await` correctly falls out as impure.
@@ -619,7 +619,7 @@ fn take_pure_suffixes<'a>(mut tokens: &'a [TokenTree], ctx: PurityContext<'_>) -
                         _ => return tokens,
                     }
                 }
-                // `as path` — type annotation. Only path-shaped types
+                // `as path`, a type annotation. Only path-shaped types
                 // are recognised; references, slices, function pointers,
                 // etc. fall back to impure.
                 TokenKind::Ident(name, IdentIsRaw::No) if name == kw::As => {
@@ -630,7 +630,7 @@ fn take_pure_suffixes<'a>(mut tokens: &'a [TokenTree], ctx: PurityContext<'_>) -
                 }
                 _ => return tokens,
             },
-            // `[expr]` — index. Both base and index must be pure;
+            // `[expr]`, an index. Both base and index must be pure;
             // the recursion happens here for the index.
             TokenTree::Delimited(_, _, Delimiter::Bracket, inner) => {
                 if !is_pure_expression_stream(inner, ctx) {
@@ -665,7 +665,7 @@ fn is_pure_method_call(
 /// side-effect-free over pure operands and should themselves be pure.
 /// Without this tail, simple comparisons in `debug_assert!(a <= b)`
 /// would be flagged and the suggested `let` binding would force the
-/// comparison to evaluate in release builds — the opposite of the
+/// comparison to evaluate in release builds, the opposite of the
 /// user's intent.
 ///
 /// The walker does not honour Rust's binary-operator precedence

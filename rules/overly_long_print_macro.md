@@ -25,8 +25,8 @@ The rewrite is byte-for-byte output-preserving: every `\n`
 stays, and the trailing `\<newline><indent>` continuation
 strips exactly the source newline and indentation it adds.
 
-Eligibility is name-based — a curated list of the macros whose
-output is unchanged by the fold (`println!`, `eprintln!`,
+Eligibility is name-based, resting on a curated list of the
+macros whose output is unchanged by the fold (`println!`, `eprintln!`,
 `print!`, `eprint!`, `writeln!`, `write!`, and the
 [`log`](https://docs.rs/log) family `log!` / `error!` /
 `warn!` / `info!` / `debug!` / `trace!`),

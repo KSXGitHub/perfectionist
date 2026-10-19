@@ -22,8 +22,8 @@
 //   3. Read `perfectionist-color-scheme-override` from localStorage and
 //      apply it.
 //
-// If step 1 throws — the likely cause being a browser too old for the
-// APIs used — execution stops before steps 2–3, so the gear stays
+// If step 1 throws, the likely cause being a browser too old for the
+// APIs used, execution stops before steps 2 and 3, so the gear stays
 // hidden rather than appearing as a dead control. This is the same
 // "reveal only once wired up" contract the nav hamburger uses, and the
 // absence of a try/catch is deliberate: a half-supported browser should
@@ -32,7 +32,7 @@
 // style/base.css keeps the `hidden` attribute authoritative against the
 // `.settings-toggle { display: flex }` rule.)
 //
-// The localStorage key is `perfectionist-color-scheme-override` — long
+// The localStorage key is `perfectionist-color-scheme-override`, long
 // on purpose, because `gh-pages/index.html` is also opened over
 // `file:///`, where the origin is shared across every local HTML file
 // and a short key would risk collisions.
@@ -60,7 +60,7 @@
 
   // Apply a choice to the live page. "dark"/"light" set the override
   // attribute (tier 3); anything else ("system") removes it so the
-  // page falls back to tiers 1–2.
+  // page falls back to tiers 1 and 2.
   /** @param {string | null} value */
   function applyScheme(value) {
     if (value === 'dark' || value === 'light') {

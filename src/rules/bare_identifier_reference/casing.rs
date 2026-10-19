@@ -5,13 +5,13 @@
 /// The naming-case style of an identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Case {
-    /// `snake_case` — lowercase letters and digits, words joined by
+    /// `snake_case`: lowercase letters and digits, words joined by
     /// single underscores (`foo`, `foo_bar`, `foo2`).
     Snake,
-    /// `UPPER_CASE` / `SCREAMING_SNAKE_CASE` — uppercase letters and
+    /// `UPPER_CASE` / `SCREAMING_SNAKE_CASE`: uppercase letters and
     /// digits, words joined by single underscores (`FOO`, `FOO_BAR`).
     Upper,
-    /// `PascalCase` — capitalised words, no underscores (`Foo`,
+    /// `PascalCase`: capitalised words, no underscores (`Foo`,
     /// `FooBar`).
     Pascal,
     /// A mixed or otherwise non-conformist spelling (`fooBar`,
@@ -51,8 +51,8 @@ pub(super) fn classify(name: &str) -> Case {
         // Only uppercase letters, digits, and single underscores.
         return Case::Upper;
     }
-    // Both cases present: `PascalCase` is the one conformist shape —
-    // no underscores and an uppercase first letter.
+    // Both cases present: `PascalCase` is the one conformist shape,
+    // with no underscores and an uppercase first letter.
     if !name.contains('_') && name.starts_with(|ch: char| ch.is_ascii_uppercase()) {
         return Case::Pascal;
     }
@@ -63,9 +63,9 @@ pub(super) fn classify(name: &str) -> Case {
 ///
 /// `snake_case` / `UPPER_CASE` split on underscores; `PascalCase` splits
 /// on camel humps (with the `HTTPServer` → `HTTP` + `Server` acronym
-/// rule). A non-conformist name has no meaningful word count — callers
-/// treat it as "checked regardless" and never consult this — so it
-/// reports `1`.
+/// rule). A non-conformist name has no meaningful word count, callers
+/// treating it as "checked regardless" and never consulting this, so
+/// it reports `1`.
 pub(super) fn word_count(name: &str, case: Case) -> usize {
     match case {
         Case::Snake | Case::Upper => name
