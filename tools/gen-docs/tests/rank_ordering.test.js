@@ -3,7 +3,7 @@
 //
 // Where two of a rule's three fields are compared, the fixtures give them
 // the *same* text, so the only thing separating the two scores is the
-// weight the field carries — which is what the case is about.
+// weight the field carries, which is what the case is about.
 // ============================================================================
 
 ;(function () {

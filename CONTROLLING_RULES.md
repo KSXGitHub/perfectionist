@@ -51,7 +51,7 @@ disable = [
 ]
 ```
 
-Bare strings and inline `{ name, reason }` tables can be intermixed inside a single literal `enable = [...]` (or `disable = [...]`) array. The array-of-tables form is an alternative syntax for the same data — pick one form per key:
+Bare strings and inline `{ name, reason }` tables can be intermixed inside a single literal `enable = [...]` (or `disable = [...]`) array. The array-of-tables form is an alternative syntax for the same data; pick one form per key:
 
 ```toml
 [[perfectionist.enable]]

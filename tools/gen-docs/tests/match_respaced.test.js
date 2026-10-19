@@ -58,7 +58,7 @@
 
   t.add('one phrase is marked one way however its separators were typed', function () {
     // The respaced and variants tiers place the same characters here and
-    // so score the same, and they mark differently — the one span against
+    // so score the same, and they mark differently: the one span against
     // one per word. Which wins must not come down to the last bit of a
     // double, or the reader sees the phrase marked whole for one query
     // and word by word for the next.
