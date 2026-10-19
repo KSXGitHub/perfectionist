@@ -49,7 +49,7 @@
   })
 
   t.add("a word reaches the target's variants here too", function () {
-    // The same reading as the tier above it: the target's word has to
+    // The same reading as the variants tier: the target's word has to
     // open with the query's once the ending the query's would drop is
     // allowed for, so a plural still finds its singular out of order.
     t.ok(m.matchFuzzy('std cores', 'core_instead_of_std'), '`cores` reaches `core`')

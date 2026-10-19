@@ -313,7 +313,7 @@ those directories for a label line that also carries "the same", "too",
 "either", "as well", "likewise", "ditto", "above" or "below". Anchor the
 search on the label itself, or the output fills with the exceptions
 above. Anchor it on the label's word alone, though, since what follows it
-varies: a colon in most files, a comma or an em dash elsewhere, and
+varies: a colon in most files, a comma or another mark elsewhere, and
 sometimes nothing at all. An anchor that assumes one separator silently
 skips every file written with another. Then read each matching comment
 whole, because a label's
@@ -341,7 +341,7 @@ rather than to a copied fact.
 
 A doc is *shipped* if a consumer reads it without cloning:
 `README.md`, `CONFIGURATION.md`, `CONTROLLING_RULES.md`, and
-everything `tools/gen-docs/` renders, meaning a rule's
+everything `tools/gen-docs/` renders, among them a rule's
 `declare_tool_lint!` rustdoc, its `Config` field docs, and the docs
 on the types and variants those fields name. Everything else is
 contributor-only and may say whatever is useful: `planned-rules/`,
@@ -451,8 +451,8 @@ enum FrobStyle {
 
 The wrong placement is the recurring mistake this convention
 exists to stop: `Rounded`'s doc reading "… the default.", or
-`FrobStyle`'s own doc reading "Defaults to `rounded`." It already had to
-be corrected once for `ReferenceScope::Crate` in
+`FrobStyle`'s own doc reading "Defaults to `rounded`." The mistake
+already had to be corrected once for `ReferenceScope::Crate` in
 <https://github.com/KSXGitHub/perfectionist/pull/218>. The
 `#[default]` *attribute* on a variant is fine, being code that
 expresses the `Default` impl rather than prose claiming a default. Only
