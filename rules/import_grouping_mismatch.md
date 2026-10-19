@@ -32,14 +32,14 @@ inactive by default; a project opts in and sets `style` to one of:
 Orthogonally to `style`, the `reexports` knob controls `pub`
 re-exports, meaning any `use` with an explicit visibility. Like
 `style` it is mandatory once the rule is enabled, and is one of:
-`grouped`,
-which pulls every re-export into one contiguous leading block above
-the private imports, visibility outranking path and cfg gating;
-`split`, which breaks that block into two, submodule re-exports
-(`pub use child::Item;`, a multi-segment path) above alias
-re-exports (`pub use Item;` / `pub use Item as Alias;`, a
-single-segment path); or `by_path`, which gives re-exports no
-dedicated block, classifying each by its path like a private import.
+`grouped`, which pulls every re-export into one contiguous
+leading block above the private imports, visibility outranking
+path and cfg gating; `split`, which breaks that block into two,
+submodule re-exports (`pub use child::Item;`, a multi-segment
+path) above alias re-exports (`pub use Item;` /
+`pub use Item as Alias;`, a single-segment path); or `by_path`,
+which gives re-exports no dedicated block, classifying each by
+its path like a private import.
 
 This rule only governs the *partitioning* of imports into blocks.
 Whether items within each `use` are merged or split is the job of

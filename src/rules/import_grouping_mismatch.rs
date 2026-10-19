@@ -45,14 +45,14 @@ declare_tool_lint! {
     /// Orthogonally to `style`, the `reexports` knob controls `pub`
     /// re-exports, meaning any `use` with an explicit visibility. Like
     /// `style` it is mandatory once the rule is enabled, and is one of:
-    /// `grouped`,
-    /// which pulls every re-export into one contiguous leading block above
-    /// the private imports, visibility outranking path and cfg gating;
-    /// `split`, which breaks that block into two, submodule re-exports
-    /// (`pub use child::Item;`, a multi-segment path) above alias
-    /// re-exports (`pub use Item;` / `pub use Item as Alias;`, a
-    /// single-segment path); or `by_path`, which gives re-exports no
-    /// dedicated block, classifying each by its path like a private import.
+    /// `grouped`, which pulls every re-export into one contiguous
+    /// leading block above the private imports, visibility outranking
+    /// path and cfg gating; `split`, which breaks that block into two,
+    /// submodule re-exports (`pub use child::Item;`, a multi-segment
+    /// path) above alias re-exports (`pub use Item;` /
+    /// `pub use Item as Alias;`, a single-segment path); or `by_path`,
+    /// which gives re-exports no dedicated block, classifying each by
+    /// its path like a private import.
     ///
     /// This rule only governs the *partitioning* of imports into blocks.
     /// Whether items within each `use` are merged or split is the job of
@@ -253,9 +253,8 @@ pub(super) struct UseStmt<'ast> {
     /// attribute, or of the `use` keyword when there are none.
     lo: BytePos,
     /// Whether this `use` carries an explicit visibility, making it a
-    /// re-export.
-    /// Read by [`ImportGroupingMismatch::message`] to word a violation
-    /// that involves the re-export block.
+    /// re-export. Read by [`ImportGroupingMismatch::message`] to word a
+    /// violation that involves the re-export block.
     is_reexport: bool,
     /// Whether this `use` is `#[cfg(...)]`-gated. Combined with the
     /// config in [`ImportGroupingMismatch::message`] to tell a trailing
