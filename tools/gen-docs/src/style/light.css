@@ -12,7 +12,7 @@
  * repeats each colour under the two dark tiers; see that file.
  *
  * Override tiers:
- *   1. Default Light, these rules. They are the lowest-priority colour
+ *   1. Default Light: these rules. They are the lowest-priority colour
  *      layer; with neither a system-preference media query nor the
  *      override attribute, the page is Light.
  *   2. System preference and 3. explicit override both live in dark.css

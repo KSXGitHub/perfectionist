@@ -71,14 +71,13 @@ infrastructure.
 Nothing in a planning file has been compiled or run. Read it as a
 proposal to evaluate, not a specification to fulfil.
 
-- **Its claims about reality may be wrong.** A planning file
-  asserts what a HIR node exposes, what a span covers, what
-  `clippy_utils` already provides, which are examples rather than
-  the whole set. Verify each such claim empirically before you
-  build on it:
-  write the fixture, dump the AST or HIR, read the upstream
-  source. Where a claim cannot be verified that way, leave it
-  unclaimed rather than restate it in a doc or a comment.
+- **Its claims about reality may be wrong.** A planning file asserts
+  what a HIR node exposes, what a span covers, what `clippy_utils`
+  already provides, which are examples rather than the whole set.
+  Verify each such claim empirically before you build on it: write
+  the fixture, dump the AST or HIR, read the upstream source. Where
+  a claim cannot be verified that way, leave it unclaimed rather
+  than restate it in a doc or a comment.
 - **It is often over-ambitious.** Among the shapes that recur:
   config knobs nobody would ever set, sub-checks no real code
   violates, autofix branches that cost more than the rule they
@@ -241,9 +240,9 @@ Some of these are mechanically checkable and worth a grep before
 committing:
 backticked in-repo paths should resolve, and a `perfectionist::`
 name should be one the `rule_index!` invocation names. Both have
-standing exceptions, so read the hits rather than the count. Those
-exceptions are prose about a *linted* crate, planning files and
-this guide, the deliberate typos around
+standing exceptions, so read the hits rather than the count. Among
+them are prose about a *linted* crate, planning files and this
+guide, the deliberate typos around
 `unknown_perfectionist_lints`, and `gen-docs`' unit tests, which
 invent lint names.
 
@@ -340,13 +339,14 @@ rather than to a copied fact.
 
 ## Shipped docs address the consumer, not the contributor
 
-A doc is *shipped* if a consumer reads it without cloning: `README.md`,
-`CONFIGURATION.md`, `CONTROLLING_RULES.md`, and everything
-`tools/gen-docs/` renders, meaning a rule's `declare_tool_lint!`
-rustdoc, its `Config` field docs, and the docs on the types and
-variants those fields name. Everything else is contributor-only and may say whatever
-is useful: `planned-rules/`, this guide, `//!` docs, docs on items no
-`Config` field exposes, `tests/`, `tools/`.
+A doc is *shipped* if a consumer reads it without cloning:
+`README.md`, `CONFIGURATION.md`, `CONTROLLING_RULES.md`, and
+everything `tools/gen-docs/` renders, meaning a rule's
+`declare_tool_lint!` rustdoc, its `Config` field docs, and the docs
+on the types and variants those fields name. Everything else is
+contributor-only and may say whatever is useful: `planned-rules/`,
+this guide, `//!` docs, docs on items no `Config` field exposes,
+`tests/`, `tools/`.
 
 A shipped doc may name only what a consumer can reach: their code,
 their `dylint.toml`, a registered lint, rustc, Clippy, a published
@@ -592,10 +592,8 @@ A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
 driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
-writing one, since pasting the driver's real numbers in will not
-match.
-[`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs) performs the
-normalisation and explains how.
+writing one, since pasting the driver's real numbers in will not match. [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
+performs the normalisation and explains how.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
@@ -644,13 +642,14 @@ regression that no automated step catches. Humans verify by opening
 `gh-pages/index.html` in a browser. Agents that can't do that should
 drive a headless Chromium from a throwaway Playwright script:
 
-- Use Playwright's Chromium headlessly. If the environment
-  already has Playwright and its Chromium binary available, point
-  the launcher at them; otherwise install Playwright into a
-  temporary location and use that; the standard
-  `npm i -D playwright && npx playwright install chromium` works. Write a one-off `.mjs` that imports `chromium`
-  from `"playwright"`, launches it, loads `gh-pages/index.html` at
-  the viewport sizes the change cares about, and dumps screenshots
+- Use Playwright's Chromium headlessly. If the environment already
+  has Playwright and its Chromium binary available, point the
+  launcher at them; otherwise install Playwright into a temporary
+  location and use that. The standard
+  `npm i -D playwright && npx playwright install chromium` works.
+  Write a one-off `.mjs` that imports `chromium` from
+  `"playwright"`, launches it, loads `gh-pages/index.html` at the
+  viewport sizes the change cares about, and dumps screenshots
   and/or `getBoundingClientRect` / `getComputedStyle` values.
 
 - Treat the script as scratch, and keep it out of the repository
@@ -829,9 +828,8 @@ Every other markdown file in the repository is only rendered in
 contexts where relative paths resolve correctly (GitHub, local
 editors, agent tooling). That covers `CLAUDE.md`,
 `planned-rules/*.md` and anything else committed alongside the
-source. Prefer
-relative links in those files; they survive repository renames and
-don't bake in a hosting URL.
+source. Prefer relative links in those files; they survive
+repository renames and don't bake in a hosting URL.
 
 ## GitHub-specific markdown
 
