@@ -4,14 +4,14 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 
-// Bad — an outer `#[allow]` on a `mod` item is now rewriteable.
+// Bad: an outer `#[allow]` on a `mod` item is now rewriteable.
 #[allow(non_snake_case, reason = "module-wide")]
 mod outer_module {
     pub fn Item() {}
 }
 
 fn main() {
-    // Bad — an inner attribute (`#![...]`) is now rewriteable.
+    // Bad: an inner attribute (`#![...]`) is now rewriteable.
     #![allow(clippy::needless_return, reason = "inner attr")]
 
     outer_module::Item();

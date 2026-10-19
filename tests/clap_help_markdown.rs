@@ -50,7 +50,7 @@ fn extra_constructs_flags_bold_italic_and_lists() {
 }
 
 /// `ignore_constructs = ["inline_link"]` permits inline links in help
-/// text while the rest of the default set — here, the code span —
+/// text while the rest of the default set, here the code span,
 /// still fires.
 #[test]
 fn ignore_constructs_drops_a_construct_from_the_default_set() {
@@ -66,8 +66,8 @@ fn ignore_constructs_drops_a_construct_from_the_default_set() {
 /// `require_help_override = true` flags every clap-derived doc comment
 /// that feeds `--help` without an explicit override (container and
 /// field docs alike), tolerates a missing override wherever there is
-/// no doc comment, and supersedes the markdown scan — a code span in
-/// an unoverridden doc is reported once as a missing override.
+/// no doc comment, and supersedes the markdown scan, so a code span
+/// in an unoverridden doc is reported once as a missing override.
 #[test]
 fn require_help_override_flags_unoverridden_doc_comments() {
     run(

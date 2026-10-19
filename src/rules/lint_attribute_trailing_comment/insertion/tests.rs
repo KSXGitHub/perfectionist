@@ -35,7 +35,7 @@ fn insertion_multi_line_trailing_comma() {
 
 /// Wrapped argument list whose closing `)` rides the last
 /// argument's line. The `)` is not on its own line, so the
-/// inline strategy applies — splice before `)` rather than
+/// inline strategy applies, splicing before `)` rather than
 /// emitting a stray unindented `reason` line.
 #[test]
 fn insertion_wrapped_close_paren_on_last_arg_line() {

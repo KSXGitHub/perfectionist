@@ -46,7 +46,8 @@ fn cache_dir_honours_a_configured_directory() {
 }
 
 /// A cache that already holds the file must be left alone and trigger
-/// no download — the offline path. We prove "no download" by pointing
+/// no download, which is the offline path. We prove "no download" by
+/// pointing
 /// the URL at an unroutable address: if ensure_cached tried to fetch,
 /// it would fail instead of returning Ok.
 #[test]
@@ -92,7 +93,7 @@ fn install_into_hard_links_when_possible() {
 }
 
 /// A leftover file from a previous run must not make the hard-link
-/// fail (it errors if the destination exists) — install clears it
+/// fail (it errors if the destination exists). Install clears it
 /// first, so the output always reflects the current cache.
 #[test]
 fn install_into_replaces_a_stale_destination() {

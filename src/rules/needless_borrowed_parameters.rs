@@ -26,16 +26,16 @@ declare_tool_lint! {
     /// Flags a function or method parameter taken by shared reference
     /// (`&str`, `&Path`, `&OsStr`, `&CStr`, `&[T]`) whose *only* use in
     /// the body is to produce its owned counterpart (`String`,
-    /// `PathBuf`, `OsString`, `CString`, `Vec<T>`) — via `to_owned`,
+    /// `PathBuf`, `OsString`, `CString`, `Vec<T>`) through `to_owned`,
     /// `to_string`, `to_path_buf`, `to_vec`, `to_os_string`, `clone`,
     /// `into`, or `String::from(..)` and friends. Such a parameter
     /// should take the owned form directly.
     ///
     /// Only the conservative single-use case is flagged: the
     /// parameter must be referenced exactly once, that use must be the
-    /// conversion, and the conversion must execute unconditionally — no
-    /// `if` / `match` / loop, closure, or short-circuiting `&&` / `||`
-    /// may sit between it and the enclosing function. This is
+    /// conversion, and the conversion must execute unconditionally, so
+    /// no `if` / `match` / loop, closure, or short-circuiting `&&` /
+    /// `||` may sit between it and the enclosing function. This is
     /// deliberately conservative: even the always-executed `if`
     /// condition and `match` scrutinee positions count as
     /// disqualifying, not just the branch arms.
@@ -60,7 +60,7 @@ declare_tool_lint! {
     /// `clippy::needless_pass_by_value` (`pedantic`, off by default)
     /// covers the *opposite* direction: a by-value parameter that is
     /// never consumed should be taken by reference. `clippy::ptr_arg`
-    /// (`style`, on by default) is orthogonal — it rewrites a
+    /// (`style`, on by default) is orthogonal: it rewrites a
     /// `&String` / `&Vec<T>` / `&PathBuf` parameter to the more
     /// permissive `&str` / `&[T]` / `&Path`. Neither moves a borrowed
     /// parameter to its owned form, so enabling all three gives full
@@ -140,8 +140,8 @@ impl<'tcx> LateLintPass<'tcx> for NeedlessBorrowedParameters {
         if self.is_exempt(cx, def_id) {
             return;
         }
-        // A signature dictated by a trait — whether the trait's own
-        // declaration or an `impl Trait for T` method — cannot be
+        // A signature dictated by a trait, whether the trait's own
+        // declaration or an `impl Trait for T` method, cannot be
         // changed by this rule's reader, so leave it alone. Only free
         // functions and inherent methods are eligible.
         if let Some(assoc) = cx.tcx.opt_associated_item(def_id.to_def_id())
@@ -168,8 +168,8 @@ impl NeedlessBorrowedParameters {
     /// out of, per the `exempt_tests` / `exempt_build_scripts`
     /// knobs.
     ///
-    /// The crate-wide half — an integration-test, benchmark, or
-    /// build-script target, where *every* function is exempt — is
+    /// The crate-wide half, an integration-test, benchmark or
+    /// build-script target where *every* function is exempt, is
     /// memoised, since it is one answer per crate. The per-function
     /// half walks the enclosing scopes for a `#[cfg(test)]` gate or a
     /// `#[test]` function, so it is asked afresh each time.
@@ -249,7 +249,7 @@ impl NeedlessBorrowedParameters {
     }
 
     /// Whether `conversion` is `use_expr` being converted to its owned
-    /// form — either `use_expr.<method>()` for a recognised method, or
+    /// form, either `use_expr.<method>()` for a recognised method or
     /// `From::from(use_expr)`. Both branches lean on the caller's
     /// result-type check to confirm the call actually produces the
     /// owned form; the `from` branch additionally requires the callee
@@ -305,7 +305,7 @@ impl<'tcx> Visitor<'tcx> for UseCollector<'tcx> {
 }
 
 /// Whether `expr` is reached unconditionally from the enclosing
-/// function body — i.e. no `if`/`match`/loop, closure, or
+/// function body, i.e. no `if`/`match`/loop, closure, or
 /// short-circuiting logical operator sits between it and the function
 /// item. Walking up to the owning item is enough: every conditional
 /// construct is an `Expr` node, so any of them on the path proves the
@@ -429,7 +429,7 @@ fn is_diagnostic_ty(cx: &LateContext<'_>, ty: Ty<'_>, name: &str) -> bool {
 /// counterpart, so together this matches exactly `Owned::from(param)`.
 /// Requiring the `From` trait keeps the lint from matching an unrelated
 /// inherent `Type::from(param)` constructor that merely returns the
-/// owned type — dropping such a call in the suggestion would change
+/// owned type. Dropping such a call in the suggestion would change
 /// behaviour.
 fn is_from_call<'tcx>(
     cx: &LateContext<'tcx>,
@@ -452,7 +452,7 @@ fn is_from_call<'tcx>(
     is_from_trait_method(cx, def_id)
 }
 
-/// Whether `def_id` is `From::from` — either the trait method itself
+/// Whether `def_id` is `From::from`, either the trait method itself
 /// (the usual resolution for `Owned::from(..)`) or a concrete `From`
 /// impl's method. Identified by the `from_fn` diagnostic item that the
 /// standard library attaches to `From::from`.

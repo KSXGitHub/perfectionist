@@ -3,7 +3,7 @@
 //!
 //! ## What this actually tests
 //!
-//! Not the suggestion text — the `ui/` sweep already pins that, and a
+//! Not the suggestion text. The `ui/` sweep already pins that, and a
 //! `.stderr` file cannot show applicability at all, which is exactly
 //! the property that decides whether `cargo dylint --fix` touches a
 //! suggestion. So the fixture is run through the real fixer and judged
@@ -18,7 +18,7 @@
 //! no `.stderr` can make.
 //!
 //! The two shapes that earned this test both come from the same root
-//! cause — an item's *definition* path is not always a path the
+//! cause: an item's *definition* path is not always a path the
 //! importer may write:
 //!
 //! - `std`'s prelude re-exports items defined in `alloc`, which an
@@ -116,7 +116,7 @@ fn the_autofix_leaves_the_crate_compiling() {
     let (_temp, fixed, stderr) = fix();
 
     // The headline assertion. `cargo fix` prints this after applying a
-    // suggestion that does not compile, having reverted the file — so
+    // suggestion that does not compile, having reverted the file, so
     // its absence is what says every applied rewrite was sound.
     assert!(
         !stderr.contains("errors present after applying fixes"),

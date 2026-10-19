@@ -9,9 +9,9 @@
 // on import the way `thiserror_stub` is: the rule's dependency gate
 // looks for a declared dependency under exactly that name.
 //
-// The implementation is also the rule's own trigger — each `with_*`
+// The implementation is also the rule's own trigger: each `with_*`
 // body calls a std setter on an owned `Command`, and there is nothing
-// else such a body could do — but compiletest compares only the
+// else such a body could do. But compiletest compares only the
 // fixture's own output, so the diagnostics this crate earns as it
 // builds reach no `.stderr` and need no `#[allow]`.
 

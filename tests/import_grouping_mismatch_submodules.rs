@@ -3,8 +3,8 @@
 //! <https://github.com/KSXGitHub/parallel-disk-usage/issues/431>): with
 //! the rule running as a pre-expansion pass, out-of-line `mod foo;`
 //! modules were still `ModKind::Unloaded` at lint time, so their `use`
-//! statements were never inspected — only the crate-root file and inline
-//! `mod { ... }` blocks were.
+//! statements were never inspected. The scan reached only the
+//! crate-root file and inline `mod { ... }` blocks.
 //!
 //! These tests materialise a real Cargo project on disk (so the
 //! separate-file module is loaded the way a normal build loads it) and
@@ -16,8 +16,8 @@
 //! mandatory once enabled, so each test enables the rule and selects
 //! `multi_block` / `grouped`
 //! through the appended `dylint.toml` config. `--all` (not `--all-targets`) is
-//! kept so `#[cfg(test)]` code stays excluded — the
-//! [`does_not_flag_cfg_excluded_inline_module`] case depends on it.
+//! kept so `#[cfg(test)]` code stays excluded, which the
+//! [`does_not_flag_cfg_excluded_inline_module`] case depends on.
 //!
 //! The violation used throughout is a blank line splitting a single
 //! [`std`] group: it is a violation under every `order` (so it does not
@@ -114,11 +114,11 @@ use std::time::Duration;
 /// only through the re-parse. The crate root carries a deliberate
 /// violation (std and internal not blank-separated) so the rule is
 /// proven active, while `src/outer.rs` groups a `crate::`-rooted import
-/// and a bare `use inner::...` (a sibling `mod inner;`) into one internal
-/// block — a layout that is compliant only because the bare import lands
-/// in the internal group, not the third-party catch-all. Before the fix
-/// the bare import was third-party, so the internal block looked
-/// unseparated and `src/outer.rs` was flagged.
+/// and a bare `use inner::...` (a sibling `mod inner;`) into one
+/// internal block, a layout that is compliant only because the bare
+/// import lands in the internal group rather than the third-party
+/// catch-all. Before the fix the bare import was third-party, so the
+/// internal block looked unseparated and `src/outer.rs` was flagged.
 #[test]
 fn bare_path_submodule_groups_as_internal_in_separate_file() {
     let lib = include_str!("fixtures/import_grouping_mismatch_submodules/bare_internal_lib.rs");
@@ -153,8 +153,9 @@ fn bare_path_submodule_groups_as_internal_in_separate_file() {
 
 /// A `#[cfg(...)]`-excluded inline module is not linted. The re-parse
 /// keeps it (parsing does not strip cfg), but it is absent from the
-/// compiled crate, so descending into it would flag — and, since it has
-/// no HIR node, fail to let a local `#[allow]` suppress — dead code. The
+/// compiled crate, so descending into it would flag dead code and,
+/// since it has no HIR node, fail to let a local `#[allow]` suppress
+/// it. The
 /// common shape is `#[cfg(test)] mod tests`, excluded from a non-test
 /// `cargo dylint` run.
 #[test]

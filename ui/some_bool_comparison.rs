@@ -108,7 +108,7 @@ fn doubly_borrowed_payload(settings: Option<&bool>) {
 }
 
 // Not flagged: `assert_eq!` binds both operands before comparing them, so
-// the shape never arises -- and the silence is wanted rather than
+// the shape never arises, and the silence is wanted rather than
 // tolerated, since the rewrite would cost the failure message the operand
 // values it prints.
 fn under_an_equality_assertion(verbose: Option<bool>) {

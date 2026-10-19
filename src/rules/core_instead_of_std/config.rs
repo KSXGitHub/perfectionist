@@ -10,12 +10,12 @@ use std::collections::BTreeSet;
 pub(super) struct Config {
     /// Whether an `alloc::` path is a violation alongside a `core::`
     /// one. Set it to `false` in a crate that keeps its `alloc::` paths
-    /// on purpose — one tracking `core` cleanliness against a possible
+    /// on purpose, tracking `core` cleanliness against a possible
     /// `no_std` future while the `alloc` dependency is permanent.
     /// Defaults to `true`.
     pub(super) also_alloc: bool,
     /// Paths that are never flagged, each written as the absolute
-    /// extern-crate path it is — with the leading `::` and every
+    /// extern-crate path it is, with the leading `::` and every
     /// segment spelled out, as in `"::core::mem::transmute"`. Only a
     /// `::core::` or `::alloc::` entry can ever match, and matching is
     /// exact and syntactic against the path as written, with no
@@ -54,9 +54,9 @@ impl Resolved {
 /// Validate that every `skip_paths` entry is a `::core::` / `::alloc::`
 /// path with at least one segment under the crate. The rule only ever
 /// flags such a path, so an entry of any other shape exempts nothing and
-/// is almost certainly a mistake — a bare `core::fmt::Display` missing
+/// is almost certainly a mistake: a bare `core::fmt::Display` missing
 /// its leading `::`, or a path into some other crate. Returns an error
-/// message — for the dylint run to fail on — naming the first offending
+/// message, for the dylint run to fail on, naming the first offending
 /// entry.
 pub(super) fn validate(config: &Config) -> Result<(), String> {
     for entry in &config.skip_paths {

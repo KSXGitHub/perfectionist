@@ -44,9 +44,9 @@ pub fn build_project(
 /// Like [`build_project`], but appends `extra_dylint_toml` to the
 /// generated `dylint.toml`. Use it to add a per-rule
 /// `["perfectionist::<rule>"]` configuration table next to the library
-/// metadata — library discovery only reads `workspace.metadata.dylint`,
-/// so unrelated top-level tables are ignored by it while still being
-/// visible to `dylint_linting::config_or_default`. Quote the `::` key,
+/// metadata. Library discovery only reads `workspace.metadata.dylint`,
+/// so it ignores unrelated top-level tables while they stay visible to
+/// `dylint_linting::config_or_default`. Quote the `::` key,
 /// since a bare `perfectionist::<rule>` is invalid TOML.
 pub fn build_project_with_config(
     project_dir: &Path,

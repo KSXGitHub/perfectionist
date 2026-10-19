@@ -2,8 +2,9 @@
 //! into the sprite [`crate::render`] emits.
 //!
 //! Those files are left as they are, licence notice and all. What they
-//! carry besides the drawing — a fixed `width` and `height`, a `fill` —
-//! would override the stylesheet, so only the `viewBox` is kept.
+//! carry besides the drawing, a fixed `width` and `height` and a
+//! `fill`, would override the stylesheet, so only the `viewBox` is
+//! kept.
 //!
 //! [`quick_xml`] reads them, being already here by way of `syntect`'s
 //! theme loading. A hand-rolled scanner would have spent most of its
@@ -122,7 +123,7 @@ pub(crate) fn sprite() -> String {
     let symbols = ICONS
         .iter()
         .map(|icon| {
-            symbol(icon.id, icon.source).unwrap_or_else(|error| panic!("bad icon -- {error}"))
+            symbol(icon.id, icon.source).unwrap_or_else(|error| panic!("bad icon: {error}"))
         })
         .collect::<String>();
     format!(r#"<svg xmlns="http://www.w3.org/2000/svg" hidden>{symbols}</svg>"#)

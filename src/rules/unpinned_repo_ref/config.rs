@@ -49,7 +49,7 @@ pub(super) struct HostEntry {
 }
 
 /// Minimum hex length recognised as a SHA when `sha_recognition_length`
-/// is omitted — Git's own minimum abbreviated-SHA length.
+/// is omitted: Git's own minimum abbreviated-SHA length.
 pub(super) const DEFAULT_SHA_RECOGNITION_LENGTH: usize = 4;
 
 /// The forge hosts scanned out of the box, each paired with the kind
@@ -125,7 +125,7 @@ impl Default for Config {
 
 /// Match `text` against a `*`-glob `pattern`, case-insensitively over
 /// ASCII. `*` matches any run of characters (including the empty run);
-/// every other character matches itself. There is no `?` wildcard —
+/// every other character matches itself. There is no `?` wildcard:
 /// hostnames don't need single-character matching, and leaving it out
 /// keeps the matcher a plain two-pointer scan with star backtracking.
 pub(super) fn glob_match(pattern: &str, text: &str) -> bool {

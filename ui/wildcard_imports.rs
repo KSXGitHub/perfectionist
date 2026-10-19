@@ -23,11 +23,11 @@ mod prelude {
     pub use crate::thing::{A, B};
 }
 
-// Not flagged: the prelude exception — the final non-glob segment is
-// `prelude`.
+// Not flagged: the prelude exception, the final non-glob segment
+// being `prelude`.
 use crate::prelude::*;
 
-// Not flagged: the root-re-export exception — a bare-`pub` glob at the
+// Not flagged: the root-re-export exception, a bare-`pub` glob at the
 // top level of a module body.
 pub use crate::thing::*;
 
@@ -47,8 +47,8 @@ mod nested {
 
 mod outer {
     mod inner {
-        // Bad: a glob two inline-module levels deep is still reached —
-        // `live_module_spans` is built from the crate-wide
+        // Bad: a glob two inline-module levels deep is still reached,
+        // `live_module_spans` being built from the crate-wide
         // `hir_free_items()`, which recurses through nested modules, so
         // the descent guard does not stop at the first level.
         use crate::thing::*;

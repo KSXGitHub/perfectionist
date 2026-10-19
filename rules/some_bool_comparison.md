@@ -22,8 +22,8 @@ what `None` means:
 
 Either operand may be the `Some`, and either may be borrowed, so
 `Some(true) == opt` and `opt == &Some(true)` are flagged the same.
-A borrowed payload — what `HashMap::<_, bool>::get` and
-`Option::as_ref` hand back — gains a `copied` to reach the `bool`,
+A borrowed payload, what `HashMap::<_, bool>::get` and
+`Option::as_ref` hand back, gains a `copied` to reach the `bool`,
 so `map.get(k) == Some(&true)` becomes
 `map.get(k).copied().unwrap_or(false)`.
 
@@ -51,8 +51,8 @@ objection is to what the reader has to do:
 
 - **The `None` case is left implicit.** `== Some(true)` never
   says what `None` means, so the reader derives it from the
-  operator. `unwrap_or(false)` states it — absent counts as
-  false — which is usually the decision the surrounding code
+  operator. `unwrap_or(false)` states it, absent counting as
+  false, which is usually the decision the surrounding code
   turned on.
 - **`!=` compounds that.** `opt != Some(true)` admits two states
   for two different reasons, and which two is not apparent

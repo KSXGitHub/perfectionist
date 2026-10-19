@@ -19,7 +19,7 @@ pub(super) enum Position {
 ///
 /// Only ever asked about the chain's tail, and the walk that finds the
 /// tail has already followed every method call taking the value as its
-/// receiver -- so no parent here is one of those.
+/// receiver, so no parent here is one of those.
 pub(super) fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position> {
     if call.span.from_expansion() {
         return None;
@@ -31,13 +31,13 @@ pub(super) fn position(cx: &LateContext<'_>, call: &Expr<'_>) -> Option<Position
         },
         // A macro holding the caller's expression puts every use of it
         // at the one span this would edit. The type is kept at each of
-        // them, so they would all still compile -- but the rule cannot
+        // them, so they would all still compile, but the rule cannot
         // see what else the body does with the tokens, and `stringify!`
         // is enough to make type-preserving stop meaning
         // behaviour-preserving.
         Node::Expr(parent) if parent.span.from_expansion() => None,
         // `&mut` binds looser than these, so the prefix would have to
-        // carry parentheses -- and `(&mut command).field` reads worse
+        // carry parentheses, and `(&mut command).field` reads worse
         // than the expression it replaces, which is the whole point of
         // the rule.
         Node::Expr(Expr {

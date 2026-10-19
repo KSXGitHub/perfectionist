@@ -1,7 +1,7 @@
 warning: ambiguous `#77`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: closes #77 — `repository` resolves to a GitHub URL, so the
+LL | /// Bad: closes #77. `repository` resolves to a GitHub URL, so the
    |                 ^^^
    |
    = help: enable `suggest_issue_url` and/or `suggest_pr_url` in dylint.toml under `["perfectionist::bare_issue_reference"]` to get a link suggestion

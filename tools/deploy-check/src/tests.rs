@@ -136,7 +136,7 @@ fn version_only_diff_rejects_collateral_edits() {
         r#"version = "0.0.0-rc.7""#
     };
     // The first differing line is `name = ...`, which doesn't
-    // match the expected version-line text — so the rejection
+    // match the expected version-line text, so the rejection
     // is `UnexpectedBeforeLine`, not `ExtraLineChanged`.
     assert!(matches!(
         assert_version_only_diff("Cargo.toml", before, after, "0.0.0-rc.6", "0.0.0-rc.7"),
@@ -209,7 +209,7 @@ fn commit_msg_strips_default_hash_comment_lines() {
     );
 }
 
-/// What a `core.commentChar = ;` template looks like — the
+/// What a `core.commentChar = ;` template looks like. The
 /// pre-fix code rejected this as `MessageHasExtraContent`.
 #[test]
 fn commit_msg_honours_a_configured_semicolon_comment_char() {

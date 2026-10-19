@@ -14,7 +14,7 @@
 // pass: it inspects the syntactic form of `use` statements
 // (`use thiserror::...`, `use thiserror::*`, etc.) without
 // consulting macro resolution. The fixture exploits that property
-// by faking the `thiserror` crate as a local module — every
+// by faking the `thiserror` crate as a local module, so that every
 // `use thiserror::...` line below resolves against this stub, but
 // the lint still keys on the path's first segment (`thiserror`) and
 // emits exactly as it would against the real crate.
@@ -22,7 +22,7 @@
 // The derive-side cases (`#[derive(thiserror::Error)]`,
 // `#[error(...)]` on a thiserror-derived item) need an `Error` derive
 // that actually resolves, which this local stub is not, so they live
-// in `ui/thiserror_usage_derive.rs` — same trick, but against a
+// in `ui/thiserror_usage_derive.rs`, the same trick but against a
 // proc-macro auxiliary rather than a `mod`. What remains here is the
 // `use`-side coverage, which covers every alias-collection branch.
 mod thiserror {
@@ -33,12 +33,13 @@ mod thiserror {
 // macro into scope and primes the rule's alias set.
 use thiserror::Error;
 
-// Bad: `use thiserror::*` glob form. Even more aggressive — adds
-// each recognised path's last segment to the alias set.
+// Bad: `use thiserror::*` glob form. Even more aggressive, since it
+// adds the last segment of a recognised path that sits one segment
+// below the glob.
 use thiserror::*;
 
-// Bad: aliased import. Still flagged — the rule keys on the use
-// path's first segment, not on the local name.
+// Bad: aliased import. Still flagged, since the rule keys on the use
+// path's first segment rather than on the local name.
 use thiserror::Error as RenamedErrorMacro;
 
 // Bad: re-export form. The first segment is `thiserror` whatever the

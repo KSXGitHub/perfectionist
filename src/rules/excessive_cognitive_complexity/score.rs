@@ -3,12 +3,12 @@
 //! The metric is SonarSource's Cognitive Complexity, adapted to Rust
 //! syntax. Every increment is one of three kinds:
 //!
-//! - **structural** — `+1`, plus one more for each level of nesting
+//! - **structural**: `+1`, plus one more for each level of nesting
 //!   the construct sits at: `if`, `match`, `for`, `while`, `loop`;
-//! - **hybrid** — `+1` with no nesting penalty, for a construct that
+//! - **hybrid**: `+1` with no nesting penalty, for a construct that
 //!   continues a structure the reader is already inside: `else if`,
 //!   `else`, `let ... else`, a match-arm guard;
-//! - **fundamental** — `+1` with no nesting penalty: each run of like
+//! - **fundamental**: `+1` with no nesting penalty: each run of like
 //!   boolean operators (`a && b && c` is one run, `a && b || c` is
 //!   two), each labelled `break` / `continue`, each recursive call.
 //!
@@ -16,7 +16,7 @@
 //! a closure. A closure itself costs nothing.
 //!
 //! The walk measures what the author wrote. Code produced by a macro
-//! expansion is opaque — it contributes nothing, though an expression
+//! expansion is opaque, contributing nothing, though an expression
 //! the author wrote as a macro argument is still counted. Compiler
 //! desugarings are seen through: `?`, `.await`, and the `match` / `if`
 //! that a `for` or `while` loop lowers to are not branches the reader

@@ -8,9 +8,9 @@
 )]
 
 // Under `style = "multi_block"` with `reexports = "split"`: the leading
-// re-export region splits into two blank-separated blocks — submodule
+// re-export region splits into two blank-separated blocks, submodule
 // re-exports (a `::`-qualified path) above alias re-exports (a
-// single-segment path) — both above the path-partitioned private imports.
+// single-segment path), both above the path-partitioned private imports.
 // Each run is isolated by a marker item, and the submodules and aliases
 // use distinct names so the file still compiles.
 
@@ -46,7 +46,7 @@ pub use summary::Summary;
 struct Sep2;
 
 // Bad: a cfg-gated alias re-export stays in the alias sub-block rather
-// than a trailing cfg block — visibility/kind outranks cfg gating.
+// than a trailing cfg block, visibility and kind outranking cfg gating.
 use std::mem::swap;
 #[cfg(unix)]
 pub use Node as UnixNode;

@@ -3,8 +3,8 @@
 fn _configured_skip_host() {}
 
 /// Bad: `example.com` isn't in the custom `skip_hosts`, so this bare
-/// URL still fires — the custom list replaces, not extends, the
-/// `localhost` default: https://example.com/ here.
+/// URL still fires, the custom list replacing rather than extending
+/// the `localhost` default: https://example.com/ here.
 fn _unlisted_host_fires() {}
 
 fn main() {}

@@ -11,8 +11,8 @@ pub(super) struct Config {
     /// reach, the diagnostic would name something the author cannot
     /// write. Defaults to `workspace`: a workspace that has settled on
     /// the crate has settled for its members, so a member that has not
-    /// inherited it yet is told all the same — what it is missing is a
-    /// line in a manifest. Narrow it to `crate` where the members are
+    /// inherited it yet is told all the same, what it is missing being
+    /// a line in a manifest. Narrow it to `crate` where the members are
     /// deliberately not uniform, or widen it to `unchecked` to hear
     /// from everywhere, including where the method named cannot be
     /// written yet.

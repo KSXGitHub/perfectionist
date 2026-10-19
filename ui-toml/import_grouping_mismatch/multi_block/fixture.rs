@@ -35,7 +35,7 @@ use crate::config::Args;
 
 struct Sep1;
 
-// Bad: groups are blank-separated but in the wrong order — third-party
+// Bad: groups are blank-separated but in the wrong order, third-party
 // before std.
 use clap::ValueEnum;
 

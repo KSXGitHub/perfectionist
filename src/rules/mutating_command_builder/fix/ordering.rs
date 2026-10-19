@@ -41,9 +41,9 @@ pub(super) fn creates_an_ordered_drop<'tcx>(
 /// is moved into the call and dropped inside it: `stdin(Stdio::null())`
 /// leaves nothing behind, whatever `Stdio`'s destructor does. The walk
 /// climbs from `expr` towards the argument it belongs to, and the
-/// default at each step is that the value stays: only a hand-over --
-/// being passed to a call, or being the receiver of one that takes it
-/// by value -- carries it further. A parent the walk does not
+/// default at each step is that the value stays: only a hand-over
+/// carries it further, by the value being passed to a call or being
+/// the receiver of one that takes it by value. A parent the walk does not
 /// recognise leaves the value behind, which is the safe way round for
 /// a guard whose job is to decline.
 ///
@@ -120,7 +120,7 @@ fn is_borrowed<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> bool {
 /// projection does not carry away.
 ///
 /// A destructor on the base's own type is the case to watch: it sits on
-/// no field, so a scan of the siblings finds nothing -- and a type that
+/// no field, so a scan of the siblings finds nothing, and a type that
 /// has one cannot be taken apart at all, so the field is copied or
 /// borrowed and the whole base stays. A base the walk cannot take apart
 /// answers `true` as well, since a guard that cannot tell should

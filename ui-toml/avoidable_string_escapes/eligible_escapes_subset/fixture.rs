@@ -5,12 +5,12 @@
 // escapes are exclusively `\"` is flagged as usual.
 
 fn _backslash_only() {
-    // `\\` is no longer eligible — must NOT fire.
+    // `\\` is no longer eligible, so it must NOT fire.
     let _ = "C:\\Users\\foo";
 }
 
 fn _quote_only() {
-    // `\"` is still eligible — must fire.
+    // `\"` is still eligible, so it must fire.
     let _ = "say \"hello\"";
 }
 

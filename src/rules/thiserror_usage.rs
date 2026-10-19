@@ -40,7 +40,7 @@ declare_tool_lint! {
     /// The lint is detection-only: it emits a help-style diagnostic
     /// pointing at the offending site and suggests migrating to
     /// `#[derive(derive_more::Display, derive_more::Error)]`. There is
-    /// no autofix — the migration involves a mix of derive-list edits,
+    /// no autofix: the migration involves a mix of derive-list edits,
     /// format-string positional translation (`thiserror`'s `{0}` ↔
     /// [`derive_more`](https://docs.rs/derive_more)'s `{_0}`),
     /// attribute renames (`#[error(...)]` ↔ `#[display(...)]`), and
@@ -124,11 +124,11 @@ impl EarlyLintPass for ThiserrorUsage {
         match &item.kind {
             ItemKind::Use(use_tree) => self.check_use(cx, item, use_tree),
             ItemKind::ExternCrate(orig, ident) => {
-                // `extern crate thiserror;` — `orig` is `None`,
-                // `ident.name` is the crate name. `extern crate
-                // thiserror as te;` — `orig` is `Some(thiserror)`,
-                // `ident.name` is `te`. The alias side is recorded by
-                // the scan; emit the import diagnostic on the item
+                // `extern crate thiserror;` leaves `orig` as `None` and
+                // `ident.name` as the crate name. `extern crate
+                // thiserror as te;` leaves `orig` as `Some(thiserror)`
+                // and `ident.name` as `te`. The alias side is recorded
+                // by the scan; emit the import diagnostic on the item
                 // span here.
                 let original = orig.unwrap_or(ident.name);
                 if self.thiserror_crates.contains(&original) {

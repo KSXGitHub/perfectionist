@@ -34,7 +34,7 @@ fn if_else(first: bool) {
     }
 }
 
-// Bad: `if`, `else if`, `else` — the chain adds no nesting.
+// Bad: `if`, `else if`, `else`, where the chain adds no nesting.
 fn else_if_chain(n: u8) {
     if n == 0 {
         work();
@@ -218,7 +218,8 @@ fn if_let_chain(input: Option<u8>, first: bool) {
     }
 }
 
-// Bad for inner; outer is Not flagged — a nested function is scored on its own.
+// Bad for inner; outer is Not flagged, a nested function being scored
+// on its own.
 fn outer() {
     fn inner(first: bool) {
         if first {

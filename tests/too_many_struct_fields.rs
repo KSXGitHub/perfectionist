@@ -43,7 +43,7 @@ fn zero_threshold_reports_every_field_count() {
 }
 
 /// A library whose production struct, `#[cfg(test)]` fixture struct, and
-/// struct local to a `#[test]` each have eleven fields — one above the
+/// struct local to a `#[test]` each have eleven fields, one above the
 /// default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/too_many_struct_fields/lib_with_test_module.rs");
@@ -53,7 +53,7 @@ const LIB_SOURCES: &[(&str, &str)] = &[("src/lib.rs", LIB_WITH_TEST_MODULE)];
 /// The same over-limit struct in an integration test and in a
 /// benchmark. Neither carries a `#[cfg(test)]` gate nor a `#[test]`
 /// function, so they are test code only through the Cargo target they
-/// sit in -- the half of `item_in_test_code` that no attribute reaches.
+/// sit in, the half of `item_in_test_code` that no attribute reaches.
 const TARGET_SOURCES: &[(&str, &str)] = &[
     ("src/lib.rs", "pub fn nothing() {}\n"),
     (

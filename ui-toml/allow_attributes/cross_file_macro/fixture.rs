@@ -2,9 +2,9 @@
 // with prose only, because the source text the structured suggestions
 // need cannot be recovered.
 //
-// `reason = $reason` is assembled from two source files — the `reason`
-// key from this file's macro definition, the literal from the
-// `include!`d call site — so the meta item's span begins in one file
+// `reason = $reason` is assembled from two source files, the `reason`
+// key from this file's macro definition and the literal from the
+// `include!`d call site, so the meta item's span begins in one file
 // and ends in another, and `span_to_snippet` fails on it. Rather than
 // risk a rewrite that silently drops the reason, the rule declines the
 // autofix and describes both resolutions in prose.

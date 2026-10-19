@@ -1,6 +1,6 @@
 //! UI tests for `core_instead_of_std`. The rule is inactive by default,
-//! so every fixture has to travel with a `dylint.toml` that enables it —
-//! the default-configuration sweep included, which is why there is no
+//! so every fixture has to travel with a `dylint.toml` that enables
+//! it, the default-configuration sweep included, which is why there is no
 //! `ui/core_instead_of_std.rs` for `tests/ui.rs` to pick up. Each test
 //! points at its own one-fixture directory under
 //! `ui-toml/core_instead_of_std/`.

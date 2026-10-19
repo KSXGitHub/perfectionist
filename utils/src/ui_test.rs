@@ -37,10 +37,10 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 /// A poisoned lock is recovered rather than unwrapped: the guard
 /// protects an environment variable the panicking run has already
 /// restored, so a later fixture inherits nothing corrupt from it.
-/// Recovering does not keep the binary's remaining `#[test]`s green —
+/// Recovering does not keep the binary's remaining `#[test]`s green:
 /// `compiletest` panics inside `dylint_testing`'s own mutex, poisoning
-/// that one, and the next run unwraps it — but the failures that
-/// follow are then upstream's to explain rather than this lock's.
+/// that one, and the next run unwraps it. The failures that follow are
+/// then upstream's to explain rather than this lock's.
 static SERIAL: Mutex<()> = Mutex::new(());
 
 /// A `dylint_testing` UI test, described and ready to run.

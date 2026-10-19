@@ -1,7 +1,7 @@
 warning: ambiguous `#77`; a bare `#NNN` could be an issue or pull request, a colour, or any other numbered item
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: closes #77 — on GitLab a bare `#77` is always an issue, so
+LL | /// Bad: closes #77. On GitLab a bare `#77` is always an issue, so
    |                 ^^^
    |
    = help: enable `suggest_issue_url` in dylint.toml under `["perfectionist::bare_issue_reference"]` to get a link suggestion; `suggest_pr_url` has no effect on GitLab, where a bare `#NNN` is always an issue (merge requests are written `!NNN`)

@@ -90,7 +90,7 @@ pub(crate) fn verify(root: &Path, version: &str, source: &Source) -> Result<(), 
 /// package's version (read by `parse_version`) changes from one
 /// release literal to another, and nothing else differs between
 /// the before/after snapshots. The two versions only need to be
-/// *different* — neither monotonicity nor SemVer ordering matters.
+/// *different*: neither monotonicity nor SemVer ordering matters.
 fn verify_version_bump_file(
     source: &Source,
     root: &Path,
@@ -121,7 +121,8 @@ fn verify_version_bump_file(
 /// caller has already confirmed that this package's version moved
 /// from `before_ver` to `after_ver`, so if exactly one line differs
 /// and its text matches the expected version literal, that line
-/// must be the package's version line — no positional check needed.
+/// must be the package's version line, with no positional check
+/// needed.
 pub(crate) fn assert_version_only_diff(
     file: &str,
     before: &str,
@@ -182,7 +183,7 @@ pub(crate) fn assert_version_only_diff(
     // target the wrong one whenever the before-version coincides
     // with another package's version. `split_inclusive('\n')`
     // preserves each line's terminator, which the synthesised line
-    // reuses verbatim — an EOL-style flip on the version line
+    // reuses verbatim, so an EOL-style flip on the version line
     // then surfaces as a byte mismatch against `after`.
     let mut synthesised = String::with_capacity(before.len());
     for (i, piece) in before.split_inclusive('\n').enumerate() {

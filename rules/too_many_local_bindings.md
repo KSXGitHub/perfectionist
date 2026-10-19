@@ -9,9 +9,9 @@
 
 ## What it does
 
-Counts the distinct names a function or method body binds —
+Counts the distinct names a function or method body binds,
 through `let`, `if let`, `while let`, `let ... else`, `for`,
-match arms, and the parameters of closures it contains — and
+match arms, and the parameters of closures it contains, then
 flags the body when the count is above `max_bindings`.
 
 A name counts once however many times it is bound, so

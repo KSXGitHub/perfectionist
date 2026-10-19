@@ -186,7 +186,7 @@ fn collect_referenced_idents_skips_shared_newtypes() {
 /// (because `is_builtin_type` returns true) AND emit it
 /// verbatim as a Rust identifier in the field-type column.
 ///
-/// The `Config` entry is exempt — it's on the builtin list
+/// The `Config` entry is exempt. It's on the builtin list
 /// purely to prevent self-referential lookup loops, and has
 /// no user-facing label form.
 ///

@@ -207,7 +207,7 @@ fn index_md_renders_bullet_list() {
     assert!(index.contains("- [`demo_rule`](./demo_rule.md) (default: `active`).\n"));
     assert!(index.contains("\n  uses | inside\n"));
     // The bullet-list form needs no `|` escaping (unlike a
-    // table) — the pipe in the description appears raw.
+    // table), so the pipe in the description appears raw.
     assert!(!index.contains(r"\|"));
     assert_no_trailing_whitespace("index", &index);
 }
@@ -251,8 +251,8 @@ fn promote_headings_caps_at_h6() {
 }
 
 /// A triple-backtick fence stays open through a `~~~` line
-/// in its body — `~~~` is the wrong marker, so it's not a
-/// close — and any `## inside` between them must not be
+/// in its body, `~~~` being the wrong marker and so not a
+/// close, and any `## inside` between them must not be
 /// treated as a heading. Per CommonMark §4.5, fence char
 /// and length both matter for the close.
 #[test]

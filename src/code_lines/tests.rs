@@ -76,7 +76,7 @@ fn a_last_line_without_a_trailing_newline_still_counts() {
 
 /// A `macro_rules!` written inside a body is ordinary body source:
 /// its definition lines count, and the invocation costs only the
-/// line it is written on -- never the lines it expands to.
+/// line it is written on, never the lines it expands to.
 #[test]
 fn a_local_macro_definition_counts_its_own_lines() {
     let source = text_block_fnl! {

@@ -126,8 +126,8 @@ fn is_display_string_literal(kind: LiteralKind) -> bool {
 /// / `assert_ne!` / `debug_assert_eq!` / `debug_assert_ne!` (the two
 /// values come first).
 ///
-/// Unknown macros — including any added through the configuration's
-/// `extra_macros` knob — default to `0`. A project that adds an
+/// Unknown macros, including any added through the configuration's
+/// `extra_macros` knob, default to `0`. A project that adds an
 /// assertion-shaped custom macro through configuration accepts the
 /// false positive in that case.
 fn arguments_before_message(macro_name: Symbol) -> u32 {

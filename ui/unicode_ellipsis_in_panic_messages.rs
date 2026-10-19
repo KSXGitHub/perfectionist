@@ -12,7 +12,7 @@ fn _panics() {
     // Raw string literals are scanned identically.
     panic!(r"raw string with …");
     panic!(r#"raw-hash string with …"#);
-    // Two ellipses in one literal — should fire twice.
+    // Two ellipses in one literal, so it should fire twice.
     panic!("first … and second …");
     // Path-qualified macro invocation still resolves to `panic`.
     std::panic!("qualified path with …");
@@ -59,8 +59,8 @@ fn _quiet() {
     // The synthetic message inserted by bare `assert!(cond)` has no
     // U+2026, so it doesn't fire here.
     assert!(true);
-    // Literal expressed via escape — source has `\u{2026}`, not the
-    // raw codepoint — is not flagged.
+    // Literal expressed via escape, whose source has `\u{2026}` rather
+    // than the raw codepoint, is not flagged.
     panic!("escaped \u{2026} stays");
     // String literals nested inside another macro that is *not* a
     // panic-family member are not part of the panic message and must
@@ -76,7 +76,7 @@ fn _quiet() {
     assert_ne!("value-with-…", "another-…");
     debug_assert_eq!("value-with-…", "another-…");
     debug_assert_ne!("value-with-…", "another-…");
-    // `assert!`'s first argument is the condition — a string-literal
+    // `assert!`'s first argument is the condition, and a string-literal
     // condition wouldn't compile, so this case is more theoretical,
     // but the skip-count keeps it consistent. The trailing literal
     // *is* the message and should still fire.

@@ -370,9 +370,9 @@ fn owning_adt(ty: Ty<'_>) -> Option<DefId> {
 /// Whether `definition`'s own name resolves to it where `at` sits.
 ///
 /// A glob import is not followed, so a name only a glob brings in reads as
-/// absent -- which costs a downgrade and an import offer the reader does not
-/// need, where the opposite mistake would cost a rewrite that does not
-/// compile.
+/// absent, which costs a downgrade and an import offer the reader does
+/// not need, where the opposite mistake would cost a rewrite that does
+/// not compile.
 fn resolves_here(cx: &LateContext<'_>, definition: DefId, at: HirId) -> bool {
     if in_the_prelude(cx, definition) {
         return true;
@@ -606,8 +606,8 @@ fn point_free<'tcx>(
             // The path names the owner by its bare name, which compiles only
             // where that name resolves. Where it does not, the rewrite is
             // still the right advice, so it is offered with the `use` it wants
-            // rather than withheld or written out in full -- a fully qualified
-            // path would be longer than the closure it replaces.
+            // rather than withheld or written out in full, since a fully
+            // qualified path would be longer than the closure it replaces.
             if let Some(definition) = owning_adt(held_ty)
                 && !resolves_here(cx, definition, step.hir_id)
             {

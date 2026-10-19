@@ -29,14 +29,14 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    `tracing::*`) that *do* drop arguments below the configured
 ///    filter level.
 /// 2. `core` / `std` macros whose top-level argument simply isn't a
-///    runtime expression — `stringify!` takes a token sequence,
+///    runtime expression: `stringify!` takes a token sequence,
 ///    `cfg!` takes a cfg predicate, the `env!` / `include_*` /
 ///    `is_x86_feature_detected!` family takes a string literal, the
 ///    `line!` / `column!` / `file!` / `module_path!` family takes
-///    no argument, `compile_error!` aborts compilation — or, in the
+///    no argument, and `compile_error!` aborts compilation. In the
 ///    matryoshka case from issue [#71](https://github.com/KSXGitHub/perfectionist/issues/71),
-///    is itself a call to another
-///    macro from this group. None of these evaluates a user
+///    that argument is itself a call to another macro from this
+///    group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
 ///    surfaces at the call site.
 /// 3. Third-party macros whose matchers are known to evaluate every
@@ -97,7 +97,7 @@ const BUILTIN_ALLOW: &[&str] = &[
     //   group 1). `bail!(args)` expands to `return Err(anyhow!(args))`
     //   and evaluates each captured expression once; `ensure!(cond,
     //   args)` matches the shape of `assert!(cond, args)` already on
-    //   group 1 — `cond` always evaluates, `args` only on failure.
+    //   group 1, `cond` always evaluating and `args` only on failure.
     // - `assert_cmp::assert_op_expr` asserts a binary comparison
     //   of two expressions. It expands to `match ($left, $right)
     //   { (left, right) => assert!(left $op right, ...) }`, moving
@@ -125,7 +125,7 @@ const BUILTIN_ALLOW: &[&str] = &[
     // - `serde_json::json` builds a `serde_json::Value` tree; each
     //   embedded Rust expression goes through `to_value(&expr)`
     //   exactly once. Unlike `maplit::*`, this entry is load-
-    //   bearing for direct-expression arguments — `json!(expr)`
+    //   bearing for direct-expression arguments: `json!(expr)`
     //   has no DSL marker, so removing the entry would re-flag
     //   `json!(value().unwrap())` and similar.
     //
@@ -153,14 +153,14 @@ const BUILTIN_ALLOW: &[&str] = &[
 ];
 
 /// `core` / `std` macros whose invocation expands to a value the
-/// compiler computes at build time — a literal, a `&'static str`, a
+/// compiler computes at build time: a literal, a `&'static str`, a
 /// byte string, a `bool` cfg verdict, a line / column / file marker.
 /// None evaluates a runtime expression, none has side effects, so an
 /// `inner!(...)` call to one of these is itself a pure argument
 /// for the surrounding macro: it cannot be evaluated more than once
 /// at runtime no matter what the outer macro does with it.
 ///
-/// `include!` is deliberately excluded — its expansion is arbitrary
+/// `include!` is deliberately excluded. Its expansion is arbitrary
 /// Rust code rather than a literal, so its purity depends on the
 /// included file's contents and the rule cannot prove it.
 /// `compile_error!` is also excluded: its expansion is the diverging
@@ -201,13 +201,13 @@ pub(super) enum Mode {
     DenyOnly,
     /// Flag every function-like or array-like invocation that carries
     /// an impure top-level argument, regardless of any built-in
-    /// classification — unless the invocation matches an `allow_extra`
+    /// classification, unless the invocation matches an `allow_extra`
     /// entry. The built-in allow set is deliberately ignored in this
     /// mode; project exceptions go in `allow_extra`.
     Blanket,
     /// Curated deny set plus curated allow set, both extensible via
     /// `deny_extra` / `allow_extra`. Macros classified by neither are
-    /// flagged — flagging unrecognised macros is deliberate so the
+    /// flagged. Flagging unrecognised macros is deliberate so the
     /// rule remains useful in projects that depend on uncatalogued
     /// proc macros.
     #[default]
@@ -240,7 +240,7 @@ pub(super) struct Config {
     /// pure postfix when the method takes no arguments. Add a
     /// project-local method here only when it is genuinely safe
     /// for the surrounding macro to drop or duplicate the call
-    /// (the rule's working definition of *pure*) — typically an
+    /// (the rule's working definition of *pure*), typically an
     /// `O(1)` side-effect-free getter that the lint's syntactic
     /// classification can't otherwise see.
     pub extra_pure_methods: Vec<String>,
@@ -248,15 +248,14 @@ pub(super) struct Config {
     /// appear in the built-in defaults or in `extra_pure_methods`.
     /// Empty by default; checked after the merge, so this knob always
     /// wins. Useful for opting back into linting on a default entry
-    /// the project does not consider pure — for example, removing
-    /// `as_ref` for a project that wraps it in an impure
-    /// implementation.
+    /// the project does not consider pure: removing `as_ref`, say,
+    /// where a project wraps it in an impure implementation.
     pub ignore_pure_methods: Vec<String>,
     /// Macro names added to the built-in pure-macro list. Each
     /// entry is matched against the invocation's final path segment
     /// (so `my_crate::const_str` matches by the `"const_str"` tail).
     /// A pure-macro call passed as an argument to another macro is
-    /// treated as a pure atom — the rule does not propose binding
+    /// treated as a pure atom, so the rule does not propose binding
     /// it to a `let`. Use this knob for project-specific macros
     /// whose expansion is a compile-time constant (a literal, a
     /// `&'static str`, a `bool`); their inclusion satisfies the
@@ -352,7 +351,7 @@ impl ImpureMacroArguments {
 
     /// Path-side eligibility: combines the `ignore` skip list with
     /// the mode-based deny / allow lookup. Does *not* consider the
-    /// call's delimiter or argument shape — those stay in the
+    /// call's delimiter or argument shape, which stay in the
     /// early-pass driver, where token-tree concerns live.
     pub(super) fn should_check_path(&self, path: &Path) -> bool {
         !matches_any(path, &self.ignore) && self.arguments_should_be_checked(path)

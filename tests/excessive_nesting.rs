@@ -41,7 +41,7 @@ fn zero_threshold_reports_every_depth() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each nest 4 levels deep — 1 above the
+/// `#[test]` function each nest 4 levels deep, 1 above the
 /// default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/excessive_nesting/lib_with_test_module.rs");

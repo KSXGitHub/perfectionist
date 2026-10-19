@@ -49,7 +49,7 @@ struct _CfgAttr;
 struct _CfgAttrMulti;
 
 // Bad: a compound `cfg` predicate is left untouched while its gated
-// `derive(...)` is ordered — the predicate is just the first item and
+// `derive(...)` is ordered: the predicate is just the first item and
 // is skipped regardless of its shape.
 #[cfg_attr(all(unix, target_pointer_width = "64"), derive(Debug, Clone))]
 struct _CfgAttrCompound;
@@ -62,7 +62,7 @@ struct _CfgAttrCompound;
 struct _CfgAttrNested;
 
 // Bad: a derive gated by a predicate that is FALSE on the test host is
-// still ordered — `unordered_derives` is a pre-expansion pass and never
+// still ordered. `unordered_derives` is a pre-expansion pass and never
 // evaluates the `cfg` predicate, so the check is host-independent. Keep
 // the predicate as `windows` (false on the Unix CI host): "simplifying"
 // it back to `unix` would silently drop the platform-independence

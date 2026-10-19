@@ -75,7 +75,7 @@ impl ConstructCategory {
     }
 }
 
-/// The built-in default set of forbidden constructs — the conservative
+/// The built-in default set of forbidden constructs: the conservative
 /// constructs that read badly in a terminal `--help`. Emphasis and lists
 /// are deliberately excluded; clap renders them as their literal
 /// characters, which usually reads cleanly.
@@ -91,7 +91,7 @@ pub(super) const DEFAULT_FORBID: &[ConstructCategory] = &[
 
 /// The attribute keys that, when present inside a `clap` / `arg` /
 /// `command` attribute, mean the doc comment is no longer the source of
-/// truth for help text — so the lint stays silent. This is clap's own
+/// truth for help text, so the lint stays silent. This is clap's own
 /// complete set of help-text overrides, so it is fixed: there is nothing
 /// for a project to add or remove.
 pub(super) const OVERRIDE_KEYS: &[&str] = &["about", "long_about", "help", "long_help"];
@@ -102,8 +102,8 @@ pub(super) struct Config {
     /// Markdown constructs to forbid in addition to the built-in default
     /// set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
     /// `code_block`, `code_span`, `heading`). Empty by default; `bold`,
-    /// `italic`, and `list` are the usual additions — clap renders them
-    /// acceptably, so they are off by default.
+    /// `italic`, and `list` are the usual additions, clap rendering
+    /// them acceptably, so they are off by default.
     pub(super) extra_constructs: Vec<ConstructCategory>,
     /// Constructs to drop from the forbidden set, even if they appear in
     /// the built-in defaults. Empty by default; applied after the merge
@@ -116,13 +116,13 @@ pub(super) struct Config {
     /// `#[command(about = "...")]`, ...) on every command, argument, and
     /// value. When `true`, the rule flags every clap-derived doc comment
     /// that reaches `--help` without such an override, regardless of
-    /// whether it contains markdown — the doc comment stays for
+    /// whether it contains markdown. The doc comment stays for
     /// `cargo doc`, but `--help` must come from a plain-string override.
     /// A node with no doc comment is left alone: the requirement is only
     /// that a *present* doc comment never feeds `--help` unoverridden, so
     /// a bare `#[arg(help = "...")]` with no `///` is fine. This
-    /// supersedes the markdown scan — an override silences the markdown
-    /// concern anyway — so an unoverridden doc comment is reported once as
+    /// supersedes the markdown scan, an override silencing the markdown
+    /// concern anyway, so an unoverridden doc comment is reported once as
     /// a missing override rather than per markdown construct. Defaults to
     /// `false`.
     pub(super) require_help_override: bool,
@@ -139,9 +139,10 @@ pub(super) struct ResolvedConfig {
 
 impl ResolvedConfig {
     pub(super) fn from_config(config: Config) -> Self {
-        // Effective set = (default ∪ extra_constructs) \ ignore_constructs
-        // — the same add/subtract-over-a-curated-default shape as the
-        // catalogue's `resolve_string_set` / `resolve_symbol_set` helpers.
+        // Effective set = (default ∪ extra_constructs) \ ignore_constructs.
+        // That is the same add/subtract-over-a-curated-default shape as
+        // the catalogue's `resolve_string_set` / `resolve_symbol_set`
+        // helpers.
         let mut forbid: BTreeSet<ConstructCategory> = DEFAULT_FORBID
             .iter()
             .copied()
@@ -157,7 +158,7 @@ impl ResolvedConfig {
     }
 
     /// Whether the classifier needs to look for `*` / `_` emphasis runs
-    /// — only when `bold` or `italic` is forbidden.
+    /// at all, which is only when `bold` or `italic` is forbidden.
     pub(super) fn detect_emphasis(&self) -> bool {
         self.forbid.contains(&ConstructCategory::Bold)
             || self.forbid.contains(&ConstructCategory::Italic)

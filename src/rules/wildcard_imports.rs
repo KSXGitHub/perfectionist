@@ -1,10 +1,10 @@
-//! `perfectionist::wildcard_imports` — flag glob (`*`) `use` statements in
-//! module bodies, with two configurable exceptions.
+//! `perfectionist::wildcard_imports`: flag glob (`*`) `use` statements
+//! in module bodies, with two configurable exceptions.
 //!
 //! The rule runs as a [`LateLintPass`] that **re-parses each of the
 //! crate's module source files** via [`crate::module_reparse`]. The case
-//! the rule cares about most — `use super::*;` inside a
-//! `#[cfg(test)] mod tests` block — is cfg-gated, so the layout has to be
+//! the rule cares about most, `use super::*;` inside a
+//! `#[cfg(test)] mod tests` block, is cfg-gated, so the layout has to be
 //! read from a re-parse that keeps `#[cfg(...)]` gates intact rather than
 //! from the post-expansion AST (which strips them) or a pre-expansion
 //! pass (which leaves out-of-line `mod foo;` modules `ModKind::Unloaded`
@@ -31,15 +31,15 @@ use config::{Config, Resolved};
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags glob (`*`) `use` statements — `use foo::bar::*;` — in module
-    /// bodies. These exceptions are enabled by default, and each can
-    /// be turned off individually:
+    /// Flags glob (`*`) `use` statements, `use foo::bar::*;` among
+    /// them, in module bodies. These exceptions are enabled by default,
+    /// and each can be turned off individually:
     ///
-    /// - `prelude` — a glob whose final non-glob path segment names a
+    /// - `prelude`: a glob whose final non-glob path segment names a
     ///   prelude module is allowed: `use rayon::prelude::*;`,
     ///   `use diesel::prelude::*;`. The recognised names are configurable
     ///   via `prelude_segment_names`.
-    /// - `root_reexport` — a re-export glob (`pub use ...::*`) at the top
+    /// - `root_reexport`: a re-export glob (`pub use ...::*`) at the top
     ///   level of a module body is allowed: `pub use submodule::*;` in
     ///   `lib.rs`.
     ///
@@ -64,7 +64,7 @@ declare_tool_lint! {
     /// Clippy's `wildcard_imports` (an allow-by-default `pedantic` lint)
     /// flags the same glob `use`s and, by default, exempts prelude
     /// imports, `pub use` re-exports, and `use super::*;` inside any
-    /// module whose name contains `test` — overlapping this rule's
+    /// module whose name contains `test`, overlapping this rule's
     /// exceptions. But all of those exemptions, together with the
     /// `allowed-wildcard-imports` path list, are coupled behind a single
     /// `warn-on-all-wildcard-imports` boolean: left at its default
@@ -72,7 +72,7 @@ declare_tool_lint! {
     /// `use super::*;` inside `mod tests` is *not* flagged; set to `true`,
     /// every exemption drops at once, including the prelude one. There is
     /// no setting that keeps `prelude::*` exempt while flagging
-    /// `use super::*;` in a `#[cfg(test)] mod tests` block — which is
+    /// `use super::*;` in a `#[cfg(test)] mod tests` block, which is
     /// exactly this rule's headline case. This rule decouples them: the
     /// `prelude` and `root_reexport` exceptions toggle independently
     /// (with a configurable `prelude_segment_names` and the `allowed_paths`
@@ -147,8 +147,8 @@ impl Register for rule::WildcardImports {
         }
         // Late pass: the cfg-gated `#[cfg(test)] mod tests { use super::*; }`
         // case (and any out-of-line `mod foo;` submodule) is only reachable
-        // by re-parsing each module file in a late pass — see the module
-        // docs and [`crate::module_reparse`].
+        // by re-parsing each module file in a late pass. The module
+        // docs and [`crate::module_reparse`] explain why.
         lint_store.register_late_lint_pass(Box::new(move |_| {
             Box::new(WildcardImports {
                 config: Resolved::from_config(config.clone()),
@@ -168,7 +168,7 @@ struct Pending {
     /// span keeps the anchor robust for an out-of-line `mod foo;` whose
     /// item span lives in the parent file.
     anchor: Span,
-    /// Span the diagnostic points at — the offending `path::*` subtree.
+    /// Span the diagnostic points at: the offending `path::*` subtree.
     span: Span,
 }
 
@@ -209,7 +209,7 @@ impl WildcardImports {
     /// compiled crate. Only module-scoped items are visited (the file
     /// root and inline `mod` bodies, never a block or function body), so
     /// every `use` examined here is already at the top level of a module
-    /// body — which is what the `root_reexport` exception requires, on
+    /// body, which is what the `root_reexport` exception requires, on
     /// top of an explicit visibility.
     fn check_items(
         &self,
@@ -226,7 +226,7 @@ impl WildcardImports {
                 // documented contract. A restricted visibility is not it:
                 // `pub(crate)`/`pub(super)` are narrower re-exports the
                 // rule still flags (use `allowed_paths` to permit them),
-                // and `pub(self)` is private-equivalent — it re-exports
+                // and `pub(self)` is private-equivalent, re-exporting
                 // nothing, so exempting it would be plainly wrong.
                 let is_reexport = matches!(item.vis.kind, VisibilityKind::Public);
                 let mut globs: Vec<(Vec<String>, Span)> = Vec::new();
@@ -247,7 +247,7 @@ impl WildcardImports {
         // survived `#[cfg(...)]`-stripping into the compiled crate. The
         // re-parse keeps cfg-disabled modules (parsing does not strip
         // cfg), so without this guard a `#[cfg(test)] mod tests { ... }`
-        // excluded from a non-test build would be linted — and, having no
+        // excluded from a non-test build would be linted, and, having no
         // HIR node, could not be suppressed by a local `#[allow]`.
         // Out-of-line `mod foo;` modules are `ModKind::Unloaded` here;
         // their files are re-parsed in their own right by `check_crate`.
@@ -285,7 +285,7 @@ impl WildcardImports {
         // `["foo", "bar"]`; `canonical_key` forms the absolute key that
         // matches either written form (`::foo::bar` for an extern crate,
         // `crate::internals` for a crate-root path). Only build the key when
-        // there is an allow list to check it against — `allowed_paths` is
+        // there is an allow list to check it against. `allowed_paths` is
         // empty in the default config, so this skips the per-glob `String`
         // allocation in the common case.
         !self.config.allowed_paths.is_empty()

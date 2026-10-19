@@ -37,7 +37,8 @@ fn skip_paths_rejects_a_missing_leading_root() {
 
 #[test]
 fn skip_paths_rejects_a_path_the_rule_could_never_flag() {
-    // Another crate entirely — the rule only ever flags `core` / `alloc`.
+    // Another crate entirely, and the rule only ever flags `core` /
+    // `alloc`.
     let other: Config = toml::from_str(r#"skip_paths = ["::rayon::iter"]"#).unwrap();
     assert!(validate(&other).is_err());
     // The crate root on its own names no item under it.

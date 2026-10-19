@@ -15,7 +15,7 @@ fn _println_basic() {
     println!("error: the operation failed because of {err_src} deep inside the subsystem\nhint: run {magic_cmd} to repair it");
 }
 
-// Bad: `writeln!` — the template is the second argument, behind the
+// Bad: `writeln!`, whose template is the second argument, behind the
 // writer, so the scan must skip the writer to find it.
 fn _writeln_second_arg() -> std::fmt::Result {
     let mut out = String::new();
@@ -82,7 +82,7 @@ fn _newline_then_whitespace() {
 }
 
 // Bad: a trailing line comment in the argument list. The inserted
-// trailing comma must land after the last token, before the comment —
+// trailing comma must land after the last token, before the comment,
 // not buried inside it.
 fn _trailing_line_comment() {
     let value = 1;

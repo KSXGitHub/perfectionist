@@ -96,8 +96,8 @@ fn apply_rename_all_covers_serde_styles() {
         apply_rename_all("UPPERCASE", "BlockComment"),
         "BLOCKCOMMENT",
     );
-    // The unknown-style fallback is observable — it prints a
-    // warning and returns the name unchanged — but asserting
+    // The unknown-style fallback is observable, printing a
+    // warning and returning the name unchanged, but asserting
     // it here would spam stderr on every clean test run. The
     // behaviour is covered by manual smoke runs of `gen-docs`
     // against rule sources that intentionally use an unknown

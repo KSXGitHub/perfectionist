@@ -77,7 +77,7 @@ fn missing_path_is_rejected() {
     assert_eq!(normalize("https://github.com"), None);
 }
 
-/// A port-only authority has no host — reject it (the kept
+/// A port-only authority has no host, so reject it (the kept
 /// `:port` must not masquerade as a host under `keep_port`).
 #[test]
 fn empty_host_is_rejected() {

@@ -147,7 +147,7 @@ fn stray_md_with_collision_casing_is_deleted() {
     // gone outright. On a case-insensitive filesystem the
     // remaining file is the freshly-written `README.md`
     // (canonical case), not the user's `readme.md`. Both
-    // shapes leave the user's content discarded — the point
+    // shapes leave the user's content discarded, the point
     // of the "fully managed" contract.
     assert!(
         !dir.join("readme.md").exists()

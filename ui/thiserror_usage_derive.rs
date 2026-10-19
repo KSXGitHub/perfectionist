@@ -26,7 +26,7 @@ struct FullPathDerive;
 
 // Bad: bare `#[derive(Error)]`, resolved through the sibling
 // `use thiserror::Error;` the alias scan recorded. (The `use` itself is
-// flagged too — its first segment is `thiserror`.)
+// flagged too, its first segment being `thiserror`.)
 use thiserror::Error;
 
 #[derive(Error)]
@@ -67,8 +67,8 @@ enum VariantAttrs {
 }
 
 // Good: a derive list with no thiserror entry is left alone, and the
-// `#[error(...)]`-shaped attribute on it is not flagged either — the
-// attribute walk only runs on items the derive check classified as
+// `#[error(...)]`-shaped attribute on it is not flagged either, since
+// the attribute walk only runs on items the derive check classified as
 // thiserror-derived.
 #[derive(Clone)]
 #[cfg_attr(any(), error("never applied"))]

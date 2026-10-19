@@ -2,9 +2,9 @@
 // finding emitted without a code suggestion, because the attribute's
 // source snippet cannot be recovered.
 //
-// The `allow $lints` invocation is assembled from two source files —
-// the `allow` key from this file's macro definition, the lint list
-// from the `include!`d call site — so the meta item's span begins in
+// The `allow $lints` invocation is assembled from two source files,
+// the `allow` key from this file's macro definition and the lint list
+// from the `include!`d call site, so the meta item's span begins in
 // one file and ends in another, and `span_to_snippet` fails on it.
 // The rule still reports the missing `reason`, but points at the fix
 // in prose instead of splicing one in blind.

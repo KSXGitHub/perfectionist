@@ -45,7 +45,7 @@ declare_tool_lint! {
     /// In debug builds the call runs and the assertion holds. In
     /// release builds `debug_assertions` is off, the body folds to
     /// `if false { ... }`, and the argument expressions are *not*
-    /// evaluated — `insert` never runs and the map ends the function
+    /// evaluated: `insert` never runs and the map ends the function
     /// in a state the author did not intend. The bug only surfaces
     /// under `--release`.
     ///
@@ -65,7 +65,7 @@ declare_tool_lint! {
     /// treats everything else as impure. A `const fn` call, a
     /// `Result::map` chain over a pure base, or `vec.fold(...)` is
     /// therefore impure under this rule unless its shape is
-    /// recognised — the lint cannot prove side-effect-freedom in
+    /// recognised. The lint cannot prove side-effect-freedom in
     /// general, only spot it. The trade-off favours flagging
     /// side-effect-free expressions over silently passing a real
     /// hazard. The set is narrower than the functional-programming
@@ -92,7 +92,7 @@ declare_tool_lint! {
     /// macro touches it, so binding it to a `let` would only force
     /// the comparison to run in release builds for no benefit; the
     /// same logic applies to `env!("HOME")` inside
-    /// `debug_assert_eq!(...)` — there is nothing to evaluate at
+    /// `debug_assert_eq!(...)`, where there is nothing to evaluate at
     /// runtime.
     ///
     /// ### Example
@@ -143,8 +143,9 @@ impl Register for rule::ImpureMacroArguments {
 /// [`Mutex`] just serialises the queue against parallel pre-expansion
 /// passes within one compilation.
 ///
-/// The static is private — child modules ([`late`]) read it through
-/// Rust's standard descendant-reachability rule for non-`pub` items.
+/// Being private costs nothing here: child modules ([`late`]) read
+/// the static through Rust's standard descendant-reachability rule
+/// for non-`pub` items.
 static PENDING_VIOLATIONS: Mutex<Vec<Span>> = Mutex::new(Vec::new());
 
 impl EarlyLintPass for ImpureMacroArguments {

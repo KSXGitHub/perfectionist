@@ -264,7 +264,7 @@ fn ref_problem_rejects_version_patterns_by_default() {
 }
 
 /// A gitea `/branch/` URL whose ref happens to be hex is still a
-/// branch — the path, not the text, decides.
+/// branch, since the path rather than the text decides.
 #[test]
 fn ref_problem_reports_gitea_branch_and_non_version_pattern_tag() {
     assert_eq!(

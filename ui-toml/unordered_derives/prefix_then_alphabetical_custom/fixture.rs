@@ -1,5 +1,5 @@
 // Custom prefix is `["Hash", "Debug"]`. Traits not in this short
-// prefix list — `Clone`, `Copy`, `PartialEq` — are alphabetised
+// prefix list, `Clone`, `Copy` and `PartialEq`, are alphabetised
 // after the prefix-listed ones.
 
 // Bad: the entries don't honour the custom prefix order

@@ -25,7 +25,7 @@ impl<T> Trivial for Option<T> {
 }
 
 // A generic on a method inside an impl is owned by the method,
-// not by the impl. Both are flagged independently — neither gets
+// not by the impl. Both are flagged independently, and neither gets
 // any structural exemption.
 trait Convert {
     fn convert<U>(&self, value: U) -> U;
@@ -89,8 +89,9 @@ fn run() {
     let pairs = vec![Pair { left: 1, right: 2 }];
     let _lefts: Vec<i32> = pairs.iter().map(|p| p.left).collect();
 
-    // Good: trivial wrapper closure with a deref peel — `(*s).method()`
-    // is still structurally a method call on the parameter.
+    // Good: trivial wrapper closure with a deref peel, since
+    // `(*s).method()` is still structurally a method call on the
+    // parameter.
     let names = ["one", "two"];
     let _owned: Vec<String> = names.iter().map(|s| (*s).to_owned()).collect();
 
@@ -100,7 +101,7 @@ fn run() {
     // on the body's expansion-origin span to recognise it.
     let _nested: Vec<Vec<i32>> = sorted.iter().copied().map(|x| vec![x]).collect();
     // Good: `n` is in the default closure-parameter exempt set, so the
-    // body shape doesn't matter for this one — the conventional-name
+    // body shape doesn't matter for this one: the conventional-name
     // filter exempts the closure before the trivial-wrapper check.
     let _shouted: Vec<String> = sorted.iter().map(|n| format!("{n}!")).collect();
 

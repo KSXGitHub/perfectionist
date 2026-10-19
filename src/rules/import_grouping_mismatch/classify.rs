@@ -25,16 +25,17 @@ fn first_segment(tree: &UseTree) -> Option<String> {
 }
 
 /// Classify a statement's path into one of the three groups by its
-/// first segment. A path with no leading segment — a top-level brace
-/// spanning several crate roots, or a global `::*` — has no single crate
+/// first segment. A path with no leading segment, a top-level brace
+/// spanning several crate roots or a global `::*`, has no single crate
 /// root to key on and falls into `thirdparty`, the catch-all.
 ///
 /// `local_modules` holds the names of `mod` items declared in the same
 /// module scope as this `use`. A bare first segment naming one of them
 /// is an import of a first-party submodule (`mod error; use error::Foo;`)
-/// — in editions 2018+ a local item shadows the extern prelude, so the
-/// bare path resolves to the local module, not a same-named crate — so
-/// it is classified `internal` rather than falling through to the
+/// because in editions 2018+ a local item shadows the extern prelude,
+/// so the bare path resolves to the local module rather than a
+/// same-named crate. It is therefore classified `internal` rather than
+/// falling through to the
 /// `thirdparty` catch-all. The rule reads source syntactically, without
 /// name resolution, so this sibling-`mod` match is the syntactic
 /// approximation of that resolution. The built-in std and internal
@@ -54,8 +55,8 @@ fn path_group(tree: &UseTree, local_modules: &HashSet<String>) -> Group {
 
 /// Whether a re-export is an *alias* re-export rather than a *submodule*
 /// re-export, the split [`ReexportGrouping::Split`] draws. An alias
-/// re-export is a single-segment simple path — `pub use Item;` or
-/// `pub use Item as Alias;` — that only renames an item already in scope;
+/// re-export is a single-segment simple path, `pub use Item;` or
+/// `pub use Item as Alias;`, that only renames an item already in scope;
 /// a submodule re-export carries a `::` (`pub use child::Item;`,
 /// `pub use child::{A, B};`, `pub use child::*;`) and lifts an item out of
 /// a child module. The test is purely syntactic: a `Simple` tree whose
@@ -80,7 +81,7 @@ fn is_alias_reexport(tree: &UseTree) -> bool {
 /// when `cfg_block_handling` is [`CfgBlockHandling::Trailing`]:
 ///
 /// - `single_block` keeps every import in one block (rank `0`), so the
-///   run admits no blank lines — except a trailing cfg import, which
+///   run admits no blank lines, except a trailing cfg import, which
 ///   takes a higher rank `1` and forms a single trailing block. Path
 ///   origin is irrelevant here.
 /// - `multi_block` ranks by the path group's position in the configured
@@ -94,15 +95,15 @@ fn is_alias_reexport(tree: &UseTree) -> bool {
 ///
 /// When `reexports` separates re-exports, a re-export (`is_reexport`)
 /// takes a dedicated leading rank regardless of style, path, or cfg
-/// gating — visibility outranks every other partition — and every
+/// gating, visibility outranking every other partition, and every
 /// non-re-export rank shifts down past it
 /// ([`Config::reexport_block_offset`]):
 ///
 /// - `grouped` gives every re-export the single leading rank `0`, one
 ///   block above the styled private-import blocks.
 /// - `split` keeps submodule re-exports at rank `0` and alias re-exports
-///   at rank `1`, two blocks above the private imports — see
-///   [`is_alias_reexport`].
+///   at rank `1`, two blocks above the private imports.
+///   [`is_alias_reexport`] draws that split.
 /// - `by_path` reserves no leading rank; a re-export is classified by its
 ///   path exactly like a private import.
 pub(super) fn rank(

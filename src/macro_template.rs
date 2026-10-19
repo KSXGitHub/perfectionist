@@ -2,7 +2,7 @@
 //!
 //! Which shape a rule wants follows from what it may safely rewrite:
 //!
-//! - [`find_template_literal`] returns the single *format template* —
+//! - [`find_template_literal`] returns the single *format template*,
 //!   the first argument that is, on its own, a lone cooked string
 //!   literal. A rule whose rewrite is output-preserving only on a
 //!   genuine format template (an `\n`-fold, say) may touch nothing
@@ -20,7 +20,7 @@ use rustc_ast::tokenstream::{TokenStream, TokenTree};
 use rustc_span::Span;
 
 /// Span of the first top-level argument that is, on its own, a single
-/// cooked string literal — the format template. Returns `None` when no
+/// cooked string literal, the format template. Returns `None` when no
 /// such argument exists (a runtime-expression template, a `concat!`
 /// result, or a template that is the second argument behind a writer
 /// expression that itself isn't a lone string literal, etc.).
@@ -54,7 +54,7 @@ fn cooked_str_literal_span(tree: &TokenTree) -> Option<Span> {
 
 /// Span of every cooked string literal anywhere in `tokens`, in source
 /// order, descending into delimited groups so a literal nested inside a
-/// sub-group is found too — e.g. a `maud::html!` markup string buried in
+/// sub-group is found too, say a `maud::html!` markup string buried in
 /// `code { "..." }`, which a top-level-only scan (as `overly_long_print_macro`
 /// uses) would miss. The cost is that a literal inside a *nested macro
 /// call* is visited once here and again when that inner macro's own

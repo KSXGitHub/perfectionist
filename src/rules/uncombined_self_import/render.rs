@@ -43,7 +43,7 @@ pub(super) fn segment_names(path: &Path) -> Vec<Symbol> {
 /// rather than its [`Symbol`]. [`Ident`]'s `Display` re-adds the `r#`
 /// raw-identifier prefix where the source had it (and the edition
 /// makes it a keyword), so a module named `r#match` renders as
-/// `r#match`, not the bare keyword `match` — which would produce an
+/// `r#match`, not the bare keyword `match`, which would produce an
 /// autofix that fails to parse.
 pub(super) fn render_segments(segments: &[PathSegment]) -> String {
     segments
@@ -54,8 +54,8 @@ pub(super) fn render_segments(segments: &[PathSegment]) -> String {
 }
 
 /// Render `segments` (already `PathRoot`-stripped) with `path`'s
-/// leading `::` restored when it had one. Use this — not bare
-/// [`render_segments`] — whenever the rendered text is the *start* of a
+/// leading `::` restored when it had one. Use this, rather than bare
+/// [`render_segments`], whenever the rendered text is the *start* of a
 /// path, so an absolute `::foo` import is not silently rewritten to the
 /// crate-relative `foo`.
 pub(super) fn render_rooted(path: &Path, segments: &[PathSegment]) -> String {
@@ -110,7 +110,7 @@ pub(super) fn render_use_tree(tree: &UseTree) -> String {
     }
 }
 
-/// Whether `tree` is a bare `self` leaf — the `{self}` brace-group
+/// Whether `tree` is a bare `self` leaf, the `{self}` brace-group
 /// member, whose prefix is exactly one `self` segment. Distinguished
 /// from the `a::b::self` trailing form (prefix length >= 2), which
 /// names a module relative to the child's own prefix rather than its
@@ -135,7 +135,7 @@ pub(super) fn render_visibility(cx: &LateContext<'_>, item: &Item) -> String {
 /// Used both to require two imports' attributes to match before
 /// folding them and to replay the attributes onto a statement a
 /// rewrite synthesises. The rule re-parses source in a late pass, so
-/// `#[cfg(...)]` attributes are *not* stripped here — they appear in
+/// `#[cfg(...)]` attributes are *not* stripped here; they appear in
 /// this list like any other attribute. That is what lets the fold's
 /// attribute-equality check refuse to merge two imports differing only
 /// in their `#[cfg(...)]`.

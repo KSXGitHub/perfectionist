@@ -52,7 +52,7 @@ const CONFIG_KEY: &str = "perfectionist::bare_url";
 /// the autofix as machine-applicable.
 const DEFAULT_SAFE_TRAILING_CHARS: &[char] = &['/', '_', '-', '=', '&', '+'];
 
-/// Hosts skipped by default — only `localhost`, which points
+/// Hosts skipped by default: only `localhost`, which points
 /// nowhere public and so never wants wrapping in docs.
 const DEFAULT_SKIP_HOSTS: &[&str] = &["localhost"];
 
@@ -200,10 +200,10 @@ impl BareUrl {
             }
             // Left-context guard: skip if the byte immediately before
             // `index` is a word character or one of `<`, `[`, `(`,
-            // `"`, `'`, `` ` `` — the last six meaning the URL is
+            // `"`, `'`, `` ` ``, the last six meaning the URL is
             // already wrapped (markdown autolink / labelled link /
             // inline delimiter / HTML attribute / quoted-prose pair /
-            // code span — backticks delimit code-y spans in both
+            // code span, backticks delimiting code-y spans in both
             // markdown doc comments and plain `//` developer prose).
             if index > 0 {
                 let prev = bytes[index - 1];

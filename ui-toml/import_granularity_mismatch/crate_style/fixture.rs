@@ -47,7 +47,7 @@ mod thing {
 }
 
 // Bad: a bare import plus an item from a module of the same name share a
-// crate root and must merge into one `use`. The merge is ambiguous — the
+// crate root and must merge into one `use`. The merge is ambiguous: the
 // `self`-fold `crate::thing::{self, T}` and the sibling-split
 // `crate::{thing, thing::T}` are not interchangeable (the fold re-imports
 // only the module `thing`, dropping any value or macro named `thing`), so
@@ -59,17 +59,17 @@ mod self_merge {
 }
 
 // Good: an explicit `self` import is already a valid, compiling collapsed
-// form (the two brace entries name different things — the module via
+// form (the two brace entries name different things, the module via
 // `self` and the item `T`), so it is left alone, never rewritten into the
 // sibling shape.
 mod explicit_self {
     use crate::thing::{self, T};
 }
 
-// Good: the sibling-split form of a module and an item from it — the bare
+// Good: the sibling-split form of a module and an item from it, the bare
 // module `thing` next to the item `T`. It is already one `use` per crate
 // root and preserves every namespace `thing` binds, so it is the minimal
-// crate-granularity shape and is left alone — never "collapsed" further
+// crate-granularity shape and is left alone, never "collapsed" further
 // into the `self` form, which the rule cannot prove is equivalent.
 mod sibling_form {
     use crate::{thing, thing::T};
@@ -88,7 +88,7 @@ pub use dual::dual;
 // Good: a single statement importing the value `dual` *and* an item
 // from the module `dual` is already the minimal crate-granularity form.
 // Collapsing it to `crate::dual::{self, Opts}` would re-import only the
-// module, dropping the value `dual` and breaking the call below — so the
+// module, dropping the value `dual` and breaking the call below, so the
 // rule must leave it alone.
 // See <https://github.com/KSXGitHub/perfectionist/issues/186>.
 mod dual_ns {
@@ -103,7 +103,7 @@ mod dual_ns {
 // Good: a bare crate-root import (`use std;`) can't be folded with a
 // deeper import from the same root (`use std::io::Write;`). The only
 // one-statement form is `std::{self, io::Write}`, whose `self` re-imports
-// the crate alone — so there's no safe one-`use`-per-root shape and the
+// the crate alone, so there's no safe one-`use`-per-root shape and the
 // split is left alone rather than rewritten into a `self` merge.
 mod bare_root_item {
     use std;

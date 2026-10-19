@@ -11,7 +11,7 @@
 // re-exports and alias re-exports form two leading blocks, every private
 // import collapses into one block below, and a `#[cfg(...)]`-gated private
 // import still forms a trailing block. A cfg-gated alias re-export stays
-// in the alias sub-block — visibility/kind outranks cfg gating. Each run
+// in the alias sub-block, visibility and kind outranking cfg gating. Each run
 // is isolated by a marker item, and the submodules and aliases use
 // distinct names so the file still compiles.
 
@@ -38,7 +38,7 @@ use std::io::stdin;
 
 struct Sep1;
 
-// Bad: all four blocks present but interleaved — a submodule re-export, an
+// Bad: all four blocks present but interleaved: a submodule re-export, an
 // alias re-export, the single private block, and a trailing cfg private
 // import. The cfg-gated alias re-export stays in the alias block.
 use std::cmp::Ordering;

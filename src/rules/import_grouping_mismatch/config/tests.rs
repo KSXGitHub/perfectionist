@@ -26,9 +26,9 @@ fn style_values_deserialize() {
 fn missing_required_fields_are_an_error() {
     assert!("".pipe(toml::from_str::<Config>).is_err());
     assert!(r#"order = ["std"]"#.pipe(toml::from_str::<Config>).is_err());
-    // `style` set but `reexports` missing — still an error.
+    // `style` set but `reexports` missing is still an error.
     assert!(r#"style = "multi_block""#.pipe(toml::from_str::<Config>).is_err());
-    // `reexports` set but `style` missing — still an error.
+    // `reexports` set but `style` missing is still an error.
     assert!(r#"reexports = "grouped""#.pipe(toml::from_str::<Config>).is_err());
 }
 
