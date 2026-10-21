@@ -14,10 +14,17 @@ use rustc_hir::HirId;
 use rustc_lint::LateContext;
 use rustc_span::Span;
 
-/// Why a dash in running prose is worth a warning. Stated once, since
-/// it reads the same for every dash the rule flags.
-const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
-                            to work out, and marks a sentence carrying more than one idea";
+/// Why a dash in running prose is worth a warning: one line per
+/// reason, since no one of them carries the whole case. Stated once
+/// each, as they read the same for every dash the rule flags.
+const REASON_NOTES: &[&str] = &[
+    "a dash between two clauses leaves their relationship for the reader to work out, and marks a \
+     sentence carrying more than one idea",
+    "a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, \
+     so a dash in the place of one of them says only that some relationship holds",
+    "a comment or a doc comment is technical writing rather than editorial prose: it is read for \
+     ease of understanding, and the dash is a device of voice",
+];
 
 /// What to do about it: the caution first, then the principle, then
 /// one line per situation, each stating the condition it holds under.
@@ -53,7 +60,9 @@ pub(super) fn emit_dash(
         span,
         format!("{} in {surface}", dash.description()),
         |diag| {
-            diag.note(ELISION_NOTE);
+            for note in REASON_NOTES {
+                diag.note(*note);
+            }
             match &help {
                 Some(help) => {
                     diag.help(help.clone());

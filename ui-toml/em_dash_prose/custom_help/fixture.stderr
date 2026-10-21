@@ -5,6 +5,8 @@ LL | // Wrote the report — 3 warnings remain.
    |                     ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: see the house style guide at docs/style.md
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 

@@ -5,6 +5,8 @@ LL | // Rebuilt the index — the previous one was stale.
    |                      ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -19,6 +21,8 @@ LL | // Retrying in a moment – the server was busy.
    |                         ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -32,6 +36,8 @@ LL | // Wrote the report -- 3 warnings remain.
    |                     ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -45,6 +51,8 @@ LL | /* Walks the tree — and returns the total size. */
    |                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -58,6 +66,8 @@ LL |  * Loads the lockfile — and checks it against the manifest.
    |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -71,6 +81,8 @@ LL |  * Counts the entries — the transitive ones included.
    |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -84,6 +96,8 @@ LL | /// Walks the tree — and returns the total size.
    |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -97,6 +111,8 @@ LL | /// Reads the manifest -- and returns its package name.
    |                        ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -110,6 +126,8 @@ LL | /// Loads the lockfile — and checks it against the manifest.
    |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -123,6 +141,8 @@ LL | /// Counts the entries — the transitive ones included.
    |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -136,6 +156,8 @@ LL | /** Walks the tree — and returns the total size. */
    |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -149,6 +171,8 @@ LL | /// > The profile is read once — later edits are ignored.
    |                                ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -162,6 +186,8 @@ LL |     //! Rebuilds the index — the previous one was stale.
    |                            ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
@@ -175,6 +201,8 @@ LL |     // > The parser is stricter now — malformed input is rejected.
    |                                     ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
    = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
