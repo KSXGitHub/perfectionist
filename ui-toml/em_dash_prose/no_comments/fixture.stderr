@@ -6,6 +6,7 @@ LL |     println!("Loaded the manifest — 12 entries were skipped.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it

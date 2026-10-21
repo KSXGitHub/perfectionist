@@ -19,15 +19,18 @@ use rustc_span::Span;
 const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
                             to work out, and marks a sentence carrying more than one idea";
 
-/// What to do about it: the caution first, then one line per
-/// situation, each stating the condition it holds under. None of them
-/// commands a fix. Which one suits a given sentence depends on what
-/// the dash is standing in for, which the rule cannot see, so the
-/// lines inform the reader's judgement rather than direct it. All of
-/// them are replaced wholesale by the `help` configuration field.
+/// What to do about it: the caution first, then the principle, then
+/// one line per situation, each stating the condition it holds under.
+/// None of them commands a fix. Which one suits a given sentence
+/// depends on what the dash is standing in for, which the rule cannot
+/// see, so the lines inform the reader's judgement rather than direct
+/// it. All of them are replaced wholesale by the `help` configuration
+/// field.
 const RESTRUCTURE_HELPS: &[&str] = &[
     "a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the \
      sentence is a judgement this warning cannot make",
+    "one idea per sentence is what reads easily, so a dash is often a sign the sentence wants \
+     dividing rather than repunctuating",
     "where the clause after the dash elaborates the one before it, a colon names that relationship",
     "where both clauses stand on their own, a semicolon joins them or a full stop makes them two \
      sentences",

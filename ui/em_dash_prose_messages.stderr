@@ -6,6 +6,7 @@ LL |     println!("Loaded the manifest — 12 entries were skipped.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -19,6 +20,7 @@ LL |     eprintln!("The cache is stale – rebuilding it now.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -31,6 +33,7 @@ LL |     let _ = format!("Wrote the report — 3 warnings remain.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -43,6 +46,7 @@ LL |     std::println!("Parsed the tree — 4 levels deep.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -55,6 +59,7 @@ LL |     let _ = writeln!(buffer, "Finished the sweep — 7 files changed.");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -67,6 +72,7 @@ LL |     panic!("the lockfile is corrupt — delete it and retry");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -79,6 +85,7 @@ LL |     todo!("handle the nested case — the flat one works");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -91,6 +98,7 @@ LL |     unimplemented!("the remote backend — only the local one is wired");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -103,6 +111,7 @@ LL |     unreachable!("the parser rejects this input — nothing reaches here");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -115,6 +124,7 @@ LL |     assert!(flag, "the flag must be set — the caller forgot it");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -127,6 +137,7 @@ LL |     assert_eq!(left, right, "the counts diverged — check the filter");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -139,6 +150,7 @@ LL |     let _: i32 = Some(1).expect("the config is missing a profile — add on
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
@@ -151,6 +163,7 @@ LL |         .expect_err("the parse should have failed — the input is empty");
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
    = help: where the clause after the dash elaborates the one before it, a colon names that relationship
    = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
    = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
