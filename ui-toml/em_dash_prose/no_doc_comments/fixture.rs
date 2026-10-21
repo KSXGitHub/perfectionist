@@ -3,7 +3,7 @@
 
 // Bad: a regular comment is still scanned, and this em dash — fires.
 
-/// Good: a doc comment is skipped, so this em dash — stays.
+/// Not flagged: a doc comment is skipped, so this em dash — stays.
 pub fn documented() {}
 
 fn main() {}

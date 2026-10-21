@@ -3,9 +3,9 @@
 // surface is untouched and still fires, which is what tells a skipped
 // walk from a rule that has stopped running.
 
-// Good: a regular comment is skipped, so this em dash — stays.
+// Not flagged: a regular comment is skipped, so this em dash — stays.
 
-/// Good: a doc comment is skipped, so this em dash — stays.
+/// Not flagged: a doc comment is skipped, so this em dash — stays.
 pub fn documented() {}
 
 fn main() {

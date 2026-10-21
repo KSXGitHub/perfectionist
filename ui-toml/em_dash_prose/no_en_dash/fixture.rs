@@ -2,6 +2,6 @@
 // its own and is reported either way.
 
 // Bad: an em dash — is reported whatever the knobs say.
-// Good: an en dash – is left alone.
+// Not flagged: an en dash – is left alone.
 
 fn main() {}

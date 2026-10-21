@@ -2,6 +2,6 @@
 // U+2014 has no knob of its own and is reported either way.
 
 // Bad: an em dash — is reported whatever the knobs say.
-// Good: ASCII hyphens -- are left alone.
+// Not flagged: ASCII hyphens -- are left alone.
 
 fn main() {}

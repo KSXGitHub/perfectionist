@@ -18,12 +18,12 @@
 
 extern crate external_message_macro;
 
-// Good: the panic message belongs to the macro's own crate.
+// Not flagged: the panic message belongs to the macro's own crate.
 fn _external_panic() {
     external_message_macro::bail_with_a_dash!();
 }
 
-// Good: the expect message belongs to the macro's own crate.
+// Not flagged: the expect message belongs to the macro's own crate.
 fn _external_expect() {
     let value = Some(1);
     let _: i32 = external_message_macro::expect_with_a_dash!(value);

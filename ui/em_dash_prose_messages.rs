@@ -14,10 +14,10 @@ fn _writers(path: &str, buffer: &mut String) {
     std::println!("Bad: a qualified call's message with a dash — here.");
     // The ASCII hyphen run is left alone inside every string literal,
     // where it is as likely a separator as a dash.
-    println!("Good: a printed message holding -- an option separator.");
+    println!("Not flagged: a printed message holding -- an option separator.");
     // A backtick-quoted run inside a message is a quotation, so the
     // dash in it is not the author's to restructure.
-    println!("Good: a printed message quoting `a dash — verbatim`.");
+    println!("Not flagged: a printed message quoting `a dash — verbatim`.");
     let _ = writeln!(buffer, "Bad: a written message with a dash — here.");
 }
 
@@ -65,7 +65,7 @@ impl Settings {
 
 // An `expect` on any other type is not a panic message.
 fn _unrelated_expect() {
-    Settings.expect("Good: another type's expect message with — here.");
+    Settings.expect("Not flagged: another type's expect message with — here.");
 }
 
 // The rule reads the message from the source text of a string literal,
@@ -99,8 +99,8 @@ fn _expect_err_taking_a_code() {
 // Both message surfaces read the literal's source text rather than its
 // value, so the escape reaches each of them as an escape.
 fn _escaped() {
-    println!("Good: a printed message spelling the escape \u{2014} out.");
-    let _: i32 = Some(1).expect("Good: an expect message spelling it \u{2014} out.");
+    println!("Not flagged: a printed message spelling the escape \u{2014} out.");
+    let _: i32 = Some(1).expect("Not flagged: an expect message spelling it \u{2014} out.");
 }
 
 fn main() {}
