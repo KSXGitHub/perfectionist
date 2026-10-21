@@ -24,7 +24,8 @@
 // Not flagged: a quotation reproduces someone else's words.
 // The log said "build failed — see above" and stopped.
 
-// Not flagged: a single-quoted span is a quotation too.
+// Not flagged: a single-quoted span reproduces someone else's words
+// as much as a double-quoted one.
 // The log said 'build failed — see above' and stopped.
 
 // Not flagged: a code span holds code rather than prose.
@@ -57,7 +58,7 @@ fn _doc_ascii_run() {}
 fn _doc_several_lines() {}
 
 // Good: a colon names the relationship a dash would have left out.
-/// Walks the tree: hidden directories are included too.
+/// Walks the tree: hidden directories are included.
 fn _doc_colon() {}
 
 // Bad: a `/** */` doc comment is scanned like a `///` one.

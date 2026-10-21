@@ -23,7 +23,8 @@ fn _writers(path: &str, buffer: &mut String) {
     // Not flagged: a backtick-quoted run inside a message is a
     // quotation, so the dash in it is not the author's to restructure.
     println!("The log says `build failed — see above`.");
-    // Bad: a message written into a buffer is prose too.
+    // Bad: a message written into a buffer is prose the program shows
+    // its user.
     let _ = writeln!(buffer, "Finished the sweep — 7 files changed.");
 }
 
@@ -60,7 +61,7 @@ fn _asserts(flag: bool, left: i32, right: i32) {
 fn _expects() {
     // Bad: `expect` on an `Option` takes a panic message.
     let _: i32 = Some(1).expect("the config is missing a profile — add one");
-    // Bad: `expect_err` on a `Result` takes one as well.
+    // Bad: `expect_err` on a `Result` takes a panic message.
     let _: () = Result::<i32, ()>::Err(())
         .expect_err("the parse should have failed — the input is empty");
     // Good: the message names the cause, so it needs no dash.

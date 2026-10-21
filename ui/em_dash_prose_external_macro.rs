@@ -9,10 +9,10 @@
 // `report_in_external_macro: false` on the lint, which the dash span
 // reaches because it inherits the literal's `SyntaxContext`.
 //
-// The local macro at the bottom is the control: the same shape written
-// in this crate is reported, so the rule does reach a message that
-// arrives through an expansion and the two external cases are silent
-// for the reason stated rather than because nothing is scanned.
+// The local `expect_locally!` macro is the control: the same shape
+// written in this crate is reported, so the rule does reach a message
+// that arrives through an expansion and the two external cases are
+// silent for the reason stated rather than because nothing is scanned.
 
 #![allow(dead_code, reason = "ui fixture")]
 

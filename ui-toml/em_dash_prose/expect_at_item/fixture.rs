@@ -17,7 +17,8 @@
 /// Walks the tree — and returns the total size.
 pub fn documented() {}
 
-// Not flagged: a module-scope `expect` must fulfil too.
+// Not flagged: a module-scope `expect` suppresses the finding and is
+// fulfilled by it.
 mod inner {
     #![cfg_attr(
         dylint_lib = "perfectionist",
