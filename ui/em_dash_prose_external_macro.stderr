@@ -1,0 +1,21 @@
+warning: em dash `—` in `expect` message
+  --> $DIR/em_dash_prose_external_macro.rs:LL:CC
+   |
+LL |         $value.expect("the value is unset — set it first")
+   |                                           ^
+...
+LL |     let _: i32 = expect_locally!(value);
+   |                  ---------------------- in this macro invocation
+   |
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = note: a colon, a semicolon, a comma and a pair of parentheses each name a particular relationship, so a dash in the place of one of them says only that some relationship holds
+   = note: a comment or a doc comment is technical writing rather than editorial prose: it is read for ease of understanding, and the dash is a device of voice
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: one idea per sentence is what reads easily, so a dash is often a sign the sentence wants dividing rather than repunctuating
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
+   = note: `#[warn(perfectionist::em_dash_prose)]` on by default
+   = note: this warning originates in the macro `expect_locally` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: N warnings emitted

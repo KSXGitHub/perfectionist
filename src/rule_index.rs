@@ -109,6 +109,7 @@ rule_index! {
     cloning_getter => CloningGetter,
     core_instead_of_std => CoreInsteadOfStd,
     costless_to_conversion => CostlessToConversion,
+    em_dash_prose => EmDashProse,
     excessive_cognitive_complexity => ExcessiveCognitiveComplexity,
     excessive_inline_tests => ExcessiveInlineTests,
     excessive_nesting => ExcessiveNesting,

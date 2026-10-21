@@ -1,12 +1,10 @@
-use crate::common::DefaultState;
+use crate::common::{DefaultState, receiver_is_option_or_result};
 use crate::rule_index::{Register, rule};
 use clippy_utils::macros::root_macro_call_first_node;
-use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::sym;
 
 mod config;
 mod scan;
@@ -146,13 +144,4 @@ impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInPanicMessages {
             }
         }
     }
-}
-
-fn receiver_is_option_or_result<'tcx>(
-    lint_context: &LateContext<'tcx>,
-    receiver: &Expr<'tcx>,
-) -> bool {
-    let receiver_type = lint_context.typeck_results().expr_ty(receiver).peel_refs();
-    receiver_type.is_diag_item(lint_context, sym::Option)
-        || receiver_type.is_diag_item(lint_context, sym::Result)
 }

@@ -225,8 +225,6 @@ pattern that several rules call out by reference — live in
   default; opt in and choose `transparent` or `from_into`.
 
 ### Documentation
-- [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
-  and string literals reachable from `format!` / `println!` style macros.
 - [`commit-id-length-mismatch.md`](./commit-id-length-mismatch.md) — enforce a
   consistent SHA length for commit IDs that appear in forge URLs.
   Covers file references, single-commit views (`/commit/<sha>`),
@@ -260,8 +258,9 @@ external state, or judgement calls that a static lint cannot evaluate:
 - **Run `cargo fmt`, `cargo clippy`, and `cargo test`** before submitting —
   CI / pre-commit concerns, not source patterns.
 - **Build with no, default, and all features** — driven by CI matrix.
-- **Writing-style rules** beyond em dashes (formal tone, complete sentences,
-  no long parentheticals) — judgement-based prose review.
+- **Writing-style rules** beyond the dashes
+  `perfectionist::em_dash_prose` reports (formal tone, complete
+  sentences, no long parentheticals) — judgement-based prose review.
 - **"Use the most encompassing type" case** of the pacquet guide's
   owned-vs-borrowed section is already covered by
   `clippy::ptr_arg` (flags `&PathBuf` / `&String` / `&Vec<_>` and

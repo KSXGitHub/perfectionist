@@ -54,6 +54,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
 
+- [`em_dash_prose`](./em_dash_prose.md) (default: `active`).
+
+  dash standing between two clauses; restructure the sentence instead
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum
