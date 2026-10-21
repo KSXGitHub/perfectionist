@@ -19,29 +19,15 @@ struct Config {
     /// path. Defaults to `true`.
     scan_macro_messages: bool,
     /// Flag U+2013 EN DASH (`–`) wherever U+2014 EM DASH is
-    /// flagged. Defaults to `true`: the en dash reads as a narrower
-    /// em dash in running prose and elides the same clause
-    /// relationship. Turn it off in a project that writes numeric
-    /// ranges as `10–20`.
+    /// flagged, a numeric range like `10–20` included. Defaults to
+    /// `true`.
     flag_en_dash: bool,
     /// Flag a run of two or more ASCII hyphens with a space on each
-    /// side (`a -- b`), the typewriter spelling of an em dash.
-    /// Defaults to `true`.
-    ///
-    /// The space on each side is what keeps `--help`, `-->`, `<!--`
-    /// and a run that opens or closes a line out of the count. A run
-    /// inside a quotation or a code region is left alone for the same
-    /// reason the Unicode dashes are. Comments are the only surface
-    /// this knob reaches: inside a string literal a `--` is as often
-    /// another language's comment marker or an end-of-options
-    /// separator as it is a dash, so string literals are left to the
-    /// Unicode dashes whatever this is set to.
+    /// side (`a -- b`), the typewriter spelling of an em dash. Doc
+    /// comments and regular comments only; a run in a message is left
+    /// alone. Defaults to `true`.
     flag_pseudo_em_dash: bool,
-    /// Replacement for the diagnostic's help text, which otherwise
-    /// asks for one idea per sentence. Set it to point at a house
-    /// style guide, or to write the instruction in another
-    /// language. Unset by default, and the note saying what a dash
-    /// leaves the reader to work out stays in place either way.
+    /// Replacement for the diagnostic's help text. Unset by default.
     help: Option<String>,
 }
 

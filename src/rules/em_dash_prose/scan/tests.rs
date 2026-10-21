@@ -36,6 +36,15 @@ fn en_dash_is_reported_only_when_the_policy_asks() {
     assert_eq!(scan("one — two – three", policy), [("—", Dash::Em)]);
 }
 
+/// A Unicode dash is reported wherever it falls, no space required on
+/// either side, so the en dash a numeric range is written with is
+/// reported where the ASCII run spelling of that range is not.
+#[test]
+fn a_numeric_range_written_with_an_en_dash_is_reported() {
+    assert_eq!(scan("10–20", ALL), [("–", Dash::En)]);
+    assert_eq!(scan("10--20", ALL), []);
+}
+
 /// A hyphen run counts only with a space on each side, which is what
 /// separates a dash stand-in from the runs that carry their own
 /// meaning.

@@ -62,6 +62,15 @@ LL | /// Bad: a doc comment with an em dash — and a clause after it.
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
 
+warning: ASCII `--` used as an em dash in doc comment
+  --> $DIR/em_dash_prose.rs:LL:CC
+   |
+LL | /// Bad: a doc comment with ASCII hyphens -- and a clause after it.
+   |                                           ^^
+   |
+   = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
+   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |

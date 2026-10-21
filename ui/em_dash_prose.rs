@@ -20,6 +20,9 @@
 /// Bad: a doc comment with an em dash — and a clause after it.
 fn _doc_em_dash() {}
 
+/// Bad: a doc comment with ASCII hyphens -- and a clause after it.
+fn _doc_ascii_run() {}
+
 /// Bad: the first line of a doc comment with an em dash — here.
 /// Bad: a later line of a doc comment with an em dash — here.
 fn _doc_several_lines() {}
