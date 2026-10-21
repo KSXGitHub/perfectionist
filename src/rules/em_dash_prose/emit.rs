@@ -19,11 +19,20 @@ use rustc_span::Span;
 const ELISION_NOTE: &str = "a dash between two clauses leaves their relationship for the reader \
                             to work out, and marks a sentence carrying more than one idea";
 
-/// What to do about it. Replaced wholesale by the `help`
-/// configuration field.
-const RESTRUCTURE_HELP: &str = "one idea per sentence: split any sentence a reader would have to read twice. A comma, \
-     colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader \
-     is still left to untangle them";
+/// What to do about it: the caution first, then one line per
+/// situation, each stating the condition it holds under. None of them
+/// commands a fix. Which one suits a given sentence depends on what
+/// the dash is standing in for, which the rule cannot see, so the
+/// lines inform the reader's judgement rather than direct it. All of
+/// them are replaced wholesale by the `help` configuration field.
+const RESTRUCTURE_HELPS: &[&str] = &[
+    "a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the \
+     sentence is a judgement this warning cannot make",
+    "where the clause after the dash elaborates the one before it, a colon names that relationship",
+    "where both clauses stand on their own, a semicolon joins them or a full stop makes them two \
+     sentences",
+    "where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it",
+];
 
 pub(super) fn emit_dash(
     lint_context: &LateContext<'_>,
@@ -33,7 +42,7 @@ pub(super) fn emit_dash(
     help: Option<&str>,
 ) {
     let Finding { dash, surface } = finding;
-    let help = help.unwrap_or(RESTRUCTURE_HELP).to_owned();
+    let help = help.map(ToOwned::to_owned);
     span_lint_hir_and_then(
         lint_context,
         EM_DASH_PROSE,
@@ -42,7 +51,16 @@ pub(super) fn emit_dash(
         format!("{} in {surface}", dash.description()),
         |diag| {
             diag.note(ELISION_NOTE);
-            diag.help(help);
+            match &help {
+                Some(help) => {
+                    diag.help(help.clone());
+                }
+                None => {
+                    for help in RESTRUCTURE_HELPS {
+                        diag.help(*help);
+                    }
+                }
+            }
         },
     );
 }

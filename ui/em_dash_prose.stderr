@@ -5,7 +5,10 @@ LL | // Rebuilt the index — the previous one was stale.
    |                      ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
    = note: `#[warn(perfectionist::em_dash_prose)]` on by default
 
 warning: en dash `–` in comment
@@ -15,7 +18,10 @@ LL | // Retrying in a moment – the server was busy.
    |                         ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: ASCII `--` used as an em dash in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -24,7 +30,10 @@ LL | // Wrote the report -- 3 warnings remain.
    |                     ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -33,7 +42,10 @@ LL | /* Walks the tree — and returns the total size. */
    |                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -42,7 +54,10 @@ LL |  * Loads the lockfile — and checks it against the manifest.
    |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -51,7 +66,10 @@ LL |  * Counts the entries — the transitive ones included.
    |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -60,7 +78,10 @@ LL | /// Walks the tree — and returns the total size.
    |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: ASCII `--` used as an em dash in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -69,7 +90,10 @@ LL | /// Reads the manifest -- and returns its package name.
    |                        ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -78,7 +102,10 @@ LL | /// Loads the lockfile — and checks it against the manifest.
    |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -87,7 +114,10 @@ LL | /// Counts the entries — the transitive ones included.
    |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -96,7 +126,10 @@ LL | /** Walks the tree — and returns the total size. */
    |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -105,7 +138,10 @@ LL | /// > The profile is read once — later edits are ignored.
    |                                ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -114,7 +150,10 @@ LL |     //! Rebuilds the index — the previous one was stale.
    |                            ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
@@ -123,6 +162,9 @@ LL |     // > The parser is stricter now — malformed input is rejected.
    |                                     ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
-   = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
+   = help: a mechanical swap silences this warning and leaves the phrasing in place; which fix suits the sentence is a judgement this warning cannot make
+   = help: where the clause after the dash elaborates the one before it, a colon names that relationship
+   = help: where both clauses stand on their own, a semicolon joins them or a full stop makes them two sentences
+   = help: where a pair of dashes fences an aside, commas fold it in or a sentence of its own carries it
 
 warning: N warnings emitted
