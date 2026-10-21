@@ -20,14 +20,6 @@ declare_tool_lint! {
     /// produces counts towards that. A `let` and the value it feeds are
     /// already two.
     ///
-    /// A method that merely shares an `Iterator` method's name is left
-    /// alone. The rule asks the type system, not the spelling. A
-    /// parallel iterator's `map` and an asynchronous stream's are left
-    /// alone for that reason.
-    ///
-    /// A callback is measured only where the author's own source shows
-    /// it passed to such a method. A macro's own code is left alone.
-    ///
     /// Enable the rule per crate by adding to `dylint.toml`:
     ///
     /// ```toml
