@@ -3,11 +3,14 @@
 // surface is untouched and still fires, which is what tells a skipped
 // walk from a rule that has stopped running.
 
-// Not flagged: a regular comment is skipped, so this em dash — stays.
+// Not flagged: a regular comment is skipped.
+// Wrote the report — 3 warnings remain.
 
-/// Not flagged: a doc comment is skipped, so this em dash — stays.
+// Not flagged: a doc comment is skipped.
+/// Walks the tree — and returns the total size.
 pub fn documented() {}
 
 fn main() {
-    println!("Bad: a printed message with an em dash — and a clause.");
+    // Bad: the macro-message surface is untouched.
+    println!("Loaded the manifest — 12 entries were skipped.");
 }

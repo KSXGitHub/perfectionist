@@ -1,8 +1,8 @@
 warning: em dash `—` in `println!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     println!("Bad: a printed message with an em dash — and a clause.");
-   |                                                      ^
+LL |     println!("Loaded the manifest — 12 entries were skipped.");
+   |                                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -11,8 +11,8 @@ LL |     println!("Bad: a printed message with an em dash — and a clause.");
 warning: en dash `–` in `eprintln!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     eprintln!("Bad: a printed message with an en dash – and a clause.");
-   |                                                       ^
+LL |     eprintln!("The cache is stale – rebuilding it now.");
+   |                                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -20,8 +20,8 @@ LL |     eprintln!("Bad: a printed message with an en dash – and a clause.");
 warning: em dash `—` in `format!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     let _ = format!("Bad: a formatted message with an em dash — here.");
-   |                                                               ^
+LL |     let _ = format!("Wrote the report — 3 warnings remain.");
+   |                                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -29,8 +29,8 @@ LL |     let _ = format!("Bad: a formatted message with an em dash — here.");
 warning: em dash `—` in `println!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     std::println!("Bad: a qualified call's message with a dash — here.");
-   |                                                                ^
+LL |     std::println!("Parsed the tree — 4 levels deep.");
+   |                                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -38,8 +38,8 @@ LL |     std::println!("Bad: a qualified call's message with a dash — here.");
 warning: em dash `—` in `writeln!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     let _ = writeln!(buffer, "Bad: a written message with a dash — here.");
-   |                                                                  ^
+LL |     let _ = writeln!(buffer, "Finished the sweep — 7 files changed.");
+   |                                                  ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -47,8 +47,8 @@ LL |     let _ = writeln!(buffer, "Bad: a written message with a dash — here."
 warning: em dash `—` in `panic!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     panic!("Bad: a panic message with an em dash — and a clause.");
-   |                                                  ^
+LL |     panic!("the lockfile is corrupt — delete it and retry");
+   |                                     ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -56,8 +56,8 @@ LL |     panic!("Bad: a panic message with an em dash — and a clause.");
 warning: em dash `—` in `todo!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     todo!("Bad: a todo message with an em dash — and a clause.");
-   |                                                ^
+LL |     todo!("handle the nested case — the flat one works");
+   |                                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -65,8 +65,8 @@ LL |     todo!("Bad: a todo message with an em dash — and a clause.");
 warning: em dash `—` in `unimplemented!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     unimplemented!("Bad: an unimplemented message with a dash — here.");
-   |                                                               ^
+LL |     unimplemented!("the remote backend — only the local one is wired");
+   |                                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -74,8 +74,8 @@ LL |     unimplemented!("Bad: an unimplemented message with a dash — here.");
 warning: em dash `—` in `unreachable!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     unreachable!("Bad: an unreachable message with a dash — here.");
-   |                                                           ^
+LL |     unreachable!("the parser rejects this input — nothing reaches here");
+   |                                                 ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -83,8 +83,8 @@ LL |     unreachable!("Bad: an unreachable message with a dash — here.");
 warning: em dash `—` in `assert!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     assert!(flag, "Bad: an assertion message with a dash — here.");
-   |                                                          ^
+LL |     assert!(flag, "the flag must be set — the caller forgot it");
+   |                                         ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -92,8 +92,8 @@ LL |     assert!(flag, "Bad: an assertion message with a dash — here.");
 warning: em dash `—` in `assert_eq!` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     assert_eq!(left, right, "Bad: a comparison message with — here.");
-   |                                                             ^
+LL |     assert_eq!(left, right, "the counts diverged — check the filter");
+   |                                                  ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -101,8 +101,8 @@ LL |     assert_eq!(left, right, "Bad: a comparison message with — here.");
 warning: em dash `—` in `expect` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |     let _: i32 = Some(1).expect("Bad: an expect message with a dash — here.");
-   |                                                                     ^
+LL |     let _: i32 = Some(1).expect("the config is missing a profile — add one");
+   |                                                                  ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -110,8 +110,8 @@ LL |     let _: i32 = Some(1).expect("Bad: an expect message with a dash — her
 warning: em dash `—` in `expect_err` message
   --> $DIR/em_dash_prose_messages.rs:LL:CC
    |
-LL |         .expect_err("Bad: an expect_err message with a dash — here.");
-   |                                                             ^
+LL |         .expect_err("the parse should have failed — the input is empty");
+   |                                                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them

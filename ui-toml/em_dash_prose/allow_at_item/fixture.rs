@@ -13,17 +13,19 @@
     )
 )]
 
+// Not flagged: the per-item `allow` suppresses this item's finding.
 #[cfg_attr(
     dylint_lib = "perfectionist",
     allow(
         perfectionist::em_dash_prose,
-        reason = "quotes the dash on purpose"
+        reason = "this item's documentation uses the dash on purpose"
     )
 )]
-/// Allowed here, so this em dash — is not flagged.
+/// Walks the tree — and returns the total size.
 pub fn allowed() {}
 
-/// But this em dash — is still flagged.
+// Bad: a sibling item carrying no attribute still fires.
+/// Reads the manifest — and returns its package name.
 pub fn flagged() {}
 
 fn main() {}

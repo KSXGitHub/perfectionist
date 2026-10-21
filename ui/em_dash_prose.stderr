@@ -1,8 +1,8 @@
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | // Bad: a line comment with an em dash — and a clause after it.
-   |                                        ^
+LL | // Rebuilt the index — the previous one was stale.
+   |                      ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -11,8 +11,8 @@ LL | // Bad: a line comment with an em dash — and a clause after it.
 warning: en dash `–` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | // Bad: a line comment with an en dash – and a clause after it.
-   |                                        ^
+LL | // Retrying in a moment – the server was busy.
+   |                         ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -20,8 +20,8 @@ LL | // Bad: a line comment with an en dash – and a clause after it.
 warning: ASCII `--` used as an em dash in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | // Bad: a line comment with ASCII hyphens -- and a clause after it.
-   |                                           ^^
+LL | // Wrote the report -- 3 warnings remain.
+   |                     ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -29,8 +29,8 @@ LL | // Bad: a line comment with ASCII hyphens -- and a clause after it.
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /* Bad: a block comment with an em dash — and a clause after it. */
-   |                                         ^
+LL | /* Walks the tree — and returns the total size. */
+   |                   ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -38,8 +38,8 @@ LL | /* Bad: a block comment with an em dash — and a clause after it. */
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL |  * Bad: the first line of a block comment with an em dash — here.
-   |                                                           ^
+LL |  * Loads the lockfile — and checks it against the manifest.
+   |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -47,8 +47,8 @@ LL |  * Bad: the first line of a block comment with an em dash — here.
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL |  * Bad: a later line of a block comment with an em dash — here.
-   |                                                         ^
+LL |  * Counts the entries — the transitive ones included.
+   |                       ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -56,8 +56,8 @@ LL |  * Bad: a later line of a block comment with an em dash — here.
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /// Bad: a doc comment with an em dash — and a clause after it.
-   |                                        ^
+LL | /// Walks the tree — and returns the total size.
+   |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -65,8 +65,8 @@ LL | /// Bad: a doc comment with an em dash — and a clause after it.
 warning: ASCII `--` used as an em dash in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /// Bad: a doc comment with ASCII hyphens -- and a clause after it.
-   |                                           ^^
+LL | /// Reads the manifest -- and returns its package name.
+   |                        ^^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -74,8 +74,8 @@ LL | /// Bad: a doc comment with ASCII hyphens -- and a clause after it.
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /// Bad: the first line of a doc comment with an em dash — here.
-   |                                                          ^
+LL | /// Loads the lockfile — and checks it against the manifest.
+   |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -83,8 +83,8 @@ LL | /// Bad: the first line of a doc comment with an em dash — here.
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /// Bad: a later line of a doc comment with an em dash — here.
-   |                                                        ^
+LL | /// Counts the entries — the transitive ones included.
+   |                        ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -92,8 +92,8 @@ LL | /// Bad: a later line of a doc comment with an em dash — here.
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /** Bad: a `/** */` doc comment with an em dash — and a clause. */
-   |                                                 ^
+LL | /** Walks the tree — and returns the total size. */
+   |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -101,8 +101,8 @@ LL | /** Bad: a `/** */` doc comment with an em dash — and a clause. */
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL | /// > An alert carries a remark — and a clause after it.
-   |                                 ^
+LL | /// > The profile is read once — later edits are ignored.
+   |                                ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -110,8 +110,8 @@ LL | /// > An alert carries a remark — and a clause after it.
 warning: em dash `—` in doc comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL |     //! Bad: an inner doc comment with an em dash — and a clause.
-   |                                                   ^
+LL |     //! Rebuilds the index — the previous one was stale.
+   |                            ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
@@ -119,8 +119,8 @@ LL |     //! Bad: an inner doc comment with an em dash — and a clause.
 warning: em dash `—` in comment
   --> $DIR/em_dash_prose.rs:LL:CC
    |
-LL |     // > A line comment is not markdown — and holds no quotation.
-   |                                         ^
+LL |     // > The parser is stricter now — malformed input is rejected.
+   |                                     ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them

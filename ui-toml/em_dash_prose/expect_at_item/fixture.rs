@@ -5,16 +5,19 @@
 #![feature(register_tool)]
 #![cfg_attr(dylint_lib = "perfectionist", register_tool(perfectionist))]
 
+// Not flagged: the per-item `expect` suppresses the finding and is
+// fulfilled by it.
 #[cfg_attr(
     dylint_lib = "perfectionist",
     expect(
         perfectionist::em_dash_prose,
-        reason = "quotes the dash on purpose"
+        reason = "this item's documentation uses the dash on purpose"
     )
 )]
-/// Mentions the em dash — on purpose.
+/// Walks the tree — and returns the total size.
 pub fn documented() {}
 
+// Not flagged: a module-scope `expect` must fulfil too.
 mod inner {
     #![cfg_attr(
         dylint_lib = "perfectionist",
@@ -24,7 +27,7 @@ mod inner {
         )
     )]
 
-    //! Inner module doc comment with an em dash — is suppressed here.
+    //! Rebuilds the index — the previous one was stale.
 }
 
 fn main() {}

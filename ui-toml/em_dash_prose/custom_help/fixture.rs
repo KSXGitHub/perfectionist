@@ -1,6 +1,7 @@
-// `help = "..."` replaces the help text. The note saying what a dash
-// leaves the reader to work out stays in place.
+// `help = "..."` replaces the help text in the diagnostic. The note
+// saying what the dash left out stays in place.
 
-// Bad: the help text in the diagnostic comes from the knob — not the default.
+// Bad: the help text comes from the knob rather than the default.
+// Wrote the report — 3 warnings remain.
 
 fn main() {}

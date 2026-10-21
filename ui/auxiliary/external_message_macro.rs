@@ -11,13 +11,13 @@
 #[macro_export]
 macro_rules! bail_with_a_dash {
     () => {
-        panic!("an external macro's panic message with a dash — here")
+        panic!("the backend is unavailable — retry later")
     };
 }
 
 #[macro_export]
 macro_rules! expect_with_a_dash {
     ($value:expr) => {
-        $value.expect("an external macro's expect message with a dash — here")
+        $value.expect("the handle is closed — reopen it")
     };
 }

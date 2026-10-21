@@ -1,8 +1,8 @@
 warning: em dash `—` in `expect` message
   --> $DIR/em_dash_prose_external_macro.rs:LL:CC
    |
-LL |         $value.expect("a local macro's expect message with a dash — here")
-   |                                                                   ^
+LL |         $value.expect("the value is unset — set it first")
+   |                                           ^
 ...
 LL |     let _: i32 = expect_locally!(value);
    |                  ---------------------- in this macro invocation

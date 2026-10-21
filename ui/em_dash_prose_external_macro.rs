@@ -33,7 +33,7 @@ macro_rules! expect_locally {
     ($value:expr) => {
         // Bad: a local macro's message is in this crate, so rewording
         // it is the author's to do.
-        $value.expect("a local macro's expect message with a dash — here")
+        $value.expect("the value is unset — set it first")
     };
 }
 

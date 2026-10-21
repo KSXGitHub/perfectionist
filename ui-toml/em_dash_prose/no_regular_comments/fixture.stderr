@@ -1,8 +1,8 @@
 warning: em dash `—` in doc comment
   --> $DIR/fixture.rs:LL:CC
    |
-LL | /// Bad: a doc comment is still scanned, and this em dash — fires.
-   |                                                           ^
+LL | /// Walks the tree — and returns the total size.
+   |                    ^
    |
    = note: a dash between two clauses leaves their relationship for the reader to work out, and marks a sentence carrying more than one idea
    = help: one idea per sentence: split any sentence a reader would have to read twice. A comma, colon or semicolon in the dash's place leaves both ideas in the one sentence, so the reader is still left to untangle them
