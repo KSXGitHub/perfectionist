@@ -886,6 +886,47 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthExpectMessage)]` + `#[synth_expect_message]` →
+/// `fn _synth_expect_message() { let _ = Some(1u32).expect(".."); }`
+/// with every token moved to the user-span of `synth_expect_message`,
+/// the message literal among them. A rule that reads the span's own
+/// source text finds the attribute identifier there rather than a
+/// string literal.
+#[proc_macro_derive(SynthExpectMessage, attributes(synth_expect_message))]
+pub fn synth_expect_message(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_expect_message")
+        .expect("`#[derive(SynthExpectMessage)]` requires a `#[synth_expect_message]`");
+    let body = respan(
+        r#"let _ = Some(1u32).expect("a synthesised message with a dash — here");"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    let mut out: TokenStream = "fn _synth_expect_message()"
+        .parse()
+        .expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
+/// `#[derive(SynthDocComment)]` + `#[synth_doc_comment]` →
+/// `const _: () = { #[doc = ".."] pub struct Documented; };` with
+/// every token moved to the user-span of `synth_doc_comment`. The
+/// doc attribute is a token the expansion carries, where a `///` in a
+/// file is text a source-reading scan would have to find on disk.
+#[proc_macro_derive(SynthDocComment, attributes(synth_doc_comment))]
+pub fn synth_doc_comment(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_doc_comment")
+        .expect("`#[derive(SynthDocComment)]` requires a `#[synth_doc_comment]`");
+    let body = respan(
+        r#"#[doc = "a synthesised doc comment with a dash — here"] pub struct Documented;"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_const_block(body)
+}
+
 /// Every token of `stream`, groups walked into, moved to `span`.
 fn respan(stream: TokenStream, span: Span) -> TokenStream {
     stream
