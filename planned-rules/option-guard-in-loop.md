@@ -47,32 +47,33 @@ A `for` loop whose body block has **exactly one statement and no
 tail expression**, that statement being an `if let Some(binding) =
 scrutinee { .. }` with **no `else`**, where:
 
-1. The scrutinee is an expression **derived from the loop binding** —
-   it mentions the loop's pattern bindings. A scrutinee independent of
+1. The scrutinee is an expression **derived from the loop binding**,
+   meaning it mentions the loop's pattern bindings. A scrutinee independent of
    the loop binding is loop-invariant and belongs outside the loop
    entirely, which is a different complaint and not this rule's.
 2. The scrutinee is **not the loop binding itself**. That degenerate
-   case — where the element already *is* the `Option` — is
-   `clippy::manual_flatten`'s, and its `flatten()` suggestion is
-   better than the `filter_map(|x| x)` this rule would produce. Defer
-   to it rather than duplicate it.
+   case, where the element already *is* the `Option`, belongs to
+   `clippy::manual_flatten`. Its `flatten()` suggestion beats the
+   `filter_map(|x| x)` this rule would produce, so defer to it rather
+   than duplicate it.
 3. The body contains no `break`, `continue`, `return` or `?` that
    would escape the loop. Each changes meaning once the body moves
    into a closure, and none can be expressed there.
 
 Emit no suggestion, for the reason its sibling does not: the target
 form is a judgement rather than a fact. Lifting the scrutinee into a
-`filter_map` leaves a choice of what to iterate it with — `for y in
-it.filter_map(f)` keeps the loop and whatever the body needs from it,
-`.for_each(..)` reads as one pipeline but can carry no `break`,
-`continue`, `return` or `?`. The rewrite also moves an expression
+`filter_map` leaves a choice of what to iterate the result with.
+`for y in it.filter_map(f)` keeps the loop and whatever the body
+needs from it. `.for_each(..)` reads as one pipeline, but can carry
+no `break`, `continue`, `return` or `?`. The rewrite also moves an
+expression
 into a closure, which can change when a borrow is taken even where it
 cannot change the result, so there is no spelling the rule could
 print and stand behind.
 
 The help names the step and leaves the shape open:
 
-> **help:** the guard selects rather than decides — lift it into a
+> **help:** the guard selects rather than decides. Lift it into a
 > `filter_map` on the iteratee and let the loop body do only the work
 >
 > **help:** carry through whatever else the pattern bound, and keep a
@@ -205,8 +206,8 @@ author's call, not a fix to be made unattended.
 ## Interaction with sibling rules
 
 - [`loop-in-option-guard`](./loop-in-option-guard.md) is the mirror
-  image — an `if let` *around* a `for` rather than inside it. A shape
-  that nests both triggers both, each on its own level.
+  image, with an `if let` *around* a `for` rather than inside it. A
+  shape that nests both triggers both, each on its own level.
 - `clippy::manual_flatten` covers the degenerate case where the loop
   element itself is the `Option`, and this rule skips it by design
   (see [What to lint](#what-to-lint)). Outside that case Clippy is
@@ -221,9 +222,9 @@ author's call, not a fix to be made unattended.
   ([`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs))
   picks up where this rule's help stops. The `filter_map` it asks for
   carries whatever the guard's scrutinee was, so a scrutinee that was
-  itself a composition arrives as a closure doing several things —
-  `filter_map(|x| parse(x).and_then(validate))`, which is among the
-  shapes `splittable_adapter_closure` names. The two compose in that
+  itself a composition arrives as a closure doing several things,
+  such as `filter_map(|x| parse(x).and_then(validate))`. That is
+  among the shapes `splittable_adapter_closure` names. The two compose in that
   order rather than disagreeing: this rule flattens the nesting, and
   `splittable_adapter_closure` splits what the flattening carried
   over.

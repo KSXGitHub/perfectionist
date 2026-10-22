@@ -17,8 +17,9 @@ if let Some(targets) = manifest.get("target").and_then(Value::as_table) {
 ```
 
 `into_iter().flatten()` is the same control flow with the absent
-case folded into the iterator, where it belongs — no items to
-iterate. The scrutinee keeps the name the guard gave it, so the
+case folded into the iterator, where it belongs. An absent
+`Option` yields nothing to iterate. The scrutinee keeps the name
+the guard gave it, so the
 `for` header stays one line:
 
 ```rust
@@ -29,7 +30,8 @@ for (cfg, target) in targets.into_iter().flatten() {
 ```
 
 Folding the scrutinee into the header instead is right only where it
-is already one short expression — `for x in opt.into_iter().flatten()`.
+is already one short expression, as in
+`for x in opt.into_iter().flatten()`.
 A chained one does not fit: rustfmt breaks the header across a line
 per call and leaves the brace on its own, which spends more lines
 than the level it saves.
@@ -58,33 +60,34 @@ An `if let Some(binding) = scrutinee { .. }` expression where:
 1. There is **no `else` branch**. An `else` makes the absent case a
    decision, which is what the rule says this shape lacks.
 2. The block's **only statement** is a `for` loop, and the loop's
-   iteratee is exactly the `binding` — a bare path to it, not an
-   expression derived from it. `for x in binding.values()` is a
+   iteratee is exactly the `binding`, meaning a bare path to it
+   rather than an expression derived from it. `for x in binding.values()` is a
    different shape and is left alone.
 3. The `if let` is in **statement position** and its value is unused,
    so replacing it with a loop is type-correct.
-4. The binding is **not used after the loop** inside the block —
-   condition 2 already implies the block has one statement, so this
-   holds by construction; assert it rather than re-deriving it.
+4. The binding is **not used after the loop** inside the block. A
+   single statement in the block already implies this, so it holds
+   by construction. Assert it rather than re-deriving it.
 
 Emit no suggestion. Which rewrite is right depends on the
-scrutinee, as the [Statement](#statement) shows — folded into the
-header where it is one short expression, bound to a `let` where it is
-a chain — and that is a judgement about the surrounding code rather
-than a fact about the shape. A `MachineApplicable` fix would be
-applied unreviewed by `--fix`, and on a chained scrutinee it makes
-the code worse; rustfmt then bakes the result in. So the diagnostic
+scrutinee: a short one folds into the header, and a chain binds to a
+`let` first. The [Statement](#statement) shows both. That choice is a
+judgement about the surrounding code rather than a fact about the
+shape, so no spelling of it is the rule's to make. A
+`MachineApplicable` fix would be applied unreviewed by `--fix`, and
+on a chained scrutinee it makes the code worse, with rustfmt baking
+the result in. So the diagnostic
 carries help naming both forms and why the second exists, in the
 shape `perfectionist::overly_long_method_chain` uses:
 
-> **help:** an `Option` is already an iterator of at most one item —
-> fold the absent case into the iterator with
+> **help:** an `Option` is already an iterator of at most one item.
+> Fold the absent case into the iterator with
 > `.into_iter().flatten()` where the scrutinee is one short
 > expression
 >
-> **help:** where it is a chain, bind it to a `let` first and iterate
-> the binding — folding it into the `for` header splits the header
-> across a line per call and adds two calls toward
+> **help:** where the scrutinee is a chain, bind it to a `let` first
+> and iterate the binding. Folding a chain into the `for` header
+> splits the header across a line per call, and adds two calls toward
 > `overly_long_method_chain`'s limit
 
 `if let Some(x) = opt` where the loop iterates something *derived*
@@ -158,19 +161,19 @@ disable = ["loop_in_option_guard"]
   `Option` rather than another type with a `Some`-like variant, so a
   late pass it is.
 - **Matching the body.** The `then` block must have exactly one
-  statement and no tail expression — or no statements and a `for`
+  statement and no tail expression, or no statements and a `for`
   tail expression. A `for` desugars to a `loop` inside a `match` in
   HIR, so match on the pre-desugaring form through
   `higher::ForLoop::hir`, which `clippy_utils` provides for exactly
   this.
 - **Matching the iteratee.** Resolve the loop's iteratee to a path
   and compare its `Res` against the `HirId` the `Some` pattern binds.
-  Comparing spans or names is not enough — a shadowing binding of the
+  Comparing spans or names is not enough. A shadowing binding of the
   same name would match textually.
 - **Diagnostic span.** The whole `if let` expression. Emitting no
   rewrite means no snippet to reuse, so no parenthesising question
-  arises in the output — but the help text still names
-  `.into_iter().flatten()`, so
+  arises in the output. The help text still names
+  `.into_iter().flatten()`, though, so
   say `iter()` instead where the loop borrows. Read that from the
   loop's own desugared iteratee (`IntoIterator::into_iter` receiver
   type) rather than from the scrutinee alone: the scrutinee is
@@ -202,8 +205,8 @@ no threshold to tune.
 ## Interaction with sibling rules
 
 - [`option-guard-in-loop`](./option-guard-in-loop.md) is the mirror
-  image — an `if let` *inside* a `for` rather than around it — and
-  the two compose on the shape that nests both, each firing on its
+  image, with an `if let` *inside* a `for` rather than around it.
+  The two compose on the shape that nests both, each firing on its
   own level.
 - No Clippy lint covers this. With `clippy::all`, `clippy::pedantic`
   and `clippy::nursery` enabled together, an `if let Some(..)` whose
