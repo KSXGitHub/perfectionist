@@ -53,6 +53,12 @@ fn spare() -> u32 {
     7
 }
 
+/// The signed counterpart of `spare`, for the defaults written with a
+/// leading minus.
+fn spare_offset() -> i32 {
+    7
+}
+
 // Bad: the default is a call, so the reader carries it as far as the
 // mapper that explains why it is there.
 fn computed_default(width: Option<u32>) -> u32 {
@@ -90,6 +96,12 @@ fn default_without_a_default(width: Option<u8>) -> Wide {
 // whatever it expands to, so the exemption does not reach it.
 fn macro_call_default(width: Option<u32>) -> u32 {
     width.map_or(spare_width!(), |width| width + 1)
+}
+
+// Bad: the negation is over a call rather than a literal, so the
+// exemption does not reach it.
+fn negated_call_default(offset: Option<i32>) -> i32 {
+    offset.map_or(-spare_offset(), |offset| offset + 1)
 }
 
 // Bad: a `&Option<_>` receiver resolves `map_or` through a deref,
