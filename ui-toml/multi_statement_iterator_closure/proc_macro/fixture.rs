@@ -74,10 +74,12 @@ use callback_macros::{
     wrap_in_iterator_call,
 };
 
+// Not flagged: the derive synthesised the callback, user spans and all.
 #[derive(SynthCallback)]
 #[synth_callback]
 struct SynthesisedCallback;
 
+// Bad: the macro rebuilt the signature, so the callback is still the caller's.
 #[rebuilt_signature]
 fn signature_came_from_the_macro() {
     let _ = [1, 2].into_iter().map(|value| {
@@ -86,6 +88,7 @@ fn signature_came_from_the_macro() {
     });
 }
 
+// Bad: the control for `rebuilt_signature`, with nothing coming from the macro.
 #[verbatim]
 fn nothing_came_from_the_macro() {
     let _ = [1, 2].into_iter().map(|value| {
@@ -94,6 +97,7 @@ fn nothing_came_from_the_macro() {
     });
 }
 
+// Not flagged: synthesised code stamped onto a span the caller wrote.
 #[respan_onto_paren]
 fn the_caller_wrote_a_parenthesised_closure() {
     let identity = (|value: i32| {
@@ -102,6 +106,7 @@ fn the_caller_wrote_a_parenthesised_closure() {
     });
 }
 
+// Not flagged: the macro supplied the iterator call around the caller's closure.
 #[wrap_in_iterator_call]
 fn the_caller_wrote_a_plain_closure() {
     let identity = |value| {
@@ -110,6 +115,7 @@ fn the_caller_wrote_a_plain_closure() {
     };
 }
 
+// Not flagged: neither span covers a callback the caller passed to anything.
 #[respan_two_targets]
 fn the_caller_wrote_a_parenthesised_closure_twice() {
     let identity = (|value: i32| {
@@ -118,6 +124,7 @@ fn the_caller_wrote_a_parenthesised_closure_twice() {
     });
 }
 
+// Bad: only the receiver came from the macro, so the callback is the caller's.
 #[synthesise_receiver]
 fn the_receiver_came_from_the_macro() {
     let _ = ITEMS.map(|value| {
@@ -126,6 +133,7 @@ fn the_receiver_came_from_the_macro() {
     });
 }
 
+// Bad: only the argument parentheses lost their span, so the callback is the caller's.
 #[rebuild_argument_group]
 fn the_argument_parentheses_lost_their_span() {
     let _ = [1, 2].into_iter().map(|value| {
@@ -134,6 +142,7 @@ fn the_argument_parentheses_lost_their_span() {
     });
 }
 
+// Not flagged: the caller passed the closure to something other than an iterator method.
 #[substitute_callee]
 fn the_caller_wrote_a_call_to_something_else() {
     let _ = helper(|value| {
