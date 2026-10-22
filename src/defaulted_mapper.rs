@@ -16,7 +16,7 @@ use clippy_utils::res::MaybeDef;
 use clippy_utils::ty::implements_trait;
 use clippy_utils::{is_default_equivalent, is_default_equivalent_call, is_none_expr};
 use rustc_ast::LitKind;
-use rustc_hir::{Expr, ExprKind, RustcVersion};
+use rustc_hir::{Expr, ExprKind, RustcVersion, UnOp};
 use rustc_lint::LateContext;
 use rustc_middle::ty::Ty;
 use rustc_span::{Span, sym};
@@ -131,6 +131,27 @@ fn family(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Family> {
     receiver_type
         .is_diag_item(cx, sym::Result)
         .then_some(Family::Result)
+}
+
+/// Whether `default` is simple enough that meeting it before the
+/// mapper costs the reader nothing: a literal, or a path naming a
+/// value or a function.
+///
+/// A closure is none of those, however short its body, since
+/// `|| fallback()` spells out a call that the path `fallback` says on
+/// its own. Neither is an expression written as a macro call, whatever
+/// it expands to, because the call is what the reader meets.
+pub(crate) fn default_is_simple(default: &Expr<'_>) -> bool {
+    if default.span.from_expansion() {
+        return false;
+    }
+    match default.kind {
+        ExprKind::Lit(_) | ExprKind::Path(_) => true,
+        // A negated numeric literal is one value to the reader, and an
+        // operator over a literal only to the parser.
+        ExprKind::Unary(UnOp::Neg, operand) => matches!(operand.kind, ExprKind::Lit(_)),
+        _ => false,
+    }
 }
 
 /// What a default collapses the whole call into, where one call of the

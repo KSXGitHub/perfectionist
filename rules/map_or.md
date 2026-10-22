@@ -11,9 +11,16 @@
 
 Checks the usage of `map_or(_, _)` on `Option` and `Result`.
 
-Left alone: `map_or_default`, which takes no default; a
-receiver of any other type; and a call an expansion produced,
-though one written as a macro *argument* is flagged.
+A default that is a literal or a path is left alone, since
+meeting such a default before the mapper costs the reader
+nothing. `exempt_simple_default` turns that exemption off. A
+closure is not a simple default, and neither is an expression
+written as a macro call.
+
+Left alone whatever the configuration: `map_or_default`,
+which takes no default; a receiver of any other type; and a
+call an expansion produced, though one written as a macro
+*argument* is flagged.
 
 ## Why restrict this?
 
@@ -48,13 +55,15 @@ same calls for a different fault: a mapper doing several jobs.
 **Avoid:**
 
 ```rust,ignore
-let width = terminal_width.map_or(80, |width| width.saturating_sub(2));
+let width = terminal_width.map_or(fallback_width(), |width| width.saturating_sub(2));
 ```
 
 **Prefer:** the chain, which reads in the order it runs
 
 ```rust,ignore
-let width = terminal_width.map(|width| width.saturating_sub(2)).unwrap_or(80);
+let width = terminal_width
+    .map(|width| width.saturating_sub(2))
+    .unwrap_or_else(fallback_width);
 ```
 
 **Prefer:** a `match`, which names both cases
@@ -62,10 +71,23 @@ let width = terminal_width.map(|width| width.saturating_sub(2)).unwrap_or(80);
 ```rust,ignore
 let width = match terminal_width {
     Some(width) => width.saturating_sub(2),
-    None => 80,
+    None => fallback_width(),
 };
 ```
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::map_or"]`. Every field is optional; the per-field prose below states the default.
+
+### Field: `exempt_simple_default`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Whether a call whose default is a literal or a path
+(`option.map_or(0, mapper)`) is exempt, since meeting such a
+default before the mapper costs the reader nothing. A negated
+numeric literal counts as a literal. A closure does not count,
+however short, and neither does an expression written as a
+macro call. Defaults to `true`; set `false` to flag those
+calls too.

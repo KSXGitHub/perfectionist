@@ -53,12 +53,6 @@ fn result_default(parsed: Result<u32, String>) -> u32 {
     parsed.map_or_else(|error| error.len() as u32, |width| width + 1)
 }
 
-// Bad: `String::new` is what `String`'s `Default` gives, which the fix
-// takes.
-fn constructed_default(name: Option<&str>) -> String {
-    name.map_or_else(String::new, |name| name.to_uppercase())
-}
-
 // Bad: a closure handing back the type's `Default` is what the fix
 // takes.
 fn closure_default(width: Option<u32>) -> u32 {
@@ -76,13 +70,6 @@ fn error_ignored_default(name: Result<&str, String>) -> String {
 // means, which wins over `None` being an `Option`'s own `Default`.
 fn option_none_default(width: Option<u32>) -> Option<u32> {
     width.map_or_else(|| None, |width| width.checked_add(1))
-}
-
-// Bad, and no fix: `Port::new` hands back `Port(8080)` where
-// `Port::default` hands back `Port(0)`, so the call keeps its default
-// and the help names the open remedies.
-fn constructor_that_is_not_the_default(width: Option<u16>) -> Port {
-    width.map_or_else(Port::new, Port)
 }
 
 // Bad: a default closure holding a branch of its own is where the
@@ -128,6 +115,30 @@ fn matched(parsed: Result<u32, String>) -> u32 {
         Err(error) if error.is_empty() => 0,
         Err(_) => 1,
     }
+}
+
+/// A fallback this fixture names rather than spells out, which is the
+/// point-free default the exemption is for.
+fn spare() -> u32 {
+    7
+}
+
+// Not flagged: `String::new` is a path, and the reader holding a named
+// default as far as the mapper costs nothing.
+fn constructed_default(name: Option<&str>) -> String {
+    name.map_or_else(String::new, |name| name.to_uppercase())
+}
+
+// Not flagged: `Port::new` is a path, whatever it hands back, so the
+// exemption takes it before the fix ever weighs its body.
+fn constructor_that_is_not_the_default(width: Option<u16>) -> Port {
+    width.map_or_else(Port::new, Port)
+}
+
+// Not flagged: a function named on its own is a path, where the
+// closure `|| spare()` spelling out the same call is not.
+fn identifier_default(width: Option<u32>) -> u32 {
+    width.map_or_else(spare, |width| width + 1)
 }
 
 // Not flagged: `map_or_default` takes the mapper and nothing else,

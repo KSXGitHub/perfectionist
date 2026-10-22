@@ -37,57 +37,37 @@ type Wide = (u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8);
 
 macro_rules! defaulting {
     ($option:expr) => {
-        $option.map_or(false, |value| value > 1)
+        $option.map_or(bool::default(), |value| value > 1)
     };
 }
 
-// Bad: the default `80` is read before the mapper it stands in for.
-fn literal_default(width: Option<u32>) -> u32 {
-    width.map_or(80, |width| width.saturating_sub(2))
+macro_rules! spare_width {
+    () => {
+        7
+    };
 }
 
-// Bad: `0` is what `u32`'s `Default` gives, so the fix rewrites the
-// call as `map_or_default`.
-fn zero_default(width: Option<u32>) -> u32 {
-    width.map_or(0, |width| width + 1)
+/// A fallback this fixture computes, which is the shape the rule is
+/// about: a default the reader has to hold on to while reading on.
+fn spare() -> u32 {
+    7
 }
 
-// Bad: defaulting an `Option` to `false` is what `is_some_and` means.
-fn option_false_default(width: Option<u32>) -> bool {
-    width.map_or(false, |width| width > 2)
-}
-
-// Bad: defaulting an `Option` to `true` is what `is_none_or` means.
-fn option_true_default(width: Option<u32>) -> bool {
-    width.map_or(true, |width| width > 2)
-}
-
-// Bad: defaulting a `Result` to `false` is what `is_ok_and` means.
-fn result_false_default(width: Result<u32, String>) -> bool {
-    width.map_or(false, |width| width > 2)
-}
-
-// Bad: `Result` has no counterpart of `is_none_or`, so a `true`
-// default takes the chain.
-fn result_true_default(width: Result<u32, String>) -> bool {
-    width.map_or(true, |width| width > 2)
-}
-
-// Bad: defaulting an `Option` to `None` is what `and_then` means.
-fn option_none_default(width: Option<u32>) -> Option<u32> {
-    width.map_or(None, |width| width.checked_add(1))
-}
-
-// Bad: reaching `and_then` from a `Result` would take an `ok()`
-// first, so this default takes the chain.
-fn result_none_default(width: Result<u32, String>) -> Option<u32> {
-    width.map_or(None, |width| width.checked_add(1))
+// Bad: the default is a call, so the reader carries it as far as the
+// mapper that explains why it is there.
+fn computed_default(width: Option<u32>) -> u32 {
+    width.map_or(spare(), |width| width.saturating_sub(2))
 }
 
 // Bad: `String::new()` is what `String`'s `Default` gives, which the
 // fix takes.
 fn constructed_default(name: Option<&str>) -> String {
     name.map_or(String::new(), |name| name.to_uppercase())
+}
+
+// Bad: `Default::default()` says outright what the fix writes.
+fn trait_default(width: Option<u32>) -> u32 {
+    width.map_or(Default::default(), |width| width + 1)
 }
 
 // Bad, and no fix: `Port::new` hands back `Port(8080)` where
@@ -106,21 +86,49 @@ fn default_without_a_default(width: Option<u8>) -> Wide {
     })
 }
 
-// Bad: `Default::default()` says outright what the fix writes.
-fn trait_default(width: Option<u32>) -> u32 {
-    width.map_or(Default::default(), |width| width + 1)
+// Bad: a default written as a macro call is a call to the reader,
+// whatever it expands to, so the exemption does not reach it.
+fn macro_call_default(width: Option<u32>) -> u32 {
+    width.map_or(spare_width!(), |width| width + 1)
 }
 
 // Bad: a `&Option<_>` receiver resolves `map_or` through a deref,
 // since the payload is `Copy`.
 fn through_a_reference(width: &Option<u32>) -> u32 {
-    width.map_or(0, |width| width + 1)
+    width.map_or(spare(), |width| width + 1)
 }
 
 // Bad: a call written as a macro argument carries the author's own
 // span, so it is theirs to fix.
 fn inside_a_macro_argument(width: Option<u32>) {
-    assert!(width.map_or(false, |width| width > 2));
+    assert!(width.map_or(bool::default(), |width| width > 2));
+}
+
+// Not flagged: a literal default is one value, and the reader holding
+// it as far as the mapper costs nothing.
+fn literal_default(width: Option<u32>) -> u32 {
+    width.map_or(80, |width| width.saturating_sub(2))
+}
+
+// Not flagged: a negated numeric literal is a literal to the reader,
+// and an operator over one only to the parser.
+fn negated_literal_default(offset: Option<i32>) -> i32 {
+    offset.map_or(-1, |offset| offset + 1)
+}
+
+// Not flagged: `None` is a path, and the exemption takes paths.
+fn path_default(width: Option<u32>) -> Option<u32> {
+    width.map_or(None, |width| width.checked_add(1))
+}
+
+// Not flagged: a qualified path is a path.
+fn qualified_path_default(width: Option<u32>) -> u32 {
+    width.map_or(u32::MIN, |width| width + 1)
+}
+
+// Not flagged: a binding named on its own is a path.
+fn identifier_default(width: Option<u32>, fallback: u32) -> u32 {
+    width.map_or(fallback, |width| width + 1)
 }
 
 // Good: the chain states the receiver, then the mapper, then what
@@ -153,7 +161,7 @@ fn defaulted_mapper_only(name: Option<&str>) -> usize {
 // Not flagged: the receiver is neither an `Option` nor a `Result`,
 // whatever its own `map_or` is shaped like.
 fn another_receiver(slot: Slot) -> u32 {
-    slot.map_or(0, |value| value + 1)
+    slot.map_or(u32::default(), |value| value + 1)
 }
 
 // Not flagged: the call belongs to the `defaulting!` definition

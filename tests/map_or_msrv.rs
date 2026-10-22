@@ -32,13 +32,14 @@ const REWRITE: &str = "map_or_default(";
 const HELP: &str = "the default is the mapped type's own: `map(...).unwrap_or_default()`";
 
 /// One call per rule, each with the default that earns the rewrite
-/// where the crate is new enough: `0` is a `u32`'s `Default` written
-/// as a value, and `|| 0` is the same default written as a closure.
+/// where the crate is new enough. Neither is a default
+/// `exempt_simple_default` takes: `Default::default()` is a call, and
+/// `|| 0` is a closure.
 const SOURCE: &str = text_block_fnl! {
     r##"#![allow(dead_code, reason = "fixture")]"##
     ""
     "pub fn value_default(width: Option<u32>) -> u32 {"
-    "    width.map_or(0, |width| width + 1)"
+    "    width.map_or(Default::default(), |width| width + 1)"
     "}"
     ""
     "pub fn closure_default(width: Option<u32>) -> u32 {"

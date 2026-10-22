@@ -12,9 +12,16 @@
 Checks the usage of `map_or_else(_, _)` on `Option` and
 `Result`.
 
-Left alone: `map_or_default`, which takes no default; a
-receiver of any other type; and a call an expansion produced,
-though one written as a macro *argument* is flagged.
+A default that is a path is left alone, since meeting such a
+default before the mapper costs the reader nothing.
+`exempt_simple_default` turns that exemption off. A closure is
+not a simple default, however short its body: `|| fallback()`
+spells out a call that the path `fallback` says on its own.
+
+Left alone whatever the configuration: `map_or_default`,
+which takes no default; a receiver of any other type; and a
+call an expansion produced, though one written as a macro
+*argument* is flagged.
 
 ## Why restrict this?
 
@@ -70,4 +77,16 @@ let label = match parsed {
 
 ## Configuration
 
-None.
+Configure via `dylint.toml` under `["perfectionist::map_or_else"]`. Every field is optional; the per-field prose below states the default.
+
+### Field: `exempt_simple_default`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Whether a call whose default is a path
+(`option.map_or_else(String::new, mapper)`) is exempt, since
+meeting such a default before the mapper costs the reader
+nothing. A closure does not count, however short its body, and
+neither does an expression written as a macro call. Defaults to
+`true`; set `false` to flag those calls too.

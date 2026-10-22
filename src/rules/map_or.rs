@@ -1,5 +1,7 @@
 use crate::common::DefaultState;
-use crate::defaulted_mapper::{Collapse, DefaultedCall, MAP_OR_DEFAULT, collapse, defaulted_call};
+use crate::defaulted_mapper::{
+    Collapse, DefaultedCall, MAP_OR_DEFAULT, collapse, default_is_simple, defaulted_call,
+};
 use crate::rule_index::{Register, rule};
 use clippy_utils::diagnostics::{span_lint_and_sugg, span_lint_and_then};
 use clippy_utils::msrvs::Msrv;
@@ -14,9 +16,16 @@ declare_tool_lint! {
     ///
     /// Checks the usage of `map_or(_, _)` on `Option` and `Result`.
     ///
-    /// Left alone: `map_or_default`, which takes no default; a
-    /// receiver of any other type; and a call an expansion produced,
-    /// though one written as a macro *argument* is flagged.
+    /// A default that is a literal or a path is left alone, since
+    /// meeting such a default before the mapper costs the reader
+    /// nothing. `exempt_simple_default` turns that exemption off. A
+    /// closure is not a simple default, and neither is an expression
+    /// written as a macro call.
+    ///
+    /// Left alone whatever the configuration: `map_or_default`,
+    /// which takes no default; a receiver of any other type; and a
+    /// call an expansion produced, though one written as a macro
+    /// *argument* is flagged.
     ///
     /// ### Why restrict this?
     ///
@@ -51,13 +60,15 @@ declare_tool_lint! {
     /// **Avoid:**
     ///
     /// ```rust,ignore
-    /// let width = terminal_width.map_or(80, |width| width.saturating_sub(2));
+    /// let width = terminal_width.map_or(fallback_width(), |width| width.saturating_sub(2));
     /// ```
     ///
     /// **Prefer:** the chain, which reads in the order it runs
     ///
     /// ```rust,ignore
-    /// let width = terminal_width.map(|width| width.saturating_sub(2)).unwrap_or(80);
+    /// let width = terminal_width
+    ///     .map(|width| width.saturating_sub(2))
+    ///     .unwrap_or_else(fallback_width);
     /// ```
     ///
     /// **Prefer:** a `match`, which names both cases
@@ -65,7 +76,7 @@ declare_tool_lint! {
     /// ```rust,ignore
     /// let width = match terminal_width {
     ///     Some(width) => width.saturating_sub(2),
-    ///     None => 80,
+    ///     None => fallback_width(),
     /// };
     /// ```
     pub perfectionist::MAP_OR,
@@ -88,27 +99,44 @@ const MESSAGE: &str = "`map_or` names its default before the mapper it stands in
 
 const CONFIG_KEY: &str = "perfectionist::map_or";
 
-/// The rule has no configuration knobs. Not dead code: the read
-/// below rejects a mistyped key in the rule's `dylint.toml` table,
-/// and gen-docs needs the struct for `Configuration: none.`
-#[derive(Debug, Default, serde::Deserialize)]
+/// The rule's configuration.
+#[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
-struct Config {}
+struct Config {
+    /// Whether a call whose default is a literal or a path
+    /// (`option.map_or(0, mapper)`) is exempt, since meeting such a
+    /// default before the mapper costs the reader nothing. A negated
+    /// numeric literal counts as a literal. A closure does not count,
+    /// however short, and neither does an expression written as a
+    /// macro call. Defaults to `true`; set `false` to flag those
+    /// calls too.
+    exempt_simple_default: bool,
+}
 
-#[derive(Default)]
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            exempt_simple_default: true,
+        }
+    }
+}
+
 pub struct MapOr {
     /// The crate's `rust-version`, which says whether the
     /// `map_or_default` the fix writes would compile there.
     msrv: Msrv,
+    /// Whether a simple default is left alone, from
+    /// [`Config::exempt_simple_default`].
+    exempt_simple_default: bool,
 }
 
 impl_lint_pass!(MapOr => [MAP_OR]);
 
 impl Register for rule::MapOr {
-    /// A method name and a receiver type decide the whole trigger, and
-    /// every call they find is the shape the rule objects to, so there
-    /// is no false-positive rate a baseline would have to hedge
-    /// against.
+    /// The trigger is a method name, a receiver type and a default the
+    /// reader has to hold on to, and every call meeting all three is
+    /// the shape the rule objects to, so there is no false-positive
+    /// rate a baseline would have to hedge against.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {
@@ -116,8 +144,14 @@ impl Register for rule::MapOr {
     }
 
     fn register_pass(lint_store: &mut LintStore) {
-        let _config: Config = dylint_linting::config_or_default(CONFIG_KEY);
-        lint_store.register_late_lint_pass(Box::new(|_| Box::new(MapOr::default())));
+        let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
+        let exempt_simple_default = config.exempt_simple_default;
+        lint_store.register_late_lint_pass(Box::new(move |_| {
+            Box::new(MapOr {
+                msrv: Msrv::default(),
+                exempt_simple_default,
+            })
+        }));
     }
 }
 
@@ -130,6 +164,9 @@ impl<'tcx> LateLintPass<'tcx> for MapOr {
         let Some(call) = defaulted_call(cx, expr, "map_or") else {
             return;
         };
+        if self.exempt_simple_default && default_is_simple(call.default) {
+            return;
+        }
         emit(cx, &call, self.msrv);
     }
 }

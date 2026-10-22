@@ -887,7 +887,7 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
 }
 
 /// `#[derive(SynthMapOr)]` + `#[synth_map_or]` →
-/// `fn _synth_map_or() { let _ = FLAG.map_or(false, |flag| flag); }`,
+/// `fn _synth_map_or() { let _ = FLAG.map_or(bool::default(), |flag| flag); }`,
 /// where every token of the statement inherits the user-span of
 /// `synth_map_or` and the wrapping `fn` keeps the derive's
 /// call-site span.
@@ -903,7 +903,7 @@ pub fn synth_map_or(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_map_or")
         .expect("`#[derive(SynthMapOr)]` requires a `#[synth_map_or]`");
     let body = respan(
-        "let _ = FLAG.map_or(false, |flag| flag);"
+        "let _ = FLAG.map_or(bool::default(), |flag| flag);"
             .parse()
             .expect("valid tokens"),
         attr_span,

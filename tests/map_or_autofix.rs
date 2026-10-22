@@ -15,6 +15,8 @@
 //!
 //! - A mapper written as a path, where the rewrite has to carry the
 //!   path over rather than a closure.
+//! - A default the `exempt_simple_default` knob does not take, since
+//!   a rewrite is only ever offered for one that it leaves flagged.
 //! - A mapper spanning several lines, where the snippet taken from
 //!   source has to land as written.
 //! - A receiver that is a borrow, which the rewrite keeps, since it
@@ -49,8 +51,8 @@ const SOURCE: &str = text_block_fnl! {
     "    }"
     "}"
     ""
-    "pub fn literal_default(name: Option<&str>) -> usize {"
-    "    name.map_or(0, str::len)"
+    "pub fn path_mapper(name: Option<&str>) -> usize {"
+    "    name.map_or(usize::default(), str::len)"
     "}"
     ""
     "pub fn constructed_default(name: Option<&str>) -> String {"
@@ -65,7 +67,7 @@ const SOURCE: &str = text_block_fnl! {
     "}"
     ""
     "pub fn closure_default(name: Option<&str>) -> String {"
-    "    name.map_or_else(String::new, str::to_uppercase)"
+    "    name.map_or_else(|| String::new(), str::to_uppercase)"
     "}"
     ""
     "pub fn error_ignored(name: Result<&str, u32>) -> String {"
@@ -94,7 +96,7 @@ const FIXED: &str = text_block_fnl! {
     "    }"
     "}"
     ""
-    "pub fn literal_default(name: Option<&str>) -> usize {"
+    "pub fn path_mapper(name: Option<&str>) -> usize {"
     "    name.map_or_default(str::len)"
     "}"
     ""

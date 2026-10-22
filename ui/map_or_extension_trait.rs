@@ -33,8 +33,8 @@ impl<Held> BorrowedMapOr<Held> for &Option<Held> {
 
 // Not flagged: the call is `BorrowedMapOr`'s rather than the inherent
 // `map_or`, which cannot take a `String` out of a borrow.
-fn through_a_trait(name: &Option<String>) -> usize {
-    name.map_or(0, |name| name.len())
+fn through_a_trait(name: &Option<String>) -> String {
+    name.map_or(String::new(), |name| name.clone())
 }
 
 fn main() {}
