@@ -146,8 +146,8 @@ fn the_autofix_leaves_the_crate_compiling() {
     let (_temp, fixed, stderr) = fix();
 
     // The headline assertion. `cargo fix` prints this after applying a
-    // suggestion that does not compile, having reverted the file -- so
-    // its absence is what says every applied rewrite was sound.
+    // suggestion that does not compile, having reverted the file. Its
+    // absence is what says every applied rewrite was sound.
     assert!(
         !stderr.contains("errors present after applying fixes"),
         "the autofix produced code that does not compile; stderr was:\n{stderr}",

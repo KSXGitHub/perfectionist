@@ -9,11 +9,12 @@
 // is what still says where the call lives, and reading it is what the
 // `hir_in_external_macro` guard does.
 //
-// The synthesised call is one the rule fires on when a human writes it
-// — an `Option` receiver and a `false` default, which is the
-// `is_some_and` shape — so the guard is the only thing stopping the
-// diagnostic. A call on another receiver type, or a `map_or_default`,
-// would leave the fixture passing whether the guard were there or not.
+// The synthesised call is one the rule fires on when a human writes
+// it: an `Option` receiver and a `false` default, which is the
+// `is_some_and` shape. The guard is therefore the only thing stopping
+// the diagnostic. A call on another receiver type, or a
+// `map_or_default`, would leave the fixture passing whether the guard
+// were there or not.
 
 #![allow(dead_code, unused, reason = "ui fixture")]
 

@@ -23,8 +23,8 @@ declare_tool_lint! {
     ///
     /// This is a stylistic preference, not a correctness issue. The
     /// call names the default closure before the mapper it stands in
-    /// for, so a reader meets the exceptional case first, and a diff
-    /// shows the mapper — usually the part that changed — behind
+    /// for, so a reader meets the exceptional case first. The mapper is
+    /// usually the part that changed, and a diff shows it behind
     /// however many lines that closure takes.
     ///
     /// ### Interaction with Clippy
@@ -46,7 +46,7 @@ declare_tool_lint! {
     ///
     /// `perfectionist::map_or` says the same of the sibling method.
     /// `perfectionist::splittable_adapter_closure` reads the same
-    /// calls for a different fault — a mapper doing several jobs.
+    /// calls for a different fault: a mapper doing several jobs.
     ///
     /// ### Example
     ///
@@ -135,8 +135,8 @@ impl<'tcx> LateLintPass<'tcx> for MapOrElse {
 }
 
 /// The value the default yields, where the author wrote one: the body
-/// of a closure that ignores whatever it is handed — nothing on an
-/// `Option`, the error on a `Result`.
+/// of a closure that ignores whatever it is handed. What it is handed
+/// is nothing on an `Option`, and the error on a `Result`.
 ///
 /// A default named as a path has no body to read, and answers `None`.
 /// What that leaves is the question of whether the function is one of

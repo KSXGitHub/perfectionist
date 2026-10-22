@@ -19,8 +19,8 @@ though one written as a macro *argument* is flagged.
 
 This is a stylistic preference, not a correctness issue. The
 call names the default before the mapper it stands in for, so a
-reader meets the exceptional case first, and a diff shows the
-mapper — usually the part that changed — behind it.
+reader meets the exceptional case first. The mapper is usually
+the part that changed, and a diff shows it behind the default.
 
 ## Interaction with Clippy
 
@@ -41,7 +41,7 @@ nothing, which is the gap this rule fills.
 
 `perfectionist::map_or_else` says the same of the sibling
 method. `perfectionist::splittable_adapter_closure` reads the
-same calls for a different fault — a mapper doing several jobs.
+same calls for a different fault: a mapper doing several jobs.
 
 ## Example
 

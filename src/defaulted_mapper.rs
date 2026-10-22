@@ -49,7 +49,7 @@ pub(crate) struct DefaultedCall<'tcx> {
     /// would have to have a `Default` for.
     pub(crate) mapped: Ty<'tcx>,
     /// The method name and its arguments, without the receiver or the
-    /// dot — `map_or(0, f)` out of `value.map_or(0, f)`. A receiver can
+    /// dot: `map_or(0, f)` out of `value.map_or(0, f)`. A receiver can
     /// run to several lines and is not what the diagnostic is about.
     pub(crate) span: Span,
 }
@@ -93,10 +93,10 @@ pub(crate) fn defaulted_call<'tcx>(
         return None;
     }
     // The inherent methods and no others. An extension trait can lend
-    // the same name to a receiver of the same family — a `&Option<T>`
-    // whose payload cannot be moved out resolves to the trait's method,
-    // since the inherent one takes `self` — and that call is not this
-    // one.
+    // the same name to a receiver of the same family, and that call is
+    // not this one. A `&Option<T>` whose payload cannot be moved out
+    // resolves to the trait's method, since the inherent one takes
+    // `self`.
     let method_id = cx.typeck_results().type_dependent_def_id(expr.hir_id)?;
     if cx.tcx.trait_of_assoc(method_id).is_some() {
         return None;
@@ -139,8 +139,8 @@ fn family(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Family> {
 /// receiver's own answers what the two arguments answer together.
 pub(crate) enum Collapse {
     /// A predicate of the receiver's own, with the Rust version it
-    /// arrived in — younger than the method it replaces, so the help
-    /// names the chain beside it.
+    /// arrived in. That version is younger than the method it
+    /// replaces, so the help names the chain beside it.
     Predicate {
         method: &'static str,
         since: &'static str,

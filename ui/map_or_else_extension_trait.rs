@@ -3,9 +3,9 @@
 // Regression test: `map_or_else` must not fire on a call to an
 // extension trait's method of the same name. `BorrowedMapOrElse` lends
 // `map_or_else` to a borrowed `Option`, where the inherent method
-// cannot apply — it takes `self`, and a `String` cannot be moved out of
-// a `&Option<String>` — so the call resolves to the trait's method,
-// whose arguments mean whatever the trait says they mean.
+// cannot apply: it takes `self`, and a `String` cannot be moved out of
+// a `&Option<String>`. The call therefore resolves to the trait's
+// method, whose arguments mean whatever the trait says they mean.
 //
 // The receiver is still an `Option` and the method still wears the
 // name, so every other part of the trigger admits this call: asking
