@@ -122,6 +122,7 @@ rule_index! {
     macro_trailing_comma => MacroTrailingComma,
     map_or => MapOr,
     map_or_else => MapOrElse,
+    multi_statement_iterator_closure => MultiStatementIteratorClosure,
     mutating_command_builder => MutatingCommandBuilder,
     named_prelude_imports => NamedPreludeImports,
     needless_borrowed_parameters => NeedlessBorrowedParameters,

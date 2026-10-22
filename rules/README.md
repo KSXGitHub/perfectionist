@@ -105,6 +105,9 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`map_or_else`](./map_or_else.md) (default: `active`).
 
   `map_or_else` call, which names its default before the mapper it stands in for
+- [`multi_statement_iterator_closure`](./multi_statement_iterator_closure.md) (default: `inactive`).
+
+  iterator callback has too many top-level statements
 
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 
