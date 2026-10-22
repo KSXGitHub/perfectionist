@@ -36,18 +36,22 @@ declare_tool_lint! {
     ///
     /// ### Interaction with Clippy
     ///
-    /// `clippy::map_unwrap_or` (`pedantic`) is this rule's exact
-    /// reverse, and its own documentation records the caveat this rule
-    /// is founded on: the arguments are not in execution order.
-    /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
-    /// `match` remedy. A project enabling either group has to allow
-    /// that lint, or the two trade warnings at one call site.
+    /// `clippy::map_unwrap_or` (`pedantic`) reads the chain and asks
+    /// for this call, which is this rule's complaint reversed; its own
+    /// documentation records the caveat this rule is founded on, that
+    /// the arguments are not in execution order. The two disagree only
+    /// over a default this rule flags: a simple default is exempt
+    /// here, and both lints then leave the call alone. A project
+    /// enabling `pedantic` and meeting that disagreement has to allow
+    /// one of them. `clippy::option_if_let_else` (`nursery`) is the
+    /// reverse of the `match` remedy.
     ///
     /// At its default levels Clippy redirects a boolean default
     /// (`clippy::unnecessary_map_or`, itself gated on the crate's
     /// `rust-version`) and a `None` one (`clippy::option_map_or_none`,
-    /// `clippy::result_map_or_into_option`). Every other default draws
-    /// nothing, which is the gap this rule fills.
+    /// `clippy::result_map_or_into_option`). Both of those are simple
+    /// defaults, so the exemption leaves them to Clippy, and what this
+    /// rule adds is the default that is neither.
     ///
     /// ### Interaction with sibling rules
     ///
@@ -120,7 +124,7 @@ struct Config {
     /// however short, and neither does an expression written as a
     /// macro call, a struct or tuple literal, or an enum variant
     /// written as either, though a unit variant is a path. Defaults to
-    /// `true`; set `false` to flag those calls too.
+    /// `true`.
     exempt_simple_default: bool,
 }
 

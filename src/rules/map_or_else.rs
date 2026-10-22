@@ -38,18 +38,22 @@ declare_tool_lint! {
     ///
     /// ### Interaction with Clippy
     ///
-    /// `clippy::map_unwrap_or` (`pedantic`) is this rule's exact
-    /// reverse, and its own documentation records the caveat this rule
-    /// is founded on: the arguments are not in execution order.
-    /// `clippy::option_if_let_else` (`nursery`) is the reverse of the
-    /// `match` remedy. A project enabling either group has to allow
-    /// that lint, or the two trade warnings at one call site.
+    /// `clippy::map_unwrap_or` (`pedantic`) reads the chain and asks
+    /// for this call, which is this rule's complaint reversed; its own
+    /// documentation records the caveat this rule is founded on, that
+    /// the arguments are not in execution order. The two disagree only
+    /// over a default this rule flags: a path default is exempt
+    /// here, and both lints then leave the call alone. A project
+    /// enabling `pedantic` and meeting that disagreement has to allow
+    /// one of them. `clippy::option_if_let_else` (`nursery`) is the
+    /// reverse of the `match` remedy.
     ///
     /// At its default levels Clippy reaches the method only where the
     /// mapper hands its parameter straight back
     /// (`clippy::unnecessary_option_map_or_else`,
     /// `clippy::unnecessary_result_map_or_else`). Every other call
-    /// draws nothing, which is the gap this rule fills.
+    /// draws nothing, and the closure defaults among them are what
+    /// this rule adds.
     ///
     /// ### Interaction with sibling rules
     ///
@@ -103,7 +107,7 @@ struct Config {
     /// meeting such a default before the mapper costs the reader
     /// nothing. A closure does not count, however short its body, and
     /// neither does an expression written as a macro call. Defaults to
-    /// `true`; set `false` to flag those calls too.
+    /// `true`.
     exempt_simple_default: bool,
 }
 

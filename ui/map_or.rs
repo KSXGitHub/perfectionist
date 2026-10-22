@@ -1,7 +1,10 @@
 // edition:2024
+// aux-build:serde_json_stub.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(dead_code, unused, reason = "ui fixture")]
+
+extern crate serde_json_stub as serde_json;
 
 /// A type of this fixture's own, carrying a method named `map_or` that
 /// is shaped like the std one without being it.
@@ -142,6 +145,26 @@ fn tuple_variant_default(width: Option<u32>) -> Reach {
 // Bad: a struct variant of an enum is a struct literal.
 fn struct_variant_default(width: Option<u32>) -> Reach {
     width.map_or(Reach::Named { levels: 0 }, Reach::Deep)
+}
+
+// Bad: `format!` builds its value through an expansion, so what the
+// reader meets is a macro call.
+fn format_default(name: Option<&str>, missing: &str) -> String {
+    name.map_or(format!("<{missing}>"), |name| name.to_uppercase())
+}
+
+// Bad: `format_args!` is a macro call like any other, whatever it
+// expands to.
+fn format_args_default(name: Option<&str>) -> String {
+    std::fmt::format(name.map_or(format_args!("<none>"), |_| format_args!("<some>")))
+}
+
+// Bad: a JSON literal is the everyday default that is a macro call,
+// and the reader takes in the whole block of it before the mapper.
+fn json_default(name: Option<&str>) -> serde_json::Value {
+    name.map_or(serde_json::json!({ "name": "none" }), |name| {
+        serde_json::json!({ "name": name })
+    })
 }
 
 // Bad: a default written as a macro call is a call to the reader,
