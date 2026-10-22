@@ -431,9 +431,9 @@ impl BareIdentifierReference {
             // public-references-private exemption drops a private target
             // (a local item that is not publicly reachable, an external
             // target such as a re-exported `std` type being public).
-            let reach = target
-                .map(|def_id| import_reach(cx, scope, def_id))
-                .unwrap_or(Reach::ThirdPartyCrate);
+            let reach = target.map_or(Reach::ThirdPartyCrate, |def_id| {
+                import_reach(cx, scope, def_id)
+            });
             let ignored_by_policy = match self.reference_scope {
                 ReferenceScope::OwnModule => reach != Reach::LocalDefinition,
                 ReferenceScope::ModuleTree => {
