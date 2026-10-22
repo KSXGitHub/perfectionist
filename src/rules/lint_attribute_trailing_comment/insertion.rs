@@ -46,7 +46,7 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
     // indented `reason` line. Keying off "any newline in the parens"
     // mis-handled the wrapped case, inserting an unindented line in
     // the wrong place.
-    let close_line_start = head.rfind('\n').map_or_default(|index| index + 1);
+    let close_line_start = head.rfind('\n').map_or(0, |index| index + 1);
     let close_on_own_line = head[close_line_start..]
         .trim_matches([' ', '\t', '\r'])
         .is_empty();
