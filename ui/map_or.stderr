@@ -1,0 +1,185 @@
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(spare(), |width| width.saturating_sub(2))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+   = note: `#[warn(perfectionist::map_or)]` on by default
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     name.map_or(String::new(), |name| name.to_uppercase())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     name.map_or(String::new(), |name| name.to_uppercase())
+LL +     name.map_or_default(|name| name.to_uppercase())
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Default::default(), |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or(Default::default(), |width| width + 1)
+LL +     width.map_or_default(|width| width + 1)
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Port::new(), Port)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |       width.map_or((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), |width| {
+   |  ___________^
+LL | |         (width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+LL | |     })
+   | |______^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |       width.map_or(
+   |  ___________^
+LL | |         Layout {
+LL | |             columns: 80,
+LL | |             wrap: true,
+LL | |         },
+LL | |         Layout::fitting,
+LL | |     )
+   | |_____^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or((0, false), |width| (width, true))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or((0, false), |width| (width, true))
+LL +     width.map_or_default(|width| (width, true))
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Reach::Deep(0), Reach::Deep)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Reach::Named { levels: 0 }, Reach::Deep)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     name.map_or(format!("<{missing}>"), |name| name.to_uppercase())
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     std::fmt::format(name.map_or(format_args!("<none>"), |_| format_args!("<some>")))
+   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |       name.map_or(serde_json::json!({ "name": "none" }), |name| {
+   |  __________^
+LL | |         serde_json::json!({ "name": name })
+LL | |     })
+   | |______^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(spare_width!(), |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     offset.map_or(-spare_offset(), |offset| offset + 1)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(spare(), |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     assert!(width.map_or(bool::default(), |width| width > 2));
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     assert!(width.map_or(bool::default(), |width| width > 2));
+LL +     assert!(width.map_or_default(|width| width > 2));
+   |
+
+warning: `spare` resolves in scope; consider writing it as an intra-doc link
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL | /// The signed counterpart of `spare`, for the defaults written with a
+   |                               ^^^^^^^
+   |
+   = help: if `spare` instead names a foreign or upstream symbol that the doc only mentions by name, do not link it to the local item; write an explicit reference link to the real source, such as `[`spare`][spare-ext]` with a `[spare-ext]: <url>` definition
+   = note: `#[warn(perfectionist::bare_identifier_reference)]` on by default
+help: only once the surrounding context confirms it refers to this item, not a foreign symbol of the same name, wrap it as an intra-doc link
+   |
+LL - /// The signed counterpart of `spare`, for the defaults written with a
+LL + /// The signed counterpart of [`spare`], for the defaults written with a
+   |
+
+warning: N warnings emitted

@@ -21,6 +21,8 @@ pub mod import_grouping_mismatch;
 pub mod impure_macro_arguments;
 pub mod lint_attribute_trailing_comment;
 pub mod macro_trailing_comma;
+pub mod map_or;
+pub mod map_or_else;
 pub mod multi_statement_iterator_closure;
 pub mod mutating_command_builder;
 pub mod named_prelude_imports;
