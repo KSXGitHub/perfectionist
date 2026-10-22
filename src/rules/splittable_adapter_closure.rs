@@ -1,6 +1,6 @@
-//! `perfectionist::splittable_adapter_closure` — flag a closure passed to
-//! an adapter that does several things the pipeline has an adapter apiece
-//! for, so one adapter does all of them.
+//! `perfectionist::splittable_adapter_closure`: flag a closure passed
+//! to an adapter that does several things the pipeline has an adapter
+//! apiece for, so one adapter does all of them.
 //!
 //! One lint over three triggers, because what the closure holds decides
 //! which split it has rather than which adapter holds it. [`step_chain`]

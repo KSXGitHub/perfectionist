@@ -1,4 +1,4 @@
-//! `perfectionist::named_prelude_imports` — flag cherry-picked named
+//! `perfectionist::named_prelude_imports`: flag cherry-picked named
 //! imports from a `prelude` module (`use serde::prelude::Serialize;`),
 //! leaving the glob form (`use serde::prelude::*;`) alone.
 //!
@@ -7,7 +7,7 @@
 //! plain HIR [`LateLintPass`] rather than a re-parsing one. Two reasons:
 //!
 //! - Its autofix rewrites the import to the item's *canonical* module,
-//!   which is resolved from the item's `DefId` — information that only
+//!   which is resolved from the item's `DefId`, information that only
 //!   exists for items the compiler actually resolved, i.e. not for
 //!   `#[cfg(...)]`-disabled code a re-parse would additionally reach.
 //! - A HIR walk already reaches every compiled module, including
@@ -225,7 +225,7 @@ impl NamedPreludeImports {
     ) -> Option<canonical::Canonical> {
         // The last segment is the imported item itself; a prelude segment
         // must sit *before* it (something is cherry-picked from under the
-        // prelude). `use serde::prelude;` — the prelude as the leaf — is
+        // prelude). `use serde::prelude;`, the prelude as the leaf, is
         // not a cherry-pick and is left alone.
         let item_split = segments.len().checked_sub(1)?;
         let prelude_index = segments[..item_split].iter().position(|segment| {

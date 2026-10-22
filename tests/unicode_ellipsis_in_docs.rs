@@ -1,7 +1,7 @@
 //! UI tests for `unicode_ellipsis_in_docs`. The default-config sweep
 //! lives in `ui/unicode_ellipsis_in_docs.rs` and is picked up by
 //! `tests/ui.rs`; the tests here point at fixture directories under
-//! `ui-toml/unicode_ellipsis_in_docs/` and pass a `dylint.toml` —
+//! `ui-toml/unicode_ellipsis_in_docs/` and pass a `dylint.toml`,
 //! either a per-rule config table or the `[perfectionist]` global
 //! enable/disable table.
 
@@ -60,7 +60,7 @@ fn scan_code_spans_true_flags_inside_code_spans() {
 /// Symmetric counterpart to
 /// `unicode_ellipsis_in_comments`'s cross-rule test: with the sibling
 /// comment rule disabled, the docs rule flags only the `///` / `//!`
-/// doc comments and leaves the `//` and `/* */` comments untouched —
+/// doc comments and leaves the `//` and `/* */` comments untouched,
 /// pinning the claim that the docs rule does not intrude into regular
 /// comments.
 #[test]
@@ -89,7 +89,7 @@ fn per_item_expect_fulfils_and_suppresses() {
 
 /// Companion to [`per_item_expect_fulfils_and_suppresses`]: a per-item
 /// `#[allow]` silences only that item's doc comment, while a sibling
-/// item with no attribute still fires — so per-site control no longer
+/// item with no attribute still fires, so per-site control no longer
 /// requires a crate-root `#![allow]` that exempts every doc comment.
 #[test]
 fn per_item_allow_suppresses_only_that_item() {

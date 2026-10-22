@@ -14,8 +14,8 @@
 //! subcommand:
 //!
 //! - `html` writes the `index.html` GitHub Pages reads (the
-//!   project's public catalogue) plus the sibling assets it links —
-//!   one file per stylesheet, per page script, and per icon — and,
+//!   project's public catalogue) plus the sibling assets it links,
+//!   one file per stylesheet, per page script and per icon, and,
 //!   beside it, the `tests.html` that runs the page's own JavaScript
 //!   unit tests in whatever browser opens it.
 //! - `write-md` writes a `rules/` directory with one markdown file
@@ -238,7 +238,7 @@ fn run_html(root: &Path, out_dir: &Path, git_ref: &str) -> ExitCode {
 /// touch files outside the repo), when it's the same directory as
 /// `root` (the catalogue's `README.md` would collide with the
 /// project's own), when it resolves to a path outside `root`, or
-/// when the path contains `..` segments — `std::path::absolute`
+/// when the path contains `..` segments, since `std::path::absolute`
 /// doesn't normalise those, so `rules/../rules` would otherwise be
 /// (silently) interpreted as depth 3 and produce broken links.
 fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, String> {
@@ -247,7 +247,7 @@ fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, Strin
     // Symlink guard. `std::path::absolute` is purely lexical
     // (doesn't follow symlinks), so a `rules_dir` that's itself a
     // symlink to `/etc` would pass the `strip_prefix` containment
-    // check below — and then `write-md`'s orphan-delete loop
+    // check below, and then `write-md`'s orphan-delete loop
     // would happily remove `.md` files via the symlink target.
     // Refuse before any filesystem mutation. Only checked when
     // the path exists; a non-existent `rules_dir` (check-md
@@ -285,7 +285,7 @@ fn source_link_prefix_for(rules_dir: &Path, root: &Path) -> Result<String, Strin
     // Walk the relative components by hand instead of using
     // `components().count()`: `std::path::absolute` does *not*
     // collapse `..` or `.`, so `rules/../rules` and `rules/sub/..`
-    // would both report depth ≥ 3 — producing a `Source:` link
+    // would both report depth ≥ 3, producing a `Source:` link
     // three directories too deep. Reject `..` outright (the user
     // should write the path they mean) and skip `.` (semantically
     // a no-op).

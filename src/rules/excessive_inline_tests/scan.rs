@@ -31,7 +31,7 @@ struct TestItem {
 struct FileAcc {
     /// Top-level production items seen in this file. A file with zero
     /// of these is entirely test code and exempt from the inline-style
-    /// check — it is itself a valid extraction target.
+    /// check, being itself a valid extraction target.
     production_count: usize,
     /// The inline test items contributing to the footprint.
     test_items: Vec<TestItem>,
@@ -45,8 +45,8 @@ struct FileAcc {
 pub(super) fn run(state: &ExcessiveInlineTests, cx: &LateContext<'_>) {
     // Integration tests, benchmarks, and examples are separate crates
     // Cargo hands the rule under `--all-targets`. For the ones built
-    // under `cfg(test)` — integration tests, benchmarks, and
-    // `test = true` examples — the top-level `#[test]` functions *are*
+    // under `cfg(test)`, namely integration tests, benchmarks and
+    // `test = true` examples, the top-level `#[test]` functions *are*
     // the target, not unit tests misplaced inside a production file;
     // sitting beside ordinary helper `fn`s the rule counts as
     // production, they would otherwise be flagged. (A plain example
@@ -78,8 +78,8 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut BTreeMap<BytePos,
     if matches!(expn_kind, ExpnKind::AstPass(_) | ExpnKind::Desugaring(_)) {
         // Compiler-synthesised: the test harness `main`, `extern crate
         // test`, the descriptor const, AST desugarings. Not the
-        // author's code and tied to no file they control — ignore them
-        // entirely so they neither charge the footprint nor inflate a
+        // author's code and tied to no file they control, so ignore
+        // them entirely: they must neither charge the footprint nor inflate a
         // file's production count (which would rob an all-test crate
         // root of its exemption).
         return;
@@ -137,8 +137,8 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut BTreeMap<BytePos,
 }
 
 /// Whether a module's body lives in a different source file than its
-/// `mod` declaration — i.e. it is an external `mod X;`, not an inline
-/// `mod X { ... }`.
+/// `mod` declaration, i.e. it is an external `mod X;` rather than an
+/// inline `mod X { ... }`.
 fn is_external_module(cx: &LateContext<'_>, declaration: Span, module: &Mod<'_>) -> bool {
     let source_map = cx.sess().source_map();
     source_map.lookup_source_file(declaration.lo()).start_pos
@@ -237,7 +237,7 @@ fn emit_inline_style(state: &ExcessiveInlineTests, cx: &LateContext<'_>, acc: &F
 }
 
 /// The single module name shared by every recorded test item, if they
-/// agree — e.g. a file with one over-budget `#[cfg(test)] mod tests`.
+/// agree, as in a file with one over-budget `#[cfg(test)] mod tests`.
 /// `None` when the items disagree or any is a bare item, so the help
 /// falls back to the conventional `tests`.
 fn common_module_name(items: &[TestItem]) -> Option<Symbol> {
@@ -250,7 +250,9 @@ fn common_module_name(items: &[TestItem]) -> Option<Symbol> {
 /// the inline module's own identifier when known; bare test items have
 /// none and fall back to the conventional `tests`.
 fn help_extract(file: &SourceFile, module_name: Option<Symbol>) -> String {
-    let name = module_name.map_or_else(|| "tests".to_owned(), |name| name.to_string());
+    let name = module_name
+        .map(|name| name.to_string())
+        .unwrap_or_else(|| "tests".to_owned());
     match paths::real_path(file).and_then(|path| paths::canonical_target(&path, &name)) {
         Some(target) => format!(
             "move the inline test code into a separate file (e.g. `{}`) and replace it with an \

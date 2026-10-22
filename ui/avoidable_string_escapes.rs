@@ -1,12 +1,12 @@
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 
-// Bad: escaped quotes — JSON snippet.
+// Bad: escaped quotes in a JSON snippet.
 fn _escaped_quotes() {
     let _ = "{\"name\":\"foo\"}";
 }
 
-// Bad: escaped backslashes — Windows path.
+// Bad: escaped backslashes in a Windows path.
 fn _escaped_backslashes() {
     let _ = "C:\\Users\\foo\\bar";
 }
@@ -17,8 +17,8 @@ fn _escaped_apostrophe() {
 }
 
 // Bad: multi-byte UTF-8 surrounding an eligible escape. Exercises
-// the `len_utf8` branch in `take_literal_char` — the autofix must
-// preserve the non-ASCII characters byte-for-byte.
+// the `len_utf8` branch in `take_literal_char`, where the autofix
+// must preserve the non-ASCII characters byte-for-byte.
 fn _multi_byte_utf8() {
     let _ = "日本語: C:\\Users";
 }
@@ -58,8 +58,8 @@ fn _println_with_positional_placeholder() {
 }
 
 // Bad: `assert_eq!`'s message is the *third* argument, with no macro
-// allowlist or argument-position bookkeeping — the pre-expansion scan
-// reaches every literal. The message carries a placeholder, so it is
+// allowlist or argument-position bookkeeping, so the pre-expansion
+// scan reaches every literal. The message carries a placeholder, so it is
 // split away from the HIR; the comparison operands (`value`) are not
 // literals here, so nothing competes for the diagnostic.
 fn _assert_eq_message_placeholder() {
@@ -70,7 +70,7 @@ fn _assert_eq_message_placeholder() {
 // Bad: a string-literal *operand* of `assert_eq!`
 // survives lowering as an ordinary value, so the late pass flags it. The
 // pre-expansion scan also sees it, but the byte-range dedup drops the
-// duplicate — this fixture pins that there is no double diagnostic.
+// duplicate, and this fixture pins that there is no double diagnostic.
 fn _assert_eq_string_operand() {
     assert_eq!("a\"b".len(), 3);
 }
@@ -87,7 +87,7 @@ fn _stringify_argument() {
 // so the late pass flags it (the pre-expansion scan also sees it, but the
 // byte-range dedup drops the duplicate). The rewritten value is
 // identical; only the `stringify!`-reflected debug label printed at
-// runtime changes — the same deliberately-accepted trade-off as
+// runtime changes, the same deliberately-accepted trade-off as
 // `stringify!`.
 fn _dbg_argument() {
     let _ = dbg!("a\"b");

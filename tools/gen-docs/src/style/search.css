@@ -144,8 +144,8 @@ h2.index-heading {
   border: 1px solid;
   border-radius: 10px;
   box-sizing: border-box;
-  /* Keeps the results list's scrolling edge — and the close button parked
-     in the bottom corner — inside the rounded corners. */
+  /* Clips the results list's scrolling edge to the rounded corners.
+     Clips the close button in the bottom corner to them too. */
   overflow: hidden;
   /* The positioning context for `.search-close`. */
   position: relative;
@@ -221,6 +221,9 @@ h2.index-heading {
   padding: 0.4rem;
   list-style: none;
   overflow-y: auto;
+  /* Matches the padding, so a result the arrow keys scroll to lands
+     where one already in view sits rather than flush against the edge. */
+  scroll-padding: 0.4rem;
   /* Keeps a scroll gesture that reaches the end of the list from carrying
      on into the page behind the overlay. */
   overscroll-behavior: contain;
@@ -243,14 +246,10 @@ h2.index-heading {
   font-size: 0.85rem;
 }
 
-.search-result {
+a.search-result {
   display: block;
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
-  text-decoration: none;
-}
-
-.search-result:hover {
   text-decoration: none;
 }
 

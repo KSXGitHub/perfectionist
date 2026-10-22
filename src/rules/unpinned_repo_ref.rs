@@ -38,8 +38,8 @@ declare_tool_lint! {
     ///
     /// This is a stylistic preference, not a correctness issue. A
     /// branch ref such as `/blob/main/...` resolves to whatever that
-    /// branch currently points at, so the linked content can change —
-    /// or disappear — without warning after the link is written. A tag
+    /// branch currently points at, so the linked content can change,
+    /// or disappear, without warning after the link is written. A tag
     /// ref is steadier but still not pinned: a tag can be removed, and
     /// a version-shaped name is not even guaranteed to be a tag (a
     /// branch named `v1.2.3` is valid Git). A commit SHA is the only
@@ -136,8 +136,8 @@ impl UnpinnedRepoRef {
         // regions are skipped, not autolinks / labelled links: unlike
         // `bare_url` (which skips an already-wrapped URL), this rule
         // still pins a wrapped-but-mutable ref, so a URL inside
-        // `<...>` must be scanned. Plain comments aren't markdown — no
-        // skip pass.
+        // `<...>` must be scanned. Plain comments aren't markdown, so
+        // they get no skip pass.
         let skips: Vec<SkipRange> = match chunk.surface {
             CommentSurface::DocBlock | CommentSurface::DocBlockBlock => {
                 scan_code_regions(&chunk.rendered, true)
@@ -206,9 +206,9 @@ impl<'tcx> LateLintPass<'tcx> for UnpinnedRepoRef {
         // `planned-rules/IMPLEMENTATION_CONVENTIONS.md`):
         // the scan re-reads source text through `span_to_snippet`
         // below, which is itself the proc-macro defence. A synthesised
-        // literal either carries an *expansion* span — filtered by
-        // `report_in_external_macro: false`, since the ref span built
-        // below inherits `literal.span.ctxt()` — or, in the
+        // literal either carries an *expansion* span, filtered by
+        // `report_in_external_macro: false` since the ref span built
+        // below inherits `literal.span.ctxt()`, or, in the
         // `clap_derive` shape, a *user-attribute* span whose source
         // text is the attribute, not a string literal, so
         // `string_literal_quote_lengths` returns `None` and the body

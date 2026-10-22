@@ -15,16 +15,16 @@
     reason = "fixture targets `allow_attributes_without_reason`; the rewriteable `allow`s here are not the rule under test",
 )]
 
-// Good — every named lint is exempt.
+// Good: every named lint is exempt.
 #[allow(clippy::module_name_repetitions)]
 fn fully_exempt() {}
 
-// Bad — `dead_code` isn't exempt, so the rule still fires even
+// Bad: `dead_code` isn't exempt, so the rule still fires even
 // though one of the two named lints is.
 #[allow(clippy::module_name_repetitions, dead_code)]
 fn mixed_with_non_exempt() {}
 
-// Good — every named lint is exempt, with the `allow` wrapped in a
+// Good: every named lint is exempt, with the `allow` wrapped in a
 // `cfg_attr`.
 #[cfg_attr(all(), allow(clippy::module_name_repetitions))]
 fn fully_exempt_cfg_attr() {}

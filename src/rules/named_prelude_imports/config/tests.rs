@@ -22,10 +22,10 @@ fn unknown_field_is_rejected() {
 
 #[test]
 fn allowed_paths_must_end_with_a_prelude_segment() {
-    // Ends with the default prelude segment `prelude` — accepted.
+    // Ends with the default prelude segment `prelude`, so accepted.
     let ok: Config = toml::from_str(r#"allowed_paths = ["crate::prelude"]"#).unwrap();
     assert!(validate(&ok).is_ok());
-    // Ends with a non-prelude segment — rejected.
+    // Ends with a non-prelude segment, so rejected.
     let bad: Config = toml::from_str(r#"allowed_paths = ["crate::foo"]"#).unwrap();
     assert!(validate(&bad).is_err());
 }
@@ -55,7 +55,8 @@ fn non_absolute_allowed_path_is_rejected() {
     assert!(validate(&relative).is_err());
 }
 
-/// No nameable segment — rejected rather than silently matching nothing.
+/// No nameable segment, so rejected rather than silently matching
+/// nothing.
 #[test]
 fn empty_or_root_only_allowed_path_is_rejected() {
     let bad: Config = toml::from_str(r#"allowed_paths = ["::"]"#).unwrap();

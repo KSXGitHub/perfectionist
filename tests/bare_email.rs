@@ -80,7 +80,7 @@ fn both_style_emits_single_combined_suggestion() {
 
 /// `style = "forbid"` is the one style whose contract is *no*
 /// autofix: no address form is acceptable, so the diagnostic
-/// carries prose only. The fixture guards that contract — a future
+/// carries prose only. The fixture guards that contract: a future
 /// edit that attaches a suggestion to this arm changes the
 /// expected output.
 #[test]

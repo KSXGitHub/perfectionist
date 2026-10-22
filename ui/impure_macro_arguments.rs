@@ -139,7 +139,7 @@ fn _brace_delimiter_skipped() {
 
 // A brace-delimited *argument* (the macro's outer delimiter is `(`,
 // the argument's outer delimiter is `{`) carries DSL body syntax
-// that isn't a Rust expression — `{"key": "value"}` (JSON-shaped),
+// that isn't a Rust expression: `{"key": "value"}` (JSON-shaped),
 // `{"key" => "value"}` (maplit-shaped). The rule cannot propose a
 // let-bind rewrite for these because they don't compile in
 // expression position, so the argument is treated as
@@ -167,7 +167,7 @@ fn _brace_argument_with_dsl_markers_skipped() {
 // The observable consequence of the fix is *uniform* treatment
 // of brace-argument blocks: with the leading attribute correctly
 // skipped, the rule now classifies this block the same way it
-// classifies the un-attributed `{ let x = e; x }` — a real Rust
+// classifies the un-attributed `{ let x = e; x }`, as a real Rust
 // block, walked through `looks_like_expression`, then flagged
 // by the pure-expression walker (blocks are not a pure atom
 // shape). Pre-fix, the attribute caused a silent skip; post-fix,
@@ -181,9 +181,9 @@ fn _brace_argument_with_attributed_let_flagged() {
     });
 }
 
-// The atom-shaped pure arguments — literal, path, reference,
-// mut-reference, tuple-index, deref, indexed pure base, pure
-// cast, rooted path — accepted under every mode. The outer
+// The atom-shaped pure arguments are accepted under every mode:
+// literal, path, reference, mut-reference, tuple-index, deref,
+// indexed pure base, pure cast, rooted path. The outer
 // `debug_assert_eq!` is in the deny set, so any impure argument
 // here would otherwise be flagged. The grammar is open-ended
 // (array literals / repeats, binary chains and pure-getter
@@ -221,12 +221,12 @@ fn _single_argument_deny() {
     debug_assert!(value().is_some());
 }
 
-// `.await` is `ExprKind::Await`, not a field access — impure
+// `.await` is `ExprKind::Await` rather than a field access, so impure
 // per the spec. Without the explicit `await`-keyword rejection in
 // the dot-suffix branch, the walker would consume `.await` as a
 // "pure field access" and silently accept the whole expression.
 // `await_macro!` is uncatalogued so default-mode flags impure
-// args — that's what we verify here. The macro swallows the tokens
+// args, and that's what we verify here. The macro swallows the tokens
 // rather than emitting an `expr` so the fixture stays valid under
 // the test harness's default edition (no real `async fn` needed).
 fn _await_suffix_flagged() {
@@ -234,7 +234,7 @@ fn _await_suffix_flagged() {
     let _ = await_macro!(future.await);
 }
 
-// Empty top-level argument list — nothing to check, no false positive.
+// Empty top-level argument list: nothing to check, no false positive.
 fn _empty_argument_list() {
     let _: Vec<u32> = vec![];
 }
@@ -242,7 +242,7 @@ fn _empty_argument_list() {
 // Skipped: a top-level `=>` signals the argument is a syntactic
 // position the macro author chose (`Type => [LINT_NAMES]` is the
 // canonical example, courtesy of `impl_lint_pass!`), not a Rust
-// expression. The rule does not flag these — `value()` here is
+// expression. The rule does not flag these: `value()` here is
 // impure but lives on the right-hand side of `=>`, so the whole
 // argument is skipped rather than parsed as an expression.
 fn _fat_arrow_skips_argument() {
@@ -327,7 +327,7 @@ fn _array_literal_of_pure_elements_accepted() {
 
 // Negative coverage: an array literal with at least one impure
 // element is still flagged. The let-bind rewrite the rule suggests
-// is meaningful here — the caller can bind the impure element
+// is meaningful here, since the caller can bind the impure element
 // first and pass the resulting array.
 fn _array_literal_with_impure_element_flagged() {
     let _ = my_macro!([value(), value()]);
@@ -349,7 +349,7 @@ fn _array_repeat_with_impure_half_flagged() {
     let _ = await_macro!([0; size()]);
 }
 
-// Binary chains over pure operands are pure — comparisons and
+// Binary chains over pure operands are pure. Comparisons and
 // arithmetic on local bindings, fields, and constants are side-effect-
 // free and produce the same result regardless of how many times the
 // macro evaluates them. Flagging these would defeat the debug-only
@@ -406,9 +406,9 @@ fn _turbofish_method_call_flagged(text: &str) {
 // list (`serde_json::json!`, `maplit::{hashmap, btreemap, ...}!`,
 // `anyhow::{bail, ensure}!`) accept impure top-level arguments
 // without flagging. Each macro evaluates every captured Rust
-// expression exactly once at runtime — no cfg gate, no repeated
-// substitution — so the exactly-once contract the rule defends
-// already holds. Tail-segment matching means `serde_json::json!`,
+// expression exactly once at runtime, with no cfg gate and no
+// repeated substitution, so the exactly-once contract the rule
+// defends already holds. Tail-segment matching means `serde_json::json!`,
 // `::serde_json::json!`, and the bare `json!` form all line up
 // with the same entry.
 //
@@ -418,19 +418,19 @@ fn _turbofish_method_call_flagged(text: &str) {
 // test passes trivially and a regression that drops the entry
 // from `BUILTIN_ALLOW` would slip through.
 //
-// - `json!(value().unwrap())` — direct impure expression, no
+// - `json!(value().unwrap())`: a direct impure expression, no
 //   DSL marker, not brace-delimited. Without `json` in the allow
 //   set, the rule reaches `is_pure_expression` and flags it.
-// - `bail!("error: {}", value())` — second argument is an impure
+// - `bail!("error: {}", value())`: the second argument is an impure
 //   function call. Without `bail`, the second-argument check
 //   flags it.
-// - `ensure!(value().is_some(), "missing: {}", value())` — first
+// - `ensure!(value().is_some(), "missing: {}", value())`: the first
 //   argument is an impure method call; second / third are
 //   impure. Without `ensure`, all three flag.
 // - `json!({...})` and `hashmap!(k => v)` are also exercised, but
 //   note these would *also* be skipped by the brace-DSL and
 //   `=>`-DSL heuristics respectively even without their
-//   `BUILTIN_ALLOW` entries — they're here for shape coverage,
+//   `BUILTIN_ALLOW` entries, so they're here for shape coverage,
 //   not as load-bearing assertions. The `maplit::*` entries are
 //   in the same boat by design: every form of the macros emits
 //   `=>` at top level, which the DSL-marker check already
@@ -448,8 +448,8 @@ fn _third_party_in_allow_set_accepted() {
 // `option_env!`, `include_str!`, `include_bytes!`, `stringify!`,
 // `cfg!`, `line!`, `column!`, `file!`, `module_path!`) are on the
 // allow set AND count as pure atoms when nested inside another
-// macro. The expansion is a compile-time constant — a literal, a
-// `&'static str`, a `bool`, a span marker — with no runtime
+// macro. The expansion is a compile-time constant, be it a literal, a
+// `&'static str`, a `bool` or a span marker, with no runtime
 // evaluation to disturb. Both behaviours together make the patterns
 // flagged in issue #71 invisible to the lint.
 fn _compile_time_macros_accepted() {

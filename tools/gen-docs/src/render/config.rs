@@ -23,7 +23,7 @@ use maud::{Markup, PreEscaped, html};
 ///    not configurable is itself information; omitting the section
 ///    entirely would leave readers wondering whether they missed a
 ///    knob. Any struct-level doc comment is *not* surfaced in this
-///    case — an empty config has no user-facing schema to
+///    case: an empty config has no user-facing schema to
 ///    annotate, so the comment is internal implementation prose
 ///    that belongs in the source, not on the catalogue page.
 pub(crate) fn config_section(config: &ConfigDoc) -> Markup {
@@ -90,7 +90,7 @@ fn custom_type_block(ty: &TypeDoc) -> Markup {
     };
     html! {
         div.custom-type {
-            p {
+            p.custom-type-heading {
                 code.custom-type-name { (ty.name) }
                 " "
                 span.custom-type-kind { (kind_label) }

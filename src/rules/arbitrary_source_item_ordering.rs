@@ -1,10 +1,10 @@
-//! `perfectionist::arbitrary_source_item_ordering` — hold a module
+//! `perfectionist::arbitrary_source_item_ordering`: hold a module
 //! body to one fixed sequence: `pub mod` declarations, then `pub use`
 //! re-exports, then private imports and everything else.
 //!
 //! Module layout:
 //!
-//! - [`classify`] — which section an item belongs to, and how a
+//! - [`classify`]: which section an item belongs to, and how a
 //!   diagnostic names it.
 //!
 //! The rule runs as a [`LateLintPass`] that **re-parses each of the
@@ -44,7 +44,7 @@ declare_tool_lint! {
     /// 2. `pub use` re-exports,
     /// 3. private imports and every other item.
     ///
-    /// An item that sits below a section it belongs above is flagged —
+    /// An item that sits below a section it belongs above is flagged:
     /// a `pub mod` under a `pub use`, a `pub use` under a private
     /// import or a `fn`, and so on. The last section is not ordered
     /// internally: a private `use` and a `struct` may appear in either
@@ -57,8 +57,8 @@ declare_tool_lint! {
     /// `#[cfg(unix)] use ...;` block may follow the main import block.
     ///
     /// Only the top-level sequence of a module body is considered.
-    /// Items nested deeper — inside an `impl`, a trait, or a function
-    /// body — are out of scope.
+    /// Items nested deeper are out of scope, whether inside an
+    /// `impl`, a trait, or a function body.
     ///
     /// Any explicit visibility counts as `pub` for the ordering, so
     /// `pub(crate) mod` is a `pub mod` declaration and `pub(super) use`
@@ -78,8 +78,8 @@ declare_tool_lint! {
     ///
     /// No autofix is offered. Moving an item carries its attributes,
     /// doc comment, and any comment written above it, and a `pub use`
-    /// hoisted above a `pub mod` may cross an item it names — edits a
-    /// reader should make deliberately.
+    /// hoisted above a `pub mod` may cross an item it names. These are
+    /// edits a reader should make deliberately.
     ///
     /// ### Interaction with Clippy
     ///
@@ -171,15 +171,15 @@ impl Register for rule::ArbitrarySourceItemOrdering {
 /// A detected violation parked until its enclosing HIR node is known.
 /// The rule discovers violations by re-parsing source files, outside
 /// the HIR walk, so emission is deferred and routed through
-/// [`span_lint_hir_and_then`] at the enclosing node — that is what lets
+/// [`span_lint_hir_and_then`] at the enclosing node. That is what lets
 /// a per-module / per-item `#[allow]` / `#[expect]` resolve, instead of
 /// only a crate-root one.
 struct Pending {
     /// Resolves the lint-level anchor: the offending item's own span,
     /// always contained by its HIR node. For an out-of-line `mod foo;`
-    /// that is the declaration in the parent file — the module body
-    /// being checked — so the anchor stays in the file that holds the
-    /// violation.
+    /// that is the declaration in the parent file, which holds the
+    /// module body being checked, so the anchor stays in the file that
+    /// holds the violation.
     ///
     /// No proc-macro guard rides along. The rule reads source the
     /// author wrote: its items come from re-parsing the crate's own
@@ -192,8 +192,8 @@ struct Pending {
     /// `pub mod` under the module it declares.
     span: Span,
     /// The opening line of the earlier item whose section the offender
-    /// belongs above — the first one to reach the highest rank seen so
-    /// far.
+    /// belongs above, which is the first one to reach the highest rank
+    /// seen so far.
     blocker_span: Span,
     offender: Category,
     blocker: Category,
@@ -272,8 +272,8 @@ fn check_items(
     violations: &mut Vec<Pending>,
 ) {
     // The highest-ranked category seen so far, paired with the span of
-    // the first item to reach it — the earliest item the offender has
-    // to be moved above, and so the one worth pointing at.
+    // the first item to reach it, which is the earliest item the
+    // offender has to be moved above, and so the one worth pointing at.
     let mut highest: Option<(Category, Span)> = None;
     for item in items {
         let Some(category) = classify::classify(item) else {
@@ -303,7 +303,7 @@ fn check_items(
     // survived `#[cfg(...)]`-stripping to the compiled crate. The
     // re-parse keeps cfg-disabled modules (parsing does not strip cfg),
     // so without this guard a `#[cfg(test)] mod tests { ... }` excluded
-    // from a non-test build would be linted — and, having no HIR node,
+    // from a non-test build would be linted, and, having no HIR node,
     // could not be suppressed by a local `#[allow]`. Out-of-line
     // `mod foo;` modules are `ModKind::Unloaded` here; their files are
     // re-parsed in their own right by `check_crate` (and a cfg-disabled

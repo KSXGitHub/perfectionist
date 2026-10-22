@@ -38,7 +38,7 @@ declare_tool_lint! {
     /// and ships parameter-tuned default allowances (`n`, `f`, `i`,
     /// `j`, `k`) plus an independent `extra_allowed_idents` /
     /// `extra_denied_idents` pair. Enabling both is redundant for
-    /// parameters — choose per-kind control here, or
+    /// parameters, so choose per-kind control here, or
     /// `min_ident_chars` for the one-knob sweep.
     ///
     /// ### Example

@@ -51,7 +51,7 @@ pub(crate) enum RuntimeError {
     },
     #[display("{_0} has no version change in this diff")]
     NoVersionChange(String),
-    #[display("{_0} changed line count — version-bump commits must keep it identical")]
+    #[display("{_0} changed line count; version-bump commits must keep it identical")]
     LineCountChanged(String),
     #[display(
         "{file}: line {line} differs from the expected before-image\n  expected: {expected}\n  actual:   {got}"
@@ -72,7 +72,7 @@ pub(crate) enum RuntimeError {
         got: String,
     },
     #[display(
-        "{file}: line {line} also changed — version-bump commits must touch only the version line\n  before: {before}\n  after:  {after}"
+        "{file}: line {line} also changed; version-bump commits must touch only the version line\n  before: {before}\n  after:  {after}"
     )]
     ExtraLineChanged {
         file: String,
@@ -85,7 +85,7 @@ pub(crate) enum RuntimeError {
     )]
     NonVersionByteDiff(String),
     #[display(
-        "commit message starts with a version literal ({_0:?}) but also contains additional body lines — release commits must be the version literal only"
+        "commit message starts with a version literal ({_0:?}) but also contains additional body lines; release commits must be the version literal only"
     )]
     MessageHasExtraContent(String),
     #[display("one or more tag updates fail the version-bump contract")]

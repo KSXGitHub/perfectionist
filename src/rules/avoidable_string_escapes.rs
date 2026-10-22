@@ -26,13 +26,13 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Forbids regular string literals whose only backslash escapes
-    /// are ones a raw string would express verbatim — `\"`, `\\`,
+    /// are ones a raw string would express verbatim: `\"`, `\\`,
     /// and `\'`. The autofix rewrites the literal to the raw form
     /// `r"..."` / `r#"..."#`, picking the smallest hash count that
     /// avoids a delimiter collision.
     ///
     /// Literals inside macro invocations are covered too: every string
-    /// literal in a macro call, whatever its position — including a
+    /// literal in a macro call, whatever its position, including a
     /// `format!`-family template that contains a `{...}` placeholder. The
     /// rewrite is value-preserving (a raw string still parses
     /// placeholders, and `{{` / `}}` survive verbatim), so the literal's
@@ -55,7 +55,7 @@ declare_tool_lint! {
     /// inside a macro.
     ///
     /// Whitespace and control-character escapes (`\n`, `\t`, `\r`,
-    /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
+    /// `\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt: a
     /// raw string cannot express them, and the regular form is the
     /// only choice. A literal that mixes eliminable and
     /// inexpressible escapes is also left alone; the rewrite would
@@ -68,7 +68,7 @@ declare_tool_lint! {
     /// rule trades one noise source (interior backslash escapes)
     /// for a slightly more elaborate string syntax. The benefit is
     /// highest in strings full of file paths, regex patterns, JSON
-    /// snippets, or embedded source code — all of which would
+    /// snippets, or embedded source code, all of which would
     /// otherwise be a sea of `\\` and `\"`.
     ///
     /// ### Example
@@ -117,21 +117,21 @@ struct Config {
     /// before the lint fires. Default `1` catches every escapable
     /// string; set to `2` to skip single-escape literals where the
     /// raw form is arguably noisier than the original. The lower
-    /// bound is `1` — `0` is rejected at parse time, since
+    /// bound is `1`, and `0` is rejected at parse time, since
     /// suggesting `r"hello"` for `"hello"` would just trip
     /// `clippy::needless_raw_strings` on the next pass, and a
     /// minimum of `1` already excludes that case.
     min_escapes_to_trigger: NonZeroUsize,
     /// Escape sequences considered eliminable by switching to raw
     /// form. Only the three Rust escapes whose decoded character
-    /// is exactly the byte after the backslash — `"\""`, `"\\"`,
-    /// `"\\'"` — are accepted; entries listed here that fall
+    /// is exactly the byte after the backslash, namely `"\""`,
+    /// `"\\"` and `"\\'"`, are accepted; entries listed here that fall
     /// outside that closed set are silently dropped. (`\n`, `\t`,
     /// `\xNN`, `\u{...}` and other escapes decode to a different
     /// character and cannot be expressed verbatim in a raw string,
     /// so they have no place in this list.) Use this knob to
-    /// narrow eligibility — e.g. `["\\\""]` to only flag literals
-    /// whose sole escapes are escaped quotes — not to extend it.
+    /// narrow eligibility, say `["\\\""]` to only flag literals whose
+    /// sole escapes are escaped quotes. It cannot extend eligibility.
     eligible_escapes: Vec<String>,
 }
 
@@ -160,14 +160,14 @@ pub(super) struct ResolvedConfig {
 }
 
 /// Load and validate the rule's configuration from the shared
-/// [`CONFIG_KEY`] table. Called once per pass — the early and late passes
-/// each build their own copy — so the validation lives here instead of
-/// being duplicated across them; the result is not cached.
+/// [`CONFIG_KEY`] table. Called once per pass, the early and late
+/// passes each building their own copy, so the validation lives here
+/// instead of being duplicated across them; the result is not cached.
 pub(super) fn resolved_config() -> ResolvedConfig {
     let config: Config = dylint_linting::config_or_default(CONFIG_KEY);
     // Drop entries that aren't one of the three self-decoding
-    // escapes (`\"`, `\\`, `\'`). Anything else — `\n`, `\t`,
-    // `\xNN`, `\u{...}`, ill-formed shapes — would break
+    // escapes (`\"`, `\\`, `\'`). Anything else, be it `\n`, `\t`,
+    // `\xNN`, `\u{...}` or an ill-formed shape, would break
     // the parser's "second char is the decoded form" contract
     // and let the `MachineApplicable` autofix silently corrupt
     // user code. Filter rather than reject so a stray entry in
@@ -207,7 +207,7 @@ static PENDING_VIOLATIONS: Mutex<Vec<PendingViolation>> = Mutex::new(Vec::new())
 /// Source byte ranges (`lo`, `hi`) of the cooked string literals the
 /// late `check_expr` pass saw in the HIR. The drain at
 /// `check_crate_post` skips any queued pre-expansion candidate whose
-/// range is in here — those literals survived lowering and the late pass
+/// range is in here. Those literals survived lowering and the late pass
 /// already owns them, so only the *consumed* literals (split format
 /// templates, `stringify!` contents, ...) are emitted from the queue.
 ///
@@ -237,8 +237,8 @@ impl Register for rule::AvoidableStringEscapes {
 
     fn register_pass(lint_store: &mut LintStore) {
         // The pre-expansion pass sees every macro's string literals while
-        // the source tokens are intact — including the ones lowering would
-        // consume before the HIR exists — and parks each rewrite for the late
+        // the source tokens are intact, including the ones lowering would
+        // consume before the HIR exists, and parks each rewrite for the late
         // pass to dedup, anchor, and emit. See [`mod@early`].
         lint_store.register_pre_expansion_lint_pass(Box::new(|| {
             Box::new(AvoidableStringEscapesEarly::new())
@@ -259,8 +259,8 @@ impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {
         // pre-expansion drain leaves its source range to us) and dedup on
         // the way in: `insert` returns `false` when this exact source
         // range was already visited. That happens when a `macro_rules!`
-        // fragment is expanded into several surviving positions — every
-        // copy reuses the one call-site span — so the first occurrence
+        // fragment is expanded into several surviving positions, every
+        // copy reusing the one call-site span, so the first occurrence
         // owns the diagnostic and the later copies (and the queued
         // candidate at this range) are suppressed. The insert happens
         // before the bails below so an ineligible literal still claims its
@@ -314,7 +314,7 @@ impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {
 
     /// Drain the pre-expansion pass's queue of rewrites for literals the
     /// HIR walk never reached, and emit each at its deepest enclosing HIR
-    /// node — by which point `cfg_attr` has resolved and a per-site
+    /// node, by which point `cfg_attr` has resolved and a per-site
     /// `#[allow]` applies. A candidate is dropped if the late pass already
     /// saw a literal at the same source range (it survived lowering, so
     /// `check_expr` owns it) or if an earlier candidate already covered

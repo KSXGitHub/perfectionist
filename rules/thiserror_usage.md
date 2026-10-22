@@ -35,7 +35,7 @@ the consumer crate. These syntactic shapes trigger the lint:
 The lint is detection-only: it emits a help-style diagnostic
 pointing at the offending site and suggests migrating to
 `#[derive(derive_more::Display, derive_more::Error)]`. There is
-no autofix — the migration involves a mix of derive-list edits,
+no autofix: the migration involves a mix of derive-list edits,
 format-string positional translation (`thiserror`'s `{0}` ↔
 [`derive_more`](https://docs.rs/derive_more)'s `{_0}`),
 attribute renames (`#[error(...)]` ↔ `#[display(...)]`), and

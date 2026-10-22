@@ -2,7 +2,7 @@
 //
 // `command_extra_dependency = "unchecked"`. Nothing declares
 // `command_extra`, so the diagnostic names a method this crate cannot yet
-// call — which is the point of the value: a project deciding whether to
+// call, which is the point of the value: a project deciding whether to
 // take the dependency at all wants to see what it would buy.
 
 #![feature(register_tool)]

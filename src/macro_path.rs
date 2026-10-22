@@ -15,7 +15,7 @@
 //!   so `"  std::vec  "` is equivalent to `"std::vec"`.
 //!
 //! Because the match is relative, an entry written as an *absolute*
-//! path — one carrying a leading `::` — has no meaning here: absolute
+//! path, one carrying a leading `::`, has no meaning here: absolute
 //! (anchored) macro-path matching is not implemented. Such an entry is
 //! rejected at config-load time by [`reject_absolute`] rather than
 //! silently coerced into a relative match. This follows the leading-`::`
@@ -25,7 +25,7 @@
 use std::collections::BTreeSet;
 
 /// Split a configured `"a::b::c"`-style path into its segments. Trims
-/// per-segment whitespace and drops empty segments — `"  std::vec  "`
+/// per-segment whitespace and drops empty segments, so `"  std::vec  "`
 /// becomes `["std", "vec"]`. An empty or all-empty input returns an
 /// empty vector; callers should treat that as "no matchable path" and
 /// skip the entry.
@@ -37,7 +37,7 @@ pub(crate) fn parse_path(raw: &str) -> Vec<String> {
         .collect()
 }
 
-/// Reject a configured entry written as an absolute path — one carrying
+/// Reject a configured entry written as an absolute path, one carrying
 /// a leading `::` (after trimming surrounding whitespace). The
 /// macro-path matcher is relative (see the module docs): a single-segment
 /// entry matches the invocation's final segment and a multi-segment

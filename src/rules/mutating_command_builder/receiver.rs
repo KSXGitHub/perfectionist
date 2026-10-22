@@ -19,7 +19,7 @@ use rustc_middle::ty::adjustment::Adjust;
 /// missed diagnostic rather than an unfixable one.
 pub(super) fn can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool {
     match receiver.kind {
-        // A local binding, `self` taken by value among them -- but not
+        // A local binding, `self` taken by value among them, but not
         // one belonging to an enclosing body, which is an upvar the
         // closure only borrows. Moving out of that is `E0507`, and
         // making the closure take it by value turns an `FnMut` into an
@@ -34,8 +34,8 @@ pub(super) fn can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool
         // Never an index, for the reason `produces_a_temporary` gives.
         ExprKind::Index(..) => false,
         // A field of something the caller owns, so long as reaching it
-        // does not pass through a reference -- which is what an
-        // autoderef adjustment on the base records -- and so long as
+        // does not pass through a reference, which is what an
+        // autoderef adjustment on the base records, and so long as
         // the base does not implement `Drop`, since moving a field out
         // of such a value is `E0509` with no way to finish the fix.
         ExprKind::Field(base, _) => {
@@ -57,7 +57,7 @@ pub(super) fn can_be_consumed(cx: &LateContext<'_>, receiver: &Expr<'_>) -> bool
 ///
 /// Consuming a temporary takes nothing away from anyone. Consuming a
 /// binding or a field moves it, which is `E0382` where later code reads
-/// it and `E0507` where a closure captured it -- so the rename is only
+/// it and `E0507` where a closure captured it, so the rename is only
 /// shown on a temporary, even though the *diagnostic* is right on a
 /// binding too.
 pub(super) fn produces_a_temporary(receiver: &Expr<'_>) -> bool {

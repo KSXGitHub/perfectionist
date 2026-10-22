@@ -21,8 +21,8 @@ Left alone:
   the caller's own, which is what the prefix promises.
 - An `into_*` with another parameter, which is converting
   something more than `self`.
-- A return type carrying a lifetime the *type* already has —
-  `&'a str` out of a `struct Person<'a>`. That borrow outlives
+- A return type carrying a lifetime the *type* already has,
+  such as `&'a str` out of a `struct Person<'a>`. That borrow outlives
   the receiver rather than coming from it.
 - An `async fn`, or a method returning `impl Trait`. The
   signature names the opaque type, not the value the caller

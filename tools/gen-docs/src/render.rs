@@ -1,5 +1,5 @@
 //! Render the collected [`Rule`]s into `index.html` plus the sibling
-//! assets it links — the stylesheets ([`STYLESHEETS`]) and the page
+//! assets it links: the stylesheets ([`STYLESHEETS`]) and the page
 //! scripts ([`PAGE_SCRIPTS`]), each written as a standalone file. The
 //! page itself stays a single document so every reader of the catalogue
 //! can ctrl-F across every rule's prose without page loads; the CSS and
@@ -76,7 +76,7 @@ pub(crate) const CONFIG_TOGGLE_SCRIPT: &str = include_str!("config_toggle.js");
 pub(crate) const CONFIG_TOGGLE_SCRIPT_FILENAME: &str = "config_toggle.js";
 
 /// Text handling for query matching: folding, splitting into words, and
-/// stemming. The base of the matching stack — it reads none of the rest.
+/// stemming. The base of the matching stack, reading none of the rest.
 pub(crate) const MATCH_TEXT_SCRIPT: &str = include_str!("match_text.js");
 
 /// File name [`MATCH_TEXT_SCRIPT`] is written under.
@@ -191,6 +191,10 @@ pub(crate) const PAGE_SCRIPTS: &[&str] = &[
 /// `aria-controls`.
 pub(crate) const SEARCH_OVERLAY_ID: &str = "search-overlay";
 
+/// `id` of the search overlay's results list, shared by the list markup
+/// in [`search_templates`] and the overlay input's `aria-controls`.
+const SEARCH_RESULTS_ID: &str = "search-results";
+
 /// `id` shared by the inert `<template>` holding the search overlay's
 /// markup ([`search_templates`]) and the `search_overlay.js` lookup that
 /// clones it into the page.
@@ -209,7 +213,7 @@ const INDEX_FILTER_LABEL: &str = "Filter the index by lint name";
 /// Accessible name of the navigation filter. See [`INDEX_FILTER_LABEL`].
 const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 
-/// Every [`icon`]'s symbol, hidden — which works only because they
+/// Every [`icon`]'s symbol, hidden. That works only because they
 /// are `<symbol>`s, since `<use>` cannot instantiate a
 /// `display: none` target.
 ///
@@ -250,8 +254,8 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 meta
                     name="description"
-                    content="Catalogue of perfectionist's lints — a Dylint plugin adding stylistic and correctness lints for Rust projects.";
-                title { "perfectionist lints — " (git_ref) }
+                    content="Catalogue of the lints in perfectionist, a Dylint plugin adding stylistic and correctness lints for Rust projects.";
+                title { "perfectionist lints: " (git_ref) }
                 @for &(href, _) in STYLESHEETS {
                     link rel="stylesheet" href=(href);
                 }
@@ -294,7 +298,9 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
                             tr {
                                 td {
                                     a href={ "#" (anchor_for(&rule.namespaced)) } {
-                                        code { (breakable_lint_name(unnamespaced(&rule.namespaced))) }
+                                        code.index-lint-name {
+                                            (breakable_lint_name(unnamespaced(&rule.namespaced)))
+                                        }
                                     }
                                 }
                                 td { (state_badge(rule.default_state)) }
@@ -328,10 +334,10 @@ pub(crate) fn render_page(rules: &[Rule], context: &RenderContext<'_>) -> String
 /// revealed by `theme_toggle.js` only once its handlers are wired up, so
 /// a page whose script never runs shows neither a dead gear nor an
 /// orphan panel (the `[hidden]` reset in base.css makes that
-/// unconditional). The panel holds two sections: "Theme" — three
-/// radios (Light / Dark / System) styled as icon tiles, with System
-/// the default — and "Configuration", the two bulk-toggle buttons
-/// (see [`config_controls`]). It is shaped to gain further sections.
+/// unconditional). The panel holds two sections. "Theme" carries
+/// three radios (Light / Dark / System) styled as icon tiles, with
+/// System the default; "Configuration" carries the two bulk-toggle
+/// buttons (see [`config_controls`]). It is shaped to gain further sections.
 fn settings_panel() -> Markup {
     html! {
         button
@@ -366,7 +372,7 @@ fn settings_panel() -> Markup {
 /// are wired up, so a page whose script never runs shows no dead button.
 /// That is also the window in which its `aria-controls` names an element
 /// not yet in the document: the button is `hidden` throughout it, so
-/// nothing — assistive tech included — can follow the reference before
+/// nothing, assistive tech included, can follow the reference before
 /// the overlay exists.
 ///
 /// `search_overlay.js` also binds `/` to the same toggle, so the `title`
@@ -410,6 +416,7 @@ fn search_templates() -> Markup {
                                 "search-input",
                                 "Search lints…",
                                 "Search lints",
+                                Some(SEARCH_RESULTS_ID),
                             )
                         })
                     }
@@ -417,7 +424,11 @@ fn search_templates() -> Markup {
                     // empty `<ul>` still claims the dialog's whole
                     // remaining height, which would push either message
                     // below it.
-                    ul.search-results aria-label="Search results" hidden {}
+                    ul  .search-results
+                        id=(SEARCH_RESULTS_ID)
+                        role="listbox"
+                        aria-label="Search results"
+                        hidden {}
                     // What the reader sees instead, one at a time. Both
                     // are rendered here rather than written by the script
                     // so the wording lives with the rest of the page's
@@ -432,8 +443,7 @@ fn search_templates() -> Markup {
                         "No lint matches that search."
                     }
                     // Last, so it sits in the results' corner rather than
-                    // in the search box, and so Tab reaches it after the
-                    // results rather than before them.
+                    // in the search box.
                     button.search-close type="button" {
                         // Decoration beside the word, so the
                         // button's accessible name stays the word
@@ -445,10 +455,14 @@ fn search_templates() -> Markup {
             }
         }
         template id=(SEARCH_RESULT_TEMPLATE_ID) {
-            li {
-                // No `href` until a result fills it in: the blueprint
-                // points nowhere.
-                a.search-result {
+            // A listbox takes options as its children, so the `<li>`
+            // is hidden from assistive tech.
+            li role="presentation" {
+                // No `href` and no `id` until a result fills them in:
+                // the blueprint points nowhere. `tabindex` keeps Tab out
+                // of the results, which the caret selects among without
+                // leaving the search box.
+                a.search-result role="option" aria-selected="false" tabindex="-1" {
                     code.search-result-name {}
                     span.search-result-text {}
                 }
@@ -460,15 +474,25 @@ fn search_templates() -> Markup {
 /// One query input, as both the search overlay and the filter boxes want
 /// it.
 ///
+/// `listbox` is the `id` of the list this input selects within, which
+/// makes it a combobox over that list rather than a plain search box. A
+/// box that only narrows a list selects nothing in it, and passes
+/// `None`.
+///
 /// The attributes after `type="search"` keep a phone or tablet keyboard
 /// from capitalising the first letter and autocorrecting a half-typed
 /// lint name into a dictionary word, neither of which can match a
 /// snake_case identifier.
-fn search_text_input(class: &str, placeholder: &str, label: &str) -> Markup {
+fn search_text_input(class: &str, placeholder: &str, label: &str, listbox: Option<&str>) -> Markup {
+    let combobox = listbox.is_some();
     html! {
         input
             class=(class)
             type="search"
+            role=[combobox.then_some("combobox")]
+            aria-controls=[listbox]
+            aria-expanded=[combobox.then_some("false")]
+            aria-autocomplete=[combobox.then_some("list")]
             placeholder=(placeholder)
             aria-label=(label)
             autocapitalize="none"
@@ -524,7 +548,14 @@ fn filter_container(kind: &str, label: &str) -> Markup {
         div class=(class) id=(id) {
             template {
                 div.filter-box hidden {
-                    (search_text_input("filter-input", "Filter by name…", label))
+                    ({
+                        search_text_input(
+                            "filter-input",
+                            "Filter by name…",
+                            label,
+                            None,
+                        )
+                    })
                 }
             }
         }
@@ -539,7 +570,7 @@ fn filter_container(kind: &str, label: &str) -> Markup {
 ///
 /// The whole `<fieldset>` is emitted with the HTML `hidden` attribute
 /// and revealed by that script only once its click handlers are wired
-/// up — the same "reveal only when functional" contract the gear and
+/// up, the same "reveal only when functional" contract the gear and
 /// hamburger follow (the `[hidden]` reset in base.css makes it
 /// unconditional). Hiding the section, rather than just the two
 /// buttons, also keeps the "Configuration" legend from showing alone
@@ -589,11 +620,11 @@ fn theme_option(symbol: &str, value: &str, label: &str, checked: bool) -> Markup
 /// The toggle is rendered with the HTML `hidden` attribute: the
 /// click handler, scroll lock, focus moves, and `inert` setup are
 /// all JS-driven, so a button visible to the reader without those
-/// installed would be inert (a CSP-blocked or failed-to-load
-/// external script, a stripped script tag, a parse error before the
-/// handler attaches — any of these leave the page with a visible,
+/// installed would be inert. A CSP-blocked or failed-to-load
+/// external script, a stripped script tag and a parse error before
+/// the handler attaches all leave the page with a visible,
 /// non-functional hamburger if the button isn't gated on script
-/// readiness).
+/// readiness.
 /// `<noscript>` only covers "scripting disabled in the browser",
 /// not "script failed to run"; the `hidden` attribute covers both
 /// uniformly. The script reveals the button by clearing `hidden`
@@ -661,7 +692,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
     let source_url = format!("{repo_url}/blob/{commit_sha}/{source_path}");
     html! {
         article.rule id=(anchor_for(&rule.namespaced)) {
-            h2 {
+            h2.rule-heading {
                 code {
                     a   .rule-anchor
                         href={ "#" (anchor_for(&rule.namespaced)) }
@@ -676,7 +707,7 @@ fn rule_article(rule: &Rule, context: &RenderContext<'_>) -> Markup {
                     " top"
                 }
             }
-            p {
+            p.rule-statement {
                 (state_badge(rule.default_state))
                 (PreEscaped(markdown_inline_to_html(&rule.short_desc)))
             }
@@ -699,8 +730,8 @@ fn state_badge(default_state: DefaultState) -> Markup {
 }
 
 /// Build the in-page anchor for a rule. The fragment is
-/// `/rule/<kebab-name>` — a `/rule/` prefix plus the rule's
-/// unnamespaced name with `_` swapped for `-` — so a permalink
+/// `/rule/<kebab-name>`, a `/rule/` prefix plus the rule's
+/// unnamespaced name with `_` swapped for `-`, so a permalink
 /// reads `#/rule/path-qualification-mismatch` rather than the old
 /// `#perfectionist-path_qualification_mismatch`. The leading slash makes the
 /// fragment look like a route, and the value doubles as the

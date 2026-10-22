@@ -273,7 +273,7 @@ pub fn synth_const_generic(input: TokenStream) -> TokenStream {
 
 /// `#[derive(SynthFieldRefBody)]` → emits
 /// `const _: () = { let _ = (); };` whose `let _ = ();` statement is
-/// spanned over the derived type's body `{ ... }` — the span that
+/// spanned over the derived type's body `{ ... }`, the span that
 /// covers its field / variant doc comments. The `const _` wrapper is
 /// anonymous, so the derive can be applied to several types in one
 /// crate without name collisions.
@@ -284,7 +284,7 @@ pub fn synth_const_generic(input: TokenStream) -> TokenStream {
 /// list, lowered *after* the struct itself. The comment-anchor finder
 /// must keep the documented field/variant as the anchor (the tightest
 /// containing node) rather than letting this wider, later-visited
-/// generated node steal it — the bug reported in issue #165's
+/// generated node steal it, the bug reported in issue #165's
 /// follow-up. Built-in derives (`Debug`, `Default`, ...) don't produce
 /// such a node, which is why they don't reproduce it.
 #[proc_macro_derive(SynthFieldRefBody)]
@@ -427,7 +427,8 @@ pub fn synth_owned_param(input: TokenStream) -> TokenStream {
         tree
     };
 
-    // `item: &str` — only the `&str` type tokens carry the user span.
+    // `item: &str`, where only the `&str` type tokens carry the user
+    // span.
     let mut params = TokenStream::new();
     params.extend([
         TokenTree::Ident(Ident::new("item", call_site)),
@@ -526,7 +527,7 @@ fn synth_field_copy(attr_span: Span, method_name: &str) -> TokenStream {
     };
     let mut ret = TokenStream::new();
     ret.extend([at_sig(TokenTree::Ident(Ident::new("String", attr_span)))]);
-    // `self.s.clone()` — stamped like the signature, the way
+    // `self.s.clone()`, stamped like the signature, the way
     // `quote_spanned!(field.span() => ...)` stamps a whole accessor.
     let mut fn_body = TokenStream::new();
     fn_body.extend([
@@ -555,7 +556,7 @@ fn synth_field_borrow(attr_span: Span, method_name: &str) -> TokenStream {
         at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
         at_sig(TokenTree::Ident(Ident::new("str", attr_span))),
     ]);
-    // `&self.s` — stamped like the signature, as above.
+    // `&self.s`, stamped like the signature, as above.
     let mut fn_body = TokenStream::new();
     fn_body.extend([
         at_sig(TokenTree::Punct(Punct::new('&', Spacing::Alone))),
@@ -590,7 +591,7 @@ fn synth_accessor(
         tree
     };
 
-    // `struct _Synth { s: String }` — entirely at the call site.
+    // `struct _Synth { s: String }`, entirely at the call site.
     let mut field = TokenStream::new();
     field.extend([
         TokenTree::Ident(Ident::new("s", call_site)),
@@ -604,7 +605,7 @@ fn synth_accessor(
         TokenTree::Group(Group::new(Delimiter::Brace, field)),
     ]);
 
-    // `fn <method_name>(&self) -> <ret>` — every signature token
+    // `fn <method_name>(&self) -> <ret>`, with every signature token
     // user-spanned.
     let mut receiver = TokenStream::new();
     receiver.extend([
@@ -628,7 +629,7 @@ fn synth_accessor(
         fn_body,
     )))]);
 
-    // `impl _Synth { ... }` — stamped as well, so that every span the
+    // `impl _Synth { ... }`, stamped as well, so that every span the
     // rule could consult, the method's and its parent item's alike, reads
     // as user-written. A span-based guard has nothing left to go on.
     body.extend([
@@ -647,13 +648,13 @@ fn synth_accessor(
 ///
 /// The wrapping `fn` is stamped too, the way `SynthCloningGetter` stamps
 /// its `impl`, so every span the rule could consult reads as
-/// user-written and `hir_in_external_macro` -- which checks the node's
-/// span and the enclosing item's `def_span` -- has nothing to find. What
+/// user-written and `hir_in_external_macro`, which checks the node's
+/// span and the enclosing item's `def_span`, has nothing to find. What
 /// stops the diagnostic is `is_from_proc_macro`, which reads the source
 /// text under the span instead.
 ///
-/// The synthesised call is one the rule fires on when hand-written --
-/// a std setter on an owned local -- so the fixture is not vacuous.
+/// The synthesised call is one the rule fires on when hand-written,
+/// a std setter on an owned local, so the fixture is not vacuous.
 #[proc_macro_derive(SynthCommandSetter, attributes(synth_command_setter))]
 pub fn synth_command_setter(input: TokenStream) -> TokenStream {
     let attr_span = find_attr_span(input, "synth_command_setter")
@@ -675,8 +676,8 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
         out
     };
 
-    // `let mut command = std::process::Command::new("ls");` — at the
-    // call site, so only the setter call below carries a user span.
+    // `let mut command = std::process::Command::new("ls");` sits at
+    // the call site, so only the setter call below carries a user span.
     let mut new_args = TokenStream::new();
     new_args.extend([TokenTree::Literal(Literal::string("ls"))]);
     let mut body = TokenStream::new();
@@ -692,8 +693,8 @@ pub fn synth_command_setter(input: TokenStream) -> TokenStream {
         TokenTree::Punct(Punct::new(';', Spacing::Alone)),
     ]);
 
-    // `command.arg("-l");` — every token user-spanned, the way a derive
-    // spans a synthesised call over the attribute that drove it.
+    // `command.arg("-l");` has every token user-spanned, the way a
+    // derive spans a synthesised call over the attribute that drove it.
     let mut arg_args = TokenStream::new();
     arg_args.extend([TokenTree::Literal(Literal::string("-l"))]);
     body.extend([
@@ -883,6 +884,97 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
         .expect("valid tokens");
     out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
     out
+}
+
+/// `#[derive(SynthMapOr)]` + `#[synth_map_or]` →
+/// `fn _synth_map_or() { let _ = FLAG.map_or(bool::default(), |flag| flag); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_map_or` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The call's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both
+/// let through. Only the enclosing item's `def_span` still says where
+/// the call lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthMapOr, attributes(synth_map_or))]
+pub fn synth_map_or(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or")
+        .expect("`#[derive(SynthMapOr)]` requires a `#[synth_map_or]`");
+    let body = respan(
+        "let _ = FLAG.map_or(bool::default(), |flag| flag);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_fn_block("_synth_map_or", body)
+}
+
+/// `#[derive(SynthMapOrElse)]` + `#[synth_map_or_else]` →
+/// `fn _synth_map_or_else() { let _ = FLAG.map_or_else(|| false, |flag| flag); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_map_or_else` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The call's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both
+/// let through. Only the enclosing item's `def_span` still says where
+/// the call lives, which is what `hir_in_external_macro` reads.
+///
+/// `FLAG` is the fixture's own `const`.
+#[proc_macro_derive(SynthMapOrElse, attributes(synth_map_or_else))]
+pub fn synth_map_or_else(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_map_or_else")
+        .expect("`#[derive(SynthMapOrElse)]` requires a `#[synth_map_or_else]`");
+    let body = respan(
+        "let _ = FLAG.map_or_else(|| false, |flag| flag);"
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_fn_block("_synth_map_or_else", body)
+}
+
+/// `#[derive(SynthExpectMessage)]` + `#[synth_expect_message]` →
+/// `fn _synth_expect_message() { let _ = Some(1u32).expect(".."); }`
+/// with every token moved to the user-span of `synth_expect_message`,
+/// the message literal among them. A rule that reads the span's own
+/// source text finds the attribute identifier there rather than a
+/// string literal.
+#[proc_macro_derive(SynthExpectMessage, attributes(synth_expect_message))]
+pub fn synth_expect_message(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_expect_message")
+        .expect("`#[derive(SynthExpectMessage)]` requires a `#[synth_expect_message]`");
+    let body = respan(
+        r#"let _ = Some(1u32).expect("a synthesised message with a dash — here");"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    let mut out: TokenStream = "fn _synth_expect_message()"
+        .parse()
+        .expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
+/// `#[derive(SynthDocComment)]` + `#[synth_doc_comment]` →
+/// `const _: () = { #[doc = ".."] pub struct Documented; };` with
+/// every token moved to the user-span of `synth_doc_comment`. The
+/// doc attribute is a token the expansion carries, where a `///` in a
+/// file is text a source-reading scan would have to find on disk.
+#[proc_macro_derive(SynthDocComment, attributes(synth_doc_comment))]
+pub fn synth_doc_comment(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_doc_comment")
+        .expect("`#[derive(SynthDocComment)]` requires a `#[synth_doc_comment]`");
+    let body = respan(
+        r#"#[doc = "a synthesised doc comment with a dash — here"] pub struct Documented;"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    wrap_const_block(body)
 }
 
 /// Every token of `stream`, groups walked into, moved to `span`.

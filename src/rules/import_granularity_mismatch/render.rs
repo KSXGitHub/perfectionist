@@ -111,7 +111,7 @@ fn needs_brace(entry: &str) -> bool {
     entry == "self" || entry.starts_with("self ")
 }
 
-/// `use serde;` / `use serde as alias;` — the standalone form every
+/// `use serde;` / `use serde as alias;`, the standalone form every
 /// style keeps as-is.
 fn crate_item_body(leaf: &Leaf) -> String {
     let LeafItem::Named(name) = &leaf.item else {
@@ -183,8 +183,8 @@ fn insert(node: &mut Node, module: &[String], leaf: &Leaf) {
 fn node_entries(node: &Node, synthesize_self: bool) -> Vec<String> {
     let mut entries: Vec<String> = Vec::new();
     for item in &node.items {
-        // A named item whose name matches a child module — `use a::b;`
-        // next to `use a::b::C;` — can be read as the module imported as
+        // A named item whose name matches a child module, `use a::b;`
+        // next to `use a::b::C;`, can be read as the module imported as
         // itself. Only the `synthesize_self` shape folds it into that
         // child's brace as `self` (below); the default sibling shape
         // keeps it standing alone. The two are NOT interchangeable:

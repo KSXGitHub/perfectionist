@@ -293,7 +293,7 @@
     }
   }
 
-  var indexFilter = installFilter('index', 'table.index tbody', 'tr', 'td:first-child code')
+  var indexFilter = installFilter('index', 'table.index tbody', 'tr', '.index-lint-name')
 
   installFilter('nav', 'ul.nav-sidebar-list', 'li', 'a code')
 
@@ -306,8 +306,8 @@
   var filter = indexFilter
 
   // Without IntersectionObserver the flag simply stays true and typing
-  // works wherever the reader is — a wider trigger than intended, not a
-  // broken one.
+  // works wherever the reader is, which is a wider trigger than
+  // intended rather than a broken one.
   var indexInView = true
   if ('IntersectionObserver' in window) {
     var observer = new IntersectionObserver(function (entries) {

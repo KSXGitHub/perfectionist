@@ -1,12 +1,12 @@
-//! [`AsciiLetter`] — single-ASCII-letter newtype shared between the
+//! [`AsciiLetter`], a single-ASCII-letter newtype shared between the
 //! `single_letter_*` rules' allow-list configuration knobs. Encoding
 //! the "ASCII alphabetic" invariant in the type system retires the
 //! convention-only `#[serde(deserialize_with = "deserialize_ascii_letters")]`
 //! attribute the rules used to carry on their `Vec<char>` fields.
 
 /// TOML-flavoured type label for [`AsciiLetter`], surfaced by
-/// `tools/gen-docs` in the per-rule field-type column. Sourced here
-/// — next to the type definition — so the label is the type's own
+/// `tools/gen-docs` in the per-rule field-type column. Sourced here,
+/// next to the type definition, so the label is the type's own
 /// property rather than a hard-coded match arm in the doc generator.
 ///
 /// `char` keeps the broader `single-character string` label for the

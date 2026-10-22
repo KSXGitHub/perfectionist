@@ -22,9 +22,9 @@ use emit::Landing;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a setter called on an *owned* command — `arg`, `args`,
-    /// `env`, `envs`, `env_remove`, `env_clear`, `current_dir`,
-    /// `stdin`, `stdout`, `stderr` — and names the
+    /// Flags a setter called on an *owned* command, one of `arg`,
+    /// `args`, `env`, `envs`, `env_remove`, `env_clear`,
+    /// `current_dir`, `stdin`, `stdout` or `stderr`, and names the
     /// [`command_extra::CommandExtra`](https://docs.rs/command-extra)
     /// counterpart that takes `self` instead of `&mut self`. Any
     /// command the trait covers counts: `std::process::Command`, a
@@ -32,13 +32,13 @@ declare_tool_lint! {
     /// [`tokio::process`](https://docs.rs/tokio)'s and
     /// [`async_process`](https://docs.rs/async-process)'s.
     ///
-    /// A receiver it could not take ownership of — a `&mut Command`, or
-    /// a field reached through one — is left alone. So is a crate that
-    /// neither depends on `command-extra` nor belongs to a workspace
-    /// declaring it; `command_extra_dependency` sets how far the lint
-    /// looks for that declaration. Where `command-extra` is in the
-    /// build at all, a chain is left alone unless every setter in it
-    /// has a counterpart there — the by-value forms arrived over
+    /// A receiver it could not take ownership of is left alone, whether
+    /// a `&mut Command` or a field reached through one. So is a crate
+    /// that neither depends on `command-extra` nor belongs to a
+    /// workspace declaring it; `command_extra_dependency` sets how far
+    /// the lint looks for that declaration. Where `command-extra` is in
+    /// the build at all, a chain is left alone unless every setter in
+    /// it has a counterpart there. The by-value forms arrived over
     /// several releases, and a chain is ported whole or not at all.
     ///
     /// A fix is applied where the whole change is known: a chain is
@@ -284,8 +284,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
         // `--all-targets` compiles that code twice, and the `--test`
         // build's dependencies are the wider set, so a dependency
         // reaching only that build would earn advice to import it
-        // where the shipping build has nothing -- `E0432` the moment
-        // the advice is taken. The shipping build asks the same code
+        // where the shipping build has nothing, which is `E0432` the
+        // moment the advice is taken. The shipping build asks the same code
         // itself wherever it can be asked, so nothing is lost.
         //
         // An integration test, a benchmark and an example are asked as
@@ -330,8 +330,8 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
                 receiver_is_a_temporary,
                 landing,
                 // `(false, false)` is reachable whenever the gate
-                // passed on something else -- the workspace's own
-                // table, or nothing at all. Scoping `trait_is_imported`
+                // passed on something else, be it the workspace's own
+                // table or nothing at all. Scoping `trait_is_imported`
                 // to the module lets a macro stamping one written call
                 // into two modules earn a diagnostic apiece, each
                 // naming what its module needs.
@@ -384,20 +384,21 @@ impl<'tcx> LateLintPass<'tcx> for MutatingCommandBuilder {
 /// built, which is the only case it is consulted in. A discarded
 /// statement value constrains nothing, so the change is sound there
 /// outright. A method receiver usually accepts it, because autoref
-/// supplies the borrow the next method wants -- but not always: a
+/// supplies the borrow the next method wants, though not always: a
 /// method found on `&mut Command` itself, or a bound only
 /// `&mut Command` satisfies (`.into()` being the everyday one), is lost
 /// once the receiver becomes a `Command`. Separating those needs the
 /// typechecker, which is why a rename rendered on this answer alone is
 /// `MaybeIncorrect`.
 ///
-/// Every other position -- a `let`, a call argument, a struct field --
-/// may or may not accept the change, and which is likewise the
-/// typechecker's answer, so the diagnostic stays with prose there.
+/// Every other position, a `let`, a call argument and a struct field
+/// among them, may or may not accept the change, and which it is
+/// remains the typechecker's answer, so the diagnostic stays with
+/// prose there.
 fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
     // A macro taking an expression and using it twice gives both uses
     // the caller's span, so a rename shown for the use in an accepting
-    // position would be written over the other use as well -- and that
+    // position would be written over the other use as well, and that
     // other one may be exactly the borrow the original returned. So a
     // position the macro's own body supplies is declined however many
     // times the macro uses the expression, which costs a rendered
@@ -406,7 +407,7 @@ fn landing(cx: &LateContext<'_>, call: &Expr<'_>) -> Landing {
     // A call the macro's own body wrote arrives here carrying the
     // caller's token for its method name, because that is what an
     // `$ident` fragment holds. Renaming that token rewrites every other
-    // use of it in the body -- `stringify!($method)` among them, which
+    // use of it in the body, `stringify!($method)` among them, which
     // compiles and changes what the command is run with. `fix` declines
     // such a call outright, and the rendered rename has to as well.
     if call.span.from_expansion() {

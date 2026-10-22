@@ -1,9 +1,9 @@
 // force-host
 // no-prefer-dynamic
 //
-// A miniature stand-in for `thiserror`. The `Error` derive is inert —
-// it emits no tokens, leaving the annotated struct / enum untouched —
-// and declares the helper-attribute set (`error`, `source`, `from`,
+// A miniature stand-in for `thiserror`. The `Error` derive is inert:
+// it emits no tokens, leaving the annotated struct / enum untouched.
+// It declares the helper-attribute set (`error`, `source`, `from`,
 // `backtrace`) the real derive does, so a fixture can write
 // `#[error("...")]` on an item, its variants, and its fields and still
 // compile.

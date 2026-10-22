@@ -24,7 +24,7 @@ use std::collections::HashSet;
 
 /// One removable formatting attribute.
 pub(super) struct Violation {
-    /// Span of the identifier of the node the attribute sits on — the
+    /// Span of the identifier of the node the attribute sits on: the
     /// struct, the enum, or the variant. The diagnostic anchors here so
     /// a per-variant `#[allow]` silences just that variant while one on
     /// the enum still covers them all. The identifier is used rather
@@ -32,8 +32,8 @@ pub(super) struct Violation {
     /// node and its HIR counterpart, whatever either does with the
     /// node's leading attributes.
     pub(super) anchor: Span,
-    /// The whole attribute — the diagnostic's primary span, and what
-    /// the suggestion deletes when there is one.
+    /// The whole attribute, which is the diagnostic's primary span and
+    /// what the suggestion deletes when there is one.
     pub(super) attribute: Span,
     pub(super) kind: ForwardKind,
     /// Whether the whole attribute may be deleted outright, or only
@@ -99,7 +99,7 @@ fn walk_items(
             }
             // A container can also be declared inside a function body
             // or a `const _: () = { ... }` block. Neither is a module,
-            // so neither needs the `live_module_spans` guard — an
+            // so neither needs the `live_module_spans` guard: an
             // unbuilt one has no HIR node and is dropped at emit time.
             ItemKind::Fn(func) => {
                 if let Some(body) = &func.body {
@@ -158,11 +158,12 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     //
     // A template that does not mention `{_variant}` is simply what a
     // variant falls back to once its own attribute is gone. One that
-    // *does* mention it looks safe — the variant is wrapped either way
-    // — but only for some traits: under a wrapping template
-    // `derive_more` abandons the transparent path, and for `Pointer` it
-    // then dereferences the field, so the wrapped form prints the
-    // pointee's address and the deleted form prints the binding's.
+    // *does* mention it looks safe, because the variant is wrapped
+    // either way, but it is safe for only some traits: under a wrapping
+    // template `derive_more` abandons the transparent path, and for
+    // `Pointer` it then dereferences the field, so the wrapped form
+    // prints the pointee's address and the deleted form prints the
+    // binding's.
     // Aliasing the placeholder (`#[display("{_variant}", _variant = 1)]`)
     // makes the template replacing again. Both are narrow, and reasoning
     // about which combinations survive has been wrong more than once, so
@@ -224,8 +225,8 @@ fn check_enum(item: &Item, anchor: Span, def: &EnumDef, violations: &mut Vec<Vio
     }
 }
 
-/// Check one single-field container — a struct, or an enum variant —
-/// for a formatting attribute that only restates the forward its derive
+/// Check one single-field container, a struct or an enum variant, for
+/// a formatting attribute that only restates the forward its derive
 /// already performs.
 ///
 /// `derives` is the derive list that governs the container: its own for
@@ -284,14 +285,14 @@ fn check_container(
 }
 
 /// The helper attributes the node configures through one of
-/// `derive_more`'s non-template shapes — `#[display(bound(...))]` and
+/// `derive_more`'s non-template shapes: `#[display(bound(...))]` and
 /// its `bounds(...)` / `where(...)` spellings, `rename_all = "..."`.
 ///
 /// A helper named here is never flagged on this node. `derive_more`
 /// folds a `bound(...)` predicate into the impl only on the branch
 /// where a format attribute is present, so deleting the template would
-/// silently drop the predicates the user wrote beside it — a change to
-/// the generated impl, not the no-op the fix promises.
+/// silently drop the predicates the user wrote beside it, a change to
+/// the generated impl rather than the no-op the fix promises.
 fn non_template_helpers(calls: &[AttributeCall<'_>]) -> HashSet<Symbol> {
     calls
         .iter()
@@ -319,8 +320,8 @@ fn violation(
 
 /// The formatting trait `call` configures. `None` unless the attribute
 /// names one of the formatting helpers *and* the container derives the
-/// matching trait — a helper attribute means nothing without the derive
-/// that declares it.
+/// matching trait, a helper attribute meaning nothing without the
+/// derive that declares it.
 fn derived_formatting_trait(
     call: &AttributeCall<'_>,
     derives: &HashSet<Symbol>,
@@ -333,7 +334,7 @@ fn derived_formatting_trait(
 
 /// The field a single-field container's template can name: the index
 /// for a tuple field, the (unraw-ed) name for a named one. `None` for a
-/// container with zero or more than one field — with more than one the
+/// container with zero or more than one field: with more than one the
 /// template is mandatory, and with none there is nothing to forward to.
 fn sole_field_reference(data: &VariantData) -> Option<FieldReference> {
     let [field] = data.fields() else {

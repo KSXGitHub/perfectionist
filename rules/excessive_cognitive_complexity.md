@@ -70,8 +70,8 @@ length and depth on their own and pair well with this rule.
 
 ## Example
 
-**Avoid:** a nested `if` inside a `for` inside a `match` — the
-innermost `if` alone costs 3
+**Avoid:** a nested `if` inside a `for` inside a `match`, where
+the innermost `if` alone costs 3
 
 ```rust,ignore
 fn describe(kind: Kind, items: &[Item]) -> String {

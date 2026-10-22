@@ -75,7 +75,7 @@ a {
 
    Passed and failed are parted by lightness, not only by hue: picked for
    the same contrast against the background, as they first were, they sat
-   1.01:1 apart from each other — nothing, to a reader who cannot sort
+   1.01:1 apart from each other, which is nothing to a reader who cannot sort
    red from green. Failed is the loud one in both schemes. A glyph or a
    border needs 3:1 (WCAG 1.4.11); failed also colours the message text
    under a case, so it clears 4.5:1. */

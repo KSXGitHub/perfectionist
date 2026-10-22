@@ -15,8 +15,8 @@ policy that rustfmt itself does not apply inside macro bodies:
 multi-line invocations must end with a trailing comma; single-line
 invocations must not.
 
-Eligibility is name-based — a curated list of `core` / `std` and
-well-known third-party macros (`vec!`, `format!`, `println!`,
+Eligibility is name-based, resting on a curated list of `core` /
+`std` and well-known third-party macros (`vec!`, `format!`, `println!`,
 `assert_eq!`, `dbg!`, [`log::info!`](https://docs.rs/log),
 [`tracing::debug!`](https://docs.rs/tracing),
 [`anyhow::bail!`](https://docs.rs/anyhow),

@@ -54,6 +54,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   `to_*` method hands back a borrow at no cost where its prefix promises a costly conversion
 
+- [`em_dash_prose`](./em_dash_prose.md) (default: `active`).
+
+  dash standing between two clauses; restructure the sentence instead
+
 - [`excessive_cognitive_complexity`](./excessive_cognitive_complexity.md) (default: `active`).
 
   function body has a cognitive complexity above the configured maximum
@@ -93,6 +97,18 @@ Lint-control attributes use the `perfectionist::` namespace.
 - [`macro_trailing_comma`](./macro_trailing_comma.md) (default: `active`).
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
+
+- [`map_or`](./map_or.md) (default: `active`).
+
+  `map_or` call, which names its default before the mapper it stands in for
+
+- [`map_or_else`](./map_or_else.md) (default: `active`).
+
+  `map_or_else` call, which names its default before the mapper it stands in for
+
+- [`multi_statement_iterator_closure`](./multi_statement_iterator_closure.md) (default: `inactive`).
+
+  iterator callback has too many top-level statements
 
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 

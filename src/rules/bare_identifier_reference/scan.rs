@@ -3,8 +3,8 @@
 //! *candidate* when (and only when) its body is a single Rust
 //! identifier.
 //!
-//! The structural classification — distinguishing a bare code span
-//! from one already wrapped as `` [`Foo`] `` — lives in
+//! The structural classification, distinguishing a bare code span
+//! from one already wrapped as `` [`Foo`] ``, lives in
 //! [`crate::markdown::scan_code_span_candidates`]. The
 //! identifier-extraction step here is the Rust-specific layer that
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md` leaves to each
@@ -54,8 +54,8 @@ fn take_backticked_ident(code_span: &str) -> Option<String> {
     // both ends have one and the body is not all whitespace. Mirror that
     // exactly rather than `trim`-ing every run: a padded body like
     // `` `  Foo  ` `` keeps a space after stripping (` Foo `), so it is
-    // not a bare identifier — and rewriting it as `` [`  Foo  `] `` would
-    // produce a link rustdoc cannot resolve.
+    // not a bare identifier, and rewriting it as `` [`  Foo  `] ``
+    // would produce a link rustdoc cannot resolve.
     let body = strip_one_padding_space(body);
     if !is_plain_ident(body) {
         return None;
@@ -64,7 +64,7 @@ fn take_backticked_ident(code_span: &str) -> Option<String> {
 }
 
 /// Strip the single CommonMark padding space from each end of a code
-/// span's body — but only when both ends carry one and the body is not
+/// span's body, but only when both ends carry one and the body is not
 /// all whitespace. Leaves the body untouched otherwise.
 fn strip_one_padding_space(body: &str) -> &str {
     if body.len() >= 2 && body.starts_with(' ') && body.ends_with(' ') && !body.trim().is_empty() {
@@ -76,7 +76,7 @@ fn strip_one_padding_space(body: &str) -> &str {
 
 /// Strip the matching opening and closing backtick fences from a code
 /// span's source text, returning the inner body. Returns `None` if the
-/// text is not fence-delimited (defensive — the caller only passes
+/// text is not fence-delimited (defensive, since the caller only passes
 /// genuine code-span matches from [`scan_code_span_candidates`], whose
 /// opening and closing fences are equal-length by construction).
 fn strip_code_fences(code_span: &str) -> Option<&str> {

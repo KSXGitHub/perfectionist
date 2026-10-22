@@ -14,7 +14,7 @@ pub(super) struct FormattingTrait {
     pub(super) derive: &'static str,
     /// The derive's helper attribute, always written unqualified.
     pub(super) attribute: &'static str,
-    /// The placeholder type that selects this trait — `""` for
+    /// The placeholder type that selects this trait, `""` for
     /// `Display`, whose placeholder carries no type at all.
     pub(super) spec_type: &'static str,
 }

@@ -79,8 +79,8 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
-    /// **Avoid:** a nested `if` inside a `for` inside a `match` — the
-    /// innermost `if` alone costs 3
+    /// **Avoid:** a nested `if` inside a `for` inside a `match`, where
+    /// the innermost `if` alone costs 3
     ///
     /// ```rust,ignore
     /// fn describe(kind: Kind, items: &[Item]) -> String {
@@ -236,7 +236,7 @@ fn emit(
             );
         } else {
             diag.help(format!(
-                "this {kind_label} does several independent things — move each into \
+                "this {kind_label} does several independent things; move each into \
                  its own function named for that one responsibility",
             ));
         }

@@ -15,8 +15,8 @@
 //! formatting attributes share: a placeholder is
 //! `{` *argument* [`:` *format-spec*] `}`, where the argument is an
 //! identifier or an index and the format spec carries no nested braces.
-//! Neither part is interpreted here — a caller that cares which trait a
-//! spec selects, or which field an argument names, reads the borrowed
+//! Neither part is interpreted here. A caller that cares which trait
+//! a spec selects, or which field an argument names, reads the borrowed
 //! text itself.
 
 /// One piece of a parsed template.
@@ -40,7 +40,7 @@ pub(crate) struct Placeholder<'a> {
     pub(crate) argument: &'a str,
     /// The text between the `:` and the closing `}`, or `None` when the
     /// placeholder carries no `:` at all. `{x}` yields `None` and `{x:}`
-    /// yields `Some("")` — the two are equivalent to `format!`, and a
+    /// yields `Some("")`. The two are equivalent to `format!`, and a
     /// caller that wants them treated alike uses [`Self::spec`].
     pub(crate) format_spec: Option<&'a str>,
 }
@@ -55,7 +55,7 @@ impl<'a> Placeholder<'a> {
 }
 
 /// Split `template` into its segments, or `None` when it is not a
-/// well-formed template — an unclosed `{`, or a `}` that neither closes
+/// well-formed template: an unclosed `{`, or a `}` that neither closes
 /// a placeholder nor is doubled. A caller that reaches a template
 /// rustc has already accepted still has to handle `None`, because the
 /// attribute may not have been compiled as a template at all.

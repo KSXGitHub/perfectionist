@@ -15,9 +15,9 @@ use clippy_utils::diagnostics::span_lint_and_then;
 use rustc_lint::{LateContext, LintContext};
 
 /// Extraction is a first-class answer to deep nesting, so this never
-/// argues against it — it states the property that separates one from
+/// argues against it. It states the property that separates one from
 /// nesting relocated into an argument list.
-const EXTRACTION_HELP: &str = "or extract the inner levels — name the new function for what \
+const EXTRACTION_HELP: &str = "or extract the inner levels, naming the new function for what \
                                it does, not where it came from; if it needs most of this \
                                function's locals as parameters, the nesting moved rather than \
                                went away";

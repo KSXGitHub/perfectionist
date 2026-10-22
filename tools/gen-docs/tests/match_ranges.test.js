@@ -16,17 +16,14 @@
   t.group('match_ranges.test.js')
 
   t.add('a verbatim match prefers the occurrence that opens a word', function () {
-    // `item_` occurs twice: inside `bitem_` at 1, and opening a word at
-    // 6. The query carries the separator so that this tier is the one
-    // answering — it alone scores and marks the separators the query
-    // typed, where the looser tiers place the letters between them and
-    // trim the span to those, which is the `[6, 10]` below.
+    // `bitem_item_x` holds `item_` twice, the first of them inside
+    // `bitem_` where it opens no word.
     var hit = t.found(m.matchPhrase('item_', 'bitem_item_x'), '`item_` appears')
     t.deepEqual(hit.ranges, [[6, 11]], 'the word-opening occurrence is the one taken')
   })
 
   t.add('a verbatim match falls back to the first occurrence', function () {
-    // Neither occurrence opens a word — each finishes one — so the
+    // Neither occurrence opens a word, each finishing one, so the
     // earliest stands.
     var hit = t.found(m.matchPhrase('ite', 'bite_site'), '`ite` appears')
     t.deepEqual(hit.ranges, [[1, 4]], 'the earliest occurrence is the one taken')

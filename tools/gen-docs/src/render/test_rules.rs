@@ -28,10 +28,10 @@ fn lint_names_offer_a_line_break_after_every_underscore() {
     let name = "redundant_derive_more_forward_template";
     let html = render_page(&[fake_rule(name)], &fake_context());
     let broken = "redundant_<wbr>derive_<wbr>more_<wbr>forward_<wbr>template";
-    // The index table's "Lint" cell — the narrowest of the three
+    // The index table's "Lint" cell, the narrowest of the three
     // columns, and the one that motivated this.
     let cell = format!(
-        r##"<td><a href="#/rule/redundant-derive-more-forward-template"><code>{broken}</code></a></td>"##,
+        r##"<td><a href="#/rule/redundant-derive-more-forward-template"><code class="index-lint-name">{broken}</code></a></td>"##,
     );
     assert!(
         html.contains(&cell),

@@ -4,7 +4,7 @@
 //! Everything here is read from tokens rather than from
 //! `meta_item_list`, so it works on a freshly re-parsed module AST (see
 //! [`crate::module_reparse`]) and on argument forms that are not meta
-//! items — `#[display("{}", self.0)]` has an expression where a meta
+//! items, `#[display("{}", self.0)]` having an expression where a meta
 //! item would have to be. Nothing here knows about any particular
 //! attribute: [`attribute_calls`] unwraps a `#[name(...)]` (looking
 //! through `#[cfg_attr(...)]`), [`is_cfg_gated`] answers whether a
@@ -40,7 +40,7 @@ pub(crate) struct AttributeCall<'a> {
 }
 
 /// Every `#[name(...)]` attribute `attr` carries, looking through a
-/// `#[cfg_attr(<cfg>, ...)]` gate — and through a nested one, since
+/// `#[cfg_attr(<cfg>, ...)]` gate, and through a nested one, since
 /// `cfg_attr(a, cfg_attr(b, ...))` is how `cfg_attr(all(a, b), ...)` is
 /// sometimes spelled. An attribute in any other shape (`#[foo]`,
 /// `#[foo = "bar"]`, a doc comment) yields nothing.
@@ -139,8 +139,8 @@ pub(crate) fn ident_name(tree: &TokenTree) -> Option<Symbol> {
 
 /// The literal a token tree holds, with the token's span. Callers that
 /// want the literal's *value* decode it further; one that only needs to
-/// point at it — `crate::macro_template` locating a format template —
-/// keeps the span.
+/// point at it, as `crate::macro_template` does when locating a format
+/// template, keeps the span.
 pub(crate) fn token_literal(tree: &TokenTree) -> Option<(Lit, Span)> {
     let TokenTree::Token(token, _) = tree else {
         return None;
@@ -152,7 +152,7 @@ pub(crate) fn token_literal(tree: &TokenTree) -> Option<(Lit, Span)> {
 }
 
 /// The cooked value of a string literal token, raw and escaped forms
-/// alike — `r"{_0}"` and `"{_0}"` are the same string.
+/// alike, so `r"{_0}"` and `"{_0}"` are the same string.
 pub(crate) fn str_literal(tree: &TokenTree) -> Option<String> {
     let (literal, _span) = token_literal(tree)?;
     let LitKind::Str(symbol, _style) = LitKind::from_token_lit(literal).ok()? else {

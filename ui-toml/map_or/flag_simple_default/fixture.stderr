@@ -1,0 +1,101 @@
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(80, |width| width.saturating_sub(2))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+   = note: `#[warn(perfectionist::map_or)]` on by default
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(0, |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or(0, |width| width + 1)
+LL +     width.map_or_default(|width| width + 1)
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(false, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_some_and` means (Rust 1.70 or later)
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(true, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_none_or` means (Rust 1.82 or later)
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(false, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `is_ok_and` means (Rust 1.70 or later)
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(true, |width| width > 2)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(None, |width| width.checked_add(1))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: that default is what `and_then` means
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(None, |width| width.checked_add(1))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or(None, |width| width.checked_add(1))
+LL +     width.map_or_default(|width| width.checked_add(1))
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     offset.map_or(-1, |offset| offset + 1)
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |     width.map_or(fallback, |width| width + 1)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: N warnings emitted

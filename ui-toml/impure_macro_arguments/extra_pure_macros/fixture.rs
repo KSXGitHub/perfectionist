@@ -1,6 +1,6 @@
 // `extra_pure_macros` adds project-specific macro names to the
-// built-in pure-macro set. A call to one of these macros — even
-// nested inside a denied macro — qualifies as a pure atom
+// built-in pure-macro set. A call to one of these macros, even
+// nested inside a denied macro, qualifies as a pure atom
 // and the surrounding expression is accepted.
 //
 // This fixture's `dylint.toml` (see `tests/impure_macro_arguments.rs`)

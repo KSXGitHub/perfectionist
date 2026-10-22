@@ -9,9 +9,9 @@
 //!   token to determine whether it sits inside a URL fragment such as
 //!   `https://example.com/issues/#123`.
 //!
-//! The grammar is deliberately small — a scheme run, a non-whitespace
-//! body, optional trailing punctuation classification — per the
-//! parser-style convention in
+//! The grammar is deliberately small, being a scheme run, a
+//! non-whitespace body and an optional trailing-punctuation
+//! classification, per the parser-style convention in
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. No regex.
 
 /// Result of [`take_url`]: a `&str` slice covering the URL body and
@@ -47,7 +47,7 @@ pub(crate) const BACKWARD_URL_SCHEMES: &[&str] = &[
 /// The URL body extends greedily over non-whitespace bytes, but stops
 /// before delimiters that would break a `<URL>` wrap or an enclosing
 /// markdown link: `<`, `>`, `[`, `]`, `)`. Trailing punctuation is
-/// *kept inside* the returned slice — a caller that offers a wrapping
+/// *kept inside* the returned slice. A caller that offers a wrapping
 /// autofix classifies the last byte itself, with
 /// [`classify_trailing`], to decide `MachineApplicable` vs
 /// `MaybeIncorrect`.
@@ -84,7 +84,7 @@ pub(crate) fn take_url<'a>(input: &'a str, schemes: &[&str]) -> Option<UrlMatch<
     })
 }
 
-/// Take the leading scheme — one or more ASCII letters — from
+/// Take the leading scheme, one or more ASCII letters, from
 /// `input`, returning the byte length on success. Only schemes that
 /// match (case-insensitively) one of the entries in `schemes` are
 /// accepted.
@@ -157,8 +157,8 @@ pub(crate) enum TrailingClass {
     /// `<URL>` wrap is machine-applicable.
     Safe,
     /// Trailing byte could be either URL or sentence punctuation
-    /// (`.`, `?`, `!`, `,`, `;`, `:`, `'`, `"`). The caller — today,
-    /// only `bare_url` — degrades the suggestion to `MaybeIncorrect`
+    /// (`.`, `?`, `!`, `,`, `;`, `:`, `'`, `"`). The caller, today
+    /// only `bare_url`, degrades the suggestion to `MaybeIncorrect`
     /// so the author decides whether the trailing byte belongs to
     /// the URL or to the surrounding sentence. A future iteration
     /// may emit two suggestions (one keeping the trailing byte

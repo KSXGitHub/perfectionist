@@ -1,5 +1,5 @@
 // A module-scope `#[expect]` over a macro that expands at item
-// position (e.g. produces a `pub const`) should fulfil — the late
+// position (e.g. produces a `pub const`) should fulfil, since the late
 // pass finds the deepest enclosing HIR node for each violation and
 // emits the diagnostic there, so a per-module suppression behaves
 // correctly regardless of whether the resulting item is at function

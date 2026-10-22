@@ -6,7 +6,7 @@
 //!   which a pre-expansion `EarlyLintPass` would skip entirely (the
 //!   file is `ModKind::Unloaded` until macro expansion). The rule runs
 //!   as a late pass that re-parses every module source file, so each
-//!   separate-file submodule is covered — including one reached only
+//!   separate-file submodule is covered, including one reached only
 //!   through another.
 //! - A `#[cfg(test)] mod tests { ... }` body, which is part of the
 //!   crate only under the unit-test target. Re-parsing keeps

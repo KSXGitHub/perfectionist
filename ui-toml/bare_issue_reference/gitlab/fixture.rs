@@ -1,7 +1,7 @@
-/// Bad: closes #55 — with a `gitlab.com` `repository`, the forge
+/// Bad: closes #55. With a `gitlab.com` `repository`, the forge
 /// is inferred as GitLab. A bare `#55` is always an issue on GitLab
 /// (merge requests are `!55`), so only the `/-/issues/55` suggestion
-/// is offered — still a `MaybeIncorrect` hint, since `#55` need not
+/// is offered, still a `MaybeIncorrect` hint, since `#55` need not
 /// be a reference at all.
 fn _doc_gitlab() {}
 

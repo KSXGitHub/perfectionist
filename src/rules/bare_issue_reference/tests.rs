@@ -106,9 +106,9 @@ fn block_defines_reference_detects_existing_definition() {
 
 /// A recognised `forge` deserialises; an unrecognised one is a
 /// hard deserialisation error. `dylint_linting::config_or_default`
-/// surfaces that error as a panic at launch — it only falls
-/// back to the default when the key is *absent*, not when it's
-/// present-but-invalid — so a typo'd forge fails loudly.
+/// surfaces that error as a panic at launch, falling
+/// back to the default only when the key is *absent* rather than
+/// present-but-invalid, so a typo'd forge fails loudly.
 #[test]
 fn unknown_forge_value_is_rejected() {
     assert!(toml::from_str::<Config>(r#"forge = "gitlab""#).is_ok());
@@ -118,7 +118,7 @@ fn unknown_forge_value_is_rejected() {
 /// The headline scenario: `repository` is set, `forge` is left
 /// unset, and no path layout is configured. The forge is
 /// detected from the recognised host and both URLs resolve to a
-/// correct address — so the autofix works, not just help-only.
+/// correct address, so the autofix works rather than help-only.
 /// The GitHub and GitLab pair also confirms the derived layout
 /// is forge-specific (`/pull/` vs `/-/merge_requests/`), not a
 /// single hard-coded shape.
@@ -157,8 +157,8 @@ fn urls_are_derived_when_only_repository_is_set() {
     );
 }
 
-/// `#NNN` denotes a merge request on no forge — GitLab spells
-/// those `!NNN` — so the PR suggestion is suppressed there but
+/// `#NNN` denotes a merge request on no forge, GitLab spelling
+/// those `!NNN`, so the PR suggestion is suppressed there but
 /// offered on the others.
 #[test]
 fn hash_reference_is_issue_only_on_gitlab() {
@@ -185,7 +185,7 @@ fn resolve_repository_passes_valid_url() {
     );
 }
 
-/// Unset is legitimate — the lint runs help-only, no panic.
+/// Unset is legitimate: the lint runs help-only, with no panic.
 #[test]
 fn resolve_repository_is_none_when_unset() {
     assert_eq!(resolve_repository(None), None);
@@ -201,7 +201,7 @@ fn resolve_repository_panics_on_unparseable() {
 
 /// The deliberate non-case: `repository` is set but its host
 /// isn't a recognised service and `forge` is left unset. There
-/// is no fallback forge, so both URLs are `None` — the rule
+/// is no fallback forge, so both URLs are `None` and the rule
 /// emits help-only output rather than guessing a layout.
 #[test]
 fn no_urls_when_repository_host_is_unrecognised() {

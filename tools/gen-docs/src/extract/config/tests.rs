@@ -5,7 +5,7 @@ use core::fmt::Write as _;
 use std::path::Path;
 
 /// A `Config` without a container `#[serde(default)]` makes a
-/// non-`Option`, non-defaulted field required — the signal for a
+/// non-`Option`, non-defaulted field required, the signal for a
 /// mandatory direction field. `Option` fields and defaulted
 /// fields stay optional.
 #[test]

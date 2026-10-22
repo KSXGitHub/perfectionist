@@ -20,11 +20,11 @@ pub(super) struct Insertion {
 /// strategies, chosen by whether the closing `)` sits on its own
 /// line:
 ///
-/// - **Inline** (`)` shares its line with the last argument — both
-///   `allow(foo)` and the wrapped `allow(\n    foo)`): splice before
-///   the closing `)`. `, reason = "<escaped>"` when the last arg has
-///   no trailing comma, ` reason = "<escaped>",` when it does, and a
-///   bare `reason = "<escaped>"` into an empty `allow()`.
+/// - **Inline** (`)` shares its line with the last argument, in
+///   `allow(foo)` and the wrapped `allow(\n    foo)` alike): splice
+///   before the closing `)`. `, reason = "<escaped>"` when the last
+///   arg has no trailing comma, ` reason = "<escaped>",` when it does,
+///   and a bare `reason = "<escaped>"` into an empty `allow()`.
 /// - **New line** (`)` alone on its own line, `allow(\n    foo,\n)`):
 ///   insert a `reason = "<escaped>",` line immediately before the
 ///   `)` line, matching the indentation of the preceding argument.
@@ -41,7 +41,7 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
     // its own line, *not* by whether the argument list contains a
     // newline anywhere. A true single-line list (`allow(foo)`) and a
     // wrapped list whose `)` rides the last argument's line
-    // (`allow(\n    foo)`) both want the inline splice — only a `)`
+    // (`allow(\n    foo)`) both want the inline splice. Only a `)`
     // alone on its own line (`allow(\n    foo,\n)`) wants a new
     // indented `reason` line. Keying off "any newline in the parens"
     // mis-handled the wrapped case, inserting an unindented line in
@@ -55,8 +55,8 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
         let trimmed = head.trim_end_matches([' ', '\t', '\r']);
         // An empty argument list (`#[allow()]`) and a trailing-comma
         // list collapse into the same edit shape if we look only at
-        // the last non-space character — the comma after a single
-        // arg, or the `(` for the empty list. Distinguishing them
+        // the last non-space character, the comma after a single
+        // arg or the `(` for the empty list. Distinguishing them
         // matters: with no comma at all, we need to add one.
         let after_open = trimmed[open_paren_offset + 1..].trim_start_matches([' ', '\t', '\r']);
         let replacement = if after_open.is_empty() {
@@ -76,7 +76,8 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
     let newline_before_close = head.rfind('\n')?;
     let last_content_line_start = head[..newline_before_close]
         .rfind('\n')
-        .map_or(open_paren_offset + 1, |index| index + 1);
+        .map(|index| index + 1)
+        .unwrap_or(open_paren_offset + 1);
     let last_content_line = &head[last_content_line_start..newline_before_close];
     let indent: String = last_content_line
         .chars()
@@ -149,8 +150,8 @@ pub(super) fn escape_for_rust_string(input: &str) -> String {
             '\t' => out.push_str(r"\t"),
             '\0' => out.push_str(r"\0"),
             character if (character as u32) < 0x20 || (character as u32) == 0x7F => {
-                // Any other C0 byte / DEL: use the `\u{...}` form
-                // — the only escape that works for every control
+                // Any other C0 byte / DEL: use the `\u{...}` form,
+                // the only escape that works for every control
                 // codepoint without a dedicated short form.
                 let _ = write!(out, r"\u{{{:x}}}", character as u32);
             }

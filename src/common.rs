@@ -3,6 +3,7 @@
 //! Each helper lives here only because more than one rule needs it.
 //! Anything used by a single rule belongs in that rule's own file.
 
+use clippy_utils::res::MaybeDef;
 use rustc_ast::{MetaItem, MetaItemInner, MetaItemKind, MetaItemLit};
 use rustc_hir as hir;
 use rustc_hir::HirId;
@@ -33,7 +34,7 @@ use unicode_width::UnicodeWidthStr;
 /// the identifier itself (a `<T>` generic parameter has no other
 /// tokens), so the node's own `Span::in_external_macro` returns
 /// false. Walking up to the enclosing item and checking its
-/// `def_span` catches that case — the synthesised owner item's
+/// `def_span` catches that case, because the synthesised owner item's
 /// span carries the expansion's `SyntaxContext`. Regression
 /// fixtures live in `ui/*_proc_macro.rs` with a minimal derive in
 /// `ui/auxiliary/proc_macro_synth_binding.rs`.
@@ -51,7 +52,7 @@ pub(crate) fn hir_in_external_macro(cx: &LateContext<'_>, hir_id: HirId, span: S
 /// flips a rule that was off by default to on; each entry of
 /// `disable` flips a rule that was on by default (the common case)
 /// to off. The two arrays accept either a bare rule name (a string)
-/// or an inline `{ name, reason }` table — the `reason` field is
+/// or an inline `{ name, reason }` table. The `reason` field is
 /// decorative and ignored at runtime, present so config authors can
 /// leave a rationale next to the entry for future readers without
 /// hiding it in a TOML comment. Listing the same rule under both
@@ -64,7 +65,7 @@ pub(crate) fn hir_in_external_macro(cx: &LateContext<'_>, hir_id: HirId, span: S
 /// against the registered lint set; users that want to escalate a
 /// rule's level above `Warn` reach for `#![deny(perfectionist::
 /// <rule>)]` or `DYLINT_RUSTFLAGS=-D perfectionist::<rule>` as
-/// before — the only mechanism rustc actually exposes for level
+/// before, the only mechanism rustc actually exposes for level
 /// changes from outside the source.
 #[derive(Debug, Default, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
@@ -79,7 +80,7 @@ struct GlobalConfig {
 /// config author can write
 /// `enable = ["a", { name = "b", reason = "rationale" }]` in a
 /// single literal array. The table shape is its own struct so we
-/// can put `#[serde(deny_unknown_fields)]` on it — serde doesn't
+/// can put `#[serde(deny_unknown_fields)]` on it: serde doesn't
 /// honour that attribute on inline enum-variant shapes, only on
 /// named structs.
 #[derive(Debug, serde::Deserialize)]
@@ -114,8 +115,8 @@ impl RuleSelector {
 /// user-supplied override (the `enable` / `disable` arrays in
 /// `dylint.toml`) speak this same alphabet, so a single type is
 /// used end-to-end and no `bool` ever bridges the two. Mirrors
-/// `gen-docs`'s own copy of this enum (separate crate, same shape) —
-/// the doc generator reads each rule's `DEFAULT_STATE` constant
+/// `gen-docs`'s own copy of this enum (separate crate, same shape).
+/// The doc generator reads each rule's `DEFAULT_STATE` constant
 /// directly to render the rule's catalogue entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DefaultState {
@@ -148,7 +149,7 @@ pub(crate) fn init_global_config() {
 /// [`GLOBAL_OVERRIDES`].
 ///
 /// Panics if any rule name appears under both `enable` and
-/// `disable` — that's a contradiction the runtime can't sensibly
+/// `disable`: that's a contradiction the runtime can't sensibly
 /// resolve, and silently picking one direction would hide a
 /// user-side mistake. The same name twice under one of them agrees
 /// with itself and is accepted. Unknown rule names are silently
@@ -179,13 +180,13 @@ fn resolve_overrides(config: &GlobalConfig) -> HashMap<String, DefaultState> {
     overrides
 }
 
-/// Effective [`DefaultState`] for the rule named `name` (unqualified
-/// — no `perfectionist::` prefix), one case per rule:
+/// Effective [`DefaultState`] for the rule named `name` (unqualified,
+/// with no `perfectionist::` prefix), one case per rule:
 ///
 /// - [`DefaultState::Inactive`] where the `[perfectionist]` table
 ///   lists `name` under `disable`.
 /// - [`DefaultState::Active`] where it lists `name` under `enable`.
-/// - `default` — the per-rule baseline — where it lists `name` under
+/// - `default`, the per-rule baseline, where it lists `name` under
 ///   neither.
 ///
 /// Each rule's `register_pass` passes its own baseline as
@@ -214,7 +215,7 @@ fn resolved_state_from(
 /// name (`clippy::too_many_arguments`, `dead_code`), joining the path
 /// segments with `::`. Shared by the lint-level rules that classify or
 /// report lint names by the printed form they wear in diagnostics and
-/// `#[allow(...)]` attributes — `allow_attributes_without_reason`,
+/// `#[allow(...)]` attributes: `allow_attributes_without_reason`,
 /// `unknown_perfectionist_lints`, and `allow_attributes`.
 pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
     meta.path
@@ -233,7 +234,7 @@ pub(crate) fn render_meta_path(meta: &MetaItem) -> String {
 /// notion of "this attribute carries an explanatory reason":
 /// `allow_attributes_without_reason`, `lint_downgrade_without_reason`, and
 /// `lint_attribute_trailing_comment`. The arg list is the post-`meta_item_list`
-/// vector of nested meta items — the same shape every caller already
+/// vector of nested meta items, the same shape every caller already
 /// constructs from `Attribute::meta_item_list()`.
 pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
     for arg in args {
@@ -252,7 +253,7 @@ pub(crate) fn attr_has_reason(args: &[MetaItemInner]) -> Option<&MetaItemLit> {
 }
 
 /// Unicode display width of a line of source text, in terminal
-/// columns — the measure an editor's column ruler reports, not the
+/// columns: the measure an editor's column ruler reports, not the
 /// byte length. A CJK ideograph counts as two columns, a combining
 /// mark as zero, an ASCII character as one. Used by the rules that
 /// gate on a source line being "too wide" (`overly_long_print_macro`, and
@@ -323,6 +324,22 @@ pub(crate) fn binding_hir_id<'hir>(pat: &'hir hir::Pat<'hir>) -> Option<hir::Hir
     }
 }
 
+/// Whether `receiver` is an `Option` or a `Result`, looking through
+/// references.
+///
+/// Both rules that read a panic message out of an `expect` /
+/// `expect_err` argument ask this first: the two method names are
+/// common enough on other types that the receiver has to be checked
+/// before the first argument is treated as a panic message.
+pub(crate) fn receiver_is_option_or_result<'tcx>(
+    lint_context: &LateContext<'tcx>,
+    receiver: &hir::Expr<'tcx>,
+) -> bool {
+    let receiver_type = lint_context.typeck_results().expr_ty(receiver).peel_refs();
+    receiver_type.is_diag_item(lint_context, sym::Option)
+        || receiver_type.is_diag_item(lint_context, sym::Result)
+}
+
 /// Whether `ty` mentions a region, which is where a borrow would show
 /// up.
 pub(crate) fn borrows(ty: rustc_middle::ty::Ty<'_>) -> bool {
@@ -347,7 +364,7 @@ pub(crate) fn binds_mutably(pat: &hir::Pat<'_>) -> bool {
 
 /// Resolve a `&str` set from a curated built-in default, a
 /// user-supplied `extras` list, and a user-supplied `ignore`
-/// list. Used by rules whose runtime set key remains a `String` —
+/// list. Used by rules whose runtime set key remains a `String`.
 /// `exhaustive_error_enums`, whose suffix lookup is
 /// `str::ends_with`-shaped, is one such caller. Rules whose
 /// late-pass lookup key is a [`Symbol`] use the sibling
@@ -371,10 +388,10 @@ pub(crate) fn resolve_string_set(
 }
 
 /// Sibling of [`resolve_string_set`] that interns each name as
-/// a [`Symbol`] in one pass — skipping the intermediate
+/// a [`Symbol`] in one pass, skipping the intermediate
 /// `BTreeSet<String>` of the string-shaped variant. Used by rules
-/// whose late-pass lookup key is already a [`Symbol`] — such as
-/// `unicode_ellipsis_in_panic_messages`'s macro and method lists —
+/// whose late-pass lookup key is already a [`Symbol`], such as
+/// `unicode_ellipsis_in_panic_messages`'s macro and method lists,
 /// so that membership checks reduce to integer compares instead of
 /// `Symbol::as_str` → `String` round-trips.
 ///
@@ -399,11 +416,11 @@ pub(crate) fn resolve_symbol_set(
 /// and `extra_denied_idents` knobs. `char::encode_utf8` writes
 /// into a small stack buffer and hands [`Symbol::intern`] the
 /// resulting `&str`. `extras` and `ignore` accept anything that
-/// iterates into `char` — notably the rules'
+/// iterates into `char`, notably the rules'
 /// `Vec<crate::ascii_letter::AsciiLetter>` knobs, whose `Into<char>`
 /// keeps the ASCII-letter restriction in the type rather than at
-/// this boundary — so each caller hands its config field straight
-/// in without a per-call conversion.
+/// this boundary. Each caller therefore hands its config field
+/// straight in without a per-call conversion.
 ///
 /// Must be called inside a rustc session.
 pub(crate) fn resolve_symbol_set_from_chars(
@@ -425,9 +442,10 @@ pub(crate) fn resolve_symbol_set_from_chars(
         .collect()
 }
 
-/// Whether `span` was produced by a macro expansion — a `macro_rules!`
-/// or proc macro, from this crate or another — as opposed to written
-/// by the author or produced by a compiler desugaring. The
+/// Whether `span` was produced by a macro expansion, a
+/// `macro_rules!` or proc macro from this crate or another, as
+/// opposed to written by the author or produced by a compiler
+/// desugaring. The
 /// per-function measurement rules (`excessive_cognitive_complexity`
 /// and its siblings) treat such code as opaque: it is not what the
 /// author wrote, so it is not what they can split or flatten.

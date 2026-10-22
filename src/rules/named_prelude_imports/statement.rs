@@ -11,12 +11,12 @@
 //!
 //! Where that rebuilt tree goes depends on the shape lowering left
 //! behind. A single import keeps a path span covering its whole path,
-//! so the tree replaces just that — and the `as` rename, which sits
+//! so the tree replaces just that, and the `as` rename, which sits
 //! outside it, survives untouched. A brace list keeps no span for its
 //! tree at all (the head's path span stops at the shared prefix), so
 //! the statement is re-rendered whole, carrying its visibility across.
 //! Either span starts no earlier than the visibility, so a statement's
-//! attributes are outside the rewrite and need no reproducing — which
+//! attributes are outside the rewrite and need no reproducing, which
 //! matters most for a `#[cfg(...)]`, since cfg-stripping means a
 //! lowered item no longer records that it had one.
 //!
@@ -29,12 +29,12 @@ use rustc_hir::{HirId, Item, PathSegment, UseKind};
 use rustc_lint::{LateContext, LintContext};
 use rustc_span::{Ident, Span, kw};
 
-/// One leaf of a `use` statement — a single named import or a glob.
+/// One leaf of a `use` statement: a single named import or a glob.
 pub(super) struct Leaf {
     /// The leaf item's own `HirId`: the diagnostic's owner, and what
     /// resolves a per-item or per-module `#[allow]` / `#[expect]`.
     pub(super) hir_id: HirId,
-    /// The leaf's written path span — where the diagnostic points.
+    /// The leaf's written path span, where the diagnostic points.
     pub(super) path_span: Span,
     /// The leaf's path as written, rebuilt from its HIR segments
     /// (`crate::prelude::A`, `crate::prelude::*`).
@@ -45,8 +45,8 @@ pub(super) struct Leaf {
     /// A `self` entry (`use foo::prelude::{self, A}`). Rebuilding the
     /// tree around a different prefix turns it into a bare module
     /// import, which binds the name in every namespace rather than just
-    /// the module — the same namespace hazard
-    /// `import_granularity_mismatch` weighs for its `self_merge` knob —
+    /// the module. That is the same namespace hazard
+    /// `import_granularity_mismatch` weighs for its `self_merge` knob,
     /// so a statement holding one is never rewritten.
     pub(super) is_self: bool,
     /// Set when this leaf cherry-picks a named item out of a prelude.
@@ -63,7 +63,7 @@ pub(super) struct Statement {
     /// rewrite replaces.
     pub(super) span: Span,
     /// The head's written path span. For a single import this covers
-    /// the whole path and is what the rewrite replaces — checked
+    /// the whole path and is what the rewrite replaces, checked
     /// against the path itself, since a skipped `ListStem` can leave a
     /// brace-list leaf heading a statement of its own. For a brace list
     /// it stops at the prefix shared by the entries, which is why such a
@@ -79,7 +79,7 @@ pub(super) struct Statement {
 }
 
 impl Statement {
-    /// Start accumulating the statement headed by `item` — the outer
+    /// Start accumulating the statement headed by `item`, the outer
     /// `use` item, which for a brace list is the `ListStem` whose spans
     /// cover every leaf.
     pub(super) fn new(item: &Item<'_>, path_span: Span, kind: UseKind) -> Self {
@@ -117,7 +117,7 @@ impl Statement {
                 None => leaf.written.as_str(),
             };
             // Outside a brace list the statement has exactly one leaf,
-            // and the span being replaced stops before its `as` rename —
+            // and the span being replaced stops before its `as` rename,
             // so rendering the rename here would duplicate it.
             let rename = if self.braced {
                 leaf.rename.as_str()
@@ -146,8 +146,8 @@ impl Statement {
             // the pass walked intact. It is not true of a brace-list
             // leaf that became a head of its own because the `ListStem`
             // around it was macro-generated and skipped: that span holds
-            // one entry from between the braces — or the caller's token
-            // that produced it — so a whole path pasted there does not
+            // one entry from between the braces, or the caller's token
+            // that produced it, so a whole path pasted there does not
             // parse.
             let written = &self.leaves.first()?.written;
             if source_map.span_to_snippet(self.path_span).ok()? != *written {
@@ -188,7 +188,7 @@ pub(super) struct Fix {
     pub(super) label: &'static str,
 }
 
-/// Render `entries` — each a `(path, rename suffix)` pair — as one
+/// Render `entries`, each a `(path, rename suffix)` pair, as one
 /// `use` tree, factoring out the segments every path shares.
 ///
 /// Folding the shared prefix back out is what keeps the rewrite of
@@ -271,7 +271,7 @@ pub(super) fn rename_suffix(segments: &[PathSegment<'_>], binding: Ident) -> Str
     }
 }
 
-/// Whether a written `use` entry names the enclosing module itself —
+/// Whether a written `use` entry names the enclosing module itself:
 /// the `self` of `use foo::{self, Bar}` or of `use foo::self;`.
 ///
 /// Lowering pops that `self` off the path and rebinds the entry to the

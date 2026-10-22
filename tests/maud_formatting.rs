@@ -74,7 +74,7 @@ fn rustfmt_configs(root: &Path, listed: &[PathBuf]) -> HashMap<PathBuf, bool> {
 }
 
 /// Whether rustfmt leaves `path` alone, by the nearest `rustfmt.toml`
-/// above it -- which is the one rustfmt itself reads.
+/// above it, which is the one rustfmt itself reads.
 fn rustfmt_skips(path: &Path, configs: &HashMap<PathBuf, bool>) -> bool {
     path.ancestors()
         .skip(1)
@@ -167,7 +167,7 @@ fn every_maud_template_is_formatted() {
     let paths = sources(root);
     assert!(
         paths.len() > 100,
-        "only {} file(s) listed under {} -- has the listing gone wrong?",
+        "only {} file(s) listed under {}; has the listing gone wrong?",
         paths.len(),
         root.display(),
     );

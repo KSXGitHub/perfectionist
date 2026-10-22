@@ -14,7 +14,7 @@
 //! is no need to single out "the template" or restrict to a macro
 //! allowlist. Each eligible literal is queued; the late pass drains the
 //! queue at `check_crate_post`, **skipping any literal it already saw in
-//! the HIR** (recorded by byte range — see [`super::VISITED_LITERALS`]).
+//! the HIR** (recorded by byte range in [`super::VISITED_LITERALS`]).
 //! That dedup is what keeps the two passes disjoint: literals that
 //! survive lowering belong to the late pass, and only the consumed ones
 //! are emitted here.

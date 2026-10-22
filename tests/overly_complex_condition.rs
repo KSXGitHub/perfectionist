@@ -43,7 +43,7 @@ fn zero_threshold_reports_every_operator_count() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each hold a condition of four operators — one
+/// `#[test]` function each hold a condition of four operators, one
 /// above the default limit. The conditions are the only ones in the
 /// fixture, so a flag is identified by the line it points at.
 const LIB_WITH_TEST_MODULE: &str =

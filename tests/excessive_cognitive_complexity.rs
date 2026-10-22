@@ -43,7 +43,7 @@ fn zero_threshold_reports_every_construct_score() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function all score 21 — well above the default limit.
+/// `#[test]` function all score 21, well above the default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/excessive_cognitive_complexity/lib_with_test_module.rs");
 

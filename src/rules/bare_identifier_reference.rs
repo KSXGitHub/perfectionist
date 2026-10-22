@@ -66,7 +66,7 @@ declare_tool_lint! {
     ///
     /// When a backticked word names a *foreign* symbol that merely
     /// shares its name with an in-scope item, rewriting `` `Foo` `` to
-    /// `` [`Foo`] `` links to the *local* item — a wrong reference that
+    /// `` [`Foo`] `` links to the *local* item, a wrong reference that
     /// still compiles. The rule therefore only suggests the link
     /// rather than applying it automatically. For an external target,
     /// write an explicit reference link instead:
@@ -84,9 +84,10 @@ const CONFIG_KEY: &str = "perfectionist::bare_identifier_reference";
 struct Config {
     /// Identifiers the rule never suggests linking, even when they
     /// resolve in scope. Empty by default. Use this for a name a doc
-    /// comment deliberately mentions without wanting a cross-reference
-    /// — a historical type kept for context, or a word that happens to
-    /// collide with an in-scope item but is meant as prose.
+    /// comment deliberately mentions without wanting a
+    /// cross-reference: a historical type kept for context, or a word
+    /// that happens to collide with an in-scope item but is meant as
+    /// prose.
     skip_idents: Vec<String>,
     /// How far from the documenting item a referenced name may resolve
     /// for the rule to check it, by where the referenced item lives in
@@ -155,14 +156,15 @@ enum ReferenceScope {
     OwnModule,
     /// Also items from within that module's own subtree (e.g. reached
     /// through `use self::child::Item`), but still not names that reach
-    /// outside the module — `use super::...`, `use crate::...`, and
-    /// imports from other crates.
+    /// outside the module, meaning `use super::...`, `use crate::...`,
+    /// and imports from other crates.
     ModuleTree,
     /// Any item defined anywhere in the current crate (first-party), but
     /// nothing from another crate. A project's own items are where
-    /// documentation drifts — a rename leaves a stale mention — while the
-    /// standard library and third-party crates are stable and outside the
-    /// project's control, so a bare mention of them is low risk.
+    /// documentation drifts, a rename leaving a stale mention, while
+    /// the standard library and third-party crates are stable and
+    /// outside the project's control, so a bare mention of them is low
+    /// risk.
     #[default]
     Crate,
     /// The current crate and its third-party dependencies, but not the
@@ -170,8 +172,8 @@ enum ReferenceScope {
     /// `proc_macro`, `test`). Use this when dependency references are
     /// worth checking but the frozen standard library is not.
     ThirdParty,
-    /// Any name that resolves in scope, however it got there — including
-    /// the standard library.
+    /// Any name that resolves in scope, however it got there, the
+    /// standard library included.
     Anywhere,
 }
 
@@ -199,9 +201,9 @@ impl BareIdentifierReference {
     }
 
     /// Whether the candidate's name passes the case and minimum-word-count
-    /// knobs. A mixed / non-conformist name is always checked — those
-    /// knobs only gate the three conformist shapes — so it short-circuits
-    /// to `true`.
+    /// knobs. A mixed / non-conformist name is always checked, those
+    /// knobs gating only the three conformist shapes, so it
+    /// short-circuits to `true`.
     fn name_allows(&self, ident: &str) -> bool {
         let case = casing::classify(ident);
         let case_enabled = match case {
@@ -304,8 +306,8 @@ impl BareIdentifierReference {
 /// How a candidate identifier resolves in the documented item's scope.
 #[derive(Clone, Copy)]
 enum Resolution {
-    /// Resolves in exactly one namespace — a plain `` [`Foo`] `` link
-    /// is unambiguous, so the rule offers it as a structured
+    /// Resolves in exactly one namespace, so a plain `` [`Foo`] `` link
+    /// is unambiguous and the rule offers it as a structured
     /// suggestion (only `MaybeIncorrect`: see [`emit`], as the name may
     /// instead denote a foreign symbol that merely shares it).
     Unique,
@@ -316,7 +318,7 @@ enum Resolution {
     Ambiguous(DisambiguatorPrefix),
     /// The only thing the name resolves to is a private item, and the
     /// doc naming it is publicly reachable. Linking is the wrong fix
-    /// here — it is what `rustdoc::private_intra_doc_links` fires on —
+    /// here, being what `rustdoc::private_intra_doc_links` fires on,
     /// so the rule reports the reference itself and offers no
     /// suggestion.
     PrivateUnderPublicDoc,
@@ -368,14 +370,14 @@ impl BareIdentifierReference {
     /// - **Ambiguity** (does a bare `` [`Foo`] `` resolve uniquely?) is
     ///   judged the way rustdoc resolves the link: across *every*
     ///   same-name item in scope, in every namespace, regardless of
-    ///   privacy or the project's `reference_scope` — those are the
-    ///   rule's filters, not rustdoc's. A unit/tuple-struct constructor
+    ///   privacy or the project's `reference_scope`, which are the
+    ///   rule's filters rather than rustdoc's. A unit/tuple-struct constructor
     ///   shares its type's identity and so never counts.
     /// - **Eligibility** (is the rule willing to point a link at this?)
     ///   applies the rule's own filters: the `reference_scope` policy
     ///   (see [`ReferenceScope`]) drops a target that lives farther out
     ///   than the project allows, and a private target a `pub` item
-    ///   shouldn't link to is not eligible either — but it is still
+    ///   shouldn't link to is not eligible either, yet it is still
     ///   reported, as [`Resolution::PrivateUnderPublicDoc`], because
     ///   turning `` `Priv` `` into `` [`Priv`] `` is what rustdoc's
     ///   `rustdoc::private_intra_doc_links` fires on.
@@ -427,11 +429,11 @@ impl BareIdentifierReference {
             // Eligibility (the rule's filters): `reference_scope` drops a
             // target living farther out than the project allows; the
             // public-references-private exemption drops a private target
-            // (a local item that is not publicly reachable — an external
-            // target such as a re-exported `std` type is public).
-            let reach = target.map_or(Reach::ThirdPartyCrate, |def_id| {
-                import_reach(cx, scope, def_id)
-            });
+            // (a local item that is not publicly reachable, an external
+            // target such as a re-exported `std` type being public).
+            let reach = target
+                .map(|def_id| import_reach(cx, scope, def_id))
+                .unwrap_or(Reach::ThirdPartyCrate);
             let ignored_by_policy = match self.reference_scope {
                 ReferenceScope::OwnModule => reach != Reach::LocalDefinition,
                 ReferenceScope::ModuleTree => {
@@ -485,7 +487,7 @@ impl BareIdentifierReference {
 }
 
 /// Where a resolved candidate's target lives relative to the documented
-/// item's module and crate — the axis [`ReferenceScope`] filters on.
+/// item's module and crate, the axis [`ReferenceScope`] filters on.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Reach {
     /// Defined directly in the documenting item's own module (not an
@@ -494,8 +496,8 @@ enum Reach {
     /// Defined within that module's own subtree, reached through a
     /// `use self::...` of a descendant module's item.
     InternalImport,
-    /// Defined elsewhere in the current crate — a `use super::...` /
-    /// `use crate::...` of another module.
+    /// Defined elsewhere in the current crate, through a
+    /// `use super::...` / `use crate::...` of another module.
     CrateElsewhere,
     /// Defined in a third-party dependency (an external crate that is not
     /// one of the standard / built-in libraries).
@@ -546,8 +548,8 @@ fn import_reach(cx: &LateContext<'_>, scope: LocalDefId, target: DefId) -> Reach
 }
 
 /// Whether `krate` is a standard / built-in library that ships with the
-/// compiler — stable enough that doc references into it are low-risk, so
-/// the narrower [`ReferenceScope`] levels exclude it. Keyed on the
+/// compiler, stable enough that doc references into it are low-risk,
+/// so the narrower [`ReferenceScope`] levels exclude it. Keyed on the
 /// *defining* crate's name, so a `std` re-export of a `core` item
 /// (`Option`) is recognised through its `core` origin.
 fn is_standard_library(cx: &LateContext<'_>, krate: CrateNum) -> bool {
@@ -572,7 +574,7 @@ fn documented_def_id(cx: &LateContext<'_>, hir_id: hir::HirId) -> LocalDefId {
 
 /// The module whose scope a rustdoc intra-doc link on the node at
 /// `hir_id` resolves in. For a module (or the crate root) that is the
-/// node itself — its own `//!` / `///` doc resolves against its
+/// node itself, whose own `//!` / `///` doc resolves against its
 /// contents; for any other item it is the enclosing module.
 fn scope_module(cx: &LateContext<'_>, hir_id: hir::HirId) -> LocalDefId {
     match cx.tcx.hir_node(hir_id) {

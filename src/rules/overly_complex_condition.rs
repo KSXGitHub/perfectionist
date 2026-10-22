@@ -106,9 +106,9 @@ const DEFAULT_MAX_OPERATORS: usize = 3;
 
 /// What to do, and the constraint that decides whether it was done. The
 /// count alone is satisfied by binding the clauses under any name at
-/// all, so the help rules out the name a mechanical split reaches for
-/// -- one assembled from the clauses rather than drawn from what they
-/// together decide.
+/// all, so the help rules out the name a mechanical split reaches for:
+/// one assembled from the clauses rather than drawn from what
+/// they together decide.
 const NAMING_HELP: &str = "bind the condition, or the part of it that names a concept, to a \
                            `let` named for the predicate it decides, not for the clauses it \
                            joins";
@@ -227,7 +227,7 @@ struct Operators {
     /// Whether a join between two clauses went uncounted, which is
     /// what makes the note worth emitting: the reader can then see more
     /// `&&` in the source than the count names. A `let` elsewhere in
-    /// the condition -- in a `let`'s own initialiser, say -- omits
+    /// the condition, in a `let`'s own initialiser, say, omits
     /// nothing, so it earns no note.
     omits_a_join: bool,
 }
@@ -240,7 +240,7 @@ struct Operators {
 /// `let` sits on either side of it: a run of ordinary clauses
 /// collapses into one named clause, taking its `&&`s with it, whereas
 /// an `&&` next to a `let` is what makes the chain a chain. The
-/// operators *inside* each clause -- a `||`, a parenthesised `&&` --
+/// operators *inside* each clause, a `||` or a parenthesised `&&`,
 /// are counted the ordinary way, since no `let` can be nested there.
 ///
 /// [`OperatorCounter`] leaves `NestedFilter` at its `None` default, so

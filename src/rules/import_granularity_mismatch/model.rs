@@ -8,11 +8,11 @@ use rustc_span::kw;
 /// The thing imported at a leaf of a `use` tree.
 #[derive(Clone, PartialEq, Eq)]
 pub(super) enum LeafItem {
-    /// A named item — the `HashMap` of `use std::collections::HashMap`.
+    /// A named item: the `HashMap` of `use std::collections::HashMap`.
     Named(String),
-    /// A glob — the `*` of `use std::collections::*`.
+    /// A glob: the `*` of `use std::collections::*`.
     Glob,
-    /// A `self` import — the `self` of `use foo::bar::{self, Bar}`.
+    /// A `self` import: the `self` of `use foo::bar::{self, Bar}`.
     SelfMod,
 }
 
@@ -49,7 +49,7 @@ pub(super) enum TopKind {
 pub(super) struct StmtInfo {
     pub(super) leaves: Vec<Leaf>,
     pub(super) top_kind: TopKind,
-    /// Segments of the top-level tree's written prefix — the path
+    /// Segments of the top-level tree's written prefix: the path
     /// before the final name (`Simple`), the `*` (`Glob`), or the brace
     /// group (`Nested`). Empty for a top-level brace `use {a, b};`.
     pub(super) prefix: Vec<String>,
@@ -82,7 +82,7 @@ impl StmtInfo {
 }
 
 /// Whether `leaves` contains a bare named item that shares its name
-/// with a deeper sibling — the `{thing, thing::T}` pattern. The `fold`
+/// with a deeper sibling, the `{thing, thing::T}` pattern. The `fold`
 /// `self_merge` setting rewrites it to `thing::{self, T}`; that fold
 /// re-imports only the *module* `thing`, silently dropping any value or
 /// macro bound under the same name, so it is the lossy half of the
@@ -103,7 +103,7 @@ pub(super) fn has_bare_item_dual(leaves: &[Leaf]) -> bool {
 }
 
 /// Whether `leaves` contains a `self` import that has a splittable
-/// sibling — the `thing::{self, T}` pattern. The `split` `self_merge`
+/// sibling, the `thing::{self, T}` pattern. The `split` `self_merge`
 /// setting rewrites it to `{thing, thing::T}`; raising the module-only
 /// `self` to a bare item binds `thing` in *every* namespace, so it is the
 /// lossy half of the `split` rewrite. A lone `use thing::{self}`, or one
@@ -118,9 +118,10 @@ pub(super) fn has_self_dual(leaves: &[Leaf]) -> bool {
 }
 
 /// Whether the `self`/module import at `leaves[index]` has a sibling that
-/// lives *inside* the module it names — an item directly in the module
-/// (`thing::{self, T}`) or a deeper import (`thing::{self, sub::X}`) — and
-/// so can be split into a bare item plus that sibling. Another
+/// lives *inside* the module it names, either an item directly in the
+/// module (`thing::{self, T}`) or a deeper import
+/// (`thing::{self, sub::X}`), and so can be split into a bare item plus
+/// that sibling. Another
 /// module-only `self` for the *same* module
 /// (`thing::{self, self as alt}`) is **not** such a sibling: it binds the
 /// same module with nothing deeper to split against, so lowering the
@@ -223,7 +224,7 @@ fn flatten_into(tree: &UseTree, prefix: Vec<String>, out: &mut Vec<Leaf>) -> Opt
 /// Whether `tree` is already maximally collapsed: no brace level holds
 /// two entries that share a leading segment *and* can be merged without
 /// synthesising a `self`, and no brace wraps a single non-`self` entry.
-/// This is the per-statement half of the `crate`-style check — a
+/// This is the per-statement half of the `crate`-style check: a
 /// collapsed statement with a unique crate root needs no fix.
 fn is_collapsed(tree: &UseTree) -> bool {
     let UseTreeKind::Nested { items, .. } = &tree.kind else {
@@ -239,13 +240,13 @@ fn is_collapsed(tree: &UseTree) -> bool {
         .iter()
         .map(|(sub, _)| sub.prefix.segments.first().map(|seg| seg.ident.name))
         .collect();
-    // Two or more entries that share a leading segment are mergeable —
-    // and thus not collapsed — only when every one of them continues
+    // Two or more entries that share a leading segment are mergeable,
+    // and thus not collapsed, only when every one of them continues
     // past that segment (`{path::Path, path::PathBuf}` →
     // `path::{Path, PathBuf}`). When a *bare terminal* entry shares the
     // segment (`{thing, thing::Opts}`), the only collapse is
     // `thing::{self, Opts}`, and the synthesised `self` re-imports the
-    // *module* `thing` alone — silently dropping any value or macro
+    // *module* `thing` alone, silently dropping any value or macro
     // re-exported under the same name, which stops the using code from
     // compiling. We can't tell from syntax whether such a name exists,
     // so the bare-terminal form is treated as already collapsed rather
@@ -263,7 +264,7 @@ fn is_collapsed(tree: &UseTree) -> bool {
         // Evaluate each distinct leading segment once, over the whole
         // brace level: skip any segment already handled at an earlier
         // index. A bare terminal *anywhere* in the group forces `self`,
-        // so the group must be considered as a whole — a windowed scan
+        // so the group must be considered as a whole: a windowed scan
         // would wrongly flag `{thing::A, thing::B}` inside
         // `{thing, thing::A, thing::B}` while ignoring the bare `thing`.
         if firsts[..index].contains(&Some(first)) {
@@ -290,7 +291,7 @@ fn is_collapsed(tree: &UseTree) -> bool {
     items.iter().all(|(sub, _)| is_collapsed(sub))
 }
 
-/// Whether a brace entry has structure past its leading segment — a
+/// Whether a brace entry has structure past its leading segment: a
 /// multi-segment path (`path::Path`), a nested group (`b::{...}`), or a
 /// glob (`b::*`). A bare single-segment `Simple` (`B`, `B as C`) does
 /// not.
