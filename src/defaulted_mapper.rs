@@ -12,6 +12,7 @@
 //! value is in hand.
 
 use crate::common::hir_in_external_macro;
+use clippy_utils::res::MaybeDef;
 use clippy_utils::ty::implements_trait;
 use clippy_utils::{is_default_equivalent, is_default_equivalent_call, is_none_expr};
 use rustc_ast::LitKind;
@@ -123,16 +124,13 @@ pub(crate) fn defaulted_call<'tcx>(
 /// taken the way the method call itself reached the receiver: `map_or`
 /// takes `self`, so a `&Option<u8>` arrives derefed.
 fn family(cx: &LateContext<'_>, receiver: &Expr<'_>) -> Option<Family> {
-    let adt = cx
-        .typeck_results()
-        .expr_ty_adjusted(receiver)
-        .peel_refs()
-        .ty_adt_def()?;
-    let carries = |name| cx.tcx.is_diagnostic_item(name, adt.did());
-    if carries(sym::Option) {
+    let receiver_type = cx.typeck_results().expr_ty_adjusted(receiver).peel_refs();
+    if receiver_type.is_diag_item(cx, sym::Option) {
         return Some(Family::Option);
     }
-    carries(sym::Result).then_some(Family::Result)
+    receiver_type
+        .is_diag_item(cx, sym::Result)
+        .then_some(Family::Result)
 }
 
 /// What a default collapses the whole call into, where one call of the
