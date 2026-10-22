@@ -60,8 +60,8 @@ scrutinee { .. }` with **no `else`**, where:
    would escape the loop. Each changes meaning once the body moves
    into a closure, and none can be expressed there.
 
-Emit no suggestion, for the reason its sibling does not: the target
-form is a judgement rather than a fact. Lifting the scrutinee into a
+Emit no suggestion, for the reason `loop_in_option_guard` does not:
+the target form is a judgement rather than a fact. Lifting the scrutinee into a
 `filter_map` leaves a choice of what to iterate the result with.
 `for y in it.filter_map(f)` keeps the loop and whatever the body
 needs from it. `.for_each(..)` reads as one pipeline, but can carry
@@ -191,7 +191,8 @@ disable = ["option_guard_in_loop"]
 ### Difficulty
 
 **Easy**, where carrying a rewrite would have made it medium.
-Detection is as cheap as its sibling's, and emitting no rewrite drops
+Detection is as cheap as `loop_in_option_guard`'s, and emitting no
+rewrite drops
 what was going to cost: no reasoning about which names the pattern
 binds and must carry through, and no patterns whose source text
 cannot be reused. The escaping-control-flow check stays, being part
