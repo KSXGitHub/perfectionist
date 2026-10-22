@@ -172,6 +172,12 @@ fn overridden_iterator_method() {
         let doubled = value * 2;
         dbg!(doubled);
     });
+    // Bad: method-call syntax resolves to the impl's own `for_each`, which
+    // only reaches `Iterator` by way of the trait item it overrides.
+    Overridden.for_each(|value| {
+        let doubled = value * 2;
+        dbg!(doubled);
+    });
 }
 
 fn initial_accumulator_is_not_callback() {

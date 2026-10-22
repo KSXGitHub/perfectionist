@@ -153,6 +153,20 @@ LL | |     });
    = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
    = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
 
+warning: `for_each` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       Overridden.for_each(|value| {
+   |  _________________________^
+LL | |         let doubled = value * 2;
+LL | |         dbg!(doubled);
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
 warning: `fold` callback has 2 top-level statements, above the limit of 1
   --> $DIR/fixture.rs:LL:CC
    |
