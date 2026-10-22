@@ -59,6 +59,31 @@ fn spare_offset() -> i32 {
     7
 }
 
+/// A type worth a struct literal where it has no `Default`, which is
+/// the default shape that pushes the mapper furthest to the right.
+struct Layout {
+    columns: u32,
+    wrap: bool,
+}
+
+impl Layout {
+    fn fitting(columns: u32) -> Self {
+        Layout {
+            columns,
+            wrap: false,
+        }
+    }
+}
+
+/// An enum covering the three ways a variant is written: a unit
+/// variant is a path, where a tuple variant is a call to its
+/// constructor and a struct variant is a struct literal.
+enum Reach {
+    Nowhere,
+    Deep(u32),
+    Named { levels: u32 },
+}
+
 // Bad: the default is a call, so the reader carries it as far as the
 // mapper that explains why it is there.
 fn computed_default(width: Option<u32>) -> u32 {
@@ -90,6 +115,33 @@ fn default_without_a_default(width: Option<u8>) -> Wide {
     width.map_or((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), |width| {
         (width, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     })
+}
+
+// Bad: a struct literal is a complex default, so the reader takes in
+// every field of it before meeting the mapper.
+fn struct_literal_default(width: Option<u32>) -> Layout {
+    width.map_or(
+        Layout {
+            columns: 80,
+            wrap: true,
+        },
+        Layout::fitting,
+    )
+}
+
+// Bad: a tuple literal is a complex default, however short.
+fn tuple_default(width: Option<u32>) -> (u32, bool) {
+    width.map_or((0, false), |width| (width, true))
+}
+
+// Bad: a tuple variant of an enum is a call to its constructor.
+fn tuple_variant_default(width: Option<u32>) -> Reach {
+    width.map_or(Reach::Deep(0), Reach::Deep)
+}
+
+// Bad: a struct variant of an enum is a struct literal.
+fn struct_variant_default(width: Option<u32>) -> Reach {
+    width.map_or(Reach::Named { levels: 0 }, Reach::Deep)
 }
 
 // Bad: a default written as a macro call is a call to the reader,
@@ -131,6 +183,12 @@ fn negated_literal_default(offset: Option<i32>) -> i32 {
 // Not flagged: `None` is a path, and the exemption takes paths.
 fn path_default(width: Option<u32>) -> Option<u32> {
     width.map_or(None, |width| width.checked_add(1))
+}
+
+// Not flagged: a unit variant of an enum is a path, where the other
+// two ways of writing a variant are not.
+fn unit_variant_default(width: Option<u32>) -> Reach {
+    width.map_or(Reach::Nowhere, Reach::Deep)
 }
 
 // Not flagged: a qualified path is a path.

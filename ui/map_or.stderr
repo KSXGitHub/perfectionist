@@ -56,6 +56,52 @@ LL | |     })
 warning: `map_or` names its default before the mapper it stands in for
   --> $DIR/map_or.rs:LL:CC
    |
+LL |       width.map_or(
+   |  ___________^
+LL | |         Layout {
+LL | |             columns: 80,
+LL | |             wrap: true,
+LL | |         },
+LL | |         Layout::fitting,
+LL | |     )
+   | |_____^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or((0, false), |width| (width, true))
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     width.map_or((0, false), |width| (width, true))
+LL +     width.map_or_default(|width| (width, true))
+   |
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Reach::Deep(0), Reach::Deep)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
+LL |     width.map_or(Reach::Named { levels: 0 }, Reach::Deep)
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: put the default last: `map(...).unwrap_or(...)`
+   = help: or a `match`, which also leaves the default unevaluated where there is a value
+
+warning: `map_or` names its default before the mapper it stands in for
+  --> $DIR/map_or.rs:LL:CC
+   |
 LL |     width.map_or(spare_width!(), |width| width + 1)
    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |

@@ -60,23 +60,33 @@ declare_tool_lint! {
     /// **Avoid:**
     ///
     /// ```rust,ignore
-    /// let width = terminal_width.map_or(fallback_width(), |width| width.saturating_sub(2));
+    /// let layout = terminal_width.map_or(
+    ///     Layout {
+    ///         columns: 80,
+    ///         wrap: true,
+    ///     },
+    ///     Layout::fitting,
+    /// );
     /// ```
     ///
     /// **Prefer:** the chain, which reads in the order it runs
     ///
     /// ```rust,ignore
-    /// let width = terminal_width
-    ///     .map(|width| width.saturating_sub(2))
-    ///     .unwrap_or_else(fallback_width);
+    /// let layout = terminal_width.map(Layout::fitting).unwrap_or(Layout {
+    ///     columns: 80,
+    ///     wrap: true,
+    /// });
     /// ```
     ///
     /// **Prefer:** a `match`, which names both cases
     ///
     /// ```rust,ignore
-    /// let width = match terminal_width {
-    ///     Some(width) => width.saturating_sub(2),
-    ///     None => fallback_width(),
+    /// let layout = match terminal_width {
+    ///     Some(width) => Layout::fitting(width),
+    ///     None => Layout {
+    ///         columns: 80,
+    ///         wrap: true,
+    ///     },
     /// };
     /// ```
     pub perfectionist::MAP_OR,
@@ -108,8 +118,9 @@ struct Config {
     /// default before the mapper costs the reader nothing. A negated
     /// numeric literal counts as a literal. A closure does not count,
     /// however short, and neither does an expression written as a
-    /// macro call. Defaults to `true`; set `false` to flag those
-    /// calls too.
+    /// macro call, a struct or tuple literal, or an enum variant
+    /// written as either, though a unit variant is a path. Defaults to
+    /// `true`; set `false` to flag those calls too.
     exempt_simple_default: bool,
 }
 
