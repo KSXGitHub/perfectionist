@@ -7,15 +7,15 @@
 //! 4. The `perfectionist` package's `version` field in `Cargo.lock`
 //!    equals the tag.
 //! 5. The commit's diff against its parent modifies *only* `Cargo.toml`
-//!    and `Cargo.lock`, and *only* on the two `version` lines above —
-//!    no other line in either file is altered.
+//!    and `Cargo.lock`, and *only* on the two `version` lines above,
+//!    with no other line in either file altered.
 //!
 //! The same check is reached from each of these entry points:
 //!
-//! * `verify <version>` — deploy CI (`HEAD` is the tagged commit).
-//! * `commit-msg <file>` — `commit-msg` git hook (index vs. `HEAD`,
+//! * `verify <version>`: deploy CI (`HEAD` is the tagged commit).
+//! * `commit-msg <file>`: `commit-msg` git hook (index vs. `HEAD`,
 //!   when the typed message looks like a version literal).
-//! * `pre-push` — `pre-push` git hook (each tag-ref update fed on
+//! * `pre-push`: `pre-push` git hook (each tag-ref update fed on
 //!   stdin).
 //!
 //! When any of those fires on a release-shaped operation, this tool

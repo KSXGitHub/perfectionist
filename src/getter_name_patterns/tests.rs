@@ -64,7 +64,7 @@ fn the_list_always_has_an_answer() {
 }
 
 /// The conversion clause tests the name's own prefix, so every one
-/// of these covers only names it has already answered for — whether
+/// of these covers only names it has already answered for, whether
 /// the entry names the conversion prefix exactly, extends it, or
 /// negates either.
 #[test]

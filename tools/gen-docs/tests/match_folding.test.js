@@ -49,7 +49,7 @@
 
   t.add('a run of separators folds to a run of spaces, not to one', function () {
     // Each separator becomes one space rather than a run becoming one,
-    // so the folded string indexes exactly like the string handed in —
+    // so the folded string indexes exactly like the string handed in,
     // which is what lets a range be used to highlight that string.
     // Collapsing would shift every index after the run.
     var target = 'a  bare  url'

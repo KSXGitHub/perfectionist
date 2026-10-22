@@ -27,8 +27,8 @@ declare_tool_lint! {
     ///
     /// Either operand may be the `Some`, and either may be borrowed, so
     /// `Some(true) == opt` and `opt == &Some(true)` are flagged the same.
-    /// A borrowed payload — what `HashMap::<_, bool>::get` and
-    /// `Option::as_ref` hand back — gains a `copied` to reach the `bool`,
+    /// A borrowed payload, what `HashMap::<_, bool>::get` and
+    /// `Option::as_ref` hand back, gains a `copied` to reach the `bool`,
     /// so `map.get(k) == Some(&true)` becomes
     /// `map.get(k).copied().unwrap_or(false)`.
     ///
@@ -56,8 +56,8 @@ declare_tool_lint! {
     ///
     /// - **The `None` case is left implicit.** `== Some(true)` never
     ///   says what `None` means, so the reader derives it from the
-    ///   operator. `unwrap_or(false)` states it — absent counts as
-    ///   false — which is usually the decision the surrounding code
+    ///   operator. `unwrap_or(false)` states it, absent counting as
+    ///   false, which is usually the decision the surrounding code
     ///   turned on.
     /// - **`!=` compounds that.** `opt != Some(true)` admits two states
     ///   for two different reasons, and which two is not apparent
@@ -162,7 +162,7 @@ struct Rewrite {
 }
 
 /// How the comparison is rewritten, given that it was written with
-/// `equality` — `==` rather than `!=` — against `literal`.
+/// `equality` (`==` rather than `!=`) against `literal`.
 ///
 /// The default is the literal's opposite throughout, which is what makes
 /// the call answer for `None` the way the comparison did; the negation
@@ -227,7 +227,8 @@ fn comparison<'tcx>(
 
 /// The boolean a `Some` of a boolean literal carries, where the author
 /// wrote that literal. Any outer `&` comes off the call and off its
-/// argument — the two peels that admit `&Some(true)` and `Some(&true)`.
+/// argument: those two peels are what admit `&Some(true)` and
+/// `Some(&true)`.
 ///
 /// A literal out of an expansion answers `None`. The rewrite reads its
 /// value and drops its text, so `opt == wanted!()` would otherwise be
@@ -253,8 +254,8 @@ fn some_bool_literal(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<bool> {
 /// of a `bool` or of a `&bool`.
 ///
 /// References around the `Option` itself are peeled, so a
-/// `&Option<bool>` answers as the `Option<bool>` it derefs to — which is
-/// what the rewrite's `unwrap_or` resolves against too.
+/// `&Option<bool>` answers as the `Option<bool>` it derefs to, which
+/// is what the rewrite's `unwrap_or` resolves against too.
 fn option_bool_payload(cx: &LateContext<'_>, expr: &Expr<'_>) -> Option<Payload> {
     let ty::Adt(option, arguments) = cx.typeck_results().expr_ty(expr).peel_refs().kind() else {
         return None;

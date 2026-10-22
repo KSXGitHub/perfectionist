@@ -35,8 +35,8 @@ fn missing_reason_multiline() {}
 #[cfg_attr(all(), expect(dead_code))]
 fn missing_reason_cfg_attr() {}
 
-// Bad: nested `cfg_attr` — the rule walks through both layers and
-// flags the inner `allow`.
+// Bad: nested `cfg_attr`, where the rule walks through both layers
+// and flags the inner `allow`.
 #[cfg_attr(all(), cfg_attr(all(), allow(dead_code)))]
 fn missing_reason_nested_cfg_attr() {}
 
@@ -61,18 +61,18 @@ fn good_multibyte() {}
 fn reason_empty() {}
 
 // Bad: whitespace-only `reason` is treated the same as an empty
-// literal — the literal is long enough for the default length
+// literal. The literal `"   "` is long enough for the default length
 // floor but carries no rationale.
 #[allow(dead_code, reason = "   ")]
 fn reason_whitespace_only() {}
 
-// Good: empty argument list — silences no lint, so the rule
+// Good: empty argument list, which silences no lint, so the rule
 // doesn't fire even without a `reason`.
 #[allow()]
 fn allow_no_lints() {}
 
-// Bad: multi-line `cfg_attr` — the autofix should target the
-// inner `allow` argument list, not the outer `cfg_attr` one.
+// Bad: multi-line `cfg_attr`, where the autofix should target the
+// inner `allow` argument list rather than the outer `cfg_attr` one.
 #[cfg_attr(
     all(),
     allow(dead_code),

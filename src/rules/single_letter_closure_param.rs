@@ -26,7 +26,7 @@ declare_tool_lint! {
     /// "Single-expression" is a shared precondition for the
     /// trivial-callback exception: the body must be a bare
     /// expression or a block whose only content is a trailing
-    /// expression — a body with any `let` binding or other
+    /// expression, so a body with any `let` binding or other
     /// statement before the trailing expression disqualifies the
     /// closure regardless of which branch below would otherwise
     /// apply. Given that, one of two further shapes must hold:
@@ -39,7 +39,7 @@ declare_tool_lint! {
     ///   (`sorted_by`, `k_smallest_by`, `minmax_by_key`, ...) and
     ///   [`into-sorted`](https://docs.rs/into-sorted)
     ///   (`into_sorted_by`, `into_sorted_by_key`, ...);
-    /// - the body is a trivial wrapper around the parameter —
+    /// - the body is a trivial wrapper around the parameter:
     ///   a field access (`|x| x.field`), a method call
     ///   (`|x| x.foo()`), a one-argument call where the
     ///   parameter is the sole argument (`|x| f(x)`), a
@@ -76,7 +76,7 @@ declare_tool_lint! {
     /// cannot express this rule's trivial-callback exemption
     /// (`.map(|x| x.field)`, `sort_by(|a, b| ...)`) or its
     /// conventional-name set, so it flags the short callbacks this
-    /// rule deliberately allows. Enabling both is redundant — choose
+    /// rule deliberately allows. Enabling both is redundant, so choose
     /// the context-aware behaviour here, or `min_ident_chars` for
     /// the one-knob sweep.
     ///

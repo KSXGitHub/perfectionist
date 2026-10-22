@@ -10,13 +10,13 @@
 ## What it does
 
 Forbids regular string literals whose only backslash escapes
-are ones a raw string would express verbatim — `\"`, `\\`,
+are ones a raw string would express verbatim: `\"`, `\\`,
 and `\'`. The autofix rewrites the literal to the raw form
 `r"..."` / `r#"..."#`, picking the smallest hash count that
 avoids a delimiter collision.
 
 Literals inside macro invocations are covered too: every string
-literal in a macro call, whatever its position — including a
+literal in a macro call, whatever its position, including a
 `format!`-family template that contains a `{...}` placeholder. The
 rewrite is value-preserving (a raw string still parses
 placeholders, and `{{` / `}}` survive verbatim), so the literal's
@@ -39,7 +39,7 @@ rewritten anyway, since a literal's position isn't distinguished
 inside a macro.
 
 Whitespace and control-character escapes (`\n`, `\t`, `\r`,
-`\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt — a
+`\0`) and Unicode escapes (`\x..`, `\u{..}`) are exempt: a
 raw string cannot express them, and the regular form is the
 only choice. A literal that mixes eliminable and
 inexpressible escapes is also left alone; the rewrite would
@@ -52,7 +52,7 @@ This is a stylistic preference, not a correctness issue. The
 rule trades one noise source (interior backslash escapes)
 for a slightly more elaborate string syntax. The benefit is
 highest in strings full of file paths, regex patterns, JSON
-snippets, or embedded source code — all of which would
+snippets, or embedded source code, all of which would
 otherwise be a sea of `\\` and `\"`.
 
 ## Example
@@ -84,7 +84,7 @@ Minimum number of eliminable escapes a string must contain
 before the lint fires. Default `1` catches every escapable
 string; set to `2` to skip single-escape literals where the
 raw form is arguably noisier than the original. The lower
-bound is `1` — `0` is rejected at parse time, since
+bound is `1`, and `0` is rejected at parse time, since
 suggesting `r"hello"` for `"hello"` would just trip
 `clippy::needless_raw_strings` on the next pass, and a
 minimum of `1` already excludes that case.
@@ -96,11 +96,11 @@ minimum of `1` already excludes that case.
 
 Escape sequences considered eliminable by switching to raw
 form. Only the three Rust escapes whose decoded character
-is exactly the byte after the backslash — `"\""`, `"\\"`,
-`"\\'"` — are accepted; entries listed here that fall
+is exactly the byte after the backslash, namely `"\""`,
+`"\\"` and `"\\'"`, are accepted; entries listed here that fall
 outside that closed set are silently dropped. (`\n`, `\t`,
 `\xNN`, `\u{...}` and other escapes decode to a different
 character and cannot be expressed verbatim in a raw string,
 so they have no place in this list.) Use this knob to
-narrow eligibility — e.g. `["\\\""]` to only flag literals
-whose sole escapes are escaped quotes — not to extend it.
+narrow eligibility, say `["\\\""]` to only flag literals whose
+sole escapes are escaped quotes. It cannot extend eligibility.

@@ -1,5 +1,5 @@
 /// Good: `skip_domains = ["EXAMPLE.COM"]` suppresses this even though
-/// the address is lowercase — domains match case-insensitively:
+/// the address is lowercase, domains matching case-insensitively:
 /// contact user@example.com about it.
 fn _skipped_case_insensitive_domain() {}
 

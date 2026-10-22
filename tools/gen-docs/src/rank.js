@@ -141,7 +141,7 @@ var perfectionistRank = (function () {
         continue
       }
       // The text beneath the name is the rule's statement, except where a
-      // prose paragraph is what matched — then it is that paragraph,
+      // prose paragraph is what matched, in which case it is that paragraph,
       // windowed around the match. Either way the ranges handed to the
       // renderer are the ones matched in the text actually shown, so a
       // result highlights what the reader typed wherever they can see it.

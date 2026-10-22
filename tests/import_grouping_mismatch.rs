@@ -208,8 +208,8 @@ fn multi_block_split_reexports_form_two_leading_blocks() {
 /// re-exports and alias re-exports form two leading blocks, the
 /// private imports collapse into one block below, and a cfg-gated
 /// private import still forms a trailing block. A cfg-gated alias
-/// re-export stays in the alias sub-block — visibility/kind outranks
-/// cfg gating.
+/// re-export stays in the alias sub-block, visibility and kind
+/// outranking cfg gating.
 #[test]
 fn single_block_split_reexports_form_two_leading_blocks() {
     run(

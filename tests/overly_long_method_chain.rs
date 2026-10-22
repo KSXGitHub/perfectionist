@@ -4,9 +4,9 @@
 //! sweep under `ui/` for `tests/ui.rs` to pick up: `ui/overly_long_
 //! method_chain.rs` holds two over-limit chains and an empty `.stderr`,
 //! which is what proves the rule stays off until it is enabled. Every
-//! fixture here therefore travels with a `dylint.toml` that enables it
-//! — `default` pins the default limit, `zero_threshold` pins where a
-//! chain starts and ends. `exempt_tests` needs `#[cfg(test)]` code to
+//! fixture here therefore travels with a `dylint.toml` that enables
+//! it: `default` pins the default limit, `zero_threshold` pins where
+//! a chain starts and ends. `exempt_tests` needs `#[cfg(test)]` code to
 //! exist, so it is covered by a minimal Cargo project run through
 //! `cargo dylint --all -- --all-targets`, the way
 //! `tests/needless_borrowed_parameters.rs` does it.
@@ -88,7 +88,7 @@ fn zero_threshold_reports_every_chain_length() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each hold the same 6-call chain — one above the
+/// `#[test]` function each hold the same 6-call chain, one above the
 /// default limit of 5.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/overly_long_method_chain/lib_with_test_module.rs");

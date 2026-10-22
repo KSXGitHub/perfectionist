@@ -80,7 +80,7 @@ fn snippet_with_block_comment_between_args() {
 }
 
 /// CRLF line endings should not confuse the trailing-comma
-/// detection — `\r` is treated the same as horizontal
+/// detection: `\r` is treated the same as horizontal
 /// whitespace when scanning the end of the last content line.
 /// The inserted line uses LF; the existing source's CRLF runs
 /// are preserved.

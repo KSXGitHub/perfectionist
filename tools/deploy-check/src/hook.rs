@@ -37,7 +37,7 @@ fn git_comment_char(root: &Path) -> char {
     }
 }
 
-/// The body of Git's default "scissors" line — everything after the
+/// The body of Git's default "scissors" line: everything after the
 /// comment char and its following space. `git commit --verbose`
 /// appends the staged diff below a line of the form
 /// `"<commentChar> {SCISSORS_BODY}"`, and Git strips that line and
@@ -54,7 +54,7 @@ const SCISSORS_BODY: &str = "------------------------ >8 -----------------------
 /// * `Ok(Some(subject))` when the message is a release-shaped one
 ///   (`X.Y.Z(-<suffix>)?` only, no body).
 /// * `Ok(None)` when the message is empty or doesn't look like a
-///   release — the hook bows out and lets git proceed.
+///   release, so the hook bows out and lets git proceed.
 /// * `Err(MessageHasExtraContent)` when a release-shaped subject is
 ///   followed by additional body lines, which the contract forbids.
 pub(crate) fn extract_release_subject(
@@ -101,7 +101,7 @@ pub(crate) fn pre_push(root: &Path) -> Result<(), RuntimeError> {
             continue;
         }
         if local_sha.chars().all(|char| char == '0') {
-            // Tag deletion — nothing to verify.
+            // Tag deletion, so nothing to verify.
             continue;
         }
         // Dereference annotated tags to their commit before running

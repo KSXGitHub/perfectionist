@@ -4,8 +4,8 @@
 //! one-fixture directory under `ui-toml/impure_macro_arguments/` and
 //! pass a per-rule `dylint.toml` to `_utils::ConfiguredUiTest`.
 //!
-//! Mirrors the structure of `tests/macro_trailing_comma.rs` — same
-//! `dylint.toml` synthesis, same one-fixture-per-knob layout.
+//! Mirrors the structure of `tests/macro_trailing_comma.rs`: the same
+//! `dylint.toml` synthesis, the same one-fixture-per-knob layout.
 
 use std::collections::BTreeMap;
 

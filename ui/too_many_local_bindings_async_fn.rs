@@ -9,7 +9,7 @@
 // bindings the author wrote, so an `async fn` must be counted exactly
 // like the sync function with the same body.
 
-// Good: sixteen parameters, empty body — parameters are not counted.
+// Good: sixteen parameters and an empty body, parameters not counted.
 async fn params_only(a1: u32, a2: u32, a3: u32, a4: u32, a5: u32, a6: u32, a7: u32, a8: u32, a9: u32, a10: u32, a11: u32, a12: u32, a13: u32, a14: u32, a15: u32, a16: u32, ) {}
 
 // Bad: the parameter is still not counted, but the body binds sixteen.

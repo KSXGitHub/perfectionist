@@ -4,7 +4,7 @@
 #![allow(unknown_lints, dead_code, unused_imports, reason = "ui fixture")]
 
 // A `#![no_std]` crate has no `std::` to name, so nothing here is
-// flagged — not even with `std` linked into the same compilation, which
+// flagged, not even with `std` linked into the same compilation, which
 // is what a `#[cfg(test)] extern crate std;` amounts to.
 extern crate std;
 

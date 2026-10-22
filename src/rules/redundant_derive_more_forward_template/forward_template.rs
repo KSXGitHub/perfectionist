@@ -30,7 +30,7 @@ struct TemplateArgument {
 pub(super) enum FieldReference {
     /// A tuple field by index, written `_0`.
     Index(usize),
-    /// A named field, unraw-ed — `{type}` names `r#type`.
+    /// A named field, unraw-ed, so `{type}` names `r#type`.
     Name(Symbol),
 }
 
@@ -78,7 +78,7 @@ pub(super) fn parse_call(tokens: &TokenStream) -> Option<ParsedCall> {
 
 /// What a template forwards to, when it is nothing but one unadorned
 /// placeholder selecting `formatting`'s trait. `None` for every other
-/// template — one with literal text, a second placeholder, an escaped
+/// template: one with literal text, a second placeholder, an escaped
 /// brace, a fill / width / precision, or a placeholder selecting a
 /// different trait than the derive implements.
 pub(super) fn lone_forward(call: &ParsedCall, formatting: &FormattingTrait) -> Option<LoneForward> {
@@ -104,7 +104,7 @@ pub(super) struct LoneForward {
 pub(super) enum Forward {
     /// A field of the container the attribute sits on.
     Field(FieldReference),
-    /// `{_variant}` — the enum-level stand-in for whatever each variant
+    /// `{_variant}`, the enum-level stand-in for whatever each variant
     /// is formatted with.
     Variant,
 }
@@ -113,14 +113,14 @@ pub(super) enum Forward {
 /// warn about.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Fix {
-    /// The template names the value unambiguously — `{}`, `{0}`, `{_0}`,
-    /// `{field}`, a named argument, or `{_variant}`. Deleting the whole
+    /// The template names the value unambiguously, through `{}`, `{0}`,
+    /// `{_0}`, `{field}`, a named argument, or `{_variant}`. Deleting the whole
     /// attribute is a `MachineApplicable` no-op.
     Delete,
     /// The template forwards to the sole field via an explicit positional
     /// index `>= 1`. `derive_more`'s transparent path throws the index
     /// away, so the output is identical to the derive's own forward and
-    /// the code even compiles — but the index names an argument that was
+    /// the code even compiles, but the index names an argument that was
     /// never supplied, which reads as a forgotten one. Redundant as
     /// written, yet the intended fix might be to *supply* the argument
     /// rather than delete it, so warn without offering an autofix.
@@ -137,8 +137,8 @@ fn resolve(
 ) -> Option<LoneForward> {
     let Some(supplied) = supplied else {
         let target = match placeholder.argument {
-            // `{}` with nothing to interpolate is not a forward — it is
-            // not even a template `derive_more` accepts.
+            // `{}` with nothing to interpolate is not a forward, nor
+            // even a template `derive_more` accepts.
             "" => return None,
             VARIANT_PLACEHOLDER => Forward::Variant,
             name => Forward::Field(field_reference(name)?),
@@ -156,7 +156,7 @@ fn resolve(
             // `{}` and `{0}` are the implicit and explicit spellings of
             // "the first (and only) argument".
             0 => Fix::Delete,
-            // `{1}`, `{2}`, ... — see [`Fix::WarnOnly`].
+            // `{1}`, `{2}`, and so on, per [`Fix::WarnOnly`].
             _ => Fix::WarnOnly,
         },
     };
@@ -210,15 +210,15 @@ fn take_argument(group: &[&TokenTree]) -> Option<TemplateArgument> {
     })
 }
 
-/// Parse an argument's value. Only a bare identifier counts — `_0`,
-/// `message` — because that is the only spelling `derive_more`
+/// Parse an argument's value. Only a bare identifier counts, `_0` or
+/// `message`, because that is the only spelling `derive_more`
 /// resolves to the field itself.
 ///
 /// Every other expression, `self.0` and `self.message` included, it
 /// wraps as `&(<expr>)` and infers no formatting bound from. Deleting
 /// such an attribute therefore rewrites the generated body and, on a
 /// generic container, adds the bound the expression form never
-/// contributed — so the spelling is left unflagged rather than fixed
+/// contributed, so the spelling is left unflagged rather than fixed
 /// into a different impl.
 fn take_value(tokens: &[&TokenTree]) -> Option<FieldReference> {
     match tokens {

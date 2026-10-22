@@ -1,7 +1,7 @@
 // ============================================================================
 // match_tiers.js: each tier asked on its own.
 //
-// Through `matchFuzzy` the tiers cover for each other — every one is tried
+// Through `matchFuzzy` the tiers cover for each other: every one is tried
 // and the best worth showing wins, so a tier that stopped working can go
 // unnoticed because a sibling places the same characters. Each is asked
 // directly here, on strings already folded, which is what the tiers take.
@@ -17,7 +17,7 @@
     // `indexOf("")` clamps a `fromIndex` past the end instead of returning
     // -1, so the scan over every occurrence would never leave its loop.
     // The entry points reject an empty query before any tier sees one, so
-    // this guard is against a hang, not a wrong answer — which is why it
+    // this guard is against a hang rather than a wrong answer, which is why it
     // is asked of the tier rather than through `matchFuzzy`.
     t.equal(r.matchVerbatim('', 'bare url'), null, 'an empty needle matches nothing')
     t.equal(r.matchVerbatim('', ''), null, 'an empty haystack too')

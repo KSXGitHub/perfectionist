@@ -20,7 +20,7 @@ pub(crate) struct RenderContext<'a> {
     /// Human-facing git ref (typically a branch like `master`, a
     /// tag, or whatever the user passed via `--git-ref`). Used in
     /// the page title and banner so a reader can tell *which*
-    /// branch they're looking at — those strings would be useless
+    /// branch they're looking at, those strings being useless
     /// if they read "Showing docs for `60c4549b...`".
     pub(crate) git_ref: &'a str,
     /// Commit SHA `git_ref` resolved to. Used for the per-rule
@@ -36,7 +36,8 @@ pub(crate) struct RenderContext<'a> {
 
 /// One lint, in the shape the page needs to render.
 pub(crate) struct Rule {
-    /// `perfectionist::lint_attribute_trailing_comment` — used as the anchor.
+    /// `perfectionist::lint_attribute_trailing_comment`, used as the
+    /// anchor.
     pub(crate) namespaced: String,
     /// Whether the rule's pass is registered out of the box, or only
     /// after the user opts in via
@@ -46,12 +47,12 @@ pub(crate) struct Rule {
     /// [`DefaultState::Active`] (the catalogue default). The runtime side uses its own [`DefaultState`] enum
     /// of the same shape (`src/common.rs`), so the constant's
     /// initializer is read directly here as an enum-variant path
-    /// — no `bool` intermediate. The renderer surfaces this as the
+    /// with no `bool` intermediate. The renderer surfaces this as the
     /// "Default state" line in place of the old "Default level"
-    /// line — under the
-    /// current convention every rule's `declare_tool_lint!` level
-    /// is `Warn`, so the user signal worth surfacing per rule is
-    /// whether the rule runs at all, not what level it fires at.
+    /// line. Under the current convention every rule's
+    /// `declare_tool_lint!` level is `Warn`, so the user signal worth
+    /// surfacing per rule is whether the rule runs at all, not what
+    /// level it fires at.
     pub(crate) default_state: DefaultState,
     /// The third positional argument to `declare_tool_lint!`.
     pub(crate) short_desc: String,
@@ -62,8 +63,8 @@ pub(crate) struct Rule {
     /// The rule's configuration surface. Every rule declares both a
     /// `CONFIG_KEY` constant and a `Config` struct; a rule with no
     /// knobs uses an empty `Config {}` (e.g. `lint_attribute_trailing_comment`).
-    /// "No configuration" therefore has a single representation —
-    /// an empty [`ConfigDoc`] — that both output modes render as
+    /// "No configuration" therefore has a single representation, an
+    /// empty [`ConfigDoc`], that both output modes render as
     /// "Configuration: none." The extractor enforces this, panicking
     /// on any rule file that omits either half, so the field is never
     /// absent here.
@@ -122,7 +123,7 @@ pub(crate) struct ConfigDoc {
 /// One configurable knob. Most rules' `Config` derives
 /// `#[serde(default)]`, so their fields are optional in TOML; the
 /// renderer marks those with an `optional` badge rather than
-/// reproducing the Rust default expression — the prose doc comment
+/// reproducing the Rust default expression. The prose doc comment
 /// states the default in human-readable form. The exception is the
 /// mandatory-configuration direction fields (e.g.
 /// `import_grouping_mismatch`'s `style`), which are a bare type with
@@ -151,7 +152,7 @@ pub(crate) struct ConfigField {
 
 /// Whether a [`ConfigField`] is optional or mandatory in TOML. Its
 /// lower-case string form (`"optional"` / `"mandatory"`) doubles as
-/// the HTML badge label and — prefixed with `badge-` — the badge's CSS
+/// the HTML badge label and, prefixed with `badge-`, the badge's CSS
 /// class, so the HTML renderer reads it off the `strum`-derived
 /// `AsRef<str>` rather than hand-writing the two words. The markdown
 /// catalogue, where the word opens a sentence-like bullet instead of
@@ -198,7 +199,7 @@ pub(crate) enum TypeKind {
 pub(crate) struct EnumVariant {
     /// Rust identifier, e.g. `Line`.
     pub(crate) rust_name: String,
-    /// The string a TOML author would write — typically
+    /// The string a TOML author would write, typically
     /// `rust_name` lowercased and snake-cased when the enum carries
     /// `#[serde(rename_all = "snake_case")]`.
     pub(crate) serialized: String,
@@ -207,10 +208,10 @@ pub(crate) struct EnumVariant {
 
 /// A field of a project-local struct surfaced under a rule's
 /// Types section. Mirrors [`ConfigField`] for the nested-struct
-/// case, but the renderer omits the optional badge here — a
-/// custom struct's TOML representation requires every field
-/// to be present, since serde's `default` attribute belongs to
-/// the top-level `Config` deserialisation, not nested.
+/// case, but the renderer omits the optional badge here. A custom
+/// struct's TOML representation requires every field to be present,
+/// since serde's `default` attribute belongs to the top-level
+/// `Config` deserialisation, not nested.
 #[derive(Clone)]
 pub(crate) struct StructField {
     /// The TOML key for this field, after applying the struct's

@@ -1,7 +1,7 @@
 // Bad: `inner::their_macro!` is matched by the multi-segment entry
 // `inner::their_macro` in `extra_macros`. The same machinery
 // applies to a third-party macro referenced as
-// `somecrate::their_macro!` — multi-segment entries tail-match the
+// `somecrate::their_macro!`, multi-segment entries tail-matching the
 // invocation path.
 //
 // Note: `#[macro_export]` here is a fixture-only workaround, not a

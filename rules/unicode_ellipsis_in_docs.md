@@ -9,7 +9,7 @@
 
 ## What it does
 
-Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in doc comments —
+Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in doc comments: the
 `///` and `//!` line forms and the `/** */` / `/*! */` block
 forms. Prefer the three-ASCII-dot form `...`. Regular `//` and
 `/* */` comments are covered by a sibling lint
@@ -22,9 +22,9 @@ ASCII `...` survives every encoding round-trip, every terminal,
 every copy-paste, every `grep` invocation, and every `git diff`
 viewer without rendering as `?` or a tofu box. The visual
 difference between `…` and `...` is small enough that the
-Unicode form usually arrives by accident — autocorrect, an IDE
-smart-quote setting — rather than as a deliberate choice in
-technical writing.
+Unicode form usually arrives by accident, from autocorrect or
+an IDE smart-quote setting, rather than as a deliberate choice
+in technical writing.
 
 ## Example
 
@@ -62,7 +62,7 @@ pipelines occasionally insert. Empty by default.
 Whether to also flag a character inside an inline code span
 (`` `...` ``). Defaults to `false`: code spans often quote example
 text where the ellipsis is meaningful, so they are left alone
-unless this is set to `true`. Code *blocks* — fenced
-(` ``` ... ``` `), `~~~`-fenced, four-space indented, and the
-doc-test code they hold — are always skipped regardless of this
-knob.
+unless this is set to `true`. Code *blocks* are always skipped
+regardless of this knob, whether fenced (` ``` ... ``` `),
+`~~~`-fenced or four-space indented, and so is the doc-test code
+they hold.

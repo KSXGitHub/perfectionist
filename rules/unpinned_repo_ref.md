@@ -27,8 +27,8 @@ than overlap.
 
 This is a stylistic preference, not a correctness issue. A
 branch ref such as `/blob/main/...` resolves to whatever that
-branch currently points at, so the linked content can change —
-or disappear — without warning after the link is written. A tag
+branch currently points at, so the linked content can change,
+or disappear, without warning after the link is written. A tag
 ref is steadier but still not pinned: a tag can be removed, and
 a version-shaped name is not even guaranteed to be a tag (a
 branch named `v1.2.3` is valid Git). A commit SHA is the only

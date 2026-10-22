@@ -10,6 +10,7 @@ pub mod clap_help_markdown;
 pub mod cloning_getter;
 pub mod core_instead_of_std;
 pub mod costless_to_conversion;
+pub mod em_dash_prose;
 pub mod excessive_cognitive_complexity;
 pub mod excessive_inline_tests;
 pub mod excessive_nesting;

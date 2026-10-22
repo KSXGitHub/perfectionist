@@ -11,7 +11,7 @@
 use rustc_span::Span;
 
 pub(super) struct PendingViolation {
-    /// Span of the whole macro invocation — both the diagnostic anchor
+    /// Span of the whole macro invocation, both the diagnostic anchor
     /// and the region the suggestion replaces.
     pub(super) call_span: Span,
     /// The wrapped, continuation-folded replacement for `call_span`.

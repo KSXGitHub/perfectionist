@@ -60,7 +60,7 @@ fn a_name_under_both_arrays_panics() {
 }
 
 /// A rule the table does not name keeps the baseline its
-/// `register_pass` supplies, and that baseline differs per rule — the
+/// `register_pass` supplies, and that baseline differs per rule: the
 /// off-by-default ones pass `Inactive`.
 #[test]
 fn an_unnamed_rule_keeps_its_baseline() {

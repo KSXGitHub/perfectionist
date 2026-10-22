@@ -1,11 +1,12 @@
 //! Reading the trait names out of a `#[derive(...)]` list.
 //!
 //! [`derive_names`] collects the final path segment of every derived
-//! trait on a node, looking through `#[cfg_attr(<cfg>, derive(...))]` —
-//! a gated derive still governs what its helper attributes mean wherever
-//! it applies. Matching by final segment catches `some_crate::Trait`, a
-//! plain `Trait` imported from it, and a same-name re-export; a derive
-//! renamed through `use some_crate::Trait as T;` is not caught.
+//! trait on a node, looking through `#[cfg_attr(<cfg>, derive(...))]`,
+//! since a gated derive still governs what its helper attributes mean
+//! wherever it applies. Matching by final segment catches
+//! `some_crate::Trait`, a plain `Trait` imported from it, and a
+//! same-name re-export; a derive renamed through `use some_crate::Trait
+//! as T;` is not caught.
 //!
 //! Read from tokens rather than parsed meta-items so it works on a
 //! re-parsed module AST. [`derive_entries`] is the underlying read of

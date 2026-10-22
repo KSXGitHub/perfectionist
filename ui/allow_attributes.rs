@@ -6,7 +6,8 @@
     reason = "the leading comments document each case; they are not rationales to lift",
 )]
 
-// Bad: a built-in lint that is not exempt — offers removal or `#[expect]`.
+// Bad: a built-in lint that is not exempt, so the fix offers removal
+// or `#[expect]`.
 #[allow(non_snake_case, reason = "external API uses camelCase")]
 fn simple_builtin() {}
 
@@ -24,30 +25,33 @@ fn simple_perfectionist(x: i32) -> i32 {
     x
 }
 
-// Bad: multi-line single-lint attribute — removal or `#[expect]`.
+// Bad: multi-line single-lint attribute, so the fix offers removal or
+// `#[expect]`.
 #[allow(
     clippy::type_complexity,
     reason = "the type mirrors the upstream alias",
 )]
 fn multiline_simple() {}
 
-// Bad: `cfg_attr`-wrapped — only the inner `allow` -> `expect` swap (no removal).
+// Bad: `cfg_attr`-wrapped, so the fix offers only the inner `allow` ->
+// `expect` swap.
 #[cfg_attr(all(), allow(clippy::too_many_arguments, reason = "cfg-gated"))]
 fn cfg_attr_simple() {}
 
-// Bad: nested `cfg_attr` — the walker reaches the inner `allow`.
+// Bad: nested `cfg_attr`, where the walker reaches the inner `allow`.
 #[cfg_attr(all(), cfg_attr(all(), allow(clippy::type_complexity, reason = "nested")))]
 fn cfg_attr_nested() {}
 
-// Bad: mixed exempt + rewriteable — drop the rewriteable lints or split them.
+// Bad: mixed exempt and rewriteable, so drop the rewriteable lints or
+// split them.
 #[allow(dead_code, clippy::too_many_arguments, reason = "scaffolding")]
 fn split_mixed() {}
 
-// Bad: `cfg_attr`-wrapped mixed — drop or split the inner meta item in place.
+// Bad: `cfg_attr`-wrapped mixed, so drop or split the inner meta item.
 #[cfg_attr(all(), allow(dead_code, clippy::type_complexity, reason = "split under cfg"))]
 fn split_cfg_attr() {}
 
-// Good: every named lint is exempt — `allow` stays.
+// Good: every named lint is exempt, so `allow` stays.
 #[allow(dead_code, reason = "used only in integration tests")]
 struct ExemptOnly;
 
@@ -55,12 +59,12 @@ struct ExemptOnly;
 #[allow(this_is_not_a_real_lint, reason = "left alone")]
 fn unknown_bare() {}
 
-// Good: a lint *group* fires only if some member fires — left alone.
+// Good: a lint *group* fires only if some member fires, so left alone.
 #[allow(unused, reason = "group, not an individual lint")]
 fn group_left_alone() {}
 
-// Good: clippy lint *groups* are also non-deterministic — left alone,
-// even though individual `clippy::*` lints are rewriteable.
+// Good: clippy lint *groups* are also non-deterministic, so left
+// alone, even though individual `clippy::*` lints are rewriteable.
 #[allow(clippy::pedantic, reason = "group, not an individual lint")]
 fn clippy_group_left_alone() {}
 

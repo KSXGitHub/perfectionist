@@ -3,7 +3,7 @@
 //! `require_help_override = true` flags every clap-derived doc comment
 //! that reaches `--help` without an explicit override, and tolerates a
 //! missing override wherever there is no doc comment to leak. An override
-//! counts in either namespace clap accepts — `#[arg(help = "...")]` and
+//! counts in either namespace clap accepts, `#[arg(help = "...")]` and
 //! `#[clap(help = "...")]` alike. The markdown scan is superseded: the
 //! `` `code` `` span below is reported once as a missing override, not as
 //! a code span.

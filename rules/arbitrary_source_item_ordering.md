@@ -16,7 +16,7 @@ sequence:
 2. `pub use` re-exports,
 3. private imports and every other item.
 
-An item that sits below a section it belongs above is flagged —
+An item that sits below a section it belongs above is flagged:
 a `pub mod` under a `pub use`, a `pub use` under a private
 import or a `fn`, and so on. The last section is not ordered
 internally: a private `use` and a `struct` may appear in either
@@ -29,8 +29,8 @@ root, and a `#[cfg(...)]`-gated `use`, so a trailing
 `#[cfg(unix)] use ...;` block may follow the main import block.
 
 Only the top-level sequence of a module body is considered.
-Items nested deeper — inside an `impl`, a trait, or a function
-body — are out of scope.
+Items nested deeper are out of scope, whether inside an
+`impl`, a trait, or a function body.
 
 Any explicit visibility counts as `pub` for the ordering, so
 `pub(crate) mod` is a `pub mod` declaration and `pub(super) use`
@@ -50,8 +50,8 @@ wherever the diff happened to be open.
 
 No autofix is offered. Moving an item carries its attributes,
 doc comment, and any comment written above it, and a `pub use`
-hoisted above a `pub mod` may cross an item it names — edits a
-reader should make deliberately.
+hoisted above a `pub mod` may cross an item it names. These are
+edits a reader should make deliberately.
 
 ## Interaction with Clippy
 

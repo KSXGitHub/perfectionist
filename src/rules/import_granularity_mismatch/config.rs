@@ -25,14 +25,14 @@ pub(super) enum Style {
 }
 
 /// How to resolve a path segment that names **both** an item and a
-/// module under `crate` style — `use crate::thing;` next to
+/// module under `crate` style: `use crate::thing;` next to
 /// `use crate::thing::T;`. The two one-`use`-per-root shapes are not
 /// interchangeable, so unless this knob is set the rule offers both and
 /// the author picks. Only consulted under `style = "crate"`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum SelfMerge {
-    /// Always enforce the `self`-fold `use crate::thing::{self, T};` —
+    /// Always enforce the `self`-fold `use crate::thing::{self, T};`,
     /// the shape rustfmt's `imports_granularity = "Crate"` produces. The
     /// sibling-split form is flagged and rewritten to it.
     Fold,
@@ -44,7 +44,7 @@ pub(super) enum SelfMerge {
 #[derive(Debug, serde::Deserialize)]
 #[serde(default, deny_unknown_fields, rename_all = "snake_case")]
 pub(super) struct Config {
-    /// Import-granularity style to enforce. Defaults to `module` — the
+    /// Import-granularity style to enforce. Defaults to `module`, the
     /// shape that scales best as a `use` block grows. Set `crate` to
     /// collapse every crate root into one nested `use`, or `item` to
     /// put every imported name on its own line.
@@ -67,9 +67,9 @@ pub(super) struct Config {
     pub(super) respect_doc_comments: bool,
     /// Under `style = "crate"`, force one shape when a path segment
     /// names both an item and a module (`use crate::thing;` next to
-    /// `use crate::thing::T;`). Unset by default — the two shapes are
-    /// not interchangeable, so the rule flags neither single-statement
-    /// form and offers both as `MaybeIncorrect` when a merge is forced.
+    /// `use crate::thing::T;`). Unset by default: the two shapes are not
+    /// interchangeable, so the rule flags neither single-statement form
+    /// and offers both as `MaybeIncorrect` when a merge is forced.
     /// Set `fold` to always enforce `use crate::thing::{self, T};`, or
     /// `split` to always enforce `use crate::{thing, thing::T};`;
     /// either value also flags the opposite single-statement form.

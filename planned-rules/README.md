@@ -97,9 +97,10 @@ pattern that several rules call out by reference — live in
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
   — flag a closure doing several jobs where one adapter per job would
   do: a chain of steps on the item, a predicate that is a conjunction,
-  or a guard welded to a value. Three rules implement those three
-  triggers, over nine families; the file's `## Status` section says which
-  rule covers which, which families each reaches, and how each is
+  or a guard welded to a value. One rule,
+  `perfectionist::splittable_adapter_closure`, implements all three
+  triggers; the file's `## Status` section says which module answers
+  each trigger, which families the rule reaches, and how it is
   narrower than the file. It remains the spec for the `[T; N]` receiver,
   the unanchored chain and the autofix. Narrows what also satisfies
   `perfectionist::overly_long_method_chain`, and contradicts it where the
@@ -208,8 +209,6 @@ pattern that several rules call out by reference — live in
   default; opt in and choose `transparent` or `from_into`.
 
 ### Documentation
-- [`em-dash-prose.md`](./em-dash-prose.md) — flag em dashes in doc comments
-  and string literals reachable from `format!` / `println!` style macros.
 - [`commit-id-length-mismatch.md`](./commit-id-length-mismatch.md) — enforce a
   consistent SHA length for commit IDs that appear in forge URLs.
   Covers file references, single-commit views (`/commit/<sha>`),
@@ -243,8 +242,9 @@ external state, or judgement calls that a static lint cannot evaluate:
 - **Run `cargo fmt`, `cargo clippy`, and `cargo test`** before submitting —
   CI / pre-commit concerns, not source patterns.
 - **Build with no, default, and all features** — driven by CI matrix.
-- **Writing-style rules** beyond em dashes (formal tone, complete sentences,
-  no long parentheticals) — judgement-based prose review.
+- **Writing-style rules** beyond the dashes
+  `perfectionist::em_dash_prose` reports (formal tone, complete
+  sentences, no long parentheticals) — judgement-based prose review.
 - **"Use the most encompassing type" case** of the pacquet guide's
   owned-vs-borrowed section is already covered by
   `clippy::ptr_arg` (flags `&PathBuf` / `&String` / `&Vec<_>` and

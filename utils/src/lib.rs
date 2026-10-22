@@ -1,5 +1,5 @@
 //! Test-support building blocks for perfectionist's integration
-//! tests. These helpers materialise fixtures in a fresh temp dir —
+//! tests. These helpers materialise fixtures in a fresh temp dir:
 //! either a minimal Cargo project to shell out to `cargo dylint`
 //! against, or a throwaway copy of a compiletest UI tree, which
 //! [`ui_test`] runs. Path inputs are taken as parameters rather than
@@ -44,8 +44,8 @@ pub fn run_project_with_sources(
 /// Like [`run_project_with_sources`], but appends `dylint_config` to
 /// the fixture's `dylint.toml` while staying on plain `--all` (no
 /// `--all-targets`, so `#[cfg(test)]` code is excluded). Use it for a
-/// rule that is off by default — and so must be enabled through the
-/// appended config — but whose fixtures still rely on the non-test
+/// rule that is off by default, and so has to be enabled through the
+/// appended config, but whose fixtures still rely on the non-test
 /// build. Pass an empty `dylint_config` for the default configuration.
 pub fn run_project_with_sources_and_config(
     package_name: &str,
@@ -67,9 +67,9 @@ pub fn run_project_with_sources_and_config(
 }
 
 /// Like [`run_project_with_sources`], but runs `cargo dylint`
-/// with `--all-targets` (so the unit-test target — and thus
-/// `cfg(test)` code — is checked) and lets the caller append a
-/// per-rule configuration table to the fixture's `dylint.toml`. Pass
+/// with `--all-targets`, which checks the unit-test target and so the
+/// `cfg(test)` code in it, and lets the caller append a per-rule
+/// configuration table to the fixture's `dylint.toml`. Pass
 /// an empty `dylint_config` for the default configuration.
 pub fn run_project_with_config(
     package_name: &str,

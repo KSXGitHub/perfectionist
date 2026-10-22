@@ -2,8 +2,8 @@
 //! caller something of their own.
 //!
 //! The question is *ownership*, not *allocation*. Whether a body
-//! allocates is not decidable from a signature — `String::new()`
-//! allocates nothing and `u32::to_string` allocates every time — so
+//! allocates is not decidable from a signature, `String::new()`
+//! allocating nothing and `u32::to_string` allocating every time, so
 //! the predicate here never claims it. What it claims is that the
 //! caller was handed a value they must drop, where an `as_*` prefix
 //! promised them a view.

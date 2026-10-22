@@ -27,8 +27,8 @@ declare_tool_lint! {
     ///   the caller's own, which is what the prefix promises.
     /// - An `into_*` with another parameter, which is converting
     ///   something more than `self`.
-    /// - A return type carrying a lifetime the *type* already has —
-    ///   `&'a str` out of a `struct Person<'a>`. That borrow outlives
+    /// - A return type carrying a lifetime the *type* already has,
+    ///   such as `&'a str` out of a `struct Person<'a>`. That borrow outlives
     ///   the receiver rather than coming from it.
     /// - An `async fn`, or a method returning `impl Trait`. The
     ///   signature names the opaque type, not the value the caller
@@ -180,7 +180,7 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
             .output();
         // An `async fn`'s future and an `impl Trait` both capture the
         // receiver's own lifetime, so the region test below reports one
-        // as a borrow of `self` whatever the body does -- including
+        // as a borrow of `self` whatever the body does, including
         // where nothing is borrowed and nothing copied.
         if output.has_opaque_types() {
             return;
@@ -227,7 +227,7 @@ impl<'tcx> LateLintPass<'tcx> for UnconsumedIntoConversion {
 /// for a `&self` method is the borrow of the receiver.
 ///
 /// The distinction that matters is where the lifetime comes from. A
-/// method's own lifetimes — the elided one behind `&self` included — are
+/// method's own lifetimes, the elided one behind `&self` included, are
 /// bound by the signature's binder, so once `skip_binder` strips it they
 /// are exactly the regions left escaping. A lifetime the *type* carries,
 /// as in `struct Person<'a>`, is a parameter of the impl, so it survives

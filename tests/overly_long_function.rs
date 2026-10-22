@@ -41,7 +41,7 @@ fn zero_threshold_reports_every_line_count() {
 }
 
 /// A library whose production function, `#[cfg(test)]` helper, and
-/// `#[test]` function each have fifty-two lines of code — two above
+/// `#[test]` function each have fifty-two lines of code, two above
 /// the default limit.
 const LIB_WITH_TEST_MODULE: &str =
     include_str!("fixtures/overly_long_function/lib_with_test_module.rs");

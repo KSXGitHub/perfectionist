@@ -3,7 +3,7 @@
 //! macro grammar is fixed by `rustc_session::declare_tool_lint!`
 //! and the project's convention of placing the doc comment inside
 //! the macro braces, so a hand-rolled `syn::parse::Parse` impl is
-//! enough — we don't need to invoke the dylint driver or stand up a
+//! enough. We don't need to invoke the dylint driver or stand up a
 //! rustc plugin host just to read these few fields.
 
 pub(crate) mod config;
@@ -49,7 +49,7 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
     // `declare_tool_lint!` always lives in the parent file by
     // convention. Collect the macro bodies into owned `TokenStream`s
     // here so the merged-file step below (which consumes `file`) can't
-    // invalidate the references — and so an accidental
+    // invalidate the references, and so an accidental
     // `declare_tool_lint!` in a submodule wouldn't silently double-
     // register the rule. `TokenStream` clones are cheap; the bodies
     // are reparsed downstream anyway.
@@ -81,8 +81,8 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
     let merged_file = merge_submodule_items(source_path, file);
     if macro_items.is_empty() {
         // Silent skip for legitimate helper files. But if the
-        // file *looks* rule-shaped — has a `CONFIG_KEY` const
-        // or a `Config` struct — the missing macro is almost
+        // file *looks* rule-shaped, having a `CONFIG_KEY` const
+        // or a `Config` struct, the missing macro is almost
         // certainly a typo (`declare_tool_lin!`, etc.) that
         // would otherwise drop the rule from the docs without
         // any signal.
@@ -104,8 +104,8 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
 
     // The convention is one rule per file with its own `Config`,
     // so `macro_items` is expected to have exactly one entry. The
-    // code below still handles a multi-lint file defensively —
-    // every emitted rule receives the same `config` value — but
+    // code below still handles a multi-lint file defensively, every
+    // emitted rule receiving the same `config` value, but
     // no rule in the catalogue uses that shape today.
     let config = extract_config(source_path, &merged_file, shared);
     let default_state = extract_default_state(source_path, &merged_file);
@@ -180,8 +180,8 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
 /// (in practice every rule keeps it next to `declare_tool_lint!`).
 ///
 /// The trait requires the constant, so a rule that reaches the
-/// registry has one. A source file that states none — a stand-in in a
-/// test, a rule-shaped file that never registered — is reported as on
+/// registry has one. A source file that states none, a stand-in in a
+/// test or a rule-shaped file that never registered, is reported as on
 /// out of the box, the catalogue default.
 ///
 /// No `bool` intermediate: the runtime constant uses the same enum

@@ -25,8 +25,8 @@ declare_tool_lint! {
     /// multi-line invocations must end with a trailing comma; single-line
     /// invocations must not.
     ///
-    /// Eligibility is name-based — a curated list of `core` / `std` and
-    /// well-known third-party macros (`vec!`, `format!`, `println!`,
+    /// Eligibility is name-based, resting on a curated list of `core` /
+    /// `std` and well-known third-party macros (`vec!`, `format!`, `println!`,
     /// `assert_eq!`, `dbg!`, [`log::info!`](https://docs.rs/log),
     /// [`tracing::debug!`](https://docs.rs/tracing),
     /// [`anyhow::bail!`](https://docs.rs/anyhow),
@@ -150,7 +150,7 @@ fn check_invocation(lint_context: &EarlyContext<'_>, mac_call: &MacCall) {
         TokenTree::Token(token, _) if token.kind == TokenKind::Comma,
     );
     // rustfmt's `trailing_comma = "Vertical"` only applies in block-
-    // indent style -- i.e., when the first top-level item starts on
+    // indent style, i.e. when the first top-level item starts on
     // a line of its own, separate from the opening delimiter. If
     // the first item shares its starting line with the opening
     // delimiter (the compact / visual-indent layout that rustfmt

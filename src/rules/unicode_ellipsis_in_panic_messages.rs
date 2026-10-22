@@ -1,12 +1,10 @@
-use crate::common::DefaultState;
+use crate::common::{DefaultState, receiver_is_option_or_result};
 use crate::rule_index::{Register, rule};
 use clippy_utils::macros::root_macro_call_first_node;
-use clippy_utils::res::MaybeDef;
 use rustc_ast::LitKind;
 use rustc_hir::{Expr, ExprKind};
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
-use rustc_span::sym;
 
 mod config;
 mod scan;
@@ -17,8 +15,8 @@ declare_tool_lint! {
     /// ### What it does
     ///
     /// Forbids U+2026 HORIZONTAL ELLIPSIS (`…`) in the message of a
-    /// panic-family or assertion-style macro — `panic!` and
-    /// `assert_eq!` among them — and in the panic-message argument of
+    /// panic-family or assertion-style macro, `panic!` and
+    /// `assert_eq!` among them, and in the panic-message argument of
     /// an `Option` / `Result` method such as `expect`. Prefer the
     /// three-ASCII-dot form `...`. The built-in macro and method sets
     /// are listed on the `extra_macros` and `extra_methods` knobs,
@@ -146,13 +144,4 @@ impl<'tcx> LateLintPass<'tcx> for UnicodeEllipsisInPanicMessages {
             }
         }
     }
-}
-
-fn receiver_is_option_or_result<'tcx>(
-    lint_context: &LateContext<'tcx>,
-    receiver: &Expr<'tcx>,
-) -> bool {
-    let receiver_type = lint_context.typeck_results().expr_ty(receiver).peel_refs();
-    receiver_type.is_diag_item(lint_context, sym::Option)
-        || receiver_type.is_diag_item(lint_context, sym::Result)
 }

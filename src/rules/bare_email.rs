@@ -56,23 +56,23 @@ const CONFIG_KEY: &str = "perfectionist::bare_email";
 #[derive(Debug, Clone, Copy, Eq, PartialEq, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 enum Style {
-    /// Wrap the address with `<` and `>` — `<user@example.com>`.
+    /// Wrap the address with `<` and `>`, as `<user@example.com>`.
     AngleBrackets,
-    /// Prefix the address with `mailto:` — `mailto:user@example.com`.
+    /// Prefix the address with `mailto:`, as `mailto:user@example.com`.
     Mailto,
-    /// Combine both — `<mailto:user@example.com>`.
+    /// Combine both, as `<mailto:user@example.com>`.
     Both,
     /// Accept any of the three wrapped forms (`<email>`,
     /// `mailto:email`, or `<mailto:email>`); the autofix emits two
     /// `MaybeIncorrect` suggestions for the author to pick from.
     Either,
-    /// Forbid email addresses outright — no autofix, just a help
+    /// Forbid email addresses outright, with no autofix, just a help
     /// note recommending the address be moved to an external file
     /// or removed entirely.
     Forbid,
 }
 
-/// Domains skipped by default — none.
+/// Domains skipped by default: none.
 const DEFAULT_SKIP_DOMAINS: &[&str] = &[];
 
 #[derive(Debug, serde::Deserialize)]
@@ -320,8 +320,8 @@ fn emit_email(
             }
             Style::Forbid => {
                 diag.help(
-                    "move the email out of source — e.g. into a \
-                         CONTRIBUTING.md or SECURITY.md — or remove it \
+                    "move the email out of source, for instance into a \
+                         CONTRIBUTING.md or SECURITY.md, or remove it \
                          entirely",
                 );
             }
@@ -376,7 +376,7 @@ fn take_local_part(input: &str) -> usize {
 /// digits / `-`, separated by `.`, ending in a TLD of two or more
 /// ASCII letters. The TLD must end at a word boundary.
 ///
-/// A `.` is only consumed when followed by an alphanumeric byte —
+/// A `.` is only consumed when followed by an alphanumeric byte;
 /// otherwise the dot is sentence punctuation and the parse stops
 /// before it. This is what lets `security@example.net.` (with a
 /// trailing sentence period) parse cleanly.

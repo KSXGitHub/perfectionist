@@ -5,7 +5,7 @@
 
 // Regression: a function *produced by a macro* is not measured. The
 // body below is written out in the macro, so the source the counter
-// would read spans fifty-two lines -- two above the default limit --
+// would read spans fifty-two lines, two above the default limit,
 // and `macro_generated` fires the moment the
 // `def_span.from_expansion()` guard in `measured_fn` is removed. A
 // local `macro_rules!` expansion is not an *external* macro, so

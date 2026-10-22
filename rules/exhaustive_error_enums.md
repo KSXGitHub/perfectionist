@@ -32,7 +32,7 @@ enum.
 The opinion is opt-in: some projects deliberately use exhaustive
 error enums to force downstream consumers to handle every new
 variant, and binary crates have no SemVer surface to protect.
-The rule is therefore inactive by default — enable it per
+The rule is therefore inactive by default. Enable it per
 crate by adding to `dylint.toml`:
 
 ```toml
@@ -45,8 +45,8 @@ enable = ["exhaustive_error_enums"]
 `clippy::exhaustive_enums` and `clippy::exhaustive_structs`
 (`restriction`, off by default) require `#[non_exhaustive]` on
 *every* exported enum / struct. This rule scopes that same
-requirement to **error types** — those whose name ends in
-`Error` or that implement `std::error::Error` — because adding
+requirement to **error types**, those whose name ends in
+`Error` or that implement `std::error::Error`, because adding
 a variant to an error type downstream code matches on is the
 breaking change `#[non_exhaustive]` exists to absorb, while
 demanding it on all exported types is usually too broad. Enable
@@ -107,7 +107,7 @@ even if they appear in the built-in defaults or in
 Empty by default; checked after the merge with the
 built-ins, so this knob always wins. Use it when a project
 deliberately does not want the `Error` suffix to trigger
-the by-name branch — types that implement
+the by-name branch. Types that implement
 `std::error::Error` are still flagged via the trait branch.
 
 ### Types

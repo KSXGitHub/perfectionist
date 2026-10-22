@@ -3,12 +3,12 @@
 //! `planned-rules/IMPLEMENTATION_CONVENTIONS.md`. Consumers divide by
 //! how much structure they need:
 //!
-//! - **Tier A — structural classification.** [`classify_constructs`]
+//! - **Tier A: structural classification.** [`classify_constructs`]
 //!   returns every construct's range *and* its [`ConstructKind`];
 //!   [`scan_skip_regions`] returns ranges to post-filter candidate
 //!   diagnostics against; [`scan_code_span_candidates`] returns the
 //!   code spans themselves, as targets.
-//! - **Tier B — code-region mask.** [`scan_code_regions`] returns the
+//! - **Tier B: code-region mask.** [`scan_code_regions`] returns the
 //!   ranges of code spans and code blocks, for a rule that only needs
 //!   code excluded from a prose scan.
 //!
@@ -26,7 +26,7 @@ use core::ops::Range;
 pub(crate) type SkipRange = Range<usize>;
 
 /// Walk `input` as a markdown fragment and return every byte range
-/// that the bare-* rules should treat as a "skip region" — code
+/// that the bare-* rules should treat as a "skip region": code
 /// spans, code blocks, autolinks, inline / reference links, and
 /// reference-link definitions.
 ///
@@ -45,7 +45,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
         // the `take_*` block-level parsers below consumes a span
         // that ends either at a line boundary (the trailing `\n`
         // is included in the returned length) or at EOF, so the
-        // next position is always the start of a new line — set
+        // next position is always the start of a new line. Set
         // `at_line_start = true` unconditionally after a successful
         // match instead of probing the byte at the new position.
         if at_line_start {
@@ -116,7 +116,7 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 }
 
 /// Tier B code-region mask: the byte ranges of CommonMark code
-/// regions — inline code spans and block-level code (fenced and
+/// regions. Those are inline code spans and block-level code (fenced and
 /// four-space-indented blocks, which is where doc-test code lives).
 /// For a rule that scans prose and needs only to exclude code from
 /// the scan, not classify every construct.
@@ -126,8 +126,8 @@ pub(crate) fn scan_skip_regions(input: &str) -> Vec<SkipRange> {
 /// `unicode_ellipsis_in_docs` rule passes the inverse of its
 /// `scan_code_spans` knob, since a project may want a flagged
 /// character caught even inside an inline code span. A code span is
-/// always *parsed* — so a backtick run inside it never spuriously
-/// opens a second span — and only added to the mask when
+/// always *parsed*, so a backtick run inside it never spuriously
+/// opens a second span. A code span joins the mask only when
 /// `include_code_spans` is `true`.
 ///
 /// Like [`scan_skip_regions`], the returned ranges are sorted by start
@@ -184,7 +184,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 }
 
 /// Tier A: byte ranges of the inline code spans that are *candidates*
-/// for intra-doc-link rewriting — `` `...` `` code spans reached as
+/// for intra-doc-link rewriting: `` `...` `` code spans reached as
 /// standalone inline constructs, i.e. *not* consumed as the text of a
 /// `[...]` link (`` [`Foo`] ``, `` [`Foo`](dest) ``, `` [`Foo`][id] ``)
 /// and *not* sitting inside a code block.
@@ -193,7 +193,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// [`scan_skip_regions`]; the only difference is what it records. Block
 /// constructs, autolinks, and links are *consumed* (so a `` `Foo` ``
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
-/// [`take_link`]) but never recorded — only the surviving bare code
+/// [`take_link`]) but never recorded. Only the surviving bare code
 /// spans are returned. Pulling a Rust identifier out of each range's
 /// body is left to the consuming rule, per
 /// `planned-rules/IMPLEMENTATION_CONVENTIONS.md`.
@@ -292,9 +292,10 @@ pub(crate) fn utf8_char_len(bytes: &[u8], idx: usize) -> usize {
 /// (opening fence + body + closing fence) on success.
 ///
 /// Matches CommonMark's intra-line code-span rule. Multi-line code
-/// spans are accepted here — the closing fence is searched up to the
-/// end of `input` — because doc comments routinely place a backticked
-/// identifier across the soft-wrap boundary between two `///` lines,
+/// spans are accepted here, the closing fence being searched up to
+/// the end of `input`, because doc comments routinely place a
+/// backticked identifier across the soft-wrap boundary between two
+/// `///` lines,
 /// and treating that as two separate spans would let bare-* rules
 /// flag content inside.
 fn take_code_span(input: &str) -> Option<usize> {
@@ -395,7 +396,7 @@ fn take_fenced_code_block(input: &str) -> Option<usize> {
     Some(bytes.len())
 }
 
-/// Take an indented code block — one or more consecutive lines
+/// Take an indented code block: one or more consecutive lines
 /// whose visible content begins at column ≥ 4. Returns the total
 /// byte length (including the terminating newline of the last
 /// indented line, if any). The block ends at the first
@@ -407,8 +408,8 @@ fn take_indented_code_block(input: &str, idx: usize) -> Option<usize> {
     let bytes = input.as_bytes();
     // CommonMark requires that an indented code block be preceded by
     // a blank line (or be at the document start). Approximating that
-    // here as "previous line is blank or absent" — close enough for
-    // doc-comment content, which is the only consumer.
+    // here as "previous line is blank or absent", which is close
+    // enough for doc-comment content, the only consumer.
     if idx > 0 {
         let newline_pos = idx - 1;
         if bytes[newline_pos] != b'\n' {
@@ -462,7 +463,7 @@ fn take_indented_code_block(input: &str, idx: usize) -> Option<usize> {
                 None
             };
         }
-        // Indented content — consume to end of line.
+        // Indented content: consume to end of line.
         while index < bytes.len() && bytes[index] != b'\n' {
             index += 1;
         }
@@ -502,7 +503,7 @@ fn take_reference_definition(input: &str) -> Option<usize> {
         return None;
     }
     index += 1;
-    // Consume the destination — to end of line.
+    // Consume the destination, up to the end of the line.
     while index < bytes.len() && bytes[index] != b'\n' {
         index += 1;
     }
@@ -586,13 +587,13 @@ fn looks_like_uri_or_email(body: &str) -> bool {
 /// rather than collapsed to a length.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum LinkForm {
-    /// `[text](dest)` — an inline link with a parenthesised
+    /// `[text](dest)`: an inline link with a parenthesised
     /// destination.
     Inline,
-    /// `[text][id]` — a full reference link naming a separate
+    /// `[text][id]`: a full reference link naming a separate
     /// definition.
     Reference,
-    /// `[text]` / `` [`Type`] `` — the collapsed / shortcut form with
+    /// `[text]` / `` [`Type`] ``: the collapsed / shortcut form with
     /// no trailing destination. This is also the shape a rustdoc
     /// intra-doc link wears.
     Shortcut,
@@ -704,7 +705,7 @@ pub(crate) struct Construct {
     pub(crate) kind: ConstructKind,
 }
 
-/// The kind of a [`Construct`] — the full Tier A structural taxonomy
+/// The kind of a [`Construct`]: the full Tier A structural taxonomy
 /// (see `planned-rules/IMPLEMENTATION_CONVENTIONS.md`). A consumer
 /// maps each kind onto its own user-facing category and decides per
 /// kind whether to flag it.
@@ -720,7 +721,7 @@ pub(crate) enum ConstructKind {
     ReferenceLink,
     /// `[id]: dest` reference-link definition.
     ReferenceDefinition,
-    /// `[text]` / `` [`Type`] `` collapsed link — the rustdoc
+    /// `[text]` / `` [`Type`] `` collapsed link, the rustdoc
     /// intra-doc-link shape.
     IntraDocLink,
     /// `<https://...>` / `<user@host>` autolink. Recognised so it is
@@ -878,7 +879,7 @@ fn construct(start: usize, len: usize, kind: ConstructKind) -> Construct {
     }
 }
 
-/// Take an ATX heading — up to three leading spaces, a run of one to
+/// Take an ATX heading: up to three leading spaces, a run of one to
 /// six `#`, then a space / tab / end-of-line. Returns the byte length
 /// up to (not including) the terminating `\n`, so the heading range
 /// stays on a single rendered line and maps to a precise span.
@@ -910,14 +911,14 @@ fn take_atx_heading(input: &str) -> Option<usize> {
     Some(end)
 }
 
-/// Detect Setext headings — a non-blank text line immediately followed
+/// Detect Setext headings: a non-blank text line immediately followed
 /// by an underline line of only `=` (level 1) or `-` (level 2). Records
 /// the underline line's range as a [`ConstructKind::Heading`]. Run as a
 /// separate line scan because Setext needs one line of look-back, which
 /// the forward inline walk does not carry. The underline of a `-`-only
 /// line preceded by a paragraph is a Setext heading in CommonMark (it
 /// wins over a thematic break), so this matches the spec while leaving a
-/// `---` preceded by a blank line — a thematic break — alone.
+/// `---` preceded by a blank line, which is a thematic break, alone.
 fn detect_setext_headings(input: &str, out: &mut Vec<Construct>) {
     let bytes = input.as_bytes();
     let mut line_start = 0;
@@ -1008,7 +1009,7 @@ fn take_list_marker(input: &str) -> Option<usize> {
 /// processing instruction (`<?...?>`). Returns the total byte length.
 ///
 /// The opening `<` must be followed by `/`, an ASCII letter, `!`, or
-/// `?` — so prose like `a < b` or `<3` is left alone. Quoted attribute
+/// `?`, so prose like `a < b` or `<3` is left alone. Quoted attribute
 /// values are skipped so a `>` inside them does not close the tag
 /// early. The caller tries [`take_autolink`] first, so a `<https://...>`
 /// autolink never reaches here.

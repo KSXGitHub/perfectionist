@@ -24,7 +24,7 @@ use crate::secret::internals::*;
 
 // Both globs from `::std::collections` are exempt under the single
 // `allowed_paths` entry `"::std::collections"`, whether or not the `use`
-// writes the leading `::` — the leading `::` in the config is the
+// writes the leading `::`. The leading `::` in the config is the
 // absolute marker and covers both written forms. (`::`-rooting only
 // applies to extern crates, so `std` carries this case, not the
 // crate-local `secret`.)

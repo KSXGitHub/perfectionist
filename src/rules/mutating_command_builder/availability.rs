@@ -5,8 +5,8 @@
 //! declares the dependency, and whether the workspace around it does,
 //! are what the `command_extra_dependency` knob chooses between;
 //! whether the trait is imported at the call picks which remedy the
-//! diagnostic names -- but an import is also evidence of a dependency
-//! the declared set cannot see, so the caller reads it for both.
+//! diagnostic names. An import is also evidence of a dependency the
+//! declared set cannot see, so the caller reads it for both.
 //!
 //! Reaching the crate is not the same as having the method. The
 //! by-value forms arrived over several releases, so where the trait
@@ -28,7 +28,7 @@ const PACKAGE: &str = "command-extra";
 /// Not whether the compiler *loaded* it, which is a different question
 /// with the wrong answer both ways round. `--extern` is lazy, so a
 /// declared dependency nothing has named yet is absent from
-/// `tcx.crates(())` -- and that is the crate the advice most applies
+/// `tcx.crates(())`, and that is the crate the advice most applies
 /// to. A crate reached only through another crate's signature is
 /// present there, though this crate cannot name it at all.
 ///
@@ -42,7 +42,7 @@ const PACKAGE: &str = "command-extra";
 /// It has blind spots. Because Cargo keys `--extern` by the manifest
 /// key, a dependency renamed there
 /// (`ce = { package = "command-extra" }`) is not found under
-/// `command_extra` -- the caller reads an import of the trait as proof
+/// `command_extra`. The caller reads an import of the trait as proof
 /// instead, which covers every crate that actually uses it. And
 /// `--extern` carries dev-dependencies when the unit being compiled is
 /// a test one, so in a crate that depends on `command-extra` only for
@@ -93,8 +93,8 @@ pub(super) fn loaded_traits(cx: &LateContext<'_>) -> Vec<DefId> {
         .collect()
 }
 
-/// Whether `command_extra` -- one [`loaded_traits`] answer -- declares
-/// a method named `by_value_form`.
+/// Whether `command_extra`, one [`loaded_traits`] answer, declares a
+/// method named `by_value_form`.
 ///
 /// `CommandExtra` gained its by-value forms over several releases, so
 /// which of them exist is a property of the version resolved rather
@@ -121,7 +121,7 @@ pub(super) fn declares_the_counterpart(
 /// None of that table reaches rustc. Cargo resolves inheritance before
 /// it assembles the command line, so a dependency the member has not
 /// written `command-extra.workspace = true` for leaves no trace in the
-/// compiler's own state -- which is the case this answers, and the
+/// compiler's own state. That is the case this answers, and the
 /// reason [`crate::cargo_manifest`] reads the file. Where there is no
 /// workspace manifest to read, the answer is `false`.
 pub(super) fn workspace_declares_the_package() -> bool {

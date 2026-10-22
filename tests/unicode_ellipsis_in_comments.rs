@@ -21,7 +21,7 @@ fn run(src_base: &str, contents: &str) {
 
 /// With the sibling `unicode_ellipsis_in_docs` rule disabled, the
 /// comment rule flags only the `//` and `/* */` comments and leaves
-/// the `///` / `//!` doc comments untouched — pinning the claim that
+/// the `///` / `//!` doc comments untouched, pinning the claim that
 /// the comment rule does not intrude into doc comments.
 #[test]
 fn comment_rule_does_not_intrude_into_doc_comments() {

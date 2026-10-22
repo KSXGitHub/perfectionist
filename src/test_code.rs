@@ -4,10 +4,10 @@
 //! reasons. [`cfg_predicate_implies_test`] answers "does *this* item's
 //! `#[cfg(...)]` gate it to test builds?", including a compound
 //! predicate like `cfg(all(test, unix))` that
-//! `clippy_utils::is_cfg_test` — which only matches a bare top-level
-//! `cfg(test)` — misses. [`in_test_code`] answers the enclosing-scope
+//! `clippy_utils::is_cfg_test`, which only matches a bare top-level
+//! `cfg(test)`, misses. [`in_test_code`] answers the enclosing-scope
 //! version: is the node itself, or anything lexically containing it,
-//! so gated — or is it inside a `#[test]` function?
+//! so gated, or is it inside a `#[test]` function?
 //!
 //! Both only ever see test code in a build where `cfg(test)` is
 //! active: `#[cfg(test)]` items are configured out before a late pass
@@ -33,7 +33,7 @@ use rustc_span::sym;
 /// matches the *enclosing* function by name against the test
 /// descriptors rustc synthesises in the surrounding module. Only a
 /// function rustc itself registered as a test matches, and one of
-/// those takes no parameters — so for a parameter-shaped rule this
+/// those takes no parameters, so for a parameter-shaped rule this
 /// half fires only on an item nested inside a test body, a helper
 /// `fn` declared in the test function's own block. A test written
 /// with a third-party attribute is *not* matched by it and reaches
@@ -52,13 +52,13 @@ pub(crate) fn in_test_code(tcx: TyCtxt<'_>, id: HirId) -> bool {
 }
 
 /// Whether the item at `id` carries a `#[cfg(...)]` whose predicate is
-/// satisfiable *only* when `test` is set — a bare `#[cfg(test)]` or a
+/// satisfiable *only* when `test` is set: a bare `#[cfg(test)]` or a
 /// compound `#[cfg(all(test, unix))]`, `#[cfg(all(test, feature =
 /// "..."))]`, and so on.
 ///
 /// `clippy_utils::is_cfg_test` only recognises a top-level `test`
 /// entry, so a `mod tests;` gated by a compound predicate is otherwise
-/// misclassified as a production module — leaving its target file to be
+/// misclassified as a production module, leaving its target file to be
 /// re-flagged as inline test code living in a production file (the
 /// false positive of <https://github.com/KSXGitHub/perfectionist/issues/187>).
 /// This reads the parsed `CfgTrace` predicate rustc leaves on the item
@@ -71,7 +71,7 @@ pub(crate) fn cfg_predicate_implies_test(tcx: TyCtxt<'_>, id: HirId) -> bool {
 }
 
 /// Whether the predicate `cfg`, read under a negation when `negated`,
-/// holds *only* in a `test` build — i.e. whether it implies `test`.
+/// holds *only* in a `test` build, i.e. whether it implies `test`.
 ///
 /// `all(...)` and `any(...)` compose the implication differently:
 ///
@@ -82,14 +82,14 @@ pub(crate) fn cfg_predicate_implies_test(tcx: TyCtxt<'_>, id: HirId) -> bool {
 ///   on a `unix` build), the item is real production code, not
 ///   test-only.
 ///
-/// This composes through nesting — e.g. `all(any(test, foo), bar)` is
+/// This composes through nesting, so `all(any(test, foo), bar)` is
 /// *not* recognised as test-only, because `any(test, foo)` is not.
 ///
 /// `not(...)` flips `negated` rather than recursing into a rewritten
 /// predicate, which is De Morgan applied on the fly: under a negation
 /// an `all` behaves like an `any` and vice versa, and a bare `test`
 /// gates the item *away* from test builds. So `not(not(test))` is
-/// recognised as test-only, while `not(test)` is not — and neither
+/// recognised as test-only, while `not(test)` is not, and neither
 /// costs more than a linear walk. What the walk deliberately does not
 /// decide is under *Completeness* below.
 ///
@@ -101,7 +101,7 @@ pub(crate) fn cfg_predicate_implies_test(tcx: TyCtxt<'_>, id: HirId) -> bool {
 /// `P ∧ ¬test`, i.e. co-NP-complete, so a complete answer is a SAT
 /// solver over the predicate's atoms. What this walk computes instead
 /// is the negation-normal-form reading, which agrees with the complete
-/// answer on every predicate whose atoms are independent — which is to
+/// answer on every predicate whose atoms are independent, which is to
 /// say on every `cfg` anyone writes. The shapes it gives up on need a
 /// contradiction or a tautology spelled out across branches
 /// (`any(test, all(a, not(a)))`), and are not worth a solver.

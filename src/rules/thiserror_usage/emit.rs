@@ -1,7 +1,7 @@
 //! Diagnostic-emission helpers, one per violation shape, plus the
 //! `#[error(...)]`-attribute walkers that find them. All carry the
 //! help-only `thiserror_usage` diagnostic (no
-//! `Suggestion`, no `Applicability` — the migration is manual).
+//! `Suggestion` and no `Applicability`, the migration being manual).
 
 use super::THISERROR_USAGE;
 use clippy_utils::diagnostics::span_lint_and_help;

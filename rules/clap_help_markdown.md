@@ -10,7 +10,7 @@
 ## What it does
 
 Forbids markdown-specific constructs in a doc comment that
-clap's derive macros consume as `--help` text — HTML tags,
+clap's derive macros consume as `--help` text: HTML tags,
 inline / reference / intra-doc links, code blocks, code spans,
 and headings. The rule fires on the doc comment of a struct or
 enum deriving [`clap::Parser`](https://docs.rs/clap), `Args`,
@@ -18,12 +18,12 @@ enum deriving [`clap::Parser`](https://docs.rs/clap), `Args`,
 comments of their fields and variants.
 
 A `ValueEnum`'s own type-level doc comment is left alone: unlike
-its variant docs — clap's per-value help — it never reaches
-`--help`.
+its variant docs, which are clap's per-value help, it never
+reaches `--help`.
 
-Bold, italics, and lists are not flagged by default — clap
-renders them as their literal characters, which usually reads
-cleanly — but are available through the `extra_constructs` knob.
+Bold, italics, and lists are not flagged by default, clap
+rendering them as their literal characters, which usually reads
+cleanly. They are available through the `extra_constructs` knob.
 
 The lint stays silent on a node that overrides its help text
 with a plain string (`#[arg(help = "...")]`,
@@ -33,8 +33,8 @@ then no longer the source of truth for `--help`. A node marked
 the markdown will appear verbatim in the terminal.
 
 A project that never wants a doc comment to become `--help` text
-at all — preferring an explicit override on every command,
-argument, and value — can opt into the stricter
+at all, preferring an explicit override on every command,
+argument, and value, can opt into the stricter
 `require_help_override` mode. It flags every clap-derived doc
 comment that reaches `--help` without such an override, markdown
 or not, and reports each as a single missing-override finding
@@ -47,7 +47,7 @@ By default, clap does **not** render doc comments through a
 markdown processor. The raw text is shown verbatim in the
 terminal `--help` output. Writing `` [`PathBuf`] `` produces a
 docs.rs link in HTML output but shows literally as
-`` [`PathBuf`] `` in the terminal — a classic two-audience leak.
+`` [`PathBuf`] `` in the terminal, a classic two-audience leak.
 The doc comment serves both `cargo doc` readers and `--help`
 readers, and markdown that helps the former actively degrades
 the latter.
@@ -97,8 +97,8 @@ Configure via `dylint.toml` under `["perfectionist::clap_help_markdown"]`. Every
 Markdown constructs to forbid in addition to the built-in default
 set (`html`, `inline_link`, `reference_link`, `intra_doc_link`,
 `code_block`, `code_span`, `heading`). Empty by default; `bold`,
-`italic`, and `list` are the usual additions — clap renders them
-acceptably, so they are off by default.
+`italic`, and `list` are the usual additions, clap rendering
+them acceptably, so they are off by default.
 
 ### Field: `ignore_constructs`
 
@@ -121,13 +121,13 @@ preferring an explicit clap override (`#[arg(help = "...")]`,
 `#[command(about = "...")]`, ...) on every command, argument, and
 value. When `true`, the rule flags every clap-derived doc comment
 that reaches `--help` without such an override, regardless of
-whether it contains markdown — the doc comment stays for
+whether it contains markdown. The doc comment stays for
 `cargo doc`, but `--help` must come from a plain-string override.
 A node with no doc comment is left alone: the requirement is only
 that a *present* doc comment never feeds `--help` unoverridden, so
 a bare `#[arg(help = "...")]` with no `///` is fine. This
-supersedes the markdown scan — an override silences the markdown
-concern anyway — so an unoverridden doc comment is reported once as
+supersedes the markdown scan, an override silencing the markdown
+concern anyway, so an unoverridden doc comment is reported once as
 a missing override rather than per markdown construct. Defaults to
 `false`.
 

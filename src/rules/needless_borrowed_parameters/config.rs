@@ -44,8 +44,8 @@ pub(super) struct Config {
     /// inside a `#[test]` function, and every `tests/` or `benches/`
     /// crate. An `examples/` crate is not covered. Defaults to `true`.
     pub(super) exempt_tests: bool,
-    /// Whether a build script — `build.rs`, or whatever `Cargo.toml`'s
-    /// `build` key names — is exempt. Defaults to `true`.
+    /// Whether a build script, `build.rs` or whatever `Cargo.toml`'s
+    /// `build` key names, is exempt. Defaults to `true`.
     pub(super) exempt_build_scripts: bool,
 }
 

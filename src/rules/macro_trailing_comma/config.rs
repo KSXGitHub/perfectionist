@@ -90,8 +90,8 @@ struct Config {
 
 pub(super) struct MacroTrailingComma {
     // TODO(matcher_based): the lookup is currently linear
-    // (`entries.iter().any(...)`), so the `BTreeSet` ordering is unused
-    // — it only deduplicates identical config entries. When the
+    // (`entries.iter().any(...)`), so the `BTreeSet` ordering is
+    // unused: it only deduplicates identical config entries. When the
     // matcher-based half grows these lists, bucket by entry length: a
     // `BTreeSet<String>` for single-segment entries (O(log N) on the
     // invocation's final segment) plus a `Vec<Vec<String>>` for
@@ -124,7 +124,7 @@ impl MacroTrailingComma {
 
     /// Path-side eligibility: combines the `ignore` skip list with
     /// the built-in `name_based` lookup. Does *not* consider the
-    /// invocation's argument shape — that stays in the early pass.
+    /// invocation's argument shape, which stays in the early pass.
     pub(super) fn should_check_path(&self, path: &rustc_ast::Path) -> bool {
         !matches_any(path, &self.ignore) && matches_any(path, &self.name_based)
     }

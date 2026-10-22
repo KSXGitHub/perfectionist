@@ -26,7 +26,7 @@ struct RuleConfig {
 
 fn dylint_toml(config: RuleConfig) -> String {
     // The rule is active by default, so no `[perfectionist] enable`
-    // table is needed — only the per-rule knobs.
+    // table is needed, only the per-rule knobs.
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
     let rule_table = toml::to_string(&table).expect("serialise rule config as dylint.toml");
     // The fixtures order their support modules, imports and re-exports
@@ -64,7 +64,7 @@ fn exceptions_disabled_flags_every_glob() {
     );
 }
 
-/// With both exceptions off, a glob is normally flagged — except one
+/// With both exceptions off, a glob is normally flagged, except one
 /// whose absolute module path is named in `allowed_paths`. A crate-root
 /// entry is written `crate::...` (no leading `::`), while an extern entry
 /// carries a leading `::`, and `::std::collections` exempts both the

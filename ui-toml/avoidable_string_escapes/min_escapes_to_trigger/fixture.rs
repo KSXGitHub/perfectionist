@@ -3,12 +3,12 @@
 // is flagged.
 
 fn _below_threshold() {
-    // One `\\` escape — must NOT fire.
+    // One `\\` escape, which must NOT fire.
     let _ = "C:\\Users";
 }
 
 fn _at_threshold() {
-    // Three `\\` escapes — must fire.
+    // Three `\\` escapes, which must fire.
     let _ = "C:\\Users\\foo\\bar";
 }
 

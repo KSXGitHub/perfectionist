@@ -3,10 +3,10 @@
 //!
 //! [`Category`] is the classification; [`Category::rank`] is what the
 //! driver compares. Two categories share the last rank, so the ordering
-//! the rule enforces has three sections, not four — a private import
-//! and a plain item may appear in either order. Keeping them apart as
-//! categories is what lets a diagnostic say which of the two blocked
-//! the offending item.
+//! the rule enforces has three sections rather than four: a private
+//! import and a plain item may appear in either order. Keeping them
+//! apart as categories is what lets a diagnostic say which of the two
+//! blocked the offending item.
 
 use crate::attr_tokens::is_cfg_gated;
 use rustc_ast::{Item, ItemKind, VisibilityKind};
@@ -56,7 +56,7 @@ impl Category {
 }
 
 /// Which section `item` belongs to, or `None` when it is transparent to
-/// the ordering — neither flagged nor closing the section it sits in.
+/// the ordering, neither flagged nor closing the section it sits in.
 ///
 /// Three shapes are transparent:
 ///
@@ -84,7 +84,7 @@ pub(super) fn classify(item: &Item) -> Option<Category> {
 
 /// Whether the item is written with a visibility of its own. Any
 /// explicit visibility counts, so `pub(crate) mod` and `pub(super) use`
-/// are ordered as a `pub mod` declaration and a `pub use` re-export —
+/// are ordered as a `pub mod` declaration and a `pub use` re-export,
 /// the same reading `perfectionist::import_grouping_mismatch` gives a
 /// re-export. Only the inherited (unwritten) visibility is private.
 fn has_explicit_visibility(item: &Item) -> bool {

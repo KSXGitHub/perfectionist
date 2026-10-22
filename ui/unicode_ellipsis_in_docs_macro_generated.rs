@@ -6,7 +6,7 @@
 // generated item with a macro-expansion-context span that does not
 // byte-match the root-context comment the walker scans, so the
 // comment-anchor finder must resolve macro hygiene before comparing
-// spans — otherwise the finding falls back to crate-root resolution and
+// spans. Otherwise the finding falls back to crate-root resolution and
 // the item-level `#[expect]` neither suppresses nor is fulfilled.
 //
 // This fixture produces no diagnostics. The forwarded `#[expect]` is

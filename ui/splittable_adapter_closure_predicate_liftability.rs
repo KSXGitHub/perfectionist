@@ -4,7 +4,7 @@
 // needs its own copy of whatever the first captured, and for the adapters
 // that leave their receiver usable it moves that receiver into the leading
 // one. So a capture only one closure could hold declines, and so does a
-// receiver the function goes on to name -- counting mentions in the body
+// receiver the function goes on to name, counting mentions in the body
 // that declares it, and counting a mention in a loop as the move it runs
 // again.
 //

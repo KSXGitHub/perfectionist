@@ -4,7 +4,7 @@
 //!
 //! Only the `line_continuation` rewrite ships today, so the `style`
 //! knob documented in `planned-rules/overly-long-print-macro.md` is
-//! deliberately absent — a one-variant `style` enum would carry no
+//! deliberately absent, a one-variant `style` enum carrying no
 //! information. It returns when the `multiple_calls` half lands.
 
 use crate::macro_path::{matches_any, parse_path_list, reject_absolute_list};

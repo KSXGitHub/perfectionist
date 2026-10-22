@@ -12,16 +12,16 @@ pub(super) struct Config {
     /// the same name on `perfectionist::wildcard_imports`, so a project
     /// can flip both rules with one value. Defaults to `["prelude"]`.
     pub(super) prelude_segment_names: Vec<String>,
-    /// Prelude module paths whose named imports are never flagged — the
-    /// module path leading up to and including the prelude segment. Each
-    /// entry is **absolute**: an extern-crate path with a leading `::`
-    /// (`"::diesel::prelude"`), or a crate-root path written
-    /// `"crate::prelude"`. Because an entry matches the path up to *and
-    /// including* the prelude segment, it must end with a
-    /// `prelude_segment_names` segment. Matching is exact and syntactic:
-    /// the entry must equal the
-    /// path as written in the `use` (up to the prelude segment), with no
-    /// re-export or alias resolution. Defaults to `[]`.
+    /// Prelude module paths whose named imports are never flagged. An
+    /// entry is the module path leading up to and including the prelude
+    /// segment, and is **absolute**: an extern-crate path with a
+    /// leading `::` (`"::diesel::prelude"`), or a crate-root path
+    /// written `"crate::prelude"`. Because an entry matches the path up
+    /// to *and including* the prelude segment, it must end with a
+    /// `prelude_segment_names` segment. Matching is exact and
+    /// syntactic: the entry must equal the path as written in the `use`
+    /// (up to the prelude segment), with no re-export or alias
+    /// resolution. Defaults to `[]`.
     pub(super) allowed_paths: Vec<String>,
 }
 
@@ -55,7 +55,7 @@ impl Resolved {
 /// the prelude segment, so its final segment must be one of
 /// `prelude_segment_names`; an entry that ends in anything else can never
 /// match a cherry-pick and is almost certainly a mistake. Returns an
-/// error message — for the dylint run to fail on — naming the first
+/// error message, for the dylint run to fail on, naming the first
 /// offending entry.
 pub(super) fn validate(config: &Config) -> Result<(), String> {
     let names: BTreeSet<&str> = config

@@ -15,8 +15,8 @@ attribute to carry an explanatory `reason = "..."` field.
 silence a lint's output; the project's record of
 suppressions needs to know why each one exists.
 
-The check is purely local — the attribute itself — and does
-not depend on any inherited or ambient lint level.
+The check is purely local, reading the attribute itself, and
+does not depend on any inherited or ambient lint level.
 
 ## Why restrict this?
 
@@ -34,7 +34,7 @@ notes when a stale `#[expect]` is encountered.
 
 `clippy::allow_attributes_without_reason` (`restriction`, off
 by default) flags a missing `reason = "..."` on the same two
-levels this rule does — `#[allow]` and `#[expect]` — and only
+levels this rule does, `#[allow]` and `#[expect]`, and only
 those, so the trigger overlaps. This rule adds a quality floor
 Clippy lacks: `min_reason_length` (default 3) flags a
 content-free `reason = "ok"` that Clippy accepts, and a blank
@@ -84,6 +84,6 @@ Minimum length of the `reason` value. A one- or two-character
 reason (`"x"`, `"ok"`) satisfies the literal presence
 requirement but conveys nothing; the default floor of 3
 excludes those cases. Projects that want a higher bar (e.g.
-require a full sentence) can raise it. The lower bound is `1`
-— `0` is rejected at parse time, since an empty literal is
+require a full sentence) can raise it. The lower bound is `1`,
+and `0` is rejected at parse time, since an empty literal is
 already treated as a missing reason regardless of this knob.
