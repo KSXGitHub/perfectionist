@@ -179,13 +179,6 @@ disable = ["option_guard_in_loop"]
   bail on any. `break`/`continue` targeting a *nested* loop inside
   the body are fine; compare the target label against the loop being
   rewritten rather than rejecting on the node kind alone.
-- **Building the closure.** The closure parameter is the loop
-  pattern's own source text, and the body is
-  `Some((<bound names…>, <scrutinee>?))` — or just `<scrutinee>` when
-  the pattern binds exactly the one name the guard consumes. Both
-  forms come from snippets, so a pattern that does not round-trip
-  through its own source text (an elided struct pattern, say) is a
-  reason to bail.
 - **Proc-macro suppression.** The primary span is the whole loop,
   wider than the synthesised spans the
   [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
