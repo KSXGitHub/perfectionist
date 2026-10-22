@@ -144,10 +144,11 @@ fn find_closure_paren(stream: TokenStream) -> Option<Span> {
 /// them.
 ///
 /// This is the shape that needs no span trickery at all. The callback
-/// keeps the caller's byte range, so it is keyed and
-/// `Span::from_expansion` is false for it. The call that selects it
-/// exists only in the expansion. What rejects it is asking the same
-/// question of the call's own span.
+/// keeps the caller's byte range, and `Span::from_expansion` is false
+/// for it. The call that selects it exists only in the expansion. What
+/// rejects it is the source: the caller wrote the closure as a `let`
+/// binding rather than in callback position, so no range is recorded
+/// for it.
 #[proc_macro_attribute]
 pub fn wrap_in_iterator_call(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let (wrapped, found) = wrap_closure(item);

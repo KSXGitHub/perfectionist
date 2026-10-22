@@ -38,10 +38,10 @@
 // `#[wrap_in_iterator_call]` needs no span trickery whatever, which is
 // what makes it the one to care about. It wraps a closure the caller
 // wrote in a synthesised iterator call. The synthesised tokens keep the
-// `Span::call_site()` that `quote!` hands them. The
-// callback's byte range is the caller's, so it is keyed and its own
-// span answers nothing. The call is what came from the expansion, and
-// asking that of the call's span is what rejects it. Nothing is
+// `Span::call_site()` that `quote!` hands them, so the callback's own
+// span answers nothing. The source is what rejects it. The caller wrote
+// the closure as a `let` binding rather than in callback position, so no
+// range is recorded for it and the lookup finds nothing. Nothing is
 // reported for it either.
 //
 // `#[respan_two_targets]` is the same trick with two targets. The

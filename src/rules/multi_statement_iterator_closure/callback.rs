@@ -24,18 +24,11 @@ pub(super) fn iterator_callback<'tcx>(
         }
         _ => return None,
     };
-    let trait_method = cx
-        .tcx
-        .opt_associated_item(method)
-        .and_then(|item| item.trait_item_def_id())
-        .unwrap_or(method);
-    if !cx
-        .tcx
-        .is_diagnostic_item(sym::Iterator, cx.tcx.parent(trait_method))
-    {
+    let declaring = cx.tcx.trait_of_assoc(method)?;
+    if !cx.tcx.is_diagnostic_item(sym::Iterator, declaring) {
         return None;
     }
-    let name = cx.tcx.item_name(trait_method);
+    let name = cx.tcx.item_name(method);
     if !has_callback(name.as_str()) {
         return None;
     }
