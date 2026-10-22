@@ -1,0 +1,58 @@
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| {
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+   = note: `#[warn(perfectionist::multi_statement_iterator_closure)]` on by default
+
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| {
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = ITEMS.map(|value| {
+   |  _______________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
+warning: `map` callback has 2 top-level statements, above the limit of 1
+  --> $DIR/fixture.rs:LL:CC
+   |
+LL |       let _ = [1, 2].into_iter().map(|value| {
+   |  ____________________________________^
+LL | |         let doubled = value * 2;
+LL | |         doubled
+LL | |     });
+   | |_____^
+   |
+   = help: extract a named helper, or use an explicit loop for eager work when it preserves the required behaviour and performance
+   = help: if the only name that fits the helper describes the steps rather than the value it produces (`double_and_increment`, `parse_then_insert`), the steps moved rather than went away
+   = note: a helper can preserve a lazy chain; loop rewrites must preserve evaluation order, ownership, allocation behaviour and short-circuit results
+
+warning: N warnings emitted

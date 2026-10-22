@@ -98,6 +98,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   macro invocation does not follow rustfmt's vertical trailing-comma policy
 
+- [`multi_statement_iterator_closure`](./multi_statement_iterator_closure.md) (default: `inactive`).
+
+  iterator callback has too many top-level statements
+
 - [`mutating_command_builder`](./mutating_command_builder.md) (default: `active`).
 
   a command setter taking `&mut self` where `command-extra`'s by-value form exists
