@@ -288,19 +288,35 @@ deliberate departure from this file's original
 `Applicability::MachineApplicable` for name-based matches. The
 curated list does establish that the comma is optional, so the
 edit compiles; what it does not establish is that the edit
-survives the formatter. rustfmt honours the trailing comma it
-finds in a paren-delimited invocation rather than normalising it,
-so an inserted comma rides along into the single line rustfmt
-collapses the invocation to, and the lint reports that line in
-the opposite direction. Measured: `format!` / `println!` /
-`assert_eq!` written vertically without the comma each take two
-`cargo dylint --fix` rounds to settle, the second undoing the
-first. A bracket-delimited invocation whose sole element is
-multi-line loses the inserted comma outright when rustfmt
-reshapes it to the compact layout. Neither disagreement runs
-forever, since rustfmt is idempotent and the second fix lands on
-a form it leaves alone, but a silent fixer should not spend a
-round on churn a human has not seen.
+survives the formatter.
+
+Which comma rustfmt will respell turns on the invocation's name
+and nesting rather than on its delimiters. A top-level `vec!` is
+the one invocation rustfmt rewrites as an array literal,
+normalising the trailing comma to the same vertical policy this
+rule enforces. Every other invocation, `vec!` nested inside
+another macro included, keeps whatever trailing comma it was
+written with, which costs the insertion two ways:
+
+- The inserted comma rides along into the single line rustfmt
+  collapses the invocation to, and the rule reports that line in
+  the opposite direction. Measured: `format!`, `println!`,
+  `assert_eq!` and a bracket-delimited list macro reached through
+  `extra_macros` each take two `cargo dylint --fix` rounds to
+  settle, the second undoing the first.
+- An invocation whose sole element is multi-line settles at a
+  shape rustfmt would not have produced. Reshaping to the compact
+  layout is what rustfmt does with such an element, and the
+  inserted comma rides to the closing line, leaving
+  `my_list![Inner {` ... `},]`. That `},]` is a resting state,
+  since rustfmt leaves it and the compact-layout suppression
+  keeps the rule quiet about it. Only `vec!` is spared, its array
+  path stripping the comma instead.
+
+Neither disagreement runs forever, since rustfmt is idempotent
+and the second fix lands on a form it leaves alone, but a silent
+fixer should not spend a round on churn a human has not seen,
+and should not be the thing that writes `},]`.
 
 The removal is `MaybeIncorrect` for symmetry rather than because
 it moves anything: rustfmt picks a macro invocation's layout from

@@ -12,15 +12,16 @@
 //! ## Why the suggestions are review-only
 //!
 //! rustfmt reformats a macro invocation whose arguments parse as an
-//! expression list, and for a paren-delimited one it honours the
-//! trailing comma it finds there rather than normalising it. So an
-//! inserted comma survives into the single line rustfmt collapses the
-//! invocation to, where this same lint reports the opposite violation:
-//! a vertical `format!` fixed to carry a trailing comma reformats to
-//! `format!("{} {}", 1, 2,)`, which is then reported as a single-line
-//! invocation that should not end with one. Under the compact layout
-//! rustfmt reshapes a bracket-delimited invocation to when its sole
-//! element is multi-line, the inserted comma is dropped outright.
+//! expression list, and for every invocation but a top-level `vec!`
+//! it keeps the trailing comma it finds there rather than normalising
+//! it. So an inserted comma survives into the single line rustfmt
+//! collapses the invocation to, where this same lint reports the
+//! opposite violation: a vertical `format!` fixed to carry a trailing
+//! comma reformats to `format!("{} {}", 1, 2,)`, which is then
+//! reported as a single-line invocation that should not end with one.
+//! Where the sole element is multi-line, the comma instead rides onto
+//! the closing line of the compact layout rustfmt reshapes to, and
+//! stays there as a `},]` nothing reports.
 //!
 //! Each exchange settles, because rustfmt is idempotent and the second
 //! fix lands on a form it leaves alone. What the applicability buys is

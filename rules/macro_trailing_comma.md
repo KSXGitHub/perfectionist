@@ -45,12 +45,15 @@ added to the compact shape. The two tools have to agree.
 
 Both suggestions are offered for review rather than for
 `cargo dylint --fix` to apply unreviewed, because rustfmt
-reflows a macro invocation on its own terms. An inserted comma
-rides along into the single line rustfmt collapses a
-paren-delimited invocation to, and this lint then reports that
-line in the opposite direction. Formatting before linting
-avoids the exchange: rustfmt has settled the layout by then, so
-the comma the report asks for is one it keeps.
+reflows a macro invocation on its own terms and, for every
+invocation but a top-level `vec!`, keeps whatever trailing
+comma it finds there. An inserted comma therefore rides along
+into the single line rustfmt collapses the invocation to, where
+this lint reports it in the opposite direction, or onto the
+closing line of the compact layout rustfmt reshapes a sole
+multi-line element into. Formatting before linting avoids
+both: rustfmt has settled the layout by then, so the comma the
+report asks for is one it keeps.
 
 ## Example
 

@@ -4,11 +4,17 @@
 //! an editor's fix-all leave them alone and a human applies them. The
 //! reason is that rustfmt reformats a macro invocation whose
 //! arguments parse as an expression list, and does it on terms of its
-//! own, which turns the insertion into churn in two ways:
+//! own.
 //!
-//! * For a paren-delimited invocation rustfmt honours the trailing
-//!   comma it finds there rather than normalising it, so an inserted
-//!   comma survives the collapse onto one line:
+//! Which comma rustfmt will respell turns on the invocation's name and
+//! nesting rather than on its delimiters. A top-level `vec!` is the one
+//! invocation rustfmt rewrites as an array literal, normalising the
+//! trailing comma to the same vertical policy this lint enforces.
+//! Every other invocation, `vec!` nested inside another macro
+//! included, keeps whatever trailing comma it was written with, which
+//! turns the insertion into churn in two ways:
+//!
+//! * An inserted comma survives the collapse onto one line:
 //!
 //!   ```text
 //!   format!(          format!(           format!("{} {}", 1, 2,)
@@ -21,11 +27,25 @@
 //!
 //!   and this same lint reports `format!("{} {}", 1, 2,)` in the
 //!   opposite direction, as a single-line invocation that should not
-//!   end with a trailing comma.
-//! * A bracket-delimited invocation whose sole element is multi-line
-//!   gets reshaped by rustfmt into the compact layout, where the
-//!   inserted comma is dropped outright and the fix leaves nothing but
-//!   diff noise.
+//!   end with a trailing comma. Measured, the same exchange runs for
+//!   `println!`, `assert_eq!` and any bracket-delimited list macro an
+//!   `extra_macros` entry makes eligible.
+//! * An invocation whose sole element is multi-line settles somewhere
+//!   rustfmt would not have put it. Reshaping to the compact layout is
+//!   what rustfmt does with such an element, and the inserted comma
+//!   rides along to the closing line, so a block-indented
+//!   `my_list![Inner { field: 1 }]` fixed to carry one reformats to:
+//!
+//!   ```text
+//!   my_list![Inner {
+//!       field: 1,
+//!   },]
+//!   ```
+//!
+//!   The `},]` is a resting state: rustfmt leaves it, and the
+//!   suppression that skips the compact layout keeps this lint quiet
+//!   about it. A `vec!` is spared only because the array path strips
+//!   that comma.
 //!
 //! Neither disagreement runs forever: rustfmt is idempotent, and the
 //! second fix lands on a form rustfmt leaves alone. One round of
