@@ -339,7 +339,21 @@ settled on one line and the insertion only ever lengthens one it
 has already broken, and neither edit can carry its invocation
 across a threshold it sits on the far side of. Every fixture in
 the sweep settled one round after the fixer first touched it,
-and none returned to a state it had held before.
+and none returned to a state it had held before. Re-running the
+sweep under each of `indent_style`, `overflow_delimited_expr`,
+`force_multiline_blocks`, `max_width`, `fn_call_width`,
+`array_width`, `use_small_heuristics` and `trailing_comma` moved
+the threshold and, under visual indent, how many invocations the
+compact-layout suppression covers, without returning a fixture
+to a previous state in any of them.
+
+What the measurement does not reach is a future rustfmt. The
+agreement rests on rustfmt stripping a trailing comma only where
+it rewrites a `vec!` as an array literal, and on its vertical
+policy there matching this rule's, so a rustfmt that normalised
+the comma for other invocations too, or that stopped adding it
+to a vertical array, would want re-measuring rather than
+trusting this passage.
 
 The removal is `MaybeIncorrect` for symmetry rather than because
 it moves anything: rustfmt picks a macro invocation's layout from
