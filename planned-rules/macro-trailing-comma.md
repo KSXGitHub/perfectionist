@@ -318,6 +318,29 @@ and the second fix lands on a form it leaves alone, but a silent
 fixer should not spend a round on churn a human has not seen,
 and should not be the thing that writes `},]`.
 
+The width at which rustfmt breaks an invocation is the obvious
+place for an endless exchange to hide, an invocation long enough
+that the comma decides the layout flipping between the two
+branches forever. It is not there, because rustfmt measures the
+argument widths with the trailing comma excluded, so the comma
+never decides the layout. Measured over a sweep of one
+invocation per source width across the threshold, for a
+paren-delimited macro and a bracket-delimited one that is not
+`vec!`, each written both single-line with the comma and
+vertically without it: the two forms break at the same width, so
+the branch that fires tiles the range with neither a gap nor an
+overlap. For the bracket-delimited macro the removal fires below
+the threshold and the insertion at or above it, and the
+threshold sits at the same width for both forms.
+
+That leaves the two branches unable to feed each other, since
+the removal only ever shortens an invocation rustfmt has already
+settled on one line and the insertion only ever lengthens one it
+has already broken, and neither edit can carry its invocation
+across a threshold it sits on the far side of. Every fixture in
+the sweep settled one round after the fixer first touched it,
+and none returned to a state it had held before.
+
 The removal is `MaybeIncorrect` for symmetry rather than because
 it moves anything: rustfmt picks a macro invocation's layout from
 the argument widths with the trailing comma excluded, so deleting
