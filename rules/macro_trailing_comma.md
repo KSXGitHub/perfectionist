@@ -43,6 +43,15 @@ only adds a trailing comma when each top-level item is on its
 own line, separate from the delimiter, and strips any comma
 added to the compact shape. The two tools have to agree.
 
+Both suggestions are offered for review rather than for
+`cargo dylint --fix` to apply unreviewed, because rustfmt
+reflows a macro invocation on its own terms. An inserted comma
+rides along into the single line rustfmt collapses a
+paren-delimited invocation to, and this lint then reports that
+line in the opposite direction. Formatting before linting
+avoids the exchange: rustfmt has settled the layout by then, so
+the comma the report asks for is one it keeps.
+
 ## Example
 
 **Avoid:**

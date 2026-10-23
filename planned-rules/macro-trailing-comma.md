@@ -283,13 +283,36 @@ For every macro invocation:
      diagnostic suggesting removal of the `,`.
    - Otherwise, no diagnostic.
 
-The autofix is `Applicability::MachineApplicable` for name-based
-matches (curated list — the human vetted that the comma is
-optional) and for matcher-based matches where every arm of the
-macro accepts both forms. Matcher-based cases that picked one
-matching arm out of several are `Applicability::MaybeIncorrect`
-— the matched-arm analysis is conservative but a future macro
-revision could shift which arm matches.
+Both suggestions are `Applicability::MaybeIncorrect`, which is a
+deliberate departure from this file's original
+`Applicability::MachineApplicable` for name-based matches. The
+curated list does establish that the comma is optional, so the
+edit compiles; what it does not establish is that the edit
+survives the formatter. rustfmt honours the trailing comma it
+finds in a paren-delimited invocation rather than normalising it,
+so an inserted comma rides along into the single line rustfmt
+collapses the invocation to, and the lint reports that line in
+the opposite direction. Measured: `format!` / `println!` /
+`assert_eq!` written vertically without the comma each take two
+`cargo dylint --fix` rounds to settle, the second undoing the
+first. A bracket-delimited invocation whose sole element is
+multi-line loses the inserted comma outright when rustfmt
+reshapes it to the compact layout. Neither disagreement runs
+forever, since rustfmt is idempotent and the second fix lands on
+a form it leaves alone, but a silent fixer should not spend a
+round on churn a human has not seen.
+
+The removal is `MaybeIncorrect` for symmetry rather than because
+it moves anything: rustfmt picks a macro invocation's layout from
+the argument widths with the trailing comma excluded, so deleting
+the comma cannot turn a single-line invocation into a multi-line
+one.
+
+When matcher-based eligibility lands, cases that picked one
+matching arm out of several stay `MaybeIncorrect` on their own
+account — the matched-arm analysis is conservative but a future
+macro revision could shift which arm matches — so the whole rule
+is review-only either way.
 
 ## Examples
 
@@ -566,8 +589,9 @@ ignore = [
 **Name-based: easy.** A name-set lookup keyed off a resolved
 `DefId`, plus a token-stream scan for the trailing comma,
 plus a span-based "is this multi-line" predicate. The
-autofix is a one-character insertion or removal at a known
-position — `MachineApplicable`.
+suggestion is a one-character insertion or removal at a known
+position, held to `MaybeIncorrect` for the rustfmt interaction
+described under [What to lint](#what-to-lint).
 
 **Matcher-based: hard.** The matcher walker has to handle
 every matcher repetition shape, the multi-arm case (which
