@@ -283,89 +283,13 @@ For every macro invocation:
      diagnostic suggesting removal of the `,`.
    - Otherwise, no diagnostic.
 
-Both suggestions are `Applicability::MaybeIncorrect`, which is a
-deliberate departure from this file's original
-`Applicability::MachineApplicable` for name-based matches. The
-curated list does establish that the comma is optional, so the
-edit compiles; what it does not establish is that the edit
-survives the formatter.
-
-Which comma rustfmt will respell turns on the invocation's name
-and nesting rather than on its delimiters. A top-level `vec!` is
-the one invocation rustfmt rewrites as an array literal,
-normalising the trailing comma to the same vertical policy this
-rule enforces. Every other invocation, `vec!` nested inside
-another macro included, keeps whatever trailing comma it was
-written with, which costs the insertion two ways:
-
-- The inserted comma rides along into the single line rustfmt
-  collapses the invocation to, and the rule reports that line in
-  the opposite direction. Measured: `format!`, `println!`,
-  `assert_eq!` and a bracket-delimited list macro reached through
-  `extra_macros` each take two `cargo dylint --fix` rounds to
-  settle, the second undoing the first.
-- An invocation whose sole element is multi-line settles at a
-  shape rustfmt would not have produced. Reshaping to the compact
-  layout is what rustfmt does with such an element, and the
-  inserted comma rides to the closing line, leaving
-  `my_list![Inner {` ... `},]`. That `},]` is a resting state,
-  since rustfmt leaves it and the compact-layout suppression
-  keeps the rule quiet about it. Only `vec!` is spared, its array
-  path stripping the comma instead.
-
-Neither disagreement runs forever, since rustfmt is idempotent
-and the second fix lands on a form it leaves alone, but a silent
-fixer should not spend a round on churn a human has not seen,
-and should not be the thing that writes `},]`.
-
-The width at which rustfmt breaks an invocation is the obvious
-place for an endless exchange to hide, an invocation long enough
-that the comma decides the layout flipping between the two
-branches forever. It is not there, because rustfmt measures the
-argument widths with the trailing comma excluded, so the comma
-never decides the layout. Measured over a sweep of one
-invocation per source width across the threshold, for a
-paren-delimited macro and a bracket-delimited one that is not
-`vec!`, each written both single-line with the comma and
-vertically without it: the two forms break at the same width, so
-the branch that fires tiles the range with neither a gap nor an
-overlap. For the bracket-delimited macro the removal fires below
-the threshold and the insertion at or above it, and the
-threshold sits at the same width for both forms.
-
-That leaves the two branches unable to feed each other, since
-the removal only ever shortens an invocation rustfmt has already
-settled on one line and the insertion only ever lengthens one it
-has already broken, and neither edit can carry its invocation
-across a threshold it sits on the far side of. Every fixture in
-the sweep settled one round after the fixer first touched it,
-and none returned to a state it had held before. Re-running the
-sweep under each of `indent_style`, `overflow_delimited_expr`,
-`force_multiline_blocks`, `max_width`, `fn_call_width`,
-`array_width`, `use_small_heuristics` and `trailing_comma` moved
-the threshold and, under visual indent, how many invocations the
-compact-layout suppression covers, without returning a fixture
-to a previous state in any of them.
-
-What the measurement does not reach is a future rustfmt. The
-agreement rests on rustfmt stripping a trailing comma only where
-it rewrites a `vec!` as an array literal, and on its vertical
-policy there matching this rule's, so a rustfmt that normalised
-the comma for other invocations too, or that stopped adding it
-to a vertical array, would want re-measuring rather than
-trusting this passage.
-
-The removal is `MaybeIncorrect` for symmetry rather than because
-it moves anything: rustfmt picks a macro invocation's layout from
-the argument widths with the trailing comma excluded, so deleting
-the comma cannot turn a single-line invocation into a multi-line
-one.
-
-When matcher-based eligibility lands, cases that picked one
-matching arm out of several stay `MaybeIncorrect` on their own
-account — the matched-arm analysis is conservative but a future
-macro revision could shift which arm matches — so the whole rule
-is review-only either way.
+The autofix is `Applicability::MachineApplicable` for name-based
+matches (curated list — the human vetted that the comma is
+optional) and for matcher-based matches where every arm of the
+macro accepts both forms. Matcher-based cases that picked one
+matching arm out of several are `Applicability::MaybeIncorrect`
+— the matched-arm analysis is conservative but a future macro
+revision could shift which arm matches.
 
 ## Examples
 
@@ -642,9 +566,8 @@ ignore = [
 **Name-based: easy.** A name-set lookup keyed off a resolved
 `DefId`, plus a token-stream scan for the trailing comma,
 plus a span-based "is this multi-line" predicate. The
-suggestion is a one-character insertion or removal at a known
-position, held to `MaybeIncorrect` for the rustfmt interaction
-described under [What to lint](#what-to-lint).
+autofix is a one-character insertion or removal at a known
+position — `MachineApplicable`.
 
 **Matcher-based: hard.** The matcher walker has to handle
 every matcher repetition shape, the multi-arm case (which
