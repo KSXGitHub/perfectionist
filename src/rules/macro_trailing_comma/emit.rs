@@ -1,12 +1,4 @@
 //! Diagnostic emission for the two violation shapes.
-//!
-//! Both suggestions are `MachineApplicable`, and cannot ping-pong with
-//! rustfmt: rustfmt strips a trailing comma only where it rewrites a
-//! `vec!` as an array literal, and its vertical policy there already
-//! matches this lint's. Everywhere else rustfmt keeps the comma it
-//! finds, so nothing it does undoes either fix. Measured over a sweep
-//! of widths across rustfmt's line-breaking threshold, repeated under
-//! each layout knob: no fixture ever returned to an earlier state.
 
 use super::MACRO_TRAILING_COMMA;
 use clippy_utils::diagnostics::span_lint_hir_and_then;
@@ -15,6 +7,14 @@ use rustc_hir as hir;
 use rustc_lint::LateContext;
 use rustc_span::Span;
 
+/// The insertion is `MachineApplicable` because it cannot start an
+/// exchange with rustfmt. Where rustfmt has settled the layout,
+/// breaking this invocation across lines was its own choice, taken from
+/// argument widths that exclude the trailing comma, so adding one
+/// cannot pull the invocation back onto a single line. It stays
+/// multi-line, the layout where rustfmt either keeps the comma it finds
+/// or writes one itself, so [`emit_remove`] is left no single-line
+/// invocation to undo this from.
 pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, insert_at: Span) {
     span_lint_hir_and_then(
         lint_context,
@@ -33,6 +33,14 @@ pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, in
     );
 }
 
+/// The removal is `MachineApplicable` because it cannot start an
+/// exchange with rustfmt. Where rustfmt has settled the layout, keeping
+/// this invocation on one line was its own choice, taken from argument
+/// widths that exclude the trailing comma, so deleting one cannot push
+/// the invocation over that width and break it. It stays single-line,
+/// the layout where rustfmt either leaves the comma out or strips one
+/// itself, so [`emit_insert`] is left no multi-line invocation to undo
+/// this from.
 pub(super) fn emit_remove(lint_context: &LateContext<'_>, hir_id: hir::HirId, comma_span: Span) {
     span_lint_hir_and_then(
         lint_context,
