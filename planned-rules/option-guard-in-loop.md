@@ -1,0 +1,231 @@
+# `option_guard_in_loop`
+
+**Source:** project convention.
+
+## Statement
+
+A `for` loop whose entire body is an `if let Some(..)` iterates
+items it then discards. The discarding is the iterator's job, and
+`filter_map` is where it says so:
+
+```rust
+for (cfg, target) in targets {
+    if let Some(table) = target.as_table() {
+        collect(table, cfg);
+    }
+}
+```
+
+```rust
+for (cfg, table) in targets.filter_map(|(cfg, target)| Some((cfg, target.as_table()?))) {
+    collect(table, cfg);
+}
+```
+
+The loop body is then left saying what it does, rather than which
+condition had to hold for it to run at all.
+
+## Why restrict this?
+
+This is a stylistic preference, not a correctness issue. Both forms
+do the same work in the same order. The objection is to where the
+selection lives:
+
+- **Selection and work are interleaved.** The reader meets the body
+  before learning which items reach it, and has to hold the
+  condition in mind while reading past it.
+- **The indentation overstates the body.** Every line of real work
+  sits one level deeper than the loop that contains it, for a
+  condition that contributes nothing to the body.
+- **It hides how many items the loop actually processes.** `for x in
+  it` reads as "every item"; the count is only apparent once the
+  guard inside is read.
+
+## What to lint
+
+A `for` loop whose body block has **exactly one statement and no
+tail expression**, that statement being an `if let Some(binding) =
+scrutinee { .. }` with **no `else`**, where:
+
+1. The scrutinee is an expression **derived from the loop binding**,
+   meaning it mentions the loop's pattern bindings. A scrutinee independent of
+   the loop binding is loop-invariant and belongs outside the loop
+   entirely, which is a different complaint and not this rule's.
+2. The scrutinee is **not the loop binding itself**. That degenerate
+   case, where the element already *is* the `Option`, belongs to
+   `clippy::manual_flatten`. Its `flatten()` suggestion beats the
+   `filter_map(|x| x)` this rule would produce, so defer to it rather
+   than duplicate it.
+3. The body contains no `break`, `continue`, `return` or `?` that
+   would escape the loop. Each changes meaning once the body moves
+   into a closure, and none can be expressed there.
+
+Emit no suggestion, for the reason `loop_in_option_guard` does not:
+the target form is a judgement rather than a fact. Lifting the scrutinee into a
+`filter_map` leaves a choice of what to iterate the result with.
+`for y in it.filter_map(f)` keeps the loop and whatever the body
+needs from it. `.for_each(..)` reads as one pipeline, but can carry
+no `break`, `continue`, `return` or `?`. The rewrite also moves an
+expression
+into a closure, which can change when a borrow is taken even where it
+cannot change the result, so there is no spelling the rule could
+print and stand behind.
+
+The help names the step and leaves the shape open:
+
+> **help:** the guard selects rather than decides. Lift it into a
+> `filter_map` on the iteratee and let the loop body do only the work
+>
+> **help:** carry through whatever else the pattern bound, and keep a
+> `for` where the body needs `break`, `continue`, `return` or `?`
+
+## Examples
+
+### The shape
+
+**Avoid:**
+
+```rust
+for entry in entries {
+    if let Some(name) = entry.file_name() {
+        record(name);
+    }
+}
+```
+
+**Prefer:**
+
+```rust
+for name in entries.filter_map(|entry| entry.file_name()) {
+    record(name);
+}
+```
+
+### Carrying more than the unwrapped value
+
+**Avoid:**
+
+```rust
+for (cfg, target) in targets {
+    if let Some(table) = target.as_table() {
+        collect(table, cfg);
+    }
+}
+```
+
+**Prefer:**
+
+```rust
+for (cfg, table) in targets.filter_map(|(cfg, target)| Some((cfg, target.as_table()?))) {
+    collect(table, cfg);
+}
+```
+
+### Not flagged
+
+```rust
+// The element already is the `Option`: `clippy::manual_flatten`'s case.
+for item in items {
+    if let Some(value) = item { record(value); }
+}
+
+// Control flow that cannot move into a closure.
+for entry in entries {
+    if let Some(name) = entry.file_name() {
+        if name.is_empty() { break; }
+        record(name);
+    }
+}
+
+// The body does more than the guard.
+for entry in entries {
+    count += 1;
+    if let Some(name) = entry.file_name() { record(name); }
+}
+
+// The scrutinee does not depend on the loop binding.
+for entry in entries {
+    if let Some(root) = shared_root { record(root, entry); }
+}
+```
+
+## Configuration
+
+The rule takes no configuration. The trigger is one shape and the
+rewrite has one form.
+
+Suppress a site with `#[expect(perfectionist::option_guard_in_loop)]`,
+or the whole rule through the `[perfectionist]` global table:
+
+```toml
+[perfectionist]
+disable = ["option_guard_in_loop"]
+```
+
+## Implementation notes
+
+- **Pass kind.** `LateLintPass::check_expr`, matching the loop
+  through `higher::ForLoop::hir` so the pre-desugaring shape is
+  available rather than the `loop`/`match` it lowers to.
+- **Body shape.** One statement, no tail expression, and that
+  statement an `ExprKind::If` with an `ExprKind::Let` condition and
+  no `else`.
+- **Dependence on the loop binding.** Walk the scrutinee for a path
+  whose `Res` resolves to one of the loop pattern's `HirId`s; a
+  `clippy_utils` visitor does this. Bail when none is found
+  (loop-invariant) and when the scrutinee *is* exactly that path
+  (Clippy's case).
+- **Escaping control flow.** Walk the body for `ExprKind::Break`,
+  `ExprKind::Continue`, `ExprKind::Ret` and the `?` desugaring, and
+  bail on any. `break`/`continue` targeting a *nested* loop inside
+  the body are fine; compare the target label against the loop being
+  rewritten rather than rejecting on the node kind alone.
+- **Proc-macro suppression.** The primary span is the whole loop,
+  wider than the synthesised spans the
+  [suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
+  warns about, so `report_in_external_macro: false` should suffice.
+  Confirm against a `ui/option_guard_in_loop_proc_macro.rs` fixture.
+- See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
+  for the cross-cutting conventions that apply to every rule here.
+
+### Difficulty
+
+**Easy**, where carrying a rewrite would have made it medium.
+Detection is as cheap as `loop_in_option_guard`'s, and emitting no
+rewrite drops
+what was going to cost: no reasoning about which names the pattern
+binds and must carry through, and no patterns whose source text
+cannot be reused. The escaping-control-flow check stays, being part
+of the trigger rather than the fix.
+
+## Default state
+
+Active by default, and carries no rewrite, so `cargo dylint --fix`
+has nothing to apply: moving a loop body into a closure is the
+author's call, not a fix to be made unattended.
+
+## Interaction with sibling rules
+
+- [`loop-in-option-guard`](./loop-in-option-guard.md) is the mirror
+  image, with an `if let` *around* a `for` rather than inside it. A
+  shape that nests both triggers both, each on its own level.
+- `clippy::manual_flatten` covers the degenerate case where the loop
+  element itself is the `Option`, and this rule skips it by design
+  (see [What to lint](#what-to-lint)). Outside that case Clippy is
+  silent: with `clippy::all`, `clippy::pedantic` and
+  `clippy::nursery` enabled together, a guard whose scrutinee is a
+  call on the element produces no diagnostic. This rule is that
+  lint's extension rather than a refinement, which is why it does not
+  borrow the name.
+- `perfectionist::excessive_nesting` counts depth without judging
+  what produced it; this rule removes one specific cause.
+- `perfectionist::splittable_adapter_closure`
+  ([`src/rules/splittable_adapter_closure.rs`](../src/rules/splittable_adapter_closure.rs))
+  picks up where this rule's help stops. The `filter_map` it asks for
+  carries whatever the guard's scrutinee was, so a scrutinee that was
+  itself a composition arrives as a closure doing several things,
+  such as `filter_map(|x| parse(x).and_then(validate))`. That is
+  among the shapes `splittable_adapter_closure` names. The two compose in that
+  order rather than disagreeing: this rule flattens the nesting, and
+  `splittable_adapter_closure` splits what the flattening carried
+  over.
