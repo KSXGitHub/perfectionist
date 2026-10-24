@@ -10,7 +10,7 @@ use rustc_span::Span;
 /// Report a multi-line invocation that does not end with a trailing
 /// comma, suggesting one at `insert_at`.
 ///
-/// **[`MachineApplicable`](Applicability::MachineApplicable) autofix is sound:**
+/// **[`MachineApplicable`](Applicability::MachineApplicable) does not fight rustfmt:**
 ///
 /// On source rustfmt has already formatted, the layout is rustfmt's
 /// own choice. It broke this invocation across lines by measuring the
@@ -44,7 +44,7 @@ pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, in
 /// Report a single-line invocation that ends with a trailing comma,
 /// suggesting the deletion of `comma_span`.
 ///
-/// **[`MachineApplicable`](Applicability::MachineApplicable) autofix is sound:**
+/// **[`MachineApplicable`](Applicability::MachineApplicable) does not fight rustfmt:**
 ///
 /// On source rustfmt has already formatted, the layout is rustfmt's
 /// own choice. It kept this invocation on one line by measuring the
