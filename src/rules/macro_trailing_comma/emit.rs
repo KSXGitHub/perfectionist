@@ -12,13 +12,17 @@ use rustc_span::Span;
 ///
 /// **[`MachineApplicable`](Applicability::MachineApplicable) autofix is sound:**
 ///
-/// The suggestion cannot start an exchange with rustfmt. Where rustfmt
-/// has settled the layout, breaking this invocation across lines was
-/// its own choice, taken from argument widths that exclude the trailing
-/// comma, so adding one cannot pull the invocation back onto a single
-/// line. It stays multi-line, the layout where rustfmt either keeps the
-/// comma it finds or writes one itself, so [`emit_remove`] is left no
-/// single-line invocation to undo this from.
+/// On source rustfmt has already formatted, the layout is rustfmt's
+/// own choice. It broke this invocation across lines by measuring the
+/// arguments, and that measurement leaves the trailing comma out. So
+/// adding a comma cannot change the choice: the invocation stays
+/// multi-line.
+///
+/// Multi-line is the layout rustfmt wants a trailing comma in. It
+/// keeps one already there, and writes one itself where it lays the
+/// arguments out. The comma therefore survives formatting, and
+/// [`emit_remove`] fires only on single-line invocations, so nothing
+/// takes it away again.
 pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, insert_at: Span) {
     span_lint_hir_and_then(
         lint_context,
@@ -42,13 +46,16 @@ pub(super) fn emit_insert(lint_context: &LateContext<'_>, hir_id: hir::HirId, in
 ///
 /// **[`MachineApplicable`](Applicability::MachineApplicable) autofix is sound:**
 ///
-/// The suggestion cannot start an exchange with rustfmt. Where rustfmt
-/// has settled the layout, keeping this invocation on one line was its
-/// own choice, taken from argument widths that exclude the trailing
-/// comma, so deleting one cannot push the invocation over that width
-/// and break it. It stays single-line, the layout where rustfmt either
-/// leaves the comma out or strips one itself, so [`emit_insert`] is
-/// left no multi-line invocation to undo this from.
+/// On source rustfmt has already formatted, the layout is rustfmt's
+/// own choice. It kept this invocation on one line by measuring the
+/// arguments, and that measurement leaves the trailing comma out. So
+/// deleting a comma cannot change the choice: the invocation stays
+/// single-line.
+///
+/// Single-line is the layout rustfmt wants no trailing comma in. It
+/// never adds one, and strips one where it lays the arguments out. The
+/// comma therefore stays gone, and [`emit_insert`] fires only on
+/// multi-line invocations, so nothing puts it back.
 pub(super) fn emit_remove(lint_context: &LateContext<'_>, hir_id: hir::HirId, comma_span: Span) {
     span_lint_hir_and_then(
         lint_context,
