@@ -25,7 +25,14 @@ struct RuleConfig {
     max_lines: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     exempt_tests: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exclude_imports: Option<bool>,
 }
+
+const IMPORT_SOURCES: &[(&str, &str)] = &[(
+    "src/lib.rs",
+    "use std::{\n    collections::{HashMap, HashSet},\n    sync::Arc,\n};\n\nfn work() {\n    let _: Option<(HashMap<(), ()>, HashSet<()>, Arc<()>)> = None;\n}\n",
+)];
 
 fn dylint_toml(config: RuleConfig) -> String {
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
@@ -158,4 +165,21 @@ fn exempt_tests_leaves_test_files_alone() {
     assert_not_flagged(&stderr, "tests.rs");
     assert_not_flagged(&stderr, "it.rs");
     assert_not_flagged(&stderr, "bench.rs");
+}
+
+#[test]
+fn exclude_imports_does_not_count_vertical_import_lines() {
+    let (_temp, stderr, success) = run_project_with_config(
+        "fixture_olfile_imports",
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        IMPORT_SOURCES,
+        &dylint_toml(RuleConfig {
+            max_lines: Some(3),
+            exclude_imports: Some(true),
+            ..RuleConfig::default()
+        }),
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    assert_not_flagged(&stderr, "lib.rs");
 }
