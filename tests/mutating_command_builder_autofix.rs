@@ -24,16 +24,6 @@
 //! shapes would compile if they were rewritten anyway, so that
 //! comparison can fail rather than passing because `cargo fix` reverted
 //! the file.
-//!
-//! `tests/autofix.rs` gates the two properties over a codebase of its
-//! own: that the rewrite the rule hands over is applied and leaves
-//! the crate behaving as it did, and that a call it declines is left
-//! alone. What is here and not there is the breadth, one shape per
-//! reason the rule declines, each named in the fixture so an
-//! assertion can tell them apart. That sweep is what the `#[ignore]`
-//! keeps on demand; the per-shape assertions are the reason it was
-//! not folded into that harness, which records lint names rather than
-//! shapes.
 
 pub mod _utils;
 
@@ -99,7 +89,7 @@ fn fix(package: &str, source: &str) -> (TempDir, String, String) {
 }
 
 #[test]
-#[ignore = "a sweep over every shape the rule declines, kept out of the gating suite"]
+#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_applies_the_whole_rewrite() {
     let (_temp, fixed, stderr) = fix("mutating_command_builder_applied", APPLIED);
 
@@ -118,7 +108,7 @@ fn the_fixer_applies_the_whole_rewrite() {
 }
 
 #[test]
-#[ignore = "a sweep over every shape the rule declines, kept out of the gating suite"]
+#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_declines_the_rest() {
     let (_temp, fixed, stderr) = fix("mutating_command_builder_not_applied", NOT_APPLIED);
 

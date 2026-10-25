@@ -15,3 +15,4 @@ LL |     names.iter().fold(start, CommandExtra::without_env)
    |
    = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
    = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+   = applicability: Unspecified (use `without_envs`)

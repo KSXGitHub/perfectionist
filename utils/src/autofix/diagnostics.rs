@@ -16,6 +16,13 @@
 //! renumber every header below an inserted line. The absolute paths
 //! this harness works in are normalised too, since a temp directory's
 //! name is different on every run.
+//!
+//! One line per rendered block is the harness's own rather than
+//! rustc's: each suggestion's **applicability**, which rustc computes
+//! and never prints. It is what decides whether the fixer touches a
+//! suggestion, so it is the property every test here exists for, and
+//! a `.stderr` that left it out would record a rule's rewrites
+//! without recording which of them are offered to a machine.
 
 use serde::Deserialize;
 use std::collections::BTreeSet;
@@ -61,11 +68,50 @@ struct CargoMessage {
 struct Diagnostic {
     code: Option<DiagnosticCode>,
     rendered: Option<String>,
+    #[serde(default)]
+    message: String,
+    #[serde(default)]
+    spans: Vec<DiagnosticSpan>,
+    #[serde(default)]
+    children: Vec<Diagnostic>,
 }
 
 #[derive(Deserialize)]
 struct DiagnosticCode {
     code: String,
+}
+
+/// One span of a diagnostic, pared down to what says whether it
+/// carries a rewrite and how far rustc stands behind it.
+#[derive(Deserialize)]
+struct DiagnosticSpan {
+    suggestion_applicability: Option<String>,
+}
+
+/// The applicability lines appended to a rendered block, one per
+/// suggestion that carries one, labelled by the sub-diagnostic that
+/// offered it.
+///
+/// A suggestion rustc rendered inline is a sub-diagnostic too, so
+/// walking the children reaches every rewrite a rule handed over;
+/// a span of the diagnostic's own is labelled by its message.
+fn applicability_lines(diagnostic: &Diagnostic) -> Vec<String> {
+    let own = diagnostic
+        .spans
+        .iter()
+        .map(|span| (diagnostic.message.as_str(), span));
+    let children = diagnostic.children.iter().flat_map(|child| {
+        child
+            .spans
+            .iter()
+            .map(move |span| (child.message.as_str(), span))
+    });
+    own.chain(children)
+        .filter_map(|(label, span)| {
+            let applicability = span.suggestion_applicability.as_deref()?;
+            Some(format!("   = applicability: {applicability} ({label})"))
+        })
+        .collect()
 }
 
 impl Reported {
@@ -80,14 +126,14 @@ impl Reported {
             .filter(|message| message.reason == "compiler-message")
             .filter_map(|message| message.message);
         for diagnostic in diagnostics {
-            if let Some(code) = diagnostic.code {
-                self.lints.insert(code.code);
+            if let Some(code) = &diagnostic.code {
+                self.lints.insert(code.code.clone());
             }
-            if let Some(rendered) = diagnostic.rendered {
-                self.rendered.insert(normalise::diagnostic(
-                    &rendered,
-                    &project_dir.display().to_string(),
-                ));
+            if let Some(rendered) = &diagnostic.rendered {
+                let block = normalise::diagnostic(rendered, &project_dir.display().to_string());
+                let lines = applicability_lines(&diagnostic);
+                self.rendered
+                    .insert([vec![block], lines].concat().join("\n"));
             }
         }
     }

@@ -1,4 +1,0 @@
-# `bare_issue_reference` offers no link until it is told where one
-# would point.
-["perfectionist::bare_issue_reference"]
-repository = "https://github.com/owner/repo"

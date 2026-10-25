@@ -606,9 +606,11 @@ A new `MachineApplicable` rewrite earns a crate in the fixture whose
 dependency list it needs, named after the rule, holding the shape and
 a `#[cfg(test)] mod tests` asserting what the shape *does*. A shape
 the rule has such a rewrite for and withholds goes to the `-declined`
-sibling, whose stored diffs are empty; a rule with no such rewrite at
-all belongs in neither, its suggestion being `cargo fix`'s to ignore
-rather than this plugin's to withhold. Re-record with
+sibling, where the stored `.stderr` records the applicability it was
+withheld at and the stored diff is empty; a rule with no such rewrite
+at all belongs in neither, since what it would pin is `cargo fix`'s
+uniform handling rather than any choice of this plugin's. Re-record
+with
 `PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
 expectations: that diff is the review, since a shape the rule never
 reached leaves it short rather than failing.

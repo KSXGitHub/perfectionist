@@ -1,5 +1,2 @@
-# Under the default `either` style the rule accepts any wrapped form
-# and offers one `MaybeIncorrect` suggestion per form, so naming a
-# style is what gives it an autofix to test.
 ["perfectionist::bare_email"]
 style = "angle_brackets"

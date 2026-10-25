@@ -166,3 +166,67 @@ fn trailing_spaces_come_off() {
     let stdout = message("perfectionist::bare_url", "warning: x   \n   |   ");
     assert_eq!(reported(&stdout).render(), "warning: x\n   |\n");
 }
+
+/// One `--message-format=json` line for a lint named `code` whose
+/// sub-diagnostic `label` offers a rewrite at `applicability`.
+fn suggestion(code: &str, rendered: &str, label: &str, applicability: &str) -> String {
+    json!({
+        "reason": "compiler-message",
+        "message": {
+            "code": { "code": code, "explanation": null },
+            "level": "warning",
+            "message": "something",
+            "rendered": rendered,
+            "spans": [],
+            "children": [{
+                "level": "help",
+                "message": label,
+                "spans": [{ "suggestion_applicability": applicability }],
+                "children": [],
+            }],
+        },
+    })
+    .to_string()
+}
+
+/// An applicability is what decides whether the fixer touches a
+/// suggestion, and rustc computes it without printing it. Recording
+/// it is what lets a shape a rule withholds say so, rather than
+/// leaving it to be read off an empty diff.
+#[test]
+fn each_suggestion_records_its_applicability() {
+    let stdout = suggestion(
+        "perfectionist::bare_url",
+        "warning: bare URL",
+        "wrap in `<...>`",
+        "MaybeIncorrect",
+    );
+    assert_eq!(
+        reported(&stdout).render(),
+        "warning: bare URL\n   = applicability: MaybeIncorrect (wrap in `<...>`)\n",
+    );
+}
+
+/// A sub-diagnostic carrying no rewrite is help text, and says
+/// nothing about applicability.
+#[test]
+fn a_help_without_a_rewrite_adds_no_line() {
+    let stdout = json!({
+        "reason": "compiler-message",
+        "message": {
+            "code": { "code": "perfectionist::bare_url", "explanation": null },
+            "level": "warning",
+            "message": "something",
+            "rendered": "warning: bare URL",
+            "spans": [],
+            "children": [{
+                "level": "help",
+                "message": "consider a labelled link",
+                "spans": [{ "suggestion_applicability": null }],
+                "children": [],
+            }],
+        },
+    })
+    .to_string();
+    assert_eq!(reported(&stdout).render(), "warning: bare URL\n");
+}
