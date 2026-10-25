@@ -1,7 +1,0 @@
-[package]
-name = "fixture-third-party-declined-mutating-command-builder"
-version = "0.0.0"
-edition = "2024"
-
-[dependencies]
-command-extra = "1.2.0"

@@ -1,5 +1,17 @@
---- a/crates/avoidable-string-escapes/src/lib.rs
-+++ b/crates/avoidable-string-escapes/src/lib.rs
+--- a/crates/named-prelude-imports/src/lib.rs
++++ b/crates/named-prelude-imports/src/lib.rs
+@@ -21,8 +21,7 @@
+     pub use crate::thing::{Gadget, Widget};
+ }
+ 
+-use crate::prelude::Widget;
+-use crate::thing::Gadget;
++use crate::thing::{Gadget, Widget};
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/shapes/src/avoidable_string_escapes.rs
++++ b/crates/shapes/src/avoidable_string_escapes.rs
 @@ -3,10 +3,10 @@
  //! as a raw literal.
  
@@ -11,23 +23,23 @@
 -pub const SEPARATOR: &str = "C:\\Users\\fixture";
 +pub const SEPARATOR: &str = r"C:\Users\fixture";
  
- /// What this crate contributes to the fixture's output.
+ /// What this module contributes to the fixture's output.
  pub fn report() -> String {
---- a/crates/bare-email/src/lib.rs
-+++ b/crates/bare-email/src/lib.rs
+--- a/crates/shapes/src/bare_email.rs
++++ b/crates/shapes/src/bare_email.rs
 @@ -1,7 +1,7 @@
- //! A crate whose documentation leaves an address bare, which
+ //! A module whose documentation leaves an address bare, which
  //! `perfectionist::bare_email` wraps in angle brackets.
  
 -/// Problems go to security@example.com and are answered there.
 +/// Problems go to <security@example.com> and are answered there.
  pub const CONTACT: &str = "security@example.com";
  
- /// What this crate contributes to the fixture's output.
---- a/crates/bare-url/src/lib.rs
-+++ b/crates/bare-url/src/lib.rs
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/bare_url.rs
++++ b/crates/shapes/src/bare_url.rs
 @@ -1,7 +1,7 @@
- //! A crate whose documentation leaves a URL bare, which
+ //! A module whose documentation leaves a URL bare, which
  //! `perfectionist::bare_url` wraps in angle brackets.
  
 -/// The project home page is https://example.com and this sentence
@@ -35,8 +47,8 @@
  /// leaves it bare. The rewrite is offered at `MachineApplicable`
  /// only where the address ends in a character that cannot have been
  /// prose, so the sentence carries on after a space.
---- a/crates/clap-help-markdown/src/lib.rs
-+++ b/crates/clap-help-markdown/src/lib.rs
+--- a/crates/shapes/src/clap_help_markdown.rs
++++ b/crates/shapes/src/clap_help_markdown.rs
 @@ -5,7 +5,7 @@
  /// The fixture's command line.
  #[derive(clap::Parser)]
@@ -46,21 +58,21 @@
      pub manifest: String,
  }
  
---- a/crates/import-granularity-mismatch/src/lib.rs
-+++ b/crates/import-granularity-mismatch/src/lib.rs
+--- a/crates/shapes/src/import_granularity_mismatch.rs
++++ b/crates/shapes/src/import_granularity_mismatch.rs
 @@ -1,8 +1,7 @@
- //! A crate splitting one module across two `use` statements, which
+ //! A module splitting one module across two `use` statements, which
  //! `perfectionist::import_granularity_mismatch` merges.
  
 -use std::collections::BTreeMap;
 -use std::collections::HashMap;
 +use std::collections::{BTreeMap, HashMap};
  
- /// What this crate contributes to the fixture's output.
+ /// What this module contributes to the fixture's output.
  pub fn report() -> String {
---- a/crates/macro-trailing-comma/src/lib.rs
-+++ b/crates/macro-trailing-comma/src/lib.rs
-@@ -17,17 +17,14 @@
+--- a/crates/shapes/src/macro_trailing_comma.rs
++++ b/crates/shapes/src/macro_trailing_comma.rs
+@@ -16,17 +16,14 @@
      vec![
          "the first label, long enough that the list cannot fit on one line",
          "the second label, long enough that the list cannot fit on one line",
@@ -79,9 +91,9 @@
 +    format!("{} labels", labels().len(),)
  }
  
- /// What this crate contributes to the fixture's output.
---- a/crates/map-or/src/lib.rs
-+++ b/crates/map-or/src/lib.rs
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/map_or.rs
++++ b/crates/shapes/src/map_or.rs
 @@ -4,12 +4,12 @@
  
  /// The width of `name`, or zero where there is none.
@@ -96,21 +108,9 @@
 +    name.map_or_default(str::to_uppercase)
  }
  
- /// What this crate contributes to the fixture's output.
---- a/crates/named-prelude-imports/src/lib.rs
-+++ b/crates/named-prelude-imports/src/lib.rs
-@@ -21,8 +21,7 @@
-     pub use crate::thing::{Gadget, Widget};
- }
- 
--use crate::prelude::Widget;
--use crate::thing::Gadget;
-+use crate::thing::{Gadget, Widget};
- 
- /// What this crate contributes to the fixture's output.
- pub fn report() -> String {
---- a/crates/numeric-escape-for-visible-character/src/lib.rs
-+++ b/crates/numeric-escape-for-visible-character/src/lib.rs
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/numeric_escape_for_visible_character.rs
++++ b/crates/shapes/src/numeric_escape_for_visible_character.rs
 @@ -3,10 +3,10 @@
  //! verbatim.
  
@@ -122,10 +122,10 @@
 -pub const ARROW: char = '\u{2192}';
 +pub const ARROW: char = '→';
  
- /// What this crate contributes to the fixture's output.
+ /// What this module contributes to the fixture's output.
  pub fn report() -> String {
---- a/crates/overly-long-print-macro/src/lib.rs
-+++ b/crates/overly-long-print-macro/src/lib.rs
+--- a/crates/shapes/src/overly_long_print_macro.rs
++++ b/crates/shapes/src/overly_long_print_macro.rs
 @@ -4,7 +4,10 @@
  /// Print the fixture's diagnostic, whose template runs well past the
  /// width the rule allows and carries an embedded newline to fold at.
@@ -137,9 +137,9 @@
 +    );
  }
  
- /// What this crate contributes to the fixture's output.
---- a/crates/some-bool-comparison/src/lib.rs
-+++ b/crates/some-bool-comparison/src/lib.rs
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/some_bool_comparison.rs
++++ b/crates/shapes/src/some_bool_comparison.rs
 @@ -3,12 +3,12 @@
  
  /// Whether `flag` was set and set to true.
@@ -154,9 +154,9 @@
 +    !flag.unwrap_or(true)
  }
  
- /// What this crate contributes to the fixture's output.
---- a/crates/splittable-adapter-closure/src/lib.rs
-+++ b/crates/splittable-adapter-closure/src/lib.rs
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/splittable_adapter_closure.rs
++++ b/crates/shapes/src/splittable_adapter_closure.rs
 @@ -21,7 +21,8 @@
  pub fn doubled_values(items: Vec<Wrapper>) -> Vec<usize> {
      items

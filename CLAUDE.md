@@ -602,11 +602,16 @@ project through the autofixes and holds each round to a stored diff
 and a stored `.stderr`; its module docs carry the model, and
 [`tests/autofix.rs`](tests/autofix.rs) names one fixture per test.
 
-A new `MachineApplicable` rewrite earns a crate in the fixture whose
-dependency list it needs, named after the rule, holding the shape, a
-`#[cfg(test)] mod tests` asserting what the shape *does*, and a line
-in what the fixture's `main` prints, which the fixture stores and the
-rounds have to leave alone. A shape
+A new `MachineApplicable` rewrite earns a module in the `shapes`
+crate of the fixture whose dependency list it needs, named after the
+rule, holding the shape, a `#[cfg(test)] mod tests` asserting what the
+shape *does*, and a line in what the fixture's `main` prints, which
+the fixture stores and the rounds have to leave alone. It earns a
+crate of its own only where it has to have one: the rule reads the
+project's layout rather than one item, the shape needs a dependency
+the other modules do not, or the shape needs a proc macro. Every
+linter and every fixer pays a fixed cost per crate, so a crate nothing
+forces is paid for again on every round of every run. A shape
 the rule has such a rewrite for and withholds goes to the `-declined`
 sibling, where the stored `.stderr` records the applicability it was
 held at, or that no suggestion was attached at all, and the stored
