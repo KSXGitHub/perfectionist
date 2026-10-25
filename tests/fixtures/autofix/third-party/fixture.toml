@@ -1,0 +1,8 @@
+# The codebase each settling path in this file drives is `codebase/`,
+# and a path's configuration is the `dylint.toml` under `paths/`.
+cli_package = "fixture-third-party-cli"
+
+# The rules whose trigger or rewrite needs a registry crate present.
+[[paths]]
+name = "default"
+rounds = 1

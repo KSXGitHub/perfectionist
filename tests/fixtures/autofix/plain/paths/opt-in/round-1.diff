@@ -1,0 +1,216 @@
+--- a/crates/avoidable-string-escapes/src/lib.rs
++++ b/crates/avoidable-string-escapes/src/lib.rs
+@@ -3,10 +3,10 @@
+ //! as a raw literal.
+ 
+ /// A JSON object, written with every quote escaped.
+-pub const MANIFEST: &str = "{\"name\":\"fixture\"}";
++pub const MANIFEST: &str = r#"{"name":"fixture"}"#;
+ 
+ /// A Windows path, written with every separator escaped.
+-pub const SEPARATOR: &str = "C:\\Users\\fixture";
++pub const SEPARATOR: &str = r"C:\Users\fixture";
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/bare-email/src/lib.rs
++++ b/crates/bare-email/src/lib.rs
+@@ -1,7 +1,7 @@
+ //! A crate whose documentation leaves an address bare, which
+ //! `perfectionist::bare_email` wraps in angle brackets.
+ 
+-/// Problems go to security@example.com and are answered there.
++/// Problems go to <security@example.com> and are answered there.
+ pub const CONTACT: &str = "security@example.com";
+ 
+ /// What this crate contributes to the fixture's output.
+--- a/crates/bare-url/src/lib.rs
++++ b/crates/bare-url/src/lib.rs
+@@ -1,7 +1,7 @@
+ //! A crate whose documentation leaves a URL bare, which
+ //! `perfectionist::bare_url` wraps in angle brackets.
+ 
+-/// The project home page is https://example.com and this sentence
++/// The project home page is <https://example.com> and this sentence
+ /// leaves it bare. The rewrite is offered at `MachineApplicable`
+ /// only where the address ends in a character that cannot have been
+ /// prose, so the sentence carries on after a space.
+--- a/crates/clap-help-markdown/src/lib.rs
++++ b/crates/clap-help-markdown/src/lib.rs
+@@ -5,7 +5,7 @@
+ /// The fixture's command line.
+ #[derive(clap::Parser)]
+ pub struct Cli {
+-    /// Path to the `manifest` file.
++    /// Path to the manifest file.
+     pub manifest: String,
+ }
+ 
+--- a/crates/core-instead-of-std/src/lib.rs
++++ b/crates/core-instead-of-std/src/lib.rs
+@@ -3,7 +3,7 @@
+ //! rewrites to the `std` path. The rule ships inactive, so only a
+ //! settling path that enables it rewrites this.
+ 
+-use core::fmt::Display;
++use std::fmt::Display;
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/import-granularity-mismatch/src/lib.rs
++++ b/crates/import-granularity-mismatch/src/lib.rs
+@@ -1,8 +1,7 @@
+ //! A crate splitting one module across two `use` statements, which
+ //! `perfectionist::import_granularity_mismatch` merges.
+ 
+-use std::collections::BTreeMap;
+-use std::collections::HashMap;
++use std::collections::{BTreeMap, HashMap};
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/import-grouping-mismatch/src/lib.rs
++++ b/crates/import-grouping-mismatch/src/lib.rs
+@@ -9,8 +9,9 @@
+     pub struct Marker(pub u8);
+ }
+ 
+-use crate::local::Marker;
+ use std::collections::BTreeSet;
++
++use crate::local::Marker;
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/macro-trailing-comma/src/lib.rs
++++ b/crates/macro-trailing-comma/src/lib.rs
+@@ -17,17 +17,14 @@
+     vec![
+         "the first label, long enough that the list cannot fit on one line",
+         "the second label, long enough that the list cannot fit on one line",
+-        "the third label, long enough that the list cannot fit on one line"
++        "the third label, long enough that the list cannot fit on one line",
+     ]
+ }
+ 
+ /// How many labels there are, formatted across lines that would fit
+ /// on one.
+ pub fn summary() -> String {
+-    format!(
+-        "{} labels",
+-        labels().len(),
+-    )
++    format!("{} labels", labels().len(),)
+ }
+ 
+ /// What this crate contributes to the fixture's output.
+--- a/crates/map-or/src/lib.rs
++++ b/crates/map-or/src/lib.rs
+@@ -4,12 +4,12 @@
+ 
+ /// The width of `name`, or zero where there is none.
+ pub fn width(name: Option<&str>) -> usize {
+-    name.map_or(usize::default(), str::len)
++    name.map_or_default(str::len)
+ }
+ 
+ /// `name` in upper case, or the empty string where there is none.
+ pub fn shout(name: Option<&str>) -> String {
+-    name.map_or_else(|| String::new(), str::to_uppercase)
++    name.map_or_default(str::to_uppercase)
+ }
+ 
+ /// What this crate contributes to the fixture's output.
+--- a/crates/named-prelude-imports/src/lib.rs
++++ b/crates/named-prelude-imports/src/lib.rs
+@@ -21,8 +21,7 @@
+     pub use crate::thing::{Gadget, Widget};
+ }
+ 
+-use crate::prelude::Widget;
+-use crate::thing::Gadget;
++use crate::thing::{Gadget, Widget};
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/numeric-escape-for-visible-character/src/lib.rs
++++ b/crates/numeric-escape-for-visible-character/src/lib.rs
+@@ -3,10 +3,10 @@
+ //! verbatim.
+ 
+ /// Three letters, the first written as a hex escape.
+-pub const LETTERS: &str = "\x41BC";
++pub const LETTERS: &str = "ABC";
+ 
+ /// An arrow, written as a Unicode escape.
+-pub const ARROW: char = '\u{2192}';
++pub const ARROW: char = '→';
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/overly-long-print-macro/src/lib.rs
++++ b/crates/overly-long-print-macro/src/lib.rs
+@@ -4,7 +4,10 @@
+ /// Print the fixture's diagnostic, whose template runs well past the
+ /// width the rule allows and carries an embedded newline to fold at.
+ pub fn announce(source: &str, command: &str) {
+-    println!("error: the operation failed because of {source} deep inside the subsystem\nhint: run {command} to repair it");
++    println!(
++        "error: the operation failed because of {source} deep inside the subsystem\n\
++        hint: run {command} to repair it",
++    );
+ }
+ 
+ /// What this crate contributes to the fixture's output.
+--- a/crates/some-bool-comparison/src/lib.rs
++++ b/crates/some-bool-comparison/src/lib.rs
+@@ -3,12 +3,12 @@
+ 
+ /// Whether `flag` was set and set to true.
+ pub fn is_verbose(flag: Option<bool>) -> bool {
+-    flag == Some(true)
++    flag.unwrap_or(false)
+ }
+ 
+ /// Whether `flag` was set and set to false.
+ pub fn is_quiet(flag: Option<bool>) -> bool {
+-    flag == Some(false)
++    !flag.unwrap_or(true)
+ }
+ 
+ /// What this crate contributes to the fixture's output.
+--- a/crates/splittable-adapter-closure/src/lib.rs
++++ b/crates/splittable-adapter-closure/src/lib.rs
+@@ -21,7 +21,8 @@
+ pub fn doubled_values(items: Vec<Wrapper>) -> Vec<usize> {
+     items
+         .into_iter()
+-        .map(|wrapper| wrapper.doubled().value())
++        .map(Wrapper::doubled)
++        .map(Wrapper::value)
+         .collect()
+ }
+ 
+--- a/crates/uncombined-self-import/src/lib.rs
++++ b/crates/uncombined-self-import/src/lib.rs
+@@ -19,8 +19,7 @@
+ }
+ 
+ mod user {
+-    use crate::defs::inner::{self};
+-    use crate::defs::inner::Label;
++    use crate::defs::inner::{self, Label};
+ 
+     /// Both items, reached each the way its own `use` statement
+     /// imported it.
+--- a/crates/unordered-derives/src/lib.rs
++++ b/crates/unordered-derives/src/lib.rs
+@@ -3,7 +3,7 @@
+ //! so only a settling path that enables it rewrites this.
+ 
+ /// A tag, carrying the derives in the order they were typed.
+-#[derive(PartialEq, Clone, Debug, Eq)]
++#[derive(Clone, Debug, Eq, PartialEq)]
+ pub struct Tag(pub u8);
+ 
+ /// What this crate contributes to the fixture's output.

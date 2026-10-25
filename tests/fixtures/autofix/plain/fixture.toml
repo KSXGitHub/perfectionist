@@ -1,0 +1,15 @@
+# The codebase each settling path in this file drives is `codebase/`,
+# and a path's configuration is the `dylint.toml` under `paths/`.
+cli_package = "fixture-plain-cli"
+
+# Every rule this codebase triggers that ships active.
+[[paths]]
+name = "default"
+rounds = 2
+
+# The same codebase under the rules that ship inactive, which a
+# consumer has to opt into and which therefore rewrite nothing on the
+# `default` path.
+[[paths]]
+name = "opt-in"
+rounds = 2

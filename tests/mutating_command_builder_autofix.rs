@@ -24,6 +24,12 @@
 //! shapes would compile if they were rewritten anyway, so that
 //! comparison can fail rather than passing because `cargo fix` reverted
 //! the file.
+//!
+//! What is here that `tests/autofix.rs` does not cover is the breadth:
+//! one shape per reason the rule declines, each named in the fixture so
+//! an assertion can tell them apart. What is there and not here is the
+//! round composition, the behaviour of the fixed code, and the settling
+//! of a whole codebase.
 
 pub mod _utils;
 
@@ -89,7 +95,6 @@ fn fix(package: &str, source: &str) -> (TempDir, String, String) {
 }
 
 #[test]
-#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_applies_the_whole_rewrite() {
     let (_temp, fixed, stderr) = fix("mutating_command_builder_applied", APPLIED);
 
@@ -108,7 +113,6 @@ fn the_fixer_applies_the_whole_rewrite() {
 }
 
 #[test]
-#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_declines_the_rest() {
     let (_temp, fixed, stderr) = fix("mutating_command_builder_not_applied", NOT_APPLIED);
 

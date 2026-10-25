@@ -1,0 +1,22 @@
+[package]
+name = "fixture-plain-cli"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+avoidable_string_escapes = { package = "fixture-plain-avoidable-string-escapes", path = "../avoidable-string-escapes" }
+bare_email = { package = "fixture-plain-bare-email", path = "../bare-email" }
+bare_url = { package = "fixture-plain-bare-url", path = "../bare-url" }
+clap_help_markdown = { package = "fixture-plain-clap-help-markdown", path = "../clap-help-markdown" }
+core_instead_of_std = { package = "fixture-plain-core-instead-of-std", path = "../core-instead-of-std" }
+import_granularity_mismatch = { package = "fixture-plain-import-granularity-mismatch", path = "../import-granularity-mismatch" }
+import_grouping_mismatch = { package = "fixture-plain-import-grouping-mismatch", path = "../import-grouping-mismatch" }
+macro_trailing_comma = { package = "fixture-plain-macro-trailing-comma", path = "../macro-trailing-comma" }
+map_or = { package = "fixture-plain-map-or", path = "../map-or" }
+named_prelude_imports = { package = "fixture-plain-named-prelude-imports", path = "../named-prelude-imports" }
+numeric_escape_for_visible_character = { package = "fixture-plain-numeric-escape-for-visible-character", path = "../numeric-escape-for-visible-character" }
+overly_long_print_macro = { package = "fixture-plain-overly-long-print-macro", path = "../overly-long-print-macro" }
+some_bool_comparison = { package = "fixture-plain-some-bool-comparison", path = "../some-bool-comparison" }
+splittable_adapter_closure = { package = "fixture-plain-splittable-adapter-closure", path = "../splittable-adapter-closure" }
+uncombined_self_import = { package = "fixture-plain-uncombined-self-import", path = "../uncombined-self-import" }
+unordered_derives = { package = "fixture-plain-unordered-derives", path = "../unordered-derives" }

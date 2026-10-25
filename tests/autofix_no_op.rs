@@ -30,12 +30,12 @@
 //! perfectionist plugin are reused instead of paid for from cold. Only
 //! `derive_more` is new to that cache, and only on the first run.
 //!
-//! Ignored by default: it fetches `derive_more`, runs the fixer and
-//! three expansions, which does not belong in the gating suite.
-//!
-//! ```text
-//! cargo test --test autofix_no_op -- --ignored --nocapture
-//! ```
+//! The three expansions are what this costs, and the one-time cost of
+//! compiling `derive_more` is paid by the warmup rather than here.
+//! `tests/autofix.rs` drives the same rule over a whole codebase, but
+//! what it can show is that the fixed code compiles and behaves; that
+//! the *generated* code is byte-identical is a property only an
+//! expansion can answer, which is why this test stayed its own.
 
 pub mod _utils;
 
@@ -272,7 +272,6 @@ const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
 const WARN_ONLY: &[&str] = &["warn_only_stray_index"];
 
 #[test]
-#[ignore = "builds the lint, fetches `derive_more`, runs three expansions; see the module docs"]
 fn autofix_never_changes_the_generated_code() {
     let fixture = fixture_crate();
     let dir = fixture.path();

@@ -1,0 +1,4 @@
+[package]
+name = "fixture-plain-declined-bare-email"
+version = "0.0.0"
+edition = "2024"

@@ -1,0 +1,7 @@
+# The default configuration, plus the repository
+# `bare_issue_reference` needs before it offers a link at all. Every
+# rule here reports its crate and hands over a rewrite the fixer may
+# not apply, so the configuration says nothing about the rest.
+
+["perfectionist::bare_issue_reference"]
+repository = "https://github.com/owner/repo"

@@ -15,6 +15,12 @@
 //! here. `not_applied.rs` is compared against itself. Where a shape
 //! would compile if rewritten, that comparison is what fails; where it
 //! would not, the check for errors after applying fixes fails instead.
+//!
+//! What is here that `tests/autofix.rs` does not cover is the breadth:
+//! one shape per reason the rule declines, each named in the fixture so
+//! an assertion can tell them apart. What is there and not here is the
+//! round composition, the behaviour of the fixed code, and the settling
+//! of a whole codebase.
 
 pub mod _utils;
 
@@ -96,7 +102,6 @@ fn fix(
 }
 
 #[test]
-#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_replaces_the_fold_with_the_plural() {
     let (_temp, fixed, stderr) = fix("folded_command_setter_applied", APPLIED, "", &[]);
 
@@ -115,7 +120,6 @@ fn the_fixer_replaces_the_fold_with_the_plural() {
 }
 
 #[test]
-#[ignore = "builds the lint and resolves `command-extra` from the registry in a fresh fixture crate"]
 fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
     let (_temp, fixed, stderr) = fix(
         "folded_command_setter_not_applied",

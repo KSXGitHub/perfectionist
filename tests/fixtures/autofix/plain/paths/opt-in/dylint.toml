@@ -1,0 +1,17 @@
+# The `default` path's configuration, plus the rules that ship
+# inactive and the settings the ones among them that have no default
+# need.
+
+[perfectionist]
+enable = ["core_instead_of_std", "import_grouping_mismatch", "uncombined_self_import", "unordered_derives"]
+
+# Under the default `either`, both wrapped forms are offered and
+# neither is applied.
+["perfectionist::bare_email"]
+style = "angle_brackets"
+
+# `import_grouping_mismatch` has no default layout to fall back on, so
+# enabling it without saying which one is a fatal configuration error.
+["perfectionist::import_grouping_mismatch"]
+style = "multi_block"
+reexports = "grouped"

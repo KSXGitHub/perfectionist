@@ -1,3 +1,6 @@
 [toolchain]
 channel = "nightly-2026-07-09"
-components = ["llvm-tools-preview", "rustc-dev", "rust-src"]
+# `clippy` and `rustfmt` come with rustup's default profile, and are
+# named here because a minimal profile leaves them out and the
+# autofix rounds under `tests/fixtures/autofix/` shell out to both.
+components = ["clippy", "llvm-tools-preview", "rustc-dev", "rust-src", "rustfmt"]
