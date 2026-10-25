@@ -3,9 +3,8 @@
 //!
 //! A round is a perfectionist autofix, a Clippy autofix, and a
 //! rustfmt pass, in that order. Each is one invocation over the whole
-//! fixture workspace rather than one per member: `cargo fix` re-runs
-//! every member whatever the cache holds, so the per-invocation floor
-//! is paid once instead of once per crate.
+//! fixture workspace rather than one per member, so the
+//! per-invocation floor is paid once instead of once per crate.
 //!
 //! Every invocation shares one `CARGO_TARGET_DIR` with the rest of
 //! its fixture, so a round reuses the compiled standard library, the
@@ -16,10 +15,13 @@
 //! and is already dirty, which a fixture materialised in a temp dir
 //! always is, and which `cargo fix` otherwise refuses.
 
+use crate::autofix::Snapshot;
 use crate::dylint::cargo_command;
 use command_extra::CommandExtra;
+use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::time::SystemTime;
 
 /// What one invocation left behind. `stdout` carries the JSON a check
 /// is asked for and the output a fixture's `main` printed; `stderr`
@@ -43,6 +45,30 @@ const WHOLE_WORKSPACE: &[&str] = &["--workspace", "--all-targets"];
 
 /// Ask for machine-readable diagnostics, which arrive on stdout.
 const JSON: &str = "--message-format=json";
+
+/// Stamp every file of the project as newly written, which is what
+/// opens a round.
+///
+/// `cargo fix` only rewrites a crate it recompiles. Where the cache
+/// already holds an up-to-date fingerprint for a member, cargo
+/// replays the diagnostics recorded against it instead of running
+/// rustc, so the fix pass never reaches that crate: the suggestion is
+/// reported and nothing is applied. A check pass over the project
+/// leaves exactly that fingerprint behind, so a round that followed
+/// one would rewrite nothing. Cargo judges a path package by the
+/// mtimes of its files, so restamping them is what hands the round a
+/// project to rewrite.
+pub fn restamp(project_dir: &Path, project: &Snapshot) {
+    let now = SystemTime::now();
+    for path in project.keys() {
+        let file = project_dir.join(path);
+        fs::File::options()
+            .write(true)
+            .open(&file)
+            .and_then(|handle| handle.set_modified(now))
+            .unwrap_or_else(|error| panic!("restamp {}: {error}", file.display()));
+    }
+}
 
 /// Apply perfectionist's own autofixes over the whole project.
 pub fn dylint_fix(project_dir: &Path, target_dir: &Path) -> Outcome {

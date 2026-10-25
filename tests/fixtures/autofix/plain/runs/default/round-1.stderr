@@ -1,8 +1,163 @@
-warning: single-line macro invocation should not end with a trailing comma
+warning: `map_or_else` names its default before the mapper it stands in for
+  --> crates/map-or/src/lib.rs:LL:CC
+   |
+LL |     name.map_or_else(|| String::new(), str::to_uppercase)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::map_or_else)]` on by default
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     name.map_or_else(|| String::new(), str::to_uppercase)
+LL +     name.map_or_default(str::to_uppercase)
+   |
+   = applicability: MachineApplicable (the default is the mapped type's own, so one call says it)
+warning: `map_or` names its default before the mapper it stands in for
+  --> crates/map-or/src/lib.rs:LL:CC
+   |
+LL |     name.map_or(usize::default(), str::len)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::map_or)]` on by default
+help: the default is the mapped type's own, so one call says it
+   |
+LL -     name.map_or(usize::default(), str::len)
+LL +     name.map_or_default(str::len)
+   |
+   = applicability: MachineApplicable (the default is the mapped type's own, so one call says it)
+warning: a code span in a clap-derived doc comment leaks into `--help` output
+  --> crates/clap-help-markdown/src/lib.rs:LL:CC
+   |
+LL |     /// Path to the `manifest` file.
+   |                     ^^^^^^^^^^ help: remove the code span: `manifest`
+   |
+   = note: `#[warn(perfectionist::clap_help_markdown)]` on by default
+   = applicability: MachineApplicable (remove the code span)
+warning: bare URL `https://example.com`; wrap in `<...>` or use a labelled markdown link
+  --> crates/bare-url/src/lib.rs:LL:CC
+   |
+LL | /// The project home page is https://example.com and this sentence
+   |                              ^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>` for portable autolink syntax: `<https://example.com>`
+   |
+   = note: `#[warn(perfectionist::bare_url)]` on by default
+   = applicability: MachineApplicable (wrap in `<...>` for portable autolink syntax)
+warning: bare email address `security@example.com`
+  --> crates/bare-email/src/lib.rs:LL:CC
+   |
+LL | /// Problems go to security@example.com and are answered there.
+   |                    ^^^^^^^^^^^^^^^^^^^^ help: wrap in `<...>`: `<security@example.com>`
+   |
+   = note: `#[warn(perfectionist::bare_email)]` on by default
+   = applicability: MachineApplicable (wrap in `<...>`)
+warning: comparing against `Some(false)` leaves the `None` case unnamed
+  --> crates/some-bool-comparison/src/lib.rs:LL:CC
+   |
+LL |     flag == Some(false)
+   |     ^^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `!flag.unwrap_or(true)`
+   = applicability: MachineApplicable (name it with `unwrap_or`)
+warning: comparing against `Some(true)` leaves the `None` case unnamed
+  --> crates/some-bool-comparison/src/lib.rs:LL:CC
+   |
+LL |     flag == Some(true)
+   |     ^^^^^^^^^^^^^^^^^^ help: name it with `unwrap_or`: `flag.unwrap_or(false)`
+   |
+   = note: `#[warn(perfectionist::some_bool_comparison)]` on by default
+   = applicability: MachineApplicable (name it with `unwrap_or`)
+warning: imports are not grouped into one `use` per module
+  --> crates/import-granularity-mismatch/src/lib.rs:LL:CC
+   |
+LL | / use std::collections::BTreeMap;
+LL | | use std::collections::HashMap;
+   | |______________________________^ help: reorganize the imports: `use std::collections::{BTreeMap, HashMap};`
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+   = applicability: MachineApplicable (reorganize the imports)
+warning: imports are not grouped into one `use` per module
+  --> crates/uncombined-self-import/src/lib.rs:LL:CC
+   |
+LL | /     use crate::defs::inner::{self};
+LL | |     use crate::defs::inner::Label;
+   | |__________________________________^ help: reorganize the imports: `use crate::defs::inner::{self, Label};`
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+   = applicability: MachineApplicable (reorganize the imports)
+warning: multi-line macro invocation should end with a trailing comma
   --> crates/macro-trailing-comma/src/lib.rs:LL:CC
    |
-LL |     format!("{} labels", labels().len(),)
-   |                                        ^ help: remove the trailing comma
+LL |         "the third label, long enough that the list cannot fit on one line"
+   |                                                                            ^ help: add a trailing comma: `,`
    |
    = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
-   = applicability: MachineApplicable (remove the trailing comma)
+   = applicability: MachineApplicable (add a trailing comma)
+warning: named item cherry-picked from a prelude module
+  --> crates/named-prelude-imports/src/lib.rs:LL:CC
+   |
+LL | use crate::prelude::Widget;
+   |     ^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::Widget`
+   |
+   = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
+   = applicability: MachineApplicable (import the item from its canonical module)
+warning: print macro with an embedded newline exceeds the configured line width
+  --> crates/overly-long-print-macro/src/lib.rs:LL:CC
+   |
+LL |     println!("error: the operation failed because of {source} deep inside the subsystem\nhint: run {command} to repair it");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::overly_long_print_macro)]` on by default
+help: fold the template across lines with a backslash-newline continuation
+   |
+ 7 ~     println!(
+LL +         "error: the operation failed because of {source} deep inside the subsystem\n\
+LL +         hint: run {command} to repair it",
+10 ~     );
+   |
+   = applicability: MachineApplicable (fold the template across lines with a backslash-newline continuation)
+warning: redundant closure
+  --> crates/map-or/src/lib.rs:LL:CC
+   |
+LL |     name.map_or_else(|| String::new(), str::to_uppercase)
+   |                      ^^^^^^^^^^^^^^^^ help: replace the closure with the associated function itself: `String::new`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#redundant_closure
+   = note: `#[warn(clippy::redundant_closure)]` on by default
+   = applicability: MachineApplicable (replace the closure with the associated function itself)
+warning: string literal uses escapes that a raw string would avoid
+  --> crates/avoidable-string-escapes/src/lib.rs:LL:CC
+   |
+LL | pub const MANIFEST: &str = "{\"name\":\"fixture\"}";
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r#"{"name":"fixture"}"#`
+   |
+   = note: `#[warn(perfectionist::avoidable_string_escapes)]` on by default
+   = applicability: MachineApplicable (use a raw string)
+warning: string literal uses escapes that a raw string would avoid
+  --> crates/avoidable-string-escapes/src/lib.rs:LL:CC
+   |
+LL | pub const SEPARATOR: &str = "C:\\Users\\fixture";
+   |                             ^^^^^^^^^^^^^^^^^^^^ help: use a raw string: `r"C:\Users\fixture"`
+   = applicability: MachineApplicable (use a raw string)
+warning: this closure chains 2 steps onto the item, so `map` does all of them
+  --> crates/splittable-adapter-closure/src/lib.rs:LL:CC
+   |
+LL |         .map(|wrapper| wrapper.doubled().value())
+   |          ^^^
+   |
+   = note: `#[warn(perfectionist::splittable_adapter_closure)]` on by default
+help: lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's
+   |
+LL -         .map(|wrapper| wrapper.doubled().value())
+LL +         .map(Wrapper::doubled).map(Wrapper::value)
+   |
+   = applicability: MachineApplicable (lift all but the last step into a leading `map` of its own, leaving the closure the step that is the adapter's)
+warning: visible character `A` (U+0041) written as the escape `\x41`
+  --> crates/numeric-escape-for-visible-character/src/lib.rs:LL:CC
+   |
+LL | pub const LETTERS: &str = "\x41BC";
+   |                            ^^^^ help: spell the character as itself: `A`
+   |
+   = note: `#[warn(perfectionist::numeric_escape_for_visible_character)]` on by default
+   = applicability: MachineApplicable (spell the character as itself)
+warning: visible character `→` (U+2192) written as the escape `\u{2192}`
+  --> crates/numeric-escape-for-visible-character/src/lib.rs:LL:CC
+   |
+LL | pub const ARROW: char = '\u{2192}';
+   |                          ^^^^^^^^ help: spell the character as itself: `→`
+   = applicability: MachineApplicable (spell the character as itself)

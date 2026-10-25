@@ -13,12 +13,16 @@
 //!
 //! * the exact shape the round left, stored as one diff against the
 //!   round before it,
-//! * the exact diagnostics still reported after it, normalised as a
-//!   `.stderr` under `ui/` is, so a finding that is meant to
-//!   disappear on round *n* cannot survive it and a project cannot
-//!   stop holding one of the shapes it was written around,
-//! * that the last round leaves nothing reported at all, which is
-//!   what settling means.
+//! * the exact diagnostics it was handed, normalised as a `.stderr`
+//!   under `ui/` is, which is what its stored diff is the answer to:
+//!   round *n*'s two files are what round *n* saw and what it did
+//!   about it.
+//!
+//! Once the last round has run, the project has to report nothing at
+//! all, which is what settling means. That one is an assertion rather
+//! than a stored file, since a blessing run re-records every stored
+//! expectation and would absorb a regression that left findings
+//! behind.
 //!
 //! Bracketing the rounds, a run also asserts the project behaves as
 //! it did before any of them: its own tests pass before the first
@@ -72,10 +76,8 @@ const FIXTURES: &str = "tests/fixtures/autofix";
 /// fresh against artefacts built from a *later* round of an earlier
 /// run over the same project, and that run's rewrites would stand in
 /// for this one's round zero. Materialising at the current time is
-/// what keeps each run's first round honest, and the
-/// members are small enough that recompiling them is noise beside a
-/// fix pass, which `cargo fix` re-runs over every member whatever the
-/// cache holds.
+/// what keeps each run's first round honest, and the members are
+/// small enough that recompiling them is noise beside the fix passes.
 const CACHE: &str = "target/autofix-fixtures";
 
 /// Drive every run of the fixture `name`, and panic with every
@@ -129,14 +131,17 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
     expect_success(round::test(dir, context.target_dir), &mut report);
 
     let mut previous = stored.clone();
+    let mut reported = collect(dir, context, &mut report);
     for number in 1..=run.rounds {
-        apply(dir, context.target_dir, &mut report, number);
+        check_handed(context, run, number, &reported, &mut report);
+        apply(dir, &previous, context.target_dir, &mut report, number);
         let current = snapshot::read(dir);
         report.record(current.clone());
         check_shape(context, run, number, (&previous, &current), &mut report);
-        check_lints(dir, context, run, number, &mut report);
         previous = current;
+        reported = collect(dir, context, &mut report);
     }
+    check_settled(run, &reported, &mut report);
 
     expect_success(round::test(dir, context.target_dir), &mut report);
     let settled = run_cli(dir, context, &mut report, "after the last round");
@@ -165,7 +170,17 @@ fn write_dylint_toml(project_dir: &Path, context: &Context, run: &Run) {
 /// Apply one round: perfectionist's autofixes, then Clippy's, then
 /// rustfmt. A failure in any of them is recorded and the round still
 /// closes, so the dump holds the tree the failure was about.
-fn apply(project_dir: &Path, target_dir: &Path, report: &mut Report, number: usize) {
+///
+/// `project` is the project as the round receives it, whose files the
+/// round opens by restamping.
+fn apply(
+    project_dir: &Path,
+    project: &Snapshot,
+    target_dir: &Path,
+    report: &mut Report,
+    number: usize,
+) {
+    round::restamp(project_dir, project);
     for outcome in [
         round::dylint_fix(project_dir, target_dir),
         round::clippy_fix(project_dir, target_dir),
@@ -204,42 +219,59 @@ fn check_shape(
     }
 }
 
-/// Hold the round to the diagnostics the fixture stored for it, and
-/// the last round to reporting none at all.
-fn check_lints(
-    project_dir: &Path,
-    context: &Context,
-    run: &Run,
-    number: usize,
-    report: &mut Report,
-) {
+/// Every diagnostic the project reports as it now stands, from both
+/// linters.
+fn collect(project_dir: &Path, context: &Context, report: &mut Report) -> Reported {
     let mut reported = Reported::default();
     for check in [round::dylint_check, round::clippy_check] {
         let outcome = check(project_dir, context.target_dir);
         reported.extend(&outcome.stdout, project_dir);
         expect_success(outcome, report);
     }
-    let last = number == run.rounds;
-    if last && run.settles && !reported.lints.is_empty() {
-        report.fail(format!(
-            "[round {number}] the project is not settled after its last round; \
-             still reported:\n{}",
-            reported.render(),
-        ));
-    }
-    if last && !run.settles && reported.lints.is_empty() {
-        report.fail(format!(
-            "[round {number}] the run declares that the project does not settle, \
-             but nothing is reported after its last round; either the project no \
-             longer holds a shape the rules decline, or the declaration is stale",
-        ));
-    }
+    reported
+}
+
+/// Hold the round to the diagnostics the fixture stored as what it
+/// was handed, which is what its stored diff is the answer to.
+fn check_handed(
+    context: &Context,
+    run: &Run,
+    number: usize,
+    reported: &Reported,
+    report: &mut Report,
+) {
     let file = run
         .directory(context.fixture_dir)
         .join(format!("round-{number}.stderr"));
-    let what = format!("[round {number}] the diagnostics still reported");
+    let what = format!("[round {number}] the diagnostics the round was handed");
     if let Err(failure) = expectation::check(&file, &reported.render(), &what) {
         report.fail(failure);
+    }
+}
+
+/// Hold the project to having settled once the last round has run,
+/// or, where the run declares it cannot settle, to still reporting
+/// the shapes it was written around.
+///
+/// Nothing is stored for this, deliberately. Every other expectation
+/// here is re-recorded by a blessing run, so a regression that left
+/// findings behind after the last round would be written into the
+/// file and pass. This is the one claim a blessing run cannot
+/// launder.
+fn check_settled(run: &Run, reported: &Reported, report: &mut Report) {
+    if run.settles && !reported.lints.is_empty() {
+        report.fail(format!(
+            "the project is not settled after its last round; still reported:\n{}",
+            reported.render(),
+        ));
+    }
+    if !run.settles && reported.lints.is_empty() {
+        report.fail(
+            "the run declares that the project does not settle, but nothing is \
+             reported after its last round; either the project no longer holds a \
+             shape the rules decline, or the declaration is stale"
+                .to_owned(),
+        );
     }
 }
 

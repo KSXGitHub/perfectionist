@@ -1,0 +1,31 @@
+warning: `#[display(...)]` only forwards to the single field, which the `Display` derive already does
+  --> crates/redundant-derive-more-forward-template/src/lib.rs:LL:CC
+   |
+LL |   #[display("{_0}")]
+   |  _-^^^^^^^^^^^^^^^^^
+LL | | pub struct Name(pub String);
+   | |_- help: remove the attribute
+   |
+   = note: `#[warn(perfectionist::redundant_derive_more_forward_template)]` on by default
+   = applicability: MachineApplicable (remove the attribute)
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> crates/mutating-command-builder/src/lib.rs:LL:CC
+   |
+LL |     count_args(Command::new("ls").arg("chained"))
+   |                                   ^^^
+   |
+   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   |
+LL |     count_args(&mut Command::new("ls").with_arg("chained"))
+   |                ++++                    +++++
+   = applicability: MachineApplicable (use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position)
+   = applicability: MachineApplicable (use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position)
+warning: this fold over `without_env` re-implements `without_envs`
+  --> crates/folded-command-setter/src/lib.rs:LL:CC
+   |
+LL |     names.iter().fold(start, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.without_envs(names.iter())`
+   |
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default
+   = applicability: MachineApplicable (use `without_envs`)
