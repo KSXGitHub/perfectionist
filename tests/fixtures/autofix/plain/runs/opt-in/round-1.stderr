@@ -1,13 +1,13 @@
 warning: `map_or_else` names its default before the mapper it stands in for
   --> crates/map-or/src/lib.rs:LL:CC
    |
-LL |     name.map_or_else(|| String::new(), str::to_uppercase)
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LL |     name.map_or_else(|| String::from(""), str::to_uppercase)
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(perfectionist::map_or_else)]` on by default
 help: the default is the mapped type's own, so one call says it
    |
-LL -     name.map_or_else(|| String::new(), str::to_uppercase)
+LL -     name.map_or_else(|| String::from(""), str::to_uppercase)
 LL +     name.map_or_default(str::to_uppercase)
    |
    = applicability: MachineApplicable (the default is the mapped type's own, so one call says it)
@@ -157,15 +157,6 @@ LL +         hint: run {command} to repair it",
 10 ~     );
    |
    = applicability: MachineApplicable (fold the template across lines with a backslash-newline continuation)
-warning: redundant closure
-  --> crates/map-or/src/lib.rs:LL:CC
-   |
-LL |     name.map_or_else(|| String::new(), str::to_uppercase)
-   |                      ^^^^^^^^^^^^^^^^ help: replace the closure with the associated function itself: `String::new`
-   |
-   = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#redundant_closure
-   = note: `#[warn(clippy::redundant_closure)]` on by default
-   = applicability: MachineApplicable (replace the closure with the associated function itself)
 warning: string literal uses escapes that a raw string would avoid
   --> crates/avoidable-string-escapes/src/lib.rs:LL:CC
    |

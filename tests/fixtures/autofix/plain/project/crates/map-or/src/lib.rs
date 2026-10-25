@@ -9,7 +9,7 @@ pub fn width(name: Option<&str>) -> usize {
 
 /// `name` in upper case, or the empty string where there is none.
 pub fn shout(name: Option<&str>) -> String {
-    name.map_or_else(|| String::new(), str::to_uppercase)
+    name.map_or_else(|| String::from(""), str::to_uppercase)
 }
 
 /// What this crate contributes to the fixture's output.
