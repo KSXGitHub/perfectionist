@@ -624,14 +624,6 @@ that resolves in scope draws a rewrite held at `MaybeIncorrect`, which
 a settling project can never clear. Store the tree formatted, unless
 the rule needs otherwise, because the round ends with rustfmt.
 
-Clippy rides along in every round to show that its rewrites and this
-plugin's do not fight, so a crate plants nothing for Clippy to find: a
-Clippy finding belongs in a stored `.stderr` only where a
-perfectionist rewrite produced it. The shape to watch is a closure
-body that is a bare call, `|| String::new()` drawing
-`clippy::redundant_closure` where `|| String::from("")` says the same
-thing silently.
-
 ## Generated documentation site (`tools/gen-docs/`)
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>

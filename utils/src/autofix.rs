@@ -33,6 +33,12 @@
 //! time would cost more than running them over the tree the rounds
 //! started from is worth.
 //!
+//! Clippy's own lints are not under test. Clippy is in a round to
+//! show that its rewrites and this plugin's do not fight, so a
+//! finding of Clippy's earns a place in a stored `.stderr` only where
+//! a perfectionist rewrite produced it, and the project as stored
+//! reports none at all.
+//!
 //! A run over a project of shapes the rules deliberately decline is
 //! declared as not settling, and then asserts the complement: that
 //! the rounds rewrote nothing, which its stored diffs say by being
@@ -64,6 +70,10 @@ use tempfile::TempDir;
 
 /// Where the fixtures live, relative to this checkout.
 const FIXTURES: &str = "tests/fixtures/autofix";
+
+/// The namespace of the lints a fixture may not plant, which
+/// [`check_unplanted`] holds the stored project to reporting none of.
+const CLIPPY: &str = "clippy::";
 
 /// What a fixture stores its `main`'s output under, relative to the
 /// fixture. One file per fixture rather than per run: every run
@@ -138,6 +148,7 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
 
     let mut previous = stored.clone();
     let mut reported = collect(dir, context, &mut report);
+    check_unplanted(&reported, &mut report);
     for number in 1..=run.rounds {
         check_handed(context, run, number, &reported, &mut report);
         apply(dir, &previous, context.target_dir, &mut report, number);
@@ -250,6 +261,37 @@ fn check_handed(
     if let Err(failure) = expectation::check(&file, &reported.render(), &what) {
         report.fail(failure);
     }
+}
+
+/// Hold the project as stored to reporting nothing of Clippy's.
+///
+/// Clippy is in a round to show that its rewrites and this plugin's
+/// do not fight rather than because its lints are under test, so a
+/// finding of Clippy's is worth storing only where a perfectionist
+/// rewrite produced it. No rewrite has reached the project the first
+/// round is handed, so a finding of Clippy's there was planted, and a
+/// shape it reports is one Clippy would rewrite before the rule under
+/// test had a say.
+///
+/// Nothing is stored for this, deliberately, for the reason
+/// [`check_settled`] states: a blessing run re-records every stored
+/// expectation, so a planted finding would be written into the file
+/// and read as expected.
+fn check_unplanted(reported: &Reported, report: &mut Report) {
+    let planted: Vec<&str> = reported
+        .lints
+        .iter()
+        .map(String::as_str)
+        .filter(|lint| lint.starts_with(CLIPPY))
+        .collect();
+    if planted.is_empty() {
+        return;
+    }
+    report.fail(format!(
+        "the project as stored reports {}, which Clippy's lints are not here to \
+         pin; write the shape so that only the rule under test reports it",
+        planted.join(", "),
+    ));
 }
 
 /// Hold the project to having settled once the last round has run,
