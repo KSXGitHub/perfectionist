@@ -595,34 +595,27 @@ does not renumber every header below it. Spell it that way when
 writing one, since pasting the driver's real numbers in will not match. [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
 
-## Codebase fixtures for the autofixes
+## Fixtures for the autofixes
 
-[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture's
-project through the autofixes and holds each round to a stored diff
-and a stored `.stderr`; its module docs carry the model, and
-[`tests/autofix.rs`](tests/autofix.rs) names one fixture per test.
+[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture
+through the rounds, and its module docs carry the model.
 
-A new `MachineApplicable` rewrite earns a crate in the fixture whose
+A `MachineApplicable` rewrite earns a crate in the fixture whose
 dependency list it needs, named after the rule, holding the shape, a
 `#[cfg(test)] mod tests` asserting what the shape *does*, and a line
-in what the fixture's `main` prints, which the fixture stores and the
-rounds have to leave alone. A shape
-the rule has such a rewrite for and withholds goes to the `-declined`
-sibling, where the stored `.stderr` records the applicability it was
-held at, or that no suggestion was attached at all, and the stored
-diff is empty; a rule with no such rewrite at all belongs in neither,
-since what it would pin is `cargo fix`'s uniform handling rather than
-any choice of this plugin's. Re-record with
-`PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
-expectations: that diff is the review, since a shape the rule never
-reached leaves it short rather than failing.
+in what the fixture's `main` prints. A rewrite the rule withholds goes
+to the `-declined` sibling. A rule with no such rewrite anywhere
+belongs in neither, what it would pin being `cargo fix`'s uniform
+handling rather than any decision of this plugin's.
 
-A fixture is linted like any other crate, so all of it has to settle.
-Keep the code dull, or a second rule lands in the diff instead of the
-rewrite; keep the prose dull too, since a code span naming an item
-that resolves in scope draws a rewrite held at `MaybeIncorrect`, which
-a settling project can never clear. Store the tree formatted, unless
-the rule needs otherwise, because the round ends with rustfmt.
+Re-record with `PERFECTIONIST_BLESS_AUTOFIX=1` and read the diff of
+the expectations: that diff is the review, since a shape the rule
+never reached leaves it short rather than failing.
+
+A fixture is linted like any other crate, doc comments included, so
+all of it has to settle: keep it dull, or a second rule lands in the
+diff instead of the rewrite. Store the tree formatted unless the rule
+needs otherwise, since the round ends with rustfmt.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
