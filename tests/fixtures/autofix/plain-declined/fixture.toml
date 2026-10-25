@@ -1,9 +1,4 @@
-# The codebase each settling path in this file drives is `codebase/`,
-# and a path's configuration is the `dylint.toml` under `paths/`.
-#
-# No `cli_package`: the rounds are expected to rewrite nothing, and a
-# tree they do not touch cannot behave differently afterwards. Each
-# crate's own tests still run, either side of the rounds.
+cache = "plain"
 
 [[paths]]
 name = "default"

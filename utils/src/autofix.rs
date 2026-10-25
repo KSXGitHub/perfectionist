@@ -85,7 +85,7 @@ pub fn check_codebase(repository_dir: &Path, codebase: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let codebase_dir = fixtures_dir.join(codebase);
     let fixture = Fixture::load(&fixtures_dir, codebase);
-    let target_dir = cache_dir(repository_dir, codebase);
+    let target_dir = cache_dir(repository_dir, fixture.cache(codebase));
     let stored = snapshot::read(&codebase_dir.join("codebase"));
     let context = Context {
         codebase,
@@ -302,8 +302,9 @@ fn expect_success_when(outcome: round::Outcome, report: &mut Report, when: &str)
     ));
 }
 
-/// The build cache every settling path of `codebase` shares, as
-/// [`check_codebase`] computes it.
+/// The build cache the codebase fixture `codebase` owns. Another
+/// fixture declaring the same dependencies shares it, which
+/// [`Fixture::cache`] resolves.
 pub fn cache_dir(repository_dir: &Path, codebase: &str) -> PathBuf {
     repository_dir.join(CACHE).join(codebase)
 }
@@ -341,7 +342,7 @@ pub fn warm(repository_dir: &Path, codebase: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let codebase_dir = fixtures_dir.join(codebase);
     let fixture = Fixture::load(&fixtures_dir, codebase);
-    let target_dir = cache_dir(repository_dir, codebase);
+    let target_dir = cache_dir(repository_dir, fixture.cache(codebase));
     let context = Context {
         codebase,
         codebase_dir: &codebase_dir,

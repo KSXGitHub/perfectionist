@@ -7,13 +7,11 @@
 //! the built perfectionist plugin instead of paying the cost from
 //! cold.
 //!
-//! The canonical fixture declares the registry crates the fixture
-//! projects depend on, so the one-time cost of compiling them is paid
-//! here rather than inside whichever test reaches one first.
-//!
 //! Each codebase fixture under `tests/fixtures/autofix/` then gets
 //! the same treatment in a target dir of its own, since what its
-//! cache has to hold is decided by its dependency list.
+//! cache has to hold is decided by its dependency list. A test with a
+//! dependency list of its own borrows the cache of the codebase
+//! fixture that shares it rather than growing this one.
 //!
 //! The run resolves `cargo dylint` from `PATH`, so it starts by
 //! checking that binary against the version this workspace pins.
@@ -66,21 +64,11 @@ fn main() -> ExitCode {
     }
     std::fs::create_dir_all(&warmup_project_dir).expect("create new warmup project dir");
 
-    // The sources overwrite the generated manifest, which carries no
-    // dependencies. `derive_more` is taken with the feature set the
-    // widest fixture asks for, since a narrower one would be a
-    // different unit and leave that fixture paying for its own.
-    let manifest = format!(
-        "{}\n[dependencies]\n\
-         command-extra = \"1.2.0\"\n\
-         derive_more = {{ version = \"2\", features = [\"full\"] }}\n",
-        _utils::fixture_cargo_toml("fixture_warmup"),
-    );
     _utils::build_project(
         &warmup_project_dir,
         "fixture_warmup",
         &root,
-        &[("Cargo.toml", &manifest), ("src/lib.rs", "")],
+        &[("src/lib.rs", "")],
     );
 
     let started = Instant::now();

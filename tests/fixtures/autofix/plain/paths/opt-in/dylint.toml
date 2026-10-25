@@ -1,21 +1,13 @@
-# The `default` path's configuration, plus the rules that ship
-# inactive and the settings the ones among them that have no default
-# need.
-
 [perfectionist]
 enable = ["core_instead_of_std", "import_grouping_mismatch", "uncombined_self_import", "unordered_derives"]
 
-# Under the default `either` style the rule accepts any of the wrapped
-# forms and offers one `MaybeIncorrect` suggestion per form, on
-# purpose: which form to write is the author's choice, so there is no
-# autofix to apply under that style. A style that names one form
-# offers that one at `MachineApplicable`, which is what this fixture
-# crate is written against.
+# Under the default `either` style the rule accepts any wrapped form
+# and offers one `MaybeIncorrect` suggestion per form, so naming a
+# style is what gives it an autofix to test.
 ["perfectionist::bare_email"]
 style = "angle_brackets"
 
-# `import_grouping_mismatch` has no default layout to fall back on, so
-# enabling it without saying which one is a fatal configuration error.
+# Enabling this rule without naming a layout is a fatal config error.
 ["perfectionist::import_grouping_mismatch"]
 style = "multi_block"
 reexports = "grouped"

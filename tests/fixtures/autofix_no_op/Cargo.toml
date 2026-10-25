@@ -1,6 +1,11 @@
 # Manifest for the fixture crate `tests/autofix_no_op.rs` materialises.
 # Kept as a real `.toml` file rather than a Rust string so it reads as
 # the manifest it is; the test copies it into a `TempDir` verbatim.
+#
+# The dependency spec has to stay identical to the one
+# `tests/fixtures/autofix/third-party/` declares, whose build cache
+# this test borrows: cargo keys a unit by its features, so a spec that
+# drifts from it buys the suite a second `derive_more` to compile.
 
 [package]
 name = "autofix_no_op"
@@ -11,7 +16,7 @@ edition = "2021"
 path = "src/lib.rs"
 
 [dependencies]
-derive_more = { version = "2", features = ["full"] }
+derive_more = { version = "2.1.1", default-features = false, features = ["debug", "display"] }
 
 # Declare an empty workspace so cargo does not try to enroll the
 # fixture into whatever workspace its `TempDir` happens to sit in.

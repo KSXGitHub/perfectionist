@@ -2,13 +2,20 @@
 //! and the lines it is right to ignore.
 
 use super::{render, reported};
+use serde_json::json;
 use text_block_macros::text_block_fnl;
 
 /// One `--message-format=json` line carrying a lint named `code`.
 fn message(code: &str) -> String {
-    format!(
-        r#"{{"reason":"compiler-message","message":{{"code":{{"code":"{code}","explanation":null}},"level":"warning","message":"something"}}}}"#,
-    )
+    json!({
+        "reason": "compiler-message",
+        "message": {
+            "code": { "code": code, "explanation": null },
+            "level": "warning",
+            "message": "something",
+        },
+    })
+    .to_string()
 }
 
 /// The names come back deduplicated and in ascending order, so the
@@ -47,8 +54,16 @@ fn only_compiler_messages_are_collected() {
 /// findings the round happened to leave.
 #[test]
 fn a_diagnostic_without_a_code_is_not_a_lint() {
-    let stdout = r#"{"reason":"compiler-message","message":{"code":null,"level":"warning","message":"2 warnings emitted"}}"#;
-    assert!(reported(stdout).is_empty());
+    let stdout = json!({
+        "reason": "compiler-message",
+        "message": {
+            "code": null,
+            "level": "warning",
+            "message": "2 warnings emitted",
+        },
+    })
+    .to_string();
+    assert!(reported(&stdout).is_empty());
 }
 
 /// A settled codebase stores the empty string rather than a

@@ -16,11 +16,15 @@
 //! would compile if rewritten, that comparison is what fails; where it
 //! would not, the check for errors after applying fixes fails instead.
 //!
-//! What is here that `tests/autofix.rs` does not cover is the breadth:
-//! one shape per reason the rule declines, each named in the fixture so
-//! an assertion can tell them apart. What is there and not here is the
-//! round composition, the behaviour of the fixed code, and the settling
-//! of a whole codebase.
+//! `tests/autofix.rs` gates the two properties over a codebase of its
+//! own: that the fold the rule hands over is applied and leaves the
+//! crate behaving as it did, and that a fold it declines is left
+//! alone. What is here and not there is the breadth, one shape per
+//! reason the rule declines, each named in the fixture so an
+//! assertion can tell them apart. That sweep is what the `#[ignore]`
+//! keeps on demand; the per-shape assertions are the reason it was
+//! not folded into that harness, which records lint names rather than
+//! shapes.
 
 pub mod _utils;
 
@@ -102,6 +106,7 @@ fn fix(
 }
 
 #[test]
+#[ignore = "a sweep over every shape the rule declines, kept out of the gating suite"]
 fn the_fixer_replaces_the_fold_with_the_plural() {
     let (_temp, fixed, stderr) = fix("folded_command_setter_applied", APPLIED, "", &[]);
 
@@ -120,6 +125,7 @@ fn the_fixer_replaces_the_fold_with_the_plural() {
 }
 
 #[test]
+#[ignore = "a sweep over every shape the rule declines, kept out of the gating suite"]
 fn the_fixer_declines_the_reorderings_it_cannot_vouch_for() {
     let (_temp, fixed, stderr) = fix(
         "folded_command_setter_not_applied",

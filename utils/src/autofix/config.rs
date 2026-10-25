@@ -27,6 +27,18 @@ pub struct Fixture {
     /// The settling paths over this codebase, driven in the order
     /// they are declared.
     pub paths: Vec<SettlingPath>,
+
+    /// The codebase whose build cache this one shares. Defaults to
+    /// this codebase itself.
+    ///
+    /// What a cache has to hold is decided by the dependency list and
+    /// by nothing else, so two codebases declaring the same list want
+    /// one cache rather than two, and the second to be warmed gets
+    /// the standard library, the registry dependencies and the plugin
+    /// from the first. Their members cannot be taken for each other,
+    /// cargo keying a unit by package name and the two codebases
+    /// naming theirs apart.
+    cache: Option<String>,
 }
 
 /// One configuration and the rounds it takes to settle the codebase
@@ -64,6 +76,12 @@ fn yes() -> bool {
 }
 
 impl Fixture {
+    /// The codebase whose build cache the fixture named `codebase`
+    /// uses, which is `codebase` itself unless it says otherwise.
+    pub fn cache<'a>(&'a self, codebase: &'a str) -> &'a str {
+        self.cache.as_deref().unwrap_or(codebase)
+    }
+
     /// Read the `fixture.toml` at the root of the codebase fixture
     /// `name` holds, under `fixtures_dir`.
     pub fn load(fixtures_dir: &Path, name: &str) -> Self {

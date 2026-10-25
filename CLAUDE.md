@@ -597,70 +597,26 @@ performs the normalisation and explains how.
 
 ## Codebase fixtures for the autofixes
 
-A `MachineApplicable` rewrite is held to three things no `.stderr`
-can show: that the fixer applies it at all, that what it leaves
-compiles, and that the code goes on doing what it did. The harness
-for that is [`utils/src/autofix.rs`](utils/src/autofix.rs), whose
-module docs define a round, a settled codebase and a settling path,
-and say what each round is held to. [`tests/autofix.rs`](tests/autofix.rs)
-names one codebase fixture per test.
+[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a codebase
+fixture through the autofixes and holds each round to a stored diff;
+its module docs carry the model, and
+[`tests/autofix.rs`](tests/autofix.rs) names one codebase per test.
 
-A codebase fixture lives under `tests/fixtures/autofix/<codebase>/`:
-`fixture.toml` declares the settling paths, `codebase/` is the tree
-the harness materialises in a temp dir, and `paths/<path>/` holds the
-path's `dylint.toml` next to the `round-<n>.diff` and
-`round-<n>.lints` expectations. `tests/fixtures/rustfmt.toml` keeps
-rustfmt and rust-analyzer off the stored tree, so a fixture may be
-written in whatever shape the rule under test needs.
+A new `MachineApplicable` rewrite earns a crate in the codebase
+fixture whose dependency list it needs, named after the rule, holding
+the shape and a `#[cfg(test)] mod tests` asserting what the shape
+*does*. A shape the rule declines goes to the `-declined` sibling,
+whose stored diffs are empty. Re-record with
+`PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
+expectations: that diff is the review, since a shape the rule never
+reached leaves it short rather than failing.
 
-Re-record every expectation with `PERFECTIONIST_BLESS_AUTOFIX=1`,
-then read the diff of those files: that diff *is* the review of the
-autofixes, so read it rather than trusting that the run went green.
-The build caches are filled by `just warmup-integration-tests`, one
-per codebase, since what a cache has to hold is decided by the
-codebase's dependency list.
-
-What to do when adding a rule with a `MachineApplicable` rewrite:
-
-1. **Add a crate to the codebase fixture whose dependency list the
-   rule needs**, named after the rule, with `src/lib.rs` holding the
-   shape and a `#[cfg(test)] mod tests` asserting what the shape
-   *does*. A codebase that declares a `cli_package` also prints each
-   crate's contribution from that package's `main`, whose output is
-   compared either side of the rounds.
-2. **Check what the rule needs before its rewrite is an autofix at
-   all.** A rule may hold its rewrite at `MaybeIncorrect` on purpose,
-   leaving the choice to the author until the configuration says
-   which form to produce, and a rule that needs a configured value
-   offers nothing until it has one; either way the settling path's
-   `dylint.toml` says what the fixture is written against. A rewrite
-   the rule means to keep at `MaybeIncorrect` is not one to reach
-   for: nothing here applies one, and where such a shape is the
-   subject the assertion is that the fixer left it alone.
-3. **Add the declining shapes to the `-declined` codebase** beside
-   it, whose paths declare `settles = false` and whose stored diffs
-   are empty, so a `MaybeIncorrect` rewrite that starts being applied
-   fails there.
-4. **Bless, then read the diff.** A shape the rule never reached
-   leaves the diff short of it rather than failing outright, which is
-   what makes reading the diff the step that cannot be skipped.
-
-Three notes on writing the trees themselves, all of them the same
-point: a fixture is linted like any other crate, so everything in it
-has to settle, not just the shape under test.
-
-- **Keep each crate's own code dull.** Anything clever in it draws a
-  second rule or a Clippy lint into the round, and the diff then
-  records that instead of the rewrite.
-- **Keep its prose dull with it.** A code span naming an item that
-  resolves in scope is what `bare_identifier_reference` fires on, and
-  its rewrite is one the fixer may not apply, so a settling codebase
-  can never clear it. Name the thing rather than the item.
-- **Write the tree already formatted** unless the rule needs
-  otherwise. The round ends with rustfmt, so an unformatted tree
-  spends its first round being formatted, and a formatter that joins
-  lines inside a macro body hands the *next* round a trailing comma
-  to fix.
+A fixture is linted like any other crate, so all of it has to settle.
+Keep the code dull, or a second rule lands in the diff instead of the
+rewrite; keep the prose dull too, since a code span naming an item
+that resolves in scope draws a rewrite held at `MaybeIncorrect`, which
+a settling codebase can never clear. Store the tree formatted, unless
+the rule needs otherwise, because the round ends with rustfmt.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

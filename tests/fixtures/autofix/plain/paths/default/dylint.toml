@@ -1,13 +1,5 @@
-# The default configuration, save for the rules whose rewrite is only
-# an autofix once the configuration says which form it should produce.
-# Each of those is set here to the form its own fixture crate is
-# written against.
-
-# Under the default `either` style the rule accepts any of the wrapped
-# forms and offers one `MaybeIncorrect` suggestion per form, on
-# purpose: which form to write is the author's choice, so there is no
-# autofix to apply under that style. A style that names one form
-# offers that one at `MachineApplicable`, which is what this fixture
-# crate is written against.
+# Under the default `either` style the rule accepts any wrapped form
+# and offers one `MaybeIncorrect` suggestion per form, so naming a
+# style is what gives it an autofix to test.
 ["perfectionist::bare_email"]
 style = "angle_brackets"

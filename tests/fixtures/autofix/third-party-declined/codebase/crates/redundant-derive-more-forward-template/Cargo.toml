@@ -4,4 +4,4 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
-derive_more = { version = "2.1.1", default-features = false, features = ["display"] }
+derive_more = { version = "2.1.1", default-features = false, features = ["debug", "display"] }
