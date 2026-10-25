@@ -60,6 +60,20 @@ const FIXTURES: &str = "tests/fixtures/autofix";
 /// checkout. One subdirectory per codebase, because the dependency
 /// list is what decides what a cache has to hold, and every settling
 /// path over one codebase shares that list.
+///
+/// What the cache carries across runs is the compiled standard
+/// library, the registry dependencies and the plugin, which is where
+/// the cost is. It deliberately does not carry the fixture's own
+/// members: cargo decides a path package's freshness by comparing
+/// mtimes and never by reading its contents, so a fixture
+/// materialised with the stored tree's own mtimes would be taken for
+/// fresh against artefacts built from a *later* round of an earlier
+/// settling path over the same codebase, and that path's rewrites
+/// would stand in for this one's round zero. Materialising at the
+/// current time is what keeps each path's first round honest, and the
+/// members are small enough that recompiling them is noise beside a
+/// fix pass, which `cargo fix` re-runs over every member whatever the
+/// cache holds.
 const CACHE: &str = "target/autofix-fixtures";
 
 /// Drive every settling path of the codebase fixture `codebase`, and
