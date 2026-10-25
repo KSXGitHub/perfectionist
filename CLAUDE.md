@@ -595,6 +595,22 @@ does not renumber every header below it. Spell it that way when
 writing one, since pasting the driver's real numbers in will not match. [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
 
+## Applicability fixtures
+
+A `.stderr` cannot show an applicability. rustc renders a suggestion
+the same way whether or not the fixer would apply it, so promoting one
+to `MachineApplicable`, or demoting one away from it, moves nothing in
+any `.stderr` and no fixture notices. What pins the choice is a
+`.fixed` beside the fixture.
+
+Opt a fixture in with `// run-rustfix` and
+`// rustfix-only-machine-applicable` at its top and a committed
+`.fixed`; neither works without the other. The `.fixed` holds the
+fixture's own text with the machine-applicable suggestions applied, so
+one identical to the `.rs` is the assertion that the fixture offers
+none, and the fixed text has to compile. `just bless-fixed` records
+every one of them.
+
 ## Generated documentation site (`tools/gen-docs/`)
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>

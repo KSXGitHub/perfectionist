@@ -1,5 +1,7 @@
 // aux-build:command_extra.rs
 // edition:2024
+// run-rustfix
+// rustfix-only-machine-applicable
 //
 // What the automatic rewrite does with a flagged chain, and what stops
 // it. The sweep in `ui/mutating_command_builder.rs` is about what the

@@ -49,6 +49,26 @@ test:
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
+# Re-record the `.fixed` of every `// run-rustfix` UI fixture
+bless-fixed:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  mkdir -pv "{{test_tmp_dir}}"
+  # The run is expected to fail where a `.fixed` is out of date, and
+  # compiletest writes what it produced beside the fixture copy either
+  # way, which is what gets recorded.
+  TMPDIR="{{test_tmp_dir}}" cargo test --test ui {{locked}} || true
+  shopt -s nullglob
+  for staged in "{{test_tmp_dir}}"/*.stage-id.fixed; do
+    name=$(basename "$staged" .stage-id.fixed)
+    # The copy a fixture is run from carries the injected
+    # `normalize-stderr-test` directives, which the committed `.fixed`
+    # does not.
+    sed '/^\/\/ normalize-stderr-test: /d' "$staged" > "ui/$name.fixed"
+    echo "re-recorded ui/$name.fixed"
+  done
+  TMPDIR="{{test_tmp_dir}}" cargo test --test ui {{locked}}
+
 # Run perfectionist's own lints on its source
 self-lint:
   DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --workspace --all-targets {{locked}}

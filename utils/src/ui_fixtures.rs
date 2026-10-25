@@ -128,6 +128,14 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     }
 }
 
+/// Put `header` and a newline in front of what `file` holds.
+fn prepend(file: &Path, header: &str) {
+    let body =
+        fs::read_to_string(file).unwrap_or_else(|error| panic!("read {}: {error}", file.display()));
+    fs::write(file, format!("{header}\n{body}"))
+        .unwrap_or_else(|error| panic!("write {}: {error}", file.display()));
+}
+
 /// Recursively copy the contents of `source` into `destination`,
 /// preserving the directory layout so `aux-build:` and `include!`
 /// references still resolve in the copy.
@@ -156,9 +164,17 @@ fn inject_directives(dir: &Path) {
         } else if path.extension().is_some_and(|extension| extension == "rs")
             && path.with_extension("stderr").exists()
         {
-            let body = fs::read_to_string(&path).expect("read fixture .rs");
             let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
-            fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
+            prepend(&path, &header);
+            // A `// run-rustfix` fixture has rustfix apply its
+            // suggestions to this copy, header and all, and diffs the
+            // result against the `.fixed` beside it, so that file
+            // needs the same header to line up. The committed one
+            // holds the fixture's own text and nothing else.
+            let fixed = path.with_extension("fixed");
+            if fixed.exists() {
+                prepend(&fixed, &header);
+            }
         }
     }
 }
