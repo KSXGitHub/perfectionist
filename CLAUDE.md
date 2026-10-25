@@ -607,10 +607,10 @@ dependency list it needs, named after the rule, holding the shape and
 a `#[cfg(test)] mod tests` asserting what the shape *does*. A shape
 the rule has such a rewrite for and withholds goes to the `-declined`
 sibling, where the stored `.stderr` records the applicability it was
-withheld at and the stored diff is empty; a rule with no such rewrite
-at all belongs in neither, since what it would pin is `cargo fix`'s
-uniform handling rather than any choice of this plugin's. Re-record
-with
+held at, or that no suggestion was attached at all, and the stored
+diff is empty; a rule with no such rewrite at all belongs in neither,
+since what it would pin is `cargo fix`'s uniform handling rather than
+any choice of this plugin's. Re-record with
 `PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
 expectations: that diff is the review, since a shape the rule never
 reached leaves it short rather than failing.
