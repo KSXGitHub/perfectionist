@@ -628,11 +628,15 @@ What to do when adding a rule with a `MachineApplicable` rewrite:
    *does*. A codebase that declares a `cli_package` also prints each
    crate's contribution from that package's `main`, whose output is
    compared either side of the rounds.
-2. **Check what the rule needs to reach `MachineApplicable` at all.**
-   A rule that offers two rewrites side by side has none the fixer
-   may apply, and a rule that needs a configured value offers nothing
-   until it has one; either way the settling path's `dylint.toml`
-   says which form the fixture is written against.
+2. **Check what the rule needs before its rewrite is an autofix at
+   all.** A rule may hold its rewrite at `MaybeIncorrect` on purpose,
+   leaving the choice to the author until the configuration says
+   which form to produce, and a rule that needs a configured value
+   offers nothing until it has one; either way the settling path's
+   `dylint.toml` says what the fixture is written against. A rewrite
+   the rule means to keep at `MaybeIncorrect` is not one to reach
+   for: nothing here applies one, and where such a shape is the
+   subject the assertion is that the fixer left it alone.
 3. **Add the declining shapes to the `-declined` codebase** beside
    it, whose paths declare `settles = false` and whose stored diffs
    are empty, so a `MaybeIncorrect` rewrite that starts being applied

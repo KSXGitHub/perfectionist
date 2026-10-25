@@ -1,10 +1,11 @@
-//! A URL `perfectionist::bare_url` reports and hands over at
-//! `MaybeIncorrect`.
+//! A URL `perfectionist::bare_url` reports and offers no autofix
+//! for.
 //!
 //! The address runs up to a comma, which may be the URL's own
 //! character or the prose's, so where the URL ends is not something
-//! the rule can settle. It offers the rewrite for a reader to judge
-//! rather than for the fixer to apply.
+//! the rule can settle. It holds the rewrite at `MaybeIncorrect` on
+//! purpose, for a reader to judge rather than for the fixer to
+//! apply.
 
 /// The project home page is https://example.com/path, named in a
 /// sentence that carries on after it.

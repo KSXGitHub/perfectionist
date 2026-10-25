@@ -1,10 +1,10 @@
-//! An address `perfectionist::bare_email` reports and hands over two
-//! rewrites for.
+//! An address `perfectionist::bare_email` reports and offers no
+//! autofix for.
 //!
-//! Under the default `either` style the rule offers both the
-//! angle-bracket and the `mailto:` form, so the diagnostic carries
-//! two rewrites and the fixer has none it may apply: picking between
-//! them is the author's.
+//! Under the default `either` style the rule accepts any of the
+//! wrapped forms and offers one `MaybeIncorrect` suggestion per form,
+//! on purpose: which form to write is the author's choice, so neither
+//! is the fixer's to apply.
 
 /// Problems go to security@example.com and are answered there.
 pub const CONTACT: &str = "security@example.com";

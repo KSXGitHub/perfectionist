@@ -1,10 +1,13 @@
-# The default configuration, save for the rules whose autofix is
-# `MachineApplicable` only once the configuration picks between the
-# forms they would otherwise offer side by side. A diagnostic carrying
-# two rewrites has none the fixer may apply, so each such rule is set
-# here to the one form its own fixture crate is written against.
+# The default configuration, save for the rules whose rewrite is only
+# an autofix once the configuration says which form it should produce.
+# Each of those is set here to the form its own fixture crate is
+# written against.
 
-# Under the default `either`, both wrapped forms are offered and
-# neither is applied.
+# Under the default `either` style the rule accepts any of the wrapped
+# forms and offers one `MaybeIncorrect` suggestion per form, on
+# purpose: which form to write is the author's choice, so there is no
+# autofix to apply under that style. A style that names one form
+# offers that one at `MachineApplicable`, which is what this fixture
+# crate is written against.
 ["perfectionist::bare_email"]
 style = "angle_brackets"
