@@ -24,28 +24,22 @@
 //! and reasoning about them produced a wrong answer in both directions
 //! before this test existed.
 //!
-//! The fixture is materialised fresh in a `TempDir` while
-//! `CARGO_TARGET_DIR` points at the build cache of the `third-party`
-//! codebase fixture, which is the one whose dependency list holds
-//! `derive_more`. `just warmup-integration-tests` fills that cache,
-//! so the compiled std, the built perfectionist plugin and
-//! `derive_more` itself are reused rather than paid for here. Pointing
-//! at the generic integration cache instead would have the suite
-//! compile `derive_more` a second time, for this test alone.
+//! Like the other integration tests here, the fixture is materialised
+//! fresh in a `TempDir` while `CARGO_TARGET_DIR` points at the warmed
+//! `target/integration-fixtures`, so the compiled std and the built
+//! perfectionist plugin are reused instead of paid for from cold. Only
+//! `derive_more` is new to that cache, and only on the first run.
 //!
-//! What is left to pay is the three expansions, which is what the
-//! `#[ignore]` keeps on demand.
+//! Ignored by default: it fetches `derive_more`, runs the fixer and
+//! three expansions, which does not belong in the gating suite.
 //!
-//! `tests/autofix.rs` drives the same rule over a codebase of its
-//! own, but what it can show is that the fixed code compiles and goes
-//! on behaving as it did. That the *generated* code is byte-identical
-//! is a property only an expansion answers, so this test could not be
-//! folded into that harness and stayed its own.
+//! ```text
+//! cargo test --test autofix_no_op -- --ignored --nocapture
+//! ```
 
 pub mod _utils;
 
-use _utils::autofix::cache_dir;
-use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, run_dylint_fix};
+use _utils::{TempDir, cargo_manifest_dir, fixture_dylint_toml, run_dylint_fix, shared_target_dir};
 use command_extra::CommandExtra;
 use pipe_trait::Pipe;
 use std::collections::BTreeMap;
@@ -278,7 +272,7 @@ const ACCEPTED_MISSED_DIAGNOSTICS: &[&str] = &[
 const WARN_ONLY: &[&str] = &["warn_only_stray_index"];
 
 #[test]
-#[ignore = "runs three expansions; see the module docs"]
+#[ignore = "builds the lint, fetches `derive_more`, runs three expansions; see the module docs"]
 fn autofix_never_changes_the_generated_code() {
     let fixture = fixture_crate();
     let dir = fixture.path();
@@ -333,7 +327,7 @@ const FIXTURE_MANIFEST: &str = include_str!("fixtures/autofix_no_op/Cargo.toml")
 
 /// A fixture crate depending on the real `derive_more`, materialised
 /// fresh so the sources under test are never inherited from a previous
-/// run. Only the *build* is shared, through [`CACHE`].
+/// run. Only the *build* is shared, through [`shared_target_dir`].
 ///
 /// The manifest comes from [`FIXTURE_MANIFEST`]; the `dylint.toml`
 /// still goes through [`fixture_dylint_toml`], so the plugin is
@@ -383,23 +377,13 @@ fn cargo(dir: &Path) -> Command {
     env!("CARGO")
         .pipe(Command::new)
         .with_current_dir(dir)
-        .with_env("CARGO_TARGET_DIR", cache())
-}
-
-/// The codebase fixture whose dependency list this test shares, and
-/// so whose build cache it borrows. Its `derive_more` spec and the one
-/// in `tests/fixtures/autofix_no_op/Cargo.toml` have to stay
-/// identical for the borrow to hit.
-const CACHE: &str = "third-party";
-
-fn cache() -> std::path::PathBuf {
-    cache_dir(cargo_manifest_dir(), CACHE)
+        .with_env("CARGO_TARGET_DIR", shared_target_dir())
 }
 
 /// Run the rule's own autofix over the fixture, so the deletion under
 /// test is the one the rule actually emits.
 fn apply_the_real_fix(dir: &Path) {
-    let (stderr, success) = run_dylint_fix(dir, &cache());
+    let (stderr, success) = run_dylint_fix(dir, &shared_target_dir());
     assert!(success, "cargo dylint --fix failed:\n{stderr}");
 }
 

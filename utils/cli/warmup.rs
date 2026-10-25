@@ -9,9 +9,7 @@
 //!
 //! Each codebase fixture under `tests/fixtures/autofix/` then gets
 //! the same treatment in a target dir of its own, since what its
-//! cache has to hold is decided by its dependency list. A test with a
-//! dependency list of its own borrows the cache of the codebase
-//! fixture that shares it rather than growing this one.
+//! cache has to hold is decided by its dependency list.
 //!
 //! The run resolves `cargo dylint` from `PATH`, so it starts by
 //! checking that binary against the version this workspace pins.
