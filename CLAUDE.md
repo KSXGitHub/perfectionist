@@ -603,8 +603,10 @@ and a stored `.stderr`; its module docs carry the model, and
 [`tests/autofix.rs`](tests/autofix.rs) names one fixture per test.
 
 A new `MachineApplicable` rewrite earns a crate in the fixture whose
-dependency list it needs, named after the rule, holding the shape and
-a `#[cfg(test)] mod tests` asserting what the shape *does*. A shape
+dependency list it needs, named after the rule, holding the shape, a
+`#[cfg(test)] mod tests` asserting what the shape *does*, and a line
+in what the fixture's `main` prints, which the fixture stores and the
+rounds have to leave alone. A shape
 the rule has such a rewrite for and withholds goes to the `-declined`
 sibling, where the stored `.stderr` records the applicability it was
 held at, or that no suggestion was attached at all, and the stored

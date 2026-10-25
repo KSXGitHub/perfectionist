@@ -1,0 +1,17 @@
+avoidable_string_escapes: {"name":"fixture"} C:\Users\fixture
+bare_email: security@example.com
+bare_url: https://example.com
+clap_help_markdown: fixture.toml
+core_instead_of_std: 7
+import_granularity_mismatch: 1 1
+import_grouping_mismatch: 1
+macro_trailing_comma: 3 labels
+map_or: 3 ABC
+named_prelude_imports: 5 6
+numeric_escape_for_visible_character: ABC →
+error: the operation failed because of disk deep inside the subsystem
+hint: run fsck to repair it
+some_bool_comparison: true true false
+splittable_adapter_closure: [2, 4]
+uncombined_self_import: 1 2
+unordered_derives: Tag(7)

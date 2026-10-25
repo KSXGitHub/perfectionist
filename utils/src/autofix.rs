@@ -24,11 +24,14 @@
 //! expectation and would absorb a regression that left findings
 //! behind.
 //!
-//! Bracketing the rounds, a run also asserts the project behaves as
-//! it did before any of them: its own tests pass before the first
-//! round and after the last, and its `main` prints the same bytes
-//! either side. A rewrite that compiles and answers differently is
-//! the failure these catch and the rest cannot.
+//! Once the last round has run, a run also asserts the project still
+//! behaves: its own tests pass, and its `main` prints the bytes the
+//! fixture stored for it. A rewrite that compiles and answers
+//! differently is the failure these catch and the rest cannot. Both
+//! are asserted only there, that being the only tree whose behaviour
+//! is in question, and compiling the project's test targets a second
+//! time would cost more than running them over the tree the rounds
+//! started from is worth.
 //!
 //! A run over a project of shapes the rules deliberately decline is
 //! declared as not settling, and then asserts the complement: that
@@ -61,6 +64,12 @@ use tempfile::TempDir;
 
 /// Where the fixtures live, relative to this checkout.
 const FIXTURES: &str = "tests/fixtures/autofix";
+
+/// What a fixture stores its `main`'s output under, relative to the
+/// fixture. One file per fixture rather than per run: every run
+/// rewrites the same project, and arriving at the same behaviour
+/// whatever it rewrote is the claim.
+const OUTPUT: &str = "cli.stdout";
 
 /// Where the fixtures' build caches live, relative to this checkout.
 /// One subdirectory per fixture, because the dependency list is what
@@ -127,9 +136,6 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
     write_dylint_toml(dir, context, run);
     report.record(stored.clone());
 
-    let baseline = run_cli(dir, context, &mut report, "before the first round");
-    expect_success(round::test(dir, context.target_dir), &mut report);
-
     let mut previous = stored.clone();
     let mut reported = collect(dir, context, &mut report);
     for number in 1..=run.rounds {
@@ -144,10 +150,7 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
     check_settled(run, &reported, &mut report);
 
     expect_success(round::test(dir, context.target_dir), &mut report);
-    let settled = run_cli(dir, context, &mut report, "after the last round");
-    if let (Some(baseline), Some(settled)) = (baseline, settled) {
-        assert_same_output(&baseline, &settled, &mut report);
-    }
+    check_output(dir, context, &mut report);
     report.finish()
 }
 
@@ -275,44 +278,36 @@ fn check_settled(run: &Run, reported: &Reported, report: &mut Report) {
     }
 }
 
-/// Run the fixture's `main` and hand back its stdout, or `None` where
-/// the fixture declares none or it did not run at all.
-fn run_cli(
-    project_dir: &Path,
-    context: &Context,
-    report: &mut Report,
-    when: &str,
-) -> Option<String> {
-    let package = context.cli_package?;
-    let outcome = round::run_cli(project_dir, context.target_dir, package);
-    let stdout = outcome.stdout.clone();
-    let success = outcome.success;
-    expect_success_when(outcome, report, when);
-    success.then_some(stdout)
-}
-
-/// Hold the rounds to leaving the fixture's own behaviour alone.
+/// Hold the fixture's `main`, run over the settled project, to the
+/// output the fixture stored for it. A rewrite that changed what the
+/// project prints is the failure this reports.
 ///
-/// A `main` that prints nothing would pass this by comparing nothing,
-/// so the empty case is a failure of the fixture rather than a pass.
-fn assert_same_output(baseline: &str, settled: &str, report: &mut Report) {
-    if baseline.is_empty() {
+/// A `main` that prints nothing would pass against an equally empty
+/// stored file, so the empty case is a failure of the fixture rather
+/// than a pass.
+fn check_output(project_dir: &Path, context: &Context, report: &mut Report) {
+    let Some(package) = context.cli_package else {
+        return;
+    };
+    let outcome = round::run_cli(project_dir, context.target_dir, package);
+    if !outcome.success {
+        expect_success_when(outcome, report, "after the last round");
+        return;
+    }
+    if outcome.stdout.is_empty() {
         report.fail(
-            "the fixture's `main` printed nothing, so comparing its output either side \
-             of the rounds would assert nothing; have it print what each crate in the \
-             project contributes"
+            "the fixture's `main` printed nothing, so holding it to a stored file \
+             would assert nothing; have it print what each crate in the project \
+             contributes"
                 .to_owned(),
         );
         return;
     }
-    if baseline == settled {
-        return;
+    let file = context.fixture_dir.join(OUTPUT);
+    let what = "the output of the fixture's `main`";
+    if let Err(failure) = expectation::check(&file, &outcome.stdout, what) {
+        report.fail(failure);
     }
-    report.fail(format!(
-        "the fixture's `main` printed different output after the rounds than before \
-         them, so a rewrite changed what the project does\n\
-         --- before ---\n{baseline}--- after ---\n{settled}--- end ---",
-    ));
 }
 
 fn expect_success(outcome: round::Outcome, report: &mut Report) {
