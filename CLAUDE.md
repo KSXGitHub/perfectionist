@@ -607,10 +607,9 @@ holding the shape, a `#[cfg(test)] mod tests` asserting what the shape
 crate of its own only where the rule reads the project's layout rather
 than one item, the shape needs a dependency the other modules do not,
 or the shape needs a proc macro, since every linter and every fixer
-pays a fixed cost per crate. A rewrite the rule withholds goes to the
-`-declined` sibling. A rule with no such rewrite anywhere belongs in
-neither, what it would pin being `cargo fix`'s uniform handling rather
-than any decision of this plugin's.
+pays a fixed cost per crate. A rewrite the rule withholds belongs in
+no fixture here, what a round would pin being `cargo fix`'s uniform
+handling of it rather than any decision of this plugin's.
 
 Re-record with `PERFECTIONIST_BLESS_AUTOFIX=1` and read the diff of
 the expectations: that diff is the review, since a shape the rule

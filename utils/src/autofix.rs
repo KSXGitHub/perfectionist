@@ -39,12 +39,6 @@
 //! a perfectionist rewrite produced it, and the project as stored
 //! reports none at all.
 //!
-//! A run over a project of shapes the rules deliberately decline is
-//! declared as not settling, and then asserts the complement: that
-//! the rounds rewrote nothing, which its stored diffs say by being
-//! empty, and that the rules went on reporting the shapes rather than
-//! falling silent about them.
-//!
 //! The number of rounds comes from the fixture rather than from
 //! driving the project to a fixpoint, so a project that settles in
 //! fewer rounds than declared, or needs more, is a failure rather
@@ -108,14 +102,14 @@ pub fn check_fixture(repository_dir: &Path, name: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let fixture_dir = fixtures_dir.join(name);
     let fixture = Fixture::load(&fixtures_dir, name);
-    let target_dir = cache_dir(repository_dir, fixture.cache(name));
+    let target_dir = cache_dir(repository_dir, name);
     let stored = snapshot::read(&fixture_dir.join("project"));
     let context = Context {
         name,
         fixture_dir: &fixture_dir,
         repository_dir,
         target_dir: &target_dir,
-        cli_package: fixture.cli_package.as_deref(),
+        cli_package: &fixture.cli_package,
     };
 
     let failures: Vec<String> = fixture
@@ -133,7 +127,7 @@ struct Context<'a> {
     fixture_dir: &'a Path,
     repository_dir: &'a Path,
     target_dir: &'a Path,
-    cli_package: Option<&'a str>,
+    cli_package: &'a str,
 }
 
 /// Materialise the project, drive it through one run, and hand back
@@ -158,7 +152,7 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
         previous = current;
         reported = collect(dir, context, &mut report);
     }
-    check_settled(run, &reported, &mut report);
+    check_settled(&reported, &mut report);
 
     expect_success(round::test(dir, context.target_dir), &mut report);
     check_output(dir, context, &mut report);
@@ -294,30 +288,21 @@ fn check_unplanted(reported: &Reported, report: &mut Report) {
     ));
 }
 
-/// Hold the project to having settled once the last round has run,
-/// or, where the run declares it cannot settle, to still reporting
-/// the shapes it was written around.
+/// Hold the project to having settled once the last round has run.
 ///
 /// Nothing is stored for this, deliberately. Every other expectation
 /// here is re-recorded by a blessing run, so a regression that left
 /// findings behind after the last round would be written into the
 /// file and pass. This is the one claim a blessing run cannot
 /// launder.
-fn check_settled(run: &Run, reported: &Reported, report: &mut Report) {
-    if run.settles && !reported.lints.is_empty() {
-        report.fail(format!(
-            "the project is not settled after its last round; still reported:\n{}",
-            reported.render(),
-        ));
+fn check_settled(reported: &Reported, report: &mut Report) {
+    if reported.lints.is_empty() {
+        return;
     }
-    if !run.settles && reported.lints.is_empty() {
-        report.fail(
-            "the run declares that the project does not settle, but nothing is \
-             reported after its last round; either the project no longer holds a \
-             shape the rules decline, or the declaration is stale"
-                .to_owned(),
-        );
-    }
+    report.fail(format!(
+        "the project is not settled after its last round; still reported:\n{}",
+        reported.render(),
+    ));
 }
 
 /// Hold the fixture's `main`, run over the settled project, to the
@@ -328,10 +313,7 @@ fn check_settled(run: &Run, reported: &Reported, report: &mut Report) {
 /// stored file, so the empty case is a failure of the fixture rather
 /// than a pass.
 fn check_output(project_dir: &Path, context: &Context, report: &mut Report) {
-    let Some(package) = context.cli_package else {
-        return;
-    };
-    let outcome = round::run_cli(project_dir, context.target_dir, package);
+    let outcome = round::run_cli(project_dir, context.target_dir, context.cli_package);
     if !outcome.success {
         expect_success_when(outcome, report, "after the last round");
         return;
@@ -373,9 +355,7 @@ fn expect_success_when(outcome: round::Outcome, report: &mut Report, when: &str)
     ));
 }
 
-/// The build cache the fixture `name` owns. Another fixture
-/// declaring the same dependencies shares it, which
-/// [`Fixture::cache`] resolves.
+/// The build cache the fixture `name` owns.
 pub fn cache_dir(repository_dir: &Path, name: &str) -> PathBuf {
     repository_dir.join(CACHE).join(name)
 }
@@ -413,13 +393,13 @@ pub fn warm(repository_dir: &Path, name: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let fixture_dir = fixtures_dir.join(name);
     let fixture = Fixture::load(&fixtures_dir, name);
-    let target_dir = cache_dir(repository_dir, fixture.cache(name));
+    let target_dir = cache_dir(repository_dir, name);
     let context = Context {
         name,
         fixture_dir: &fixture_dir,
         repository_dir,
         target_dir: &target_dir,
-        cli_package: fixture.cli_package.as_deref(),
+        cli_package: &fixture.cli_package,
     };
     let project = TempDir::new().expect("create a directory for the fixture's project");
     let dir = project.path();

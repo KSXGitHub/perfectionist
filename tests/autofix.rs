@@ -25,23 +25,9 @@ fn plain() {
     check_fixture(_utils::cargo_manifest_dir(), "plain");
 }
 
-/// The project of shapes the rules report and deliberately decline to
-/// hand the fixer, with no registry dependencies.
-#[test]
-fn plain_declined() {
-    check_fixture(_utils::cargo_manifest_dir(), "plain-declined");
-}
-
 /// The project whose rules need a registry crate present, either to
 /// fire at all or to have somewhere to rewrite a call to.
 #[test]
 fn third_party() {
     check_fixture(_utils::cargo_manifest_dir(), "third-party");
-}
-
-/// The project of shapes the rules report and deliberately decline to
-/// hand the fixer, among the rules that need a registry crate.
-#[test]
-fn third_party_declined() {
-    check_fixture(_utils::cargo_manifest_dir(), "third-party-declined");
 }
