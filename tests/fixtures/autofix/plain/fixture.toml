@@ -1,9 +1,9 @@
 cli_package = "fixture-plain-cli"
 
-[[paths]]
+[[runs]]
 name = "default"
 rounds = 2
 
-[[paths]]
+[[runs]]
 name = "opt-in"
 rounds = 2

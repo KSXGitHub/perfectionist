@@ -1,0 +1,4 @@
+line|line| without_colour(line))
+line|line| anonymise_file_positions(&line))
+line|line| rebuild_gutter(&line))
+line|line| line.trim_end().to_owned())

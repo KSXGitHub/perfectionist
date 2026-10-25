@@ -1,8 +1,8 @@
-//! Render the change a round made to a codebase as one unified diff.
+//! Render the change a round made to a project as one unified diff.
 //!
 //! A round fixture stores what the round did rather than a second copy
 //! of the tree, so it grows with what the round changed rather than
-//! with the size of the codebase. Nothing here applies a diff: the
+//! with the size of the project. Nothing here applies a diff: the
 //! harness diffs the tree the round actually produced against the one
 //! it started from and compares that text against the stored fixture,
 //! so a stored diff is an expectation and never an input.

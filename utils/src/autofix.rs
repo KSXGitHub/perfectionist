@@ -1,138 +1,140 @@
-//! Drive a codebase fixture through the rounds of autofixes it takes
+//! Drive a fixture's project through the rounds of autofixes it takes
 //! to settle, and hold each round to what the fixture stored for it.
 //!
 //! A **round** is a perfectionist autofix, then a Clippy autofix,
-//! then a rustfmt pass. A codebase is **settled** once neither linter
-//! reports anything about it. A **settling path** is one
-//! configuration together with the rounds it takes to settle the
-//! codebase under it; a codebase fixture carries one path per
-//! configuration, all over the same tree, so the configurations share
-//! the fixture, the registry dependencies, and the build cache.
+//! then a rustfmt pass. A project is **settled** once neither linter
+//! reports anything about it. A **run** is one configuration together
+//! with the rounds it takes to settle the project under it; a fixture
+//! carries one run per configuration, all over the same project, so
+//! the configurations share the tree, the registry dependencies, and
+//! the build cache.
 //!
-//! What a path asserts, round by round:
+//! What a run asserts, round by round:
 //!
 //! * the exact shape the round left, stored as one diff against the
 //!   round before it,
-//! * the exact lints still reported after it, so a lint that is meant
-//!   to disappear on round *n* cannot survive it,
+//! * the exact diagnostics still reported after it, normalised as a
+//!   `.stderr` under `ui/` is, so a finding that is meant to
+//!   disappear on round *n* cannot survive it and a project cannot
+//!   stop holding one of the shapes it was written around,
 //! * that the last round leaves nothing reported at all, which is
 //!   what settling means.
 //!
-//! Bracketing the rounds, a path also asserts the codebase behaves as
+//! Bracketing the rounds, a run also asserts the project behaves as
 //! it did before any of them: its own tests pass before the first
 //! round and after the last, and its `main` prints the same bytes
 //! either side. A rewrite that compiles and answers differently is
 //! the failure these catch and the rest cannot.
 //!
-//! A path over a codebase of shapes the rules deliberately decline is
+//! A run over a project of shapes the rules deliberately decline is
 //! declared as not settling, and then asserts the complement: that
 //! the rounds rewrote nothing, which its stored diffs say by being
 //! empty, and that the rules went on reporting the shapes rather than
 //! falling silent about them.
 //!
 //! The number of rounds comes from the fixture rather than from
-//! driving the codebase to a fixpoint, so a codebase that settles in
+//! driving the project to a fixpoint, so a project that settles in
 //! fewer rounds than declared, or needs more, is a failure rather
 //! than something the harness absorbs.
 
 pub mod config;
+pub mod diagnostics;
 pub mod diff;
 pub mod expectation;
-pub mod lints;
 pub mod report;
 pub mod round;
 pub mod snapshot;
 
-pub use config::{Fixture, SettlingPath};
+pub use config::{Fixture, Run};
 pub use report::{BLESS, Report};
 pub use snapshot::Snapshot;
 
 use crate::manifest::fixture_dylint_toml;
-use std::collections::BTreeSet;
+use diagnostics::Reported;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-/// Where the codebase fixtures live, relative to this checkout.
+/// Where the fixtures live, relative to this checkout.
 const FIXTURES: &str = "tests/fixtures/autofix";
 
-/// Where the codebase fixtures' build caches live, relative to this
-/// checkout. One subdirectory per codebase, because the dependency
-/// list is what decides what a cache has to hold, and every settling
-/// path over one codebase shares that list.
+/// Where the fixtures' build caches live, relative to this checkout.
+/// One subdirectory per fixture, because the dependency list is what
+/// decides what a cache has to hold, and every run over one fixture
+/// shares that list.
 ///
 /// What the cache carries across runs is the compiled standard
 /// library, the registry dependencies and the plugin, which is where
 /// the cost is. It deliberately does not carry the fixture's own
-/// members: cargo decides a path package's freshness by comparing
-/// mtimes and never by reading its contents, so a fixture
+/// members: cargo decides a path dependency's freshness by comparing
+/// mtimes and never by reading its contents, so a project
 /// materialised with the stored tree's own mtimes would be taken for
 /// fresh against artefacts built from a *later* round of an earlier
-/// settling path over the same codebase, and that path's rewrites
-/// would stand in for this one's round zero. Materialising at the
-/// current time is what keeps each path's first round honest, and the
+/// run over the same project, and that run's rewrites would stand in
+/// for this one's round zero. Materialising at the current time is
+/// what keeps each run's first round honest, and the
 /// members are small enough that recompiling them is noise beside a
 /// fix pass, which `cargo fix` re-runs over every member whatever the
 /// cache holds.
 const CACHE: &str = "target/autofix-fixtures";
 
-/// Drive every settling path of the codebase fixture `codebase`, and
-/// panic with every failure any of them reported.
+/// Drive every run of the fixture `name`, and panic with every
+/// failure any of them reported.
 ///
 /// `repository_dir` is this checkout: the fixtures, the build cache,
-/// and the plugin the fixture lints under are all found through it.
-pub fn check_codebase(repository_dir: &Path, codebase: &str) {
+/// and the plugin the project lints under are all found through it.
+pub fn check_fixture(repository_dir: &Path, name: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
-    let codebase_dir = fixtures_dir.join(codebase);
-    let fixture = Fixture::load(&fixtures_dir, codebase);
-    let target_dir = cache_dir(repository_dir, fixture.cache(codebase));
-    let stored = snapshot::read(&codebase_dir.join("codebase"));
+    let fixture_dir = fixtures_dir.join(name);
+    let fixture = Fixture::load(&fixtures_dir, name);
+    let target_dir = cache_dir(repository_dir, fixture.cache(name));
+    let stored = snapshot::read(&fixture_dir.join("project"));
     let context = Context {
-        codebase,
-        codebase_dir: &codebase_dir,
+        name,
+        fixture_dir: &fixture_dir,
         repository_dir,
         target_dir: &target_dir,
         cli_package: fixture.cli_package.as_deref(),
     };
 
     let failures: Vec<String> = fixture
-        .paths
+        .runs
         .iter()
-        .filter_map(|path| drive(&context, path, &stored))
+        .filter_map(|run| drive(&context, run, &stored))
         .collect();
     assert!(failures.is_empty(), "\n\n{}", failures.join("\n"));
 }
 
-/// Everything a settling path needs that is the same for every path
-/// over one codebase.
+/// Everything a run needs that is the same for every run over one
+/// fixture.
 struct Context<'a> {
-    codebase: &'a str,
-    codebase_dir: &'a Path,
+    name: &'a str,
+    fixture_dir: &'a Path,
     repository_dir: &'a Path,
     target_dir: &'a Path,
     cli_package: Option<&'a str>,
 }
 
-/// Materialise the codebase, drive it along one settling path, and
-/// hand back the failure message where the path came out short.
-fn drive(context: &Context, path: &SettlingPath, stored: &Snapshot) -> Option<String> {
-    let mut report = Report::new(context.codebase.to_owned(), path.name.clone());
-    let project = TempDir::new().expect("create a directory for the codebase fixture");
+/// Materialise the project, drive it through one run, and hand back
+/// the failure message where the run came out short.
+fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
+    let mut report = Report::new(context.name.to_owned(), run.name.clone());
+    let project = TempDir::new().expect("create a directory for the fixture's project");
     let dir = project.path();
     snapshot::write(dir, stored);
-    write_dylint_toml(dir, context, path);
+    write_dylint_toml(dir, context, run);
     report.record(stored.clone());
 
     let baseline = run_cli(dir, context, &mut report, "before the first round");
     expect_success(round::test(dir, context.target_dir), &mut report);
 
     let mut previous = stored.clone();
-    for number in 1..=path.rounds {
+    for number in 1..=run.rounds {
         apply(dir, context.target_dir, &mut report, number);
         let current = snapshot::read(dir);
         report.record(current.clone());
-        check_shape(context, path, number, (&previous, &current), &mut report);
-        check_lints(dir, context, path, number, &mut report);
+        check_shape(context, run, number, (&previous, &current), &mut report);
+        check_lints(dir, context, run, number, &mut report);
         previous = current;
     }
 
@@ -144,12 +146,12 @@ fn drive(context: &Context, path: &SettlingPath, stored: &Snapshot) -> Option<St
     report.finish()
 }
 
-/// Write the fixture's `dylint.toml`: the plugin's location, then the
-/// settling path's own configuration appended to it. The path's file
-/// holds only the configuration, since where the plugin sits is this
-/// checkout's business rather than the fixture's.
-fn write_dylint_toml(project_dir: &Path, context: &Context, path: &SettlingPath) {
-    let configuration_file = path.directory(context.codebase_dir).join("dylint.toml");
+/// Write the project's `dylint.toml`: the plugin's location, then the
+/// run's own configuration appended to it. The run's file holds only
+/// the configuration, since where the plugin sits is this checkout's
+/// business rather than the fixture's.
+fn write_dylint_toml(project_dir: &Path, context: &Context, run: &Run) {
+    let configuration_file = run.directory(context.fixture_dir).join("dylint.toml");
     let configuration = fs::read_to_string(&configuration_file)
         .unwrap_or_else(|error| panic!("read {}: {error}", configuration_file.display()));
     let contents = format!(
@@ -187,14 +189,14 @@ fn apply(project_dir: &Path, target_dir: &Path, report: &mut Report, number: usi
 /// Hold the round to the diff the fixture stored for it.
 fn check_shape(
     context: &Context,
-    path: &SettlingPath,
+    run: &Run,
     number: usize,
     rounds: (&Snapshot, &Snapshot),
     report: &mut Report,
 ) {
     let (before, after) = rounds;
-    let file = path
-        .directory(context.codebase_dir)
+    let file = run
+        .directory(context.fixture_dir)
         .join(format!("round-{number}.diff"));
     let what = format!("[round {number}] the shape the round left");
     if let Err(failure) = expectation::check(&file, &diff::unified(before, after), &what) {
@@ -202,41 +204,41 @@ fn check_shape(
     }
 }
 
-/// Hold the round to the lints the fixture stored for it, and the
-/// last round to reporting none at all.
+/// Hold the round to the diagnostics the fixture stored for it, and
+/// the last round to reporting none at all.
 fn check_lints(
     project_dir: &Path,
     context: &Context,
-    path: &SettlingPath,
+    run: &Run,
     number: usize,
     report: &mut Report,
 ) {
-    let mut reported = BTreeSet::new();
+    let mut reported = Reported::default();
     for check in [round::dylint_check, round::clippy_check] {
         let outcome = check(project_dir, context.target_dir);
-        reported.extend(lints::reported(&outcome.stdout));
+        reported.extend(&outcome.stdout, project_dir);
         expect_success(outcome, report);
     }
-    let last = number == path.rounds;
-    if last && path.settles && !reported.is_empty() {
+    let last = number == run.rounds;
+    if last && run.settles && !reported.lints.is_empty() {
         report.fail(format!(
-            "[round {number}] the codebase is not settled after its last round; \
+            "[round {number}] the project is not settled after its last round; \
              still reported:\n{}",
-            lints::render(&reported),
+            reported.render(),
         ));
     }
-    if last && !path.settles && reported.is_empty() {
+    if last && !run.settles && reported.lints.is_empty() {
         report.fail(format!(
-            "[round {number}] the path declares that the codebase does not settle, \
-             but nothing is reported after its last round; either the codebase no \
+            "[round {number}] the run declares that the project does not settle, \
+             but nothing is reported after its last round; either the project no \
              longer holds a shape the rules decline, or the declaration is stale",
         ));
     }
-    let file = path
-        .directory(context.codebase_dir)
-        .join(format!("round-{number}.lints"));
-    let what = format!("[round {number}] the lints still reported");
-    if let Err(failure) = expectation::check(&file, &lints::render(&reported), &what) {
+    let file = run
+        .directory(context.fixture_dir)
+        .join(format!("round-{number}.stderr"));
+    let what = format!("[round {number}] the diagnostics still reported");
+    if let Err(failure) = expectation::check(&file, &reported.render(), &what) {
         report.fail(failure);
     }
 }
@@ -266,7 +268,7 @@ fn assert_same_output(baseline: &str, settled: &str, report: &mut Report) {
         report.fail(
             "the fixture's `main` printed nothing, so comparing its output either side \
              of the rounds would assert nothing; have it print what each crate in the \
-             codebase contributes"
+             project contributes"
                 .to_owned(),
         );
         return;
@@ -276,7 +278,7 @@ fn assert_same_output(baseline: &str, settled: &str, report: &mut Report) {
     }
     report.fail(format!(
         "the fixture's `main` printed different output after the rounds than before \
-         them, so a rewrite changed what the codebase does\n\
+         them, so a rewrite changed what the project does\n\
          --- before ---\n{baseline}--- after ---\n{settled}--- end ---",
     ));
 }
@@ -286,7 +288,7 @@ fn expect_success(outcome: round::Outcome, report: &mut Report) {
 }
 
 /// Record a failed invocation, quoting what it printed. `when` names
-/// the moment in the path where that is not already obvious from the
+/// the moment in the run where that is not already obvious from the
 /// command.
 fn expect_success_when(outcome: round::Outcome, report: &mut Report, when: &str) {
     if outcome.success {
@@ -302,25 +304,25 @@ fn expect_success_when(outcome: round::Outcome, report: &mut Report, when: &str)
     ));
 }
 
-/// The build cache the codebase fixture `codebase` owns. Another
-/// fixture declaring the same dependencies shares it, which
+/// The build cache the fixture `name` owns. Another fixture
+/// declaring the same dependencies shares it, which
 /// [`Fixture::cache`] resolves.
-pub fn cache_dir(repository_dir: &Path, codebase: &str) -> PathBuf {
-    repository_dir.join(CACHE).join(codebase)
+pub fn cache_dir(repository_dir: &Path, name: &str) -> PathBuf {
+    repository_dir.join(CACHE).join(name)
 }
 
-/// Every codebase fixture in this checkout, in ascending order.
+/// Every fixture in this checkout, in ascending order.
 ///
 /// Read off disk rather than listed, so it cannot go stale. The tests
-/// name their codebases one by one instead, which is what gives each
-/// a failure of its own and lets two run at once; a codebase nobody
+/// name their fixtures one by one instead, which is what gives each a
+/// failure of its own and lets two run at once; a fixture nobody
 /// named is one nothing drives, and is for review to catch.
-pub fn codebases(repository_dir: &Path) -> Vec<String> {
+pub fn fixtures(repository_dir: &Path) -> Vec<String> {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let entries = fs::read_dir(&fixtures_dir)
         .unwrap_or_else(|error| panic!("read {}: {error}", fixtures_dir.display()));
     let mut names: Vec<String> = entries
-        .map(|entry| entry.expect("read an entry of the codebase fixture directory"))
+        .map(|entry| entry.expect("read an entry of the fixture directory"))
         .filter(|entry| entry.path().join("fixture.toml").is_file())
         .map(|entry| entry.file_name().to_string_lossy().into_owned())
         .collect();
@@ -328,35 +330,35 @@ pub fn codebases(repository_dir: &Path) -> Vec<String> {
     names
 }
 
-/// Fill `codebase`'s build cache, so a later run pays for the
-/// standard library, the registry dependencies and the plugin from
-/// the cache rather than from cold.
+/// Fill the build cache the fixture `name` uses, so a later run pays
+/// for the standard library, the registry dependencies and the plugin
+/// from the cache rather than from cold.
 ///
 /// Everything a round compiles is compiled here: each linter has a
 /// wrapper of its own, so each gets a cache lane of its own, and the
-/// fixture's own tests and `main` are built by plain rustc, which is
+/// project's own tests and `main` are built by plain rustc, which is
 /// a third. A fix pass is not run, so nothing the warmup does depends
-/// on which settling path comes first; the first path's configuration
-/// is written only because a check needs some configuration to read.
-pub fn warm(repository_dir: &Path, codebase: &str) {
+/// on which run comes first; the first run's configuration is written
+/// only because a check needs some configuration to read.
+pub fn warm(repository_dir: &Path, name: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
-    let codebase_dir = fixtures_dir.join(codebase);
-    let fixture = Fixture::load(&fixtures_dir, codebase);
-    let target_dir = cache_dir(repository_dir, fixture.cache(codebase));
+    let fixture_dir = fixtures_dir.join(name);
+    let fixture = Fixture::load(&fixtures_dir, name);
+    let target_dir = cache_dir(repository_dir, fixture.cache(name));
     let context = Context {
-        codebase,
-        codebase_dir: &codebase_dir,
+        name,
+        fixture_dir: &fixture_dir,
         repository_dir,
         target_dir: &target_dir,
         cli_package: fixture.cli_package.as_deref(),
     };
-    let project = TempDir::new().expect("create a directory for the codebase fixture");
+    let project = TempDir::new().expect("create a directory for the fixture's project");
     let dir = project.path();
-    snapshot::write(dir, &snapshot::read(&codebase_dir.join("codebase")));
-    let first = fixture.paths.first().expect("a fixture declares a path");
-    write_dylint_toml(dir, &context, first);
+    snapshot::write(dir, &snapshot::read(&fixture_dir.join("project")));
+    let first = fixture.runs.first().expect("a fixture declares a run");
 
-    let mut report = Report::new(codebase.to_owned(), first.name.clone());
+    let mut report = Report::new(name.to_owned(), first.name.clone());
+    write_dylint_toml(dir, &context, first);
     for check in [round::dylint_check, round::clippy_check] {
         expect_success(check(dir, &target_dir), &mut report);
     }

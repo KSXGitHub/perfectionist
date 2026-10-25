@@ -597,16 +597,18 @@ performs the normalisation and explains how.
 
 ## Codebase fixtures for the autofixes
 
-[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a codebase
-fixture through the autofixes and holds each round to a stored diff;
-its module docs carry the model, and
-[`tests/autofix.rs`](tests/autofix.rs) names one codebase per test.
+[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture's
+project through the autofixes and holds each round to a stored diff
+and a stored `.stderr`; its module docs carry the model, and
+[`tests/autofix.rs`](tests/autofix.rs) names one fixture per test.
 
-A new `MachineApplicable` rewrite earns a crate in the codebase
-fixture whose dependency list it needs, named after the rule, holding
-the shape and a `#[cfg(test)] mod tests` asserting what the shape
-*does*. A shape the rule declines goes to the `-declined` sibling,
-whose stored diffs are empty. Re-record with
+A new `MachineApplicable` rewrite earns a crate in the fixture whose
+dependency list it needs, named after the rule, holding the shape and
+a `#[cfg(test)] mod tests` asserting what the shape *does*. A shape
+the rule has such a rewrite for and withholds goes to the `-declined`
+sibling, whose stored diffs are empty; a rule with no such rewrite at
+all belongs in neither, its suggestion being `cargo fix`'s to ignore
+rather than this plugin's to withhold. Re-record with
 `PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
 expectations: that diff is the review, since a shape the rule never
 reached leaves it short rather than failing.
@@ -615,7 +617,7 @@ A fixture is linted like any other crate, so all of it has to settle.
 Keep the code dull, or a second rule lands in the diff instead of the
 rewrite; keep the prose dull too, since a code span naming an item
 that resolves in scope draws a rewrite held at `MaybeIncorrect`, which
-a settling codebase can never clear. Store the tree formatted, unless
+a settling project can never clear. Store the tree formatted, unless
 the rule needs otherwise, because the round ends with rustfmt.
 
 ## Generated documentation site (`tools/gen-docs/`)

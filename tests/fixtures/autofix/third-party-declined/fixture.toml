@@ -1,6 +1,6 @@
 cache = "third-party"
 
-[[paths]]
+[[runs]]
 name = "default"
 rounds = 1
 settles = false

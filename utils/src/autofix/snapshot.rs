@@ -1,10 +1,10 @@
-//! Read a codebase fixture off disk, and write one back.
+//! Read a fixture's project off disk, and write one back.
 //!
-//! A snapshot is the whole fixture as text, keyed by the path each
-//! file sits at relative to the fixture root, with `/` separators on
+//! A snapshot is the whole project as text, keyed by the path each
+//! file sits at relative to the project root, with `/` separators on
 //! every platform so a stored diff reads the same everywhere. It is
 //! what the harness diffs a round against, what it dumps when a round
-//! fails, and what it materialises a fresh fixture from.
+//! fails, and what it materialises a fresh project from.
 //!
 //! Two paths are left out of every snapshot, each because the round
 //! does not own it. `Cargo.lock` is the resolver's, and `dylint.toml`
@@ -17,10 +17,10 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
-/// A whole codebase fixture: relative path to file contents.
+/// A whole project: relative path to file contents.
 pub type Snapshot = BTreeMap<String, String>;
 
-/// The paths a snapshot never carries, relative to the fixture root.
+/// The paths a snapshot never carries, relative to the project root.
 const EXCLUDED: &[&str] = &["Cargo.lock", "dylint.toml"];
 
 /// Read every file under `root` into a [`Snapshot`].

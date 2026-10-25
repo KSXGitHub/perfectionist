@@ -1,6 +1,9 @@
-cache = "plain"
+# Every crate here is a shape whose rule has a machine-applicable
+# rewrite for other shapes and withholds it for this one. That the
+# fixer leaves it alone is the assertion, and nothing but running the
+# fixer can make it: an applicability does not reach a `.stderr`.
 
-[[paths]]
+[[runs]]
 name = "default"
 rounds = 1
 settles = false

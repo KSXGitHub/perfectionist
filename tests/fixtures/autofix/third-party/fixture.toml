@@ -1,5 +1,5 @@
 cli_package = "fixture-third-party-cli"
 
-[[paths]]
+[[runs]]
 name = "default"
 rounds = 1

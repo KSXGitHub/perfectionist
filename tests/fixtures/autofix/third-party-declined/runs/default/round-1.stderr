@@ -1,0 +1,17 @@
+warning: `Command::arg` takes `&mut self`, so it cannot yield the command
+  --> crates/mutating-command-builder/src/lib.rs:LL:CC
+   |
+LL |     command.arg("over-a-binding");
+   |             ^^^
+   |
+   = help: use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position
+   = help: the receiver outlives this call, so where later code reads it, the change also has to reassign it or collapse the statements into one chained expression
+   = note: `#[warn(perfectionist::mutating_command_builder)]` on by default
+warning: this fold over `without_env` re-implements `without_envs`
+  --> crates/folded-command-setter/src/lib.rs:LL:CC
+   |
+LL |     names.iter().fold(start, CommandExtra::without_env)
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.without_envs(names.iter())`
+   |
+   = help: the fold evaluates the receiver before the initial value and the suggestion evaluates them the other way round, so apply it only where their order does not matter
+   = note: `#[warn(perfectionist::folded_command_setter)]` on by default

@@ -1,8 +1,8 @@
 //! Hold a round to what the fixture stored for it, or re-record it.
 //!
 //! Every expectation this harness compares is a text file beside the
-//! settling path's configuration, so reviewing a change to an autofix
-//! is reading the diff of those files. Re-recording is opt-in through
+//! run's configuration, so reviewing a change to an autofix is
+//! reading the diff of those files. Re-recording is opt-in through
 //! an environment variable rather than a flag, because the harness is
 //! driven by `cargo test` and a flag would have to cross the test
 //! binary's own argument parsing.
