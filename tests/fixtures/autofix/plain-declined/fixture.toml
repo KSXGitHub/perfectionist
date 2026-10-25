@@ -3,6 +3,8 @@
 # never prints, which is what decides whether the fixer touches a
 # suggestion; the empty diff beside it is the fixer having agreed.
 
+cache = "plain"
+
 [[runs]]
 name = "default"
 rounds = 1
