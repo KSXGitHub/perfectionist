@@ -1,7 +1,7 @@
 cli_package = "fixture-plain-cli"
 
 [[runs]]
-name = "default"
+name = "on-by-default"
 rounds = 2
 
 [[runs]]
