@@ -49,54 +49,6 @@ test:
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
-# Re-record every `// run-rustfix` fixture's fixed form
-bless-fixed:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  mkdir -pv "{{test_tmp_dir}}"
-  # A staged file left by an earlier run would be read as this run's,
-  # so what each fixture produced is what is left after clearing them.
-  find "{{test_tmp_dir}}" -name '*.stage-id.fixed' -delete
-  # The run is expected to fail wherever a `.diff` is out of date, and
-  # compiletest writes what it produced under the test's own directory
-  # either way, which is what gets recorded. `--no-fail-fast` because a
-  # fixture of one test binary is recorded from a run another binary
-  # also failed in.
-  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets --no-fail-fast {{locked}} || true
-  # `--others` so a `.diff` created for a new fixture and not yet
-  # added is recorded too.
-  for committed in $(git ls-files --cached --others --exclude-standard '*.diff'); do
-    # compiletest names its output after the fixture's path below the
-    # `src_base` it was handed, which is the copy of `ui` or of
-    # `ui-toml`, so the committed path maps onto the staged one by
-    # dropping that first component.
-    staged="{{test_tmp_dir}}/${committed#*/}"
-    staged="${staged%.diff}.stage-id.fixed"
-    # compiletest stages what it produced only where that differs from
-    # the fixed form the `.diff` gave it, so nothing staged means the
-    # `.diff` already describes the rewrite.
-    if [ ! -f "$staged" ]; then
-      echo "already recorded $committed"
-      continue
-    fi
-    fixture="${committed%.diff}.rs"
-    fixed=$(mktemp)
-    # The copy a fixture is run from carries the injected
-    # `normalize-stderr-test` directives, which the fixture does not.
-    sed '/^\/\/ normalize-stderr-test: /d' "$staged" > "$fixed"
-    # `git diff` names the two paths it was handed, where the fixture's
-    # own name on both sides reads as what the diff turns into its
-    # fixed form. It also exits non-zero when they differ, which is the
-    # expected case here.
-    { git diff --no-index --unified=3 "$fixture" "$fixed" || true; } \
-      | sed -n '/^--- /,$p' \
-      | sed "1s|.*|--- a/$(basename "$fixture")|; 2s|.*|+++ b/$(basename "$fixture")|" \
-      > "$committed"
-    rm -f "$fixed"
-    echo "re-recorded $committed"
-  done
-  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets --no-fail-fast {{locked}}
-
 # Run perfectionist's own lints on its source
 self-lint:
   DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --workspace --all-targets {{locked}}

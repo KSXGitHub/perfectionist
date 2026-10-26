@@ -7,12 +7,12 @@
 //! show the handful of lines a rewrite touches, so what is committed
 //! is the diff and the `.fixed` is materialised from it at test time.
 //!
-//! The diff is the one `git diff --no-index` writes, which
-//! `just bless-fixed` records: two header lines and then a hunk per
-//! region, three lines of context either side. Nothing here guesses
-//! at a hunk that does not fit. A context or removed line that does
-//! not match the fixture means the fixture moved under its diff, and
-//! saying so beats patching the wrong region.
+//! The diff is the one `git diff --no-index` writes: two header
+//! lines and then a hunk per region, with context either side.
+//! Nothing here guesses at a hunk that does not fit. A context or
+//! removed line that does not match the fixture means the fixture
+//! moved under its diff, and saying so beats patching the wrong
+//! region.
 
 use core::str::Lines;
 
@@ -132,7 +132,7 @@ fn split_marker(line: &str) -> Option<(char, &str)> {
         // into the file.
         None => Some((' ', "")),
         // Anything else is a line of the `diff --git` preamble, which
-        // `just bless-fixed` drops but a hand-written diff may carry.
+        // a diff recorded with it left on carries.
         Some(_) => None,
     }
 }
