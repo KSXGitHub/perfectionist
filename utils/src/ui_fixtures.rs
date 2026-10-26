@@ -160,7 +160,8 @@ fn materialise_fixed(dir: &Path) {
             .unwrap_or_else(|error| panic!("read {}: {error}", diff.display()));
         let what = format!("{}", diff.display());
         let fixed = path.with_extension("fixed");
-        fs::write(&fixed, apply(&original, &stored, &what))
+        let text = apply(&original, &stored, &what);
+        fs::write(&fixed, text)
             .unwrap_or_else(|error| panic!("write {}: {error}", fixed.display()));
     }
 }
@@ -203,11 +204,10 @@ fn inject_directives(dir: &Path) {
         {
             let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
             prepend(&path, &header);
-            // A `// run-rustfix` fixture has rustfix apply its
-            // suggestions to this copy, header and all, and diffs the
-            // result against the `.fixed` beside it, so that file
-            // needs the same header to line up. The committed one
-            // holds the fixture's own text and nothing else.
+            // rustfix rewrites this copy, header and all, and
+            // compiletest compares that rewrite against the `.fixed`,
+            // so a header on one file and not the other fails the
+            // comparison on the header itself.
             let fixed = path.with_extension("fixed");
             if fixed.exists() {
                 prepend(&fixed, &header);
