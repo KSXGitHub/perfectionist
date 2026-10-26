@@ -1,9 +1,0 @@
-[perfectionist]
-enable = ["core_instead_of_std", "import_grouping_mismatch", "uncombined_self_import", "unordered_derives"]
-
-["perfectionist::bare_email"]
-style = "angle_brackets"
-
-["perfectionist::import_grouping_mismatch"]
-style = "multi_block"
-reexports = "grouped"

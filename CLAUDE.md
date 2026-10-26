@@ -600,16 +600,20 @@ performs the normalisation and explains how.
 [`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture
 through the rounds, and its module docs carry the model.
 
-A `MachineApplicable` rewrite earns a module in the `shapes` crate of
-the fixture whose dependency list it needs, named after the rule,
-holding the shape, a `#[cfg(test)] mod tests` asserting what the shape
-*does*, and a line in what the fixture's `main` prints. It earns a
-crate of its own only where the rule reads the project's layout rather
-than one item, the shape needs a dependency the other modules do not,
-or the shape needs a proc macro, since every linter and every fixer
-pays a fixed cost per crate. A rewrite the rule withholds belongs in
-no fixture here, what a round would pin being `cargo fix`'s uniform
-handling of it rather than any decision of this plugin's.
+A shape here earns its place by needing a *round*: a rewrite that
+another rule's rewrite feeds, or that the formatter leaves more work
+after. A rewrite one pass applies and nothing reacts to needs no
+project driven through rounds. One that does earn its place is a
+module of the `shapes` crate of the fixture whose dependency list it
+needs, named after the rule, holding the shape, a
+`#[cfg(test)] mod tests` asserting what the shape *does*, and a line
+in what the fixture's `main` prints. It earns a crate of its own only
+where the rule reads the project's layout rather than one item, the
+shape needs a dependency the other modules do not, or the shape needs
+a proc macro, since every linter and every fixer pays a fixed cost per
+crate. A rewrite the rule withholds belongs here least of all, what a
+round would pin being `cargo fix`'s uniform handling of it rather than
+any decision of this plugin's.
 
 Re-record with `PERFECTIONIST_BLESS_AUTOFIX=1` and read the diff of
 the expectations: that diff is the review, since a shape the rule

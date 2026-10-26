@@ -5,6 +5,4 @@ edition = "2024"
 
 [dependencies]
 shapes = { package = "fixture-plain-shapes", path = "../shapes" }
-import_grouping_mismatch = { package = "fixture-plain-import-grouping-mismatch", path = "../import-grouping-mismatch" }
 named_prelude_imports = { package = "fixture-plain-named-prelude-imports", path = "../named-prelude-imports" }
-uncombined_self_import = { package = "fixture-plain-uncombined-self-import", path = "../uncombined-self-import" }
