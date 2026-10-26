@@ -1,7 +1,7 @@
-// aux-build:command_extra.rs
-// edition:2024
 // run-rustfix
 // rustfix-only-machine-applicable
+// aux-build:command_extra.rs
+// edition:2024
 //
 // When the suggestion is a fix and when it is only advice. The rewrite
 // moves the receiver past the initial value, so it is applied only

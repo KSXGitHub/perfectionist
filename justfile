@@ -49,25 +49,37 @@ test:
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
-# Re-record the `.fixed` of every `// run-rustfix` UI fixture
+# Re-record every `// run-rustfix` fixture's `.fixed`
 bless-fixed:
   #!/usr/bin/env bash
   set -euo pipefail
   mkdir -pv "{{test_tmp_dir}}"
-  # The run is expected to fail where a `.fixed` is out of date, and
-  # compiletest writes what it produced beside the fixture copy either
-  # way, which is what gets recorded.
-  TMPDIR="{{test_tmp_dir}}" cargo test --test ui {{locked}} || true
-  shopt -s nullglob
-  for staged in "{{test_tmp_dir}}"/*.stage-id.fixed; do
-    name=$(basename "$staged" .stage-id.fixed)
+  # The run is expected to fail wherever a `.fixed` is out of date, and
+  # compiletest writes what it produced under the test's own directory
+  # either way, which is what gets recorded. `--no-fail-fast` because a
+  # fixture of one test binary is recorded from a run another binary
+  # also failed in.
+  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets --no-fail-fast {{locked}} || true
+  for committed in $(git ls-files '*.fixed'); do
+    # compiletest names its output after the fixture's path below the
+    # `src_base` it was handed, which is the copy of `ui` or of
+    # `ui-toml`, so the committed path maps onto the staged one by
+    # dropping that first component.
+    staged="{{test_tmp_dir}}/${committed#*/}"
+    staged="${staged%.fixed}.stage-id.fixed"
+    # compiletest stages what it produced only where that differs from
+    # the committed file, so nothing staged means nothing to record.
+    if [ ! -f "$staged" ]; then
+      echo "already recorded $committed"
+      continue
+    fi
     # The copy a fixture is run from carries the injected
-    # `normalize-stderr-test` directives, which the committed `.fixed`
+    # `normalize-stderr-test` directives, which a committed `.fixed`
     # does not.
-    sed '/^\/\/ normalize-stderr-test: /d' "$staged" > "ui/$name.fixed"
-    echo "re-recorded ui/$name.fixed"
+    sed '/^\/\/ normalize-stderr-test: /d' "$staged" > "$committed"
+    echo "re-recorded $committed"
   done
-  TMPDIR="{{test_tmp_dir}}" cargo test --test ui {{locked}}
+  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets --no-fail-fast {{locked}}
 
 # Run perfectionist's own lints on its source
 self-lint:

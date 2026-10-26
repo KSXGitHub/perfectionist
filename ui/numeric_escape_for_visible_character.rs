@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // edition:2024
 #![allow(dead_code, unused, reason = "ui fixture")]
 

@@ -1,0 +1,177 @@
+// run-rustfix
+// rustfix-only-machine-applicable
+#![feature(register_tool)]
+#![register_tool(perfectionist)]
+
+// Bad: escaped quotes in a JSON snippet.
+fn _escaped_quotes() {
+    let _ = r#"{"name":"foo"}"#;
+}
+
+// Bad: escaped backslashes in a Windows path.
+fn _escaped_backslashes() {
+    let _ = r"C:\Users\foo\bar";
+}
+
+// Bad: escaped apostrophe.
+fn _escaped_apostrophe() {
+    let _ = r"it's here";
+}
+
+// Bad: multi-byte UTF-8 surrounding an eligible escape. Exercises
+// the `len_utf8` branch in `take_literal_char`, where the autofix
+// must preserve the non-ASCII characters byte-for-byte.
+fn _multi_byte_utf8() {
+    let _ = r"日本語: C:\Users";
+}
+
+// Bad: mix of `\"` and `\\` in one literal.
+fn _mixed_eligible_escapes() {
+    let _ = r#"say "\\" twice"#;
+}
+
+// Bad: literal contains `"#`, so the autofix needs two hashes
+// (`r##"..."##`) to avoid colliding with the closing delimiter.
+fn _hash_count_grows() {
+    let _ = r##"snippet: "#suffix" end"##;
+}
+
+// Bad: literal is a `core` macro argument. With
+// `report_in_external_macro: true` the user-written escape inside
+// `println!` (and the equivalent `format!` / `vec!` / `assert!`
+// invocations) must still be flagged.
+fn _inside_core_macro() {
+    println!(r#"path: "foo""#);
+}
+
+// Bad: `format!` template carrying a `{...}` placeholder. The
+// placeholder splits the template away from the HIR during format-args
+// lowering, so the late `ExprKind::Lit` pass never sees it; the
+// pre-expansion pass rescues it. (issue #219)
+fn _format_with_inline_placeholder() {
+    let name = "x";
+    let _ = format!(r#"url("{name}")"#);
+}
+
+// Bad: a positional placeholder in `println!` hides the split literal
+// from the late pass, and the pre-expansion pass rescues it.
+fn _println_with_positional_placeholder() {
+    println!(r#"path: "{}""#, "x");
+}
+
+// Bad: `assert_eq!`'s message is the *third* argument, with no macro
+// allowlist or argument-position bookkeeping, so the pre-expansion
+// scan reaches every literal. The message carries a placeholder, so it is
+// split away from the HIR; the comparison operands (`value`) are not
+// literals here, so nothing competes for the diagnostic.
+fn _assert_eq_message_placeholder() {
+    let value = 1;
+    assert_eq!(value, value, r#"v = "{value}""#);
+}
+
+// Bad: a string-literal *operand* of `assert_eq!`
+// survives lowering as an ordinary value, so the late pass flags it. The
+// pre-expansion scan also sees it, but the byte-range dedup drops the
+// duplicate, and this fixture pins that there is no double diagnostic.
+fn _assert_eq_string_operand() {
+    assert_eq!(r#"a"b"#.len(), 3);
+}
+
+// Bad: `stringify!` reflects its argument's source spelling, so the
+// literal is consumed rather than surviving into the HIR. The rewrite is
+// still value-preserving; the project deliberately flags it (suppress
+// with `#[allow]` in the rare case the exact `stringify!` text matters).
+fn _stringify_argument() {
+    let _ = stringify!(r#"a"b"#);
+}
+
+// Bad: `dbg!`'s argument *survives* lowering as the `match` scrutinee,
+// so the late pass flags it (the pre-expansion scan also sees it, but the
+// byte-range dedup drops the duplicate). The rewritten value is
+// identical; only the `stringify!`-reflected debug label printed at
+// runtime changes, the same deliberately-accepted trade-off as
+// `stringify!`.
+fn _dbg_argument() {
+    let _ = dbg!(r#"a"b"#);
+}
+
+// Not flagged: a placeholder template that also contains a non-raw
+// escape (`\n`). The literal is ineligible as a whole, and the static
+// pieces the compiler splits it into are not rewritten either.
+fn _placeholder_with_newline_escape() {
+    let value = 1;
+    let _ = format!("a\"b{value}\nc");
+}
+
+// Not flagged: contains a required non-raw escape (`\n`).
+fn _has_newline_escape() {
+    let _ = "name:\tvalue\n";
+}
+
+// Not flagged: line-continuation escape (`\` followed by a real
+// newline) is the `_ =>` arm of `take_escape_non_raw`. The
+// continuation cannot be expressed in a raw string, so the lint
+// must stay silent here.
+fn _line_continuation() {
+    let _ = "foo\
+    bar";
+}
+
+// Not flagged: mixed eligible + non-raw escapes.
+fn _mixed_eligible_and_non_raw() {
+    let _ = "She said \"hi\" then\nleft.";
+}
+
+// Not flagged: already a raw string.
+fn _already_raw() {
+    let _ = r#"<div class="x">"#;
+}
+
+// Not flagged: no escapes at all.
+fn _no_escapes() {
+    let _ = "hello world";
+}
+
+// Not flagged: `\x41` is a Unicode-style escape, not eliminable.
+#[expect(
+    perfectionist::numeric_escape_for_visible_character,
+    reason = "the escape is this case's subject; spelling it out would \
+              leave avoidable_string_escapes nothing to decline"
+)]
+fn _hex_escape() {
+    let _ = "\x41BC";
+}
+
+// Not flagged: `\u{1F600}` is a Unicode escape.
+#[expect(
+    perfectionist::numeric_escape_for_visible_character,
+    reason = "the escape is this case's subject; spelling it out would \
+              leave avoidable_string_escapes nothing to decline"
+)]
+fn _unicode_escape() {
+    let _ = "emoji: \u{1F600}";
+}
+
+fn main() {
+    _escaped_quotes();
+    _escaped_backslashes();
+    _escaped_apostrophe();
+    _multi_byte_utf8();
+    _mixed_eligible_escapes();
+    _hash_count_grows();
+    _inside_core_macro();
+    _format_with_inline_placeholder();
+    _println_with_positional_placeholder();
+    _assert_eq_message_placeholder();
+    _assert_eq_string_operand();
+    _stringify_argument();
+    _dbg_argument();
+    _placeholder_with_newline_escape();
+    _has_newline_escape();
+    _line_continuation();
+    _mixed_eligible_and_non_raw();
+    _already_raw();
+    _no_escapes();
+    _hex_escape();
+    _unicode_escape();
+}
