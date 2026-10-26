@@ -1,8 +1,0 @@
-warning: single-line macro invocation should not end with a trailing comma
-  --> crates/macro-trailing-comma/src/lib.rs:LL:CC
-   |
-LL |     format!("{} labels", labels().len(),)
-   |                                        ^ help: remove the trailing comma
-   |
-   = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
-   = applicability: MachineApplicable (remove the trailing comma)

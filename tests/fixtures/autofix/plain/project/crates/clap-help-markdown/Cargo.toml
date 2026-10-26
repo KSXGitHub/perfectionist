@@ -1,7 +1,0 @@
-[package]
-name = "fixture-plain-clap-help-markdown"
-version = "0.0.0"
-edition = "2024"
-
-[dependencies]
-clap = { package = "fixture-plain-clap", path = "../clap-stub" }
