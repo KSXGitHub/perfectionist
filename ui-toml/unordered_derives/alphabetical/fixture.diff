@@ -1,0 +1,60 @@
+--- a/fixture.rs
++++ b/fixture.rs
+@@ -2,7 +2,7 @@
+ // rustfix-only-machine-applicable
+ // Bad: `Debug` should come after `Clone` and `Copy` under
+ // alphabetical ordering.
+-#[derive(Debug, Clone, Copy)]
++#[derive(Clone, Copy, Debug)]
+ struct _Out;
+ 
+ // Good: already in ASCII-case-insensitive alphabetical order.
+@@ -15,7 +15,7 @@ struct _Single;
+ 
+ // Bad: `Hash` < `PartialEq` lexically, so the entries here are out
+ // of order.
+-#[derive(PartialEq, Eq, Hash)]
++#[derive(Eq, Hash, PartialEq)]
+ struct _MixedCase;
+ 
+ // Bad and multi-line. The autofix would flatten the list onto one
+@@ -41,26 +41,26 @@ struct _InlineComment;
+ // Bad: a `cfg`-gated derive is still ordered. The rule runs before
+ // expansion, so the wrapped `derive(...)` is reached regardless of
+ // whether the `cfg` predicate holds in this build.
+-#[cfg_attr(unix, derive(Debug, Clone, Copy))]
++#[cfg_attr(unix, derive(Clone, Copy, Debug))]
+ struct _CfgAttr;
+ 
+ // Bad: a `cfg_attr` may gate more than one attribute; every
+ // `derive(...)` after the predicate is ordered independently. Here only
+ // the first list is out of order (`Eq, PartialEq` is already sorted).
+-#[cfg_attr(unix, derive(Debug, Clone), derive(Eq, PartialEq))]
++#[cfg_attr(unix, derive(Clone, Debug), derive(Eq, PartialEq))]
+ struct _CfgAttrMulti;
+ 
+ // Bad: a compound `cfg` predicate is left untouched while its gated
+ // `derive(...)` is ordered: the predicate is just the first item and
+ // is skipped regardless of its shape.
+-#[cfg_attr(all(unix, target_pointer_width = "64"), derive(Debug, Clone))]
++#[cfg_attr(all(unix, target_pointer_width = "64"), derive(Clone, Debug))]
+ struct _CfgAttrCompound;
+ 
+ // Bad: a `derive(...)` nested under several `cfg_attr` layers
+ // (`cfg_attr(a, cfg_attr(b, derive(...)))`, the same as
+ // `cfg_attr(all(a, b), derive(...))`) is reached by recursing into each
+ // gated `cfg_attr` argument list.
+-#[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Debug, Clone)))]
++#[cfg_attr(unix, cfg_attr(target_os = "linux", derive(Clone, Debug)))]
+ struct _CfgAttrNested;
+ 
+ // Bad: a derive gated by a predicate that is FALSE on the test host is
+@@ -69,7 +69,7 @@ struct _CfgAttrNested;
+ // the predicate as `windows` (false on the Unix CI host): "simplifying"
+ // it back to `unix` would silently drop the platform-independence
+ // coverage this case exists to pin.
+-#[cfg_attr(windows, derive(Debug, Clone, Copy))]
++#[cfg_attr(windows, derive(Clone, Copy, Debug))]
+ struct _CfgAttrInactivePredicate;
+ 
+ fn main() {}

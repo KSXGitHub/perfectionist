@@ -16,8 +16,16 @@
 //! commit those directives into every fixture,
 //! [`copy_fixtures_with_directives`] injects them into a temporary
 //! copy at test time.
+//!
+//! The same copy is where a `// run-rustfix` fixture's `.fixed`
+//! comes from. compiletest reads the fixed form it compares against
+//! from a file beside the fixture, and committing that would commit a
+//! second copy of the fixture to show the handful of lines a rewrite
+//! touches, so what is committed is a `.diff`, and the `.fixed` the
+//! copy holds is written from it.
 
 use crate::TempDir;
+use patch::apply;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -113,6 +121,7 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     let temp = TempDir::new().expect("create fixture copy dir");
     let destination = temp.path().join(relative);
     copy_dir(&manifest_dir.join(relative), &destination);
+    materialise_fixed(&destination);
     inject_directives(&destination);
     // compiletest recurses from `src_base`, and the copy holds nothing
     // but `relative`, so starting at the first component still collects
@@ -125,6 +134,34 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     FixtureCopy {
         _temp: temp,
         src_base,
+    }
+}
+
+/// Write the `.fixed` of every `.rs` under `dir` that stores a
+/// `.diff`, so compiletest has the fixed form to compare its rustfix
+/// output against. The `.diff` is applied to the fixture as
+/// committed, before [`inject_directives`] puts a header on either
+/// file.
+fn materialise_fixed(dir: &Path) {
+    for entry in fs::read_dir(dir).expect("read fixture copy dir") {
+        let entry = entry.expect("read fixture copy entry");
+        let path = entry.path();
+        if entry.file_type().expect("fixture copy file type").is_dir() {
+            materialise_fixed(&path);
+            continue;
+        }
+        let diff = path.with_extension("diff");
+        if !path.extension().is_some_and(|extension| extension == "rs") || !diff.exists() {
+            continue;
+        }
+        let original = fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
+        let stored = fs::read_to_string(&diff)
+            .unwrap_or_else(|error| panic!("read {}: {error}", diff.display()));
+        let what = format!("{}", diff.display());
+        let fixed = path.with_extension("fixed");
+        fs::write(&fixed, apply(&original, &stored, &what))
+            .unwrap_or_else(|error| panic!("write {}: {error}", fixed.display()));
     }
 }
 
@@ -178,6 +215,8 @@ fn inject_directives(dir: &Path) {
         }
     }
 }
+
+mod patch;
 
 #[cfg(test)]
 mod tests;

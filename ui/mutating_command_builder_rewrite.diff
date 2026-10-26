@@ -1,0 +1,47 @@
+--- a/mutating_command_builder_rewrite.rs
++++ b/mutating_command_builder_rewrite.rs
+@@ -43,7 +43,7 @@ macro_rules! passthrough {
+     reason = "the macro has to wrap the chain's head for the prefix's anchor to matter"
+ )]
+ fn macro_wrapped_head() {
+-    configure(passthrough!(Command::new("ls").arg("macro-head")).arg("macro-tail"));
++    configure(&mut passthrough!(Command::new("ls").with_arg("macro-head")).with_arg("macro-tail"));
+ }
+ 
+ // Bad: the argument was written in a macro's body, so the `.into()` the
+@@ -242,7 +242,7 @@ mod ordered_drop {
+     // what the rest of the temporary holds, not what the whole of it
+     // held.
+     fn the_droppable_field_is_the_one_taken() {
+-        Command::new("ordered-drop-taken").arg(tagged().noisy);
++        Command::new("ordered-drop-taken").with_arg(tagged().noisy);
+     }
+ 
+     struct Guard(&'static str);
+@@ -292,7 +292,7 @@ mod ordered_drop {
+     // builds, so the argument is handed over and nothing is left to be
+     // reordered.
+     fn the_question_mark_hands_it_over() -> std::io::Result<()> {
+-        Command::new("ordered-drop-try").stdin(std::fs::File::open("/dev/null")?);
++        Command::new("ordered-drop-try").with_stdin(std::fs::File::open("/dev/null")?.into());
+         Ok(())
+     }
+ 
+@@ -362,7 +362,7 @@ mod sibling_of_a_drop {
+     // to reorder. The question a tuple gets is the same one a struct
+     // gets, not a refusal to look.
+     fn tuple_without_a_sibling_drop() {
+-        quiet_pair().1.arg("tuple-quiet");
++        quiet_pair().1.with_arg("tuple-quiet");
+     }
+ }
+ 
+@@ -371,7 +371,7 @@ mod sibling_of_a_drop {
+ // something took a reference to outlives the call, which is what
+ // `ordered_drop` has and this does not.
+ fn moved_argument() {
+-    Command::new("ls").stdin(Stdio::null());
++    Command::new("ls").with_stdin(Stdio::null());
+ }
+ 
+ // Bad, and no rename is rendered: the chain's value lands in a `let`,

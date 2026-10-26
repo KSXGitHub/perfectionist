@@ -1,0 +1,17 @@
+--- a/fixture.rs
++++ b/fixture.rs
+@@ -47,13 +47,13 @@ struct Sep2;
+ 
+ // Bad: a blank line splits one std group in two.
+ use std::io::Read;
+-
+ use std::time::Instant;
+ 
+ struct Sep3;
+ 
+ // Bad: std and internal groups not separated by a blank line.
+ use std::fmt::Write;
++
+ use crate::config::Bytes;
+ 
+ struct Sep4;

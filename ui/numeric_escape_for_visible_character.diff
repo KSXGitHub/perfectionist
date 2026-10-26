@@ -1,0 +1,84 @@
+--- a/numeric_escape_for_visible_character.rs
++++ b/numeric_escape_for_visible_character.rs
+@@ -5,69 +5,69 @@
+ 
+ // Bad: a visible non-ASCII character written as a Unicode escape.
+ fn unicode_escape_in_string() {
+-    let _ = "\u{2192} next";
++    let _ = "→ next";
+ }
+ 
+ // Bad: a visible ASCII character written as a hex escape.
+ fn hex_escape_in_string() {
+-    let _ = "\x41BC";
++    let _ = "ABC";
+ }
+ 
+ // Bad: several escapes in one literal, each reported on its own.
+ fn several_escapes_in_one_string() {
+-    let _ = "R\u{E9}sum\u{E9}";
++    let _ = "Résumé";
+ }
+ 
+ // Bad: a character literal.
+ fn unicode_escape_in_char() {
+-    let _ = '\u{2715}';
++    let _ = '✕';
+ }
+ 
+ // Bad: a C-string literal, which takes a string literal's escapes.
+ fn unicode_escape_in_cstring() {
+-    let _ = c"\u{2192}";
++    let _ = c"→";
+ }
+ 
+ // Bad: the closing quote of a string literal has no verbatim spelling
+ // there, but an apostrophe does.
+ fn apostrophe_in_string() {
+-    let _ = "it\x27s here";
++    let _ = "it's here";
+ }
+ 
+ // Bad: the closing quote of a character literal has no verbatim
+ // spelling there, but a double quote does.
+ fn double_quote_in_char() {
+-    let _ = '\x22';
++    let _ = '"';
+ }
+ 
+ // Bad: an escape with the underscore separator the grammar allows
+ // between the hex digits of a Unicode escape.
+ fn underscore_separated_escape() {
+-    let _ = "\u{1_F600}";
++    let _ = "😀";
+ }
+ 
+ // Bad: a literal inside a macro invocation. `println!` consumes its
+ // template during expansion, so nothing of it survives as a literal.
+ fn macro_template() {
+-    println!("done \u{2714}");
++    println!("done ✔");
+ }
+ 
+ // Bad: a template carrying a placeholder is split into static pieces
+ // during expansion, and the escape in it is still flagged.
+ fn macro_template_with_placeholder() {
+     let value = 1;
+-    println!("{value} \u{2714}");
++    println!("{value} ✔");
+ }
+ 
+ // Bad: a brace written as an escape. The placeholder grammar applies
+ // to the decoded text, so this template already reads as the doubled
+ // brace that prints one, and still does once spelled out.
+ fn escaped_brace_in_template() {
+-    println!("\u{7B}\u{7B}");
++    println!("{{");
+ }
+ 
+ // Bad: an attribute's string literal is scanned like any other.
+-#[doc = "arrow: \u{2192}"]
++#[doc = "arrow: →"]
+ fn escape_in_attribute() {}
+ 
+ // Not flagged: the escape of a character the string literal cannot

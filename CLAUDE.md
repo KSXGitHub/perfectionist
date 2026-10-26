@@ -601,15 +601,20 @@ A `.stderr` cannot show an applicability. rustc renders a suggestion
 the same way whether or not the fixer would apply it, so promoting one
 to `MachineApplicable`, or demoting one away from it, moves nothing in
 any `.stderr` and no fixture notices. What pins the choice is a
-`.fixed` beside the fixture.
+`.diff` beside the fixture.
 
 Opt a fixture in with `// run-rustfix` and
 `// rustfix-only-machine-applicable` at its top and a committed
-`.fixed`; neither works without the other. The `.fixed` holds the
-fixture's own text with the machine-applicable suggestions applied, so
-one identical to the `.rs` is the assertion that the fixture offers
-none, and the fixed text has to compile. `just bless-fixed` records
-every one of them.
+`.diff`; neither works without the other. The `.diff` turns the
+fixture into the form the machine-applicable suggestions leave, so an
+empty one is the assertion that the fixture offers none, and the fixed
+text has to compile. `just bless-fixed` records every one of them.
+
+What compiletest compares against is the whole fixed source, which it
+reads from a `.fixed` beside the fixture. Committing that would commit
+a second copy of the fixture to show the handful of lines a rewrite
+touches, so the `.fixed` is materialised from the `.diff` in the
+throwaway copy each fixture runs from, and never committed.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
