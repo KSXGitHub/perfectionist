@@ -610,23 +610,11 @@ fixture into the form the machine-applicable suggestions leave, so an
 empty one is the assertion that the fixture offers none, and the fixed
 text has to compile.
 
-A `.diff` is written by hand, in the form `git diff --no-index`
-produces. A run that finds one out of date leaves what rustfix made of
-the fixture beside the test's own output, as a `.stage-id.fixed` under
-the directory `TMPDIR` names, and diffing the committed fixture
-against that file is the shortest way to a hunk that fits. What the
-failure prints instead is the whole fixed source, full context and no
-hunk headers. Either path reads a file from the throwaway copy, which
-carries the injected `normalize-stderr-test` lines that the committed
-fixture does not, so those come off before the diff is taken or every
-offset lands short by as many lines as the header runs to. A `.diff` that no longer fits its fixture
-is rejected rather than applied, naming what failed to match.
-
-What compiletest compares against is the whole fixed source, which it
-reads from a `.fixed` beside the fixture. Committing that would commit
-a second copy of the fixture to show the handful of lines a rewrite
-touches, so the `.fixed` is materialised from the `.diff` in the
-throwaway copy each fixture runs from, and never committed.
+Nothing records a `.diff`, so one is written by hand.
+[`utils/src/ui_fixtures/patch.rs`](utils/src/ui_fixtures/patch.rs)
+carries the form it has to take, where to read the fixed text a
+failing run leaves, what comes off that text first, and what a
+misfitting `.diff` is answered with.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
