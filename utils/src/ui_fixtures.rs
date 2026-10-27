@@ -145,21 +145,42 @@ fn copy_dir(source: &Path, destination: &Path) {
     }
 }
 
-/// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every `<name>.rs` under
-/// `dir` that has a sibling `<name>.stderr`.
-fn inject_directives(dir: &Path) {
-    for entry in fs::read_dir(dir).expect("read fixture copy dir") {
-        let entry = entry.expect("read fixture copy entry");
+/// Every `<name>.rs` under `dir`, at any depth, that has a sibling
+/// `<name>.stderr`.
+///
+/// That pairing is what makes a fixture's output normalised, so it
+/// decides both which copies [`inject_directives`] writes a header
+/// into and which committed `.stderr` files [`crate::bless`] may
+/// re-record. The two have to be the same set: a fixture the header
+/// misses is linted with its real line and column numbers, and
+/// re-recording from that output would commit them.
+pub(crate) fn fixtures_with_stderr(dir: &Path) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    collect_fixtures_with_stderr(dir, &mut found);
+    found
+}
+
+fn collect_fixtures_with_stderr(dir: &Path, found: &mut Vec<PathBuf>) {
+    for entry in fs::read_dir(dir).expect("read fixture dir") {
+        let entry = entry.expect("read fixture dir entry");
         let path = entry.path();
-        if entry.file_type().expect("fixture copy file type").is_dir() {
-            inject_directives(&path);
+        if entry.file_type().expect("fixture file type").is_dir() {
+            collect_fixtures_with_stderr(&path, found);
         } else if path.extension().is_some_and(|extension| extension == "rs")
             && path.with_extension("stderr").exists()
         {
-            let body = fs::read_to_string(&path).expect("read fixture .rs");
-            let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
-            fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
+            found.push(path);
         }
+    }
+}
+
+/// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture under
+/// `dir` that [`fixtures_with_stderr`] collects.
+fn inject_directives(dir: &Path) {
+    let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
+    for path in fixtures_with_stderr(dir) {
+        let body = fs::read_to_string(&path).expect("read fixture .rs");
+        fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
     }
 }
 

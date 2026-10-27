@@ -28,7 +28,11 @@
 //! problem, and no lock can scope them; a spawned `cargo dylint`
 //! clears them instead. See [`crate::dylint`].
 
+use crate::bless::{self, Expectations};
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
+use core::panic::AssertUnwindSafe;
+use std::panic;
+use std::path::Path;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Serialises the window in which `DYLINT_TOML` names one fixture's
@@ -46,6 +50,9 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
+    /// The committed `.stderr` files this run may re-record, read
+    /// only where the run is blessing.
+    expectations: Expectations,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.
     _fixtures: FixtureCopy,
@@ -66,7 +73,31 @@ impl ConfiguredUiTest {
     }
 
     pub(crate) fn run(mut self) {
-        self.test.run();
+        if !bless::enabled() {
+            self.test.run();
+            return;
+        }
+        self.expectations.clear();
+        // A mismatch reaches here as a panic, `compiletest` ending a
+        // failed console run with one, so catching it is what lets the
+        // actual output it left be read before the test is over.
+        let test = &mut self.test;
+        let outcome = panic::catch_unwind(AssertUnwindSafe(|| test.run()));
+        // A run that failed and left nothing to harvest failed at
+        // something re-recording does not answer, and its panic is
+        // the only report of that. Measured, the case this catches is
+        // the arithmetic in `bless` ceasing to name the file
+        // `compiletest` writes, which would otherwise read as a
+        // blessing run with nothing to do. A fixture that stopped
+        // compiling is *not* that case: its output differs, so it is
+        // staged and re-recorded like any other difference, and the
+        // diff of the re-recorded file is what reports it.
+        let recorded = self.expectations.harvest();
+        if recorded.is_empty()
+            && let Err(payload) = outcome
+        {
+            panic::resume_unwind(payload);
+        }
     }
 }
 
@@ -227,6 +258,10 @@ where
         // so it stays outside the critical section.
         let fixtures =
             copy_fixtures_with_directives(self.manifest_dir.as_ref(), self.src_base.as_ref());
+        let expectations = Expectations::of(
+            Path::new(self.manifest_dir.as_ref()),
+            Path::new(self.src_base.as_ref()),
+        );
         let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
         let mut test =
             dylint_testing::ui::Test::src_base(self.library_name.as_ref(), fixtures.path());
@@ -234,6 +269,7 @@ where
         test.rustc_flags(self.rustc_flags);
         ConfiguredUiTest {
             test,
+            expectations,
             _fixtures: fixtures,
             _serial: serial,
         }

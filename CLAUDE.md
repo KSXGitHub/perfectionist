@@ -592,8 +592,43 @@ A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
 driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
-writing one, since pasting the driver's real numbers in will not match. [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
+writing one, since pasting the driver's real numbers in will not match, or
+let [`just bless`](#re-recording-a-stderr) record it.
+[`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
+
+## Re-recording a `.stderr`
+
+A `.stderr` holds what the driver printed, so it is recorded rather
+than composed. `just bless` runs the suite with
+`PERFECTIONIST_BLESS=true`, which replaces every `.stderr` the run
+disagreed with by what the run produced. The diff of those files is
+the review, and it is the only report: a blessing run that re-records
+is green, so read `git diff` rather than the run.
+
+The variable takes `true` to record and `false`, empty or unset to
+compare, rejecting any other value so a misspelt opt-in cannot
+quietly leave the run comparing. That is the tri-state
+`PERFECTIONIST_CARGO_LOCKED` takes.
+
+These are worth knowing before reaching for it:
+
+- **It records a failure as readily as a fix.** A fixture that stopped
+  compiling prints an error, that error is a difference, and the
+  difference is what gets recorded. The diff shows it as a `.stderr`
+  losing most of its lines.
+- **A fixture with no `.stderr` is left alone.** The normalising
+  directives reach only a fixture that already has one, so a new
+  fixture needs an empty `.stderr` beside it before recording, or
+  what lands in the file carries the real line and column numbers
+  the normalisation exists to keep out.
+- **Never record while mutation-checking.** Recording makes the suite
+  agree with the code, which is the opposite of what a mutation check
+  asks. Flipping a behaviour and recording leaves the suite green on
+  the flip, and the fixture that should have caught it rewritten.
+
+[`utils/src/bless.rs`](utils/src/bless.rs) carries how the recorded
+text is found, and why finding it takes a deletion first.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

@@ -49,6 +49,10 @@ test:
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
+# Re-record every `.stderr` fixture from what the run produces
+bless:
+  PERFECTIONIST_BLESS=true just test
+
 # Run perfectionist's own lints on its source
 self-lint:
   DYLINT_RUSTFLAGS='-D warnings' cargo dylint --all -- --workspace --all-targets {{locked}}
