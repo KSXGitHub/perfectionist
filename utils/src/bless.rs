@@ -16,7 +16,7 @@
 use crate::ui_fixtures::fixture_sources;
 use derive_more::Display;
 use pipe_trait::Pipe;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
@@ -42,17 +42,17 @@ pub(crate) fn enabled() -> bool {
 /// What a value of [`BLESS_ENV`] can come out short of.
 #[derive(Display)]
 #[display("{BLESS_ENV} must be 'true', 'false', empty, or unset; got: {_0:?}")]
-struct BlessValueError(OsString);
+struct BlessValueError<'a>(&'a OsStr);
 
 /// `true` records, `false` and empty compare, and any other value is
 /// rejected rather than read as one of those, so a misspelt opt-in
 /// never quietly leaves the run comparing. That tri-state is the one
 /// `PERFECTIONIST_CARGO_LOCKED` takes.
-fn parse(value: &OsStr) -> Result<bool, BlessValueError> {
+fn parse(value: &OsStr) -> Result<bool, BlessValueError<'_>> {
     match value.to_str() {
         Some("true") => Ok(true),
         Some("false" | "") => Ok(false),
-        _ => Err(BlessValueError(value.to_owned())),
+        _ => Err(BlessValueError(value)),
     }
 }
 
