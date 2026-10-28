@@ -82,17 +82,10 @@ impl ConfiguredUiTest {
             test.run();
             return;
         }
-        // Walking the committed tree is a blessing run's business
-        // only, so it waits until here rather than happening in
-        // `build`.
         let expectations = Expectations::of(&manifest_dir, &src_base);
         expectations.delete_staged();
-        // `compiletest` ends a failed console run with a panic, so
-        // catching it is what lets the output it left be read before
-        // the test is over.
+        // `compiletest` ends a failed console run with a panic.
         let outcome = panic::catch_unwind(move || test.run());
-        // Nothing recorded after a failure means the failure was not a
-        // mismatch, and its panic is then the only report of it.
         let recorded = expectations.record();
         if recorded.is_empty()
             && let Err(payload) = outcome
