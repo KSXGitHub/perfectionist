@@ -71,6 +71,19 @@ pattern that several rules call out by reference — live in
   default and opt-in behind `include_handled_conversions`.
   `CStr`/`CString` are out of scope (FFI-shaped; satisfy no sink
   bound). Active by default.
+- [`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)
+  — flag a UTF-8 conversion of a value whose native form is not UTF-8
+  — an OS string, a byte buffer, or a `CStr`/`CString` — where every
+  use of the result is a comparison against a string literal
+  (`value.to_str() == Some("true")`, a `match` whose arms are all
+  literal patterns, `matches!(str::from_utf8(b), Ok("yes" | "no"))`).
+  The validity the conversion establishes reaches no arm, so the
+  comparison belongs on the native byte view
+  (`as_encoded_bytes()`, `to_bytes()`, the buffer itself) against
+  byte-string literals. Exempt where the decoded text is used as
+  text, where a `match` gives the non-UTF-8 case an outcome of its
+  own, and where a lossy conversion meets a literal containing
+  U+FFFD. Active by default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive

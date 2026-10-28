@@ -590,6 +590,26 @@ default policy stays purely on the objective-defect cases.
   `&T → T` owning conversion in a *function signature*, whereas this
   rule removes an `OsStr → str` *fidelity-destroying* conversion at
   a *call site*. Neither subsumes the other.
+- **[`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)**
+  recognises the same conversions this rule does and differs in what
+  consumes them: there the result is compared against string
+  literals, and the fix swaps the conversion for a lossless byte view
+  (`as_encoded_bytes()`, `to_bytes()`) with the literals respelled as
+  byte-string literals. Here the result feeds a sink whose bound
+  already accepts the native form, and the fix drops the conversion
+  outright. A call argument is not a comparison operand, so the
+  triggers are disjoint. Some differences are worth noting where they
+  could otherwise read as inconsistency. That rule covers
+  `CStr`/`CString`, which [(b) The source type](#b-the-source-type)
+  excludes here: a literal cannot hold a NUL terminator, so
+  `to_bytes()` is the only view that can compare equal, and the
+  ambiguity this rule declines to guess at does not arise. And that rule's rationale is a
+  preference rather than the objective defect
+  [Why is this bad?](#why-is-this-bad) states here, because a
+  comparison's answer is unchanged by the rewrite where a corrupted
+  path handed to the OS is not. Whichever of the two ships first
+  factors the conversion recognition into a crate-internal module for
+  the other to reuse.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
