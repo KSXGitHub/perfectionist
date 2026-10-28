@@ -31,7 +31,7 @@
 use crate::bless::{self, Expectations};
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
 use std::panic;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Serialises the window in which `DYLINT_TOML` names one fixture's
@@ -49,6 +49,11 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
+    /// The committed fixture tree, which only a blessing run reads.
+    manifest_dir: PathBuf,
+    /// The committed fixture tree's path below `manifest_dir`, which
+    /// only a blessing run reads.
+    src_base: PathBuf,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.
     _fixtures: FixtureCopy,
@@ -68,9 +73,11 @@ impl ConfiguredUiTest {
         }
     }
 
-    pub(crate) fn run(self, manifest_dir: &Path, src_base: &Path) {
+    pub(crate) fn run(self) {
         let ConfiguredUiTest {
             mut test,
+            manifest_dir,
+            src_base,
             _fixtures,
             _serial,
         } = self;
@@ -78,10 +85,10 @@ impl ConfiguredUiTest {
             test.run();
             return;
         }
-        // The tree is a parameter rather than a field so that this
-        // walk of it, which is a blessing run's business only, never
-        // happens on an ordinary one.
-        let expectations = Expectations::of(manifest_dir, src_base);
+        // Walking the committed tree is a blessing run's business
+        // only, so it waits until here rather than happening in
+        // `build`.
+        let expectations = Expectations::of(&manifest_dir, &src_base);
         expectations.delete_staged();
         // `compiletest` ends a failed console run with a panic, so
         // catching it is what lets the output it left be read before
@@ -246,9 +253,7 @@ where
     /// but run, so handing one out could only widen the window it is
     /// held for.
     pub fn run(self) {
-        let manifest_dir = PathBuf::from(self.manifest_dir.as_ref());
-        let src_base = PathBuf::from(self.src_base.as_ref());
-        self.build().run(&manifest_dir, &src_base);
+        self.build().run();
     }
 
     /// Everything the builder deferred happens here.
@@ -264,6 +269,8 @@ where
         test.rustc_flags(self.rustc_flags);
         ConfiguredUiTest {
             test,
+            manifest_dir: PathBuf::from(self.manifest_dir.as_ref()),
+            src_base: PathBuf::from(self.src_base.as_ref()),
             _fixtures: fixtures,
             _serial: serial,
         }
