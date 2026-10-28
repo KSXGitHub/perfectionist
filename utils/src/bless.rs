@@ -20,7 +20,7 @@ use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
-pub(crate) const VAR: &str = "PERFECTIONIST_BLESS";
+const BLESS_ENV: &str = "PERFECTIONIST_BLESS";
 
 /// compiletest's default stage id, which `dylint_testing` leaves
 /// alone and which lands in the name of every file it writes.
@@ -32,15 +32,16 @@ const STAGE_ID: &str = "stage-id";
 /// that reaches this through [`crate::ui_test`] returns `()`, so
 /// there is no caller left to hand a [`Result`] to.
 pub(crate) fn enabled() -> bool {
-    env::var_os(VAR)
+    BLESS_ENV
+        .pipe(env::var_os)
         .as_deref()
         .pipe(parse)
         .unwrap_or_else(|error| panic!("{error}"))
 }
 
-/// What a value of [`VAR`] can come out short of.
+/// What a value of [`BLESS_ENV`] can come out short of.
 #[derive(Display)]
-#[display("{VAR} must be 'true', 'false', empty, or unset; got: {_0:?}")]
+#[display("{BLESS_ENV} must be 'true', 'false', empty, or unset; got: {_0:?}")]
 struct BlessValueError(OsString);
 
 /// `true` records, `false` and empty compare, and any other value is
@@ -126,20 +127,21 @@ impl Expectations {
     /// `.stderr` it belongs to, and hand back the ones replaced. A
     /// fixture whose output matched left no file, so it is skipped.
     pub(crate) fn record(&self) -> Vec<&Path> {
-        self.0
-            .iter()
-            .filter(|expectation| expectation.staged.exists())
-            .map(|expectation| {
-                fs::copy(&expectation.staged, &expectation.committed).unwrap_or_else(|error| {
-                    panic!(
-                        "copy {} over {}: {error}",
-                        expectation.staged.display(),
-                        expectation.committed.display(),
-                    )
-                });
-                expectation.committed.as_path()
-            })
-            .collect()
+        let mut recorded = Vec::new();
+        for expectation in &self.0 {
+            if !expectation.staged.exists() {
+                continue;
+            }
+            fs::copy(&expectation.staged, &expectation.committed).unwrap_or_else(|error| {
+                panic!(
+                    "copy {} over {}: {error}",
+                    expectation.staged.display(),
+                    expectation.committed.display(),
+                )
+            });
+            recorded.push(expectation.committed.as_path());
+        }
+        recorded
     }
 }
 

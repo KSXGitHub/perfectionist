@@ -79,10 +79,11 @@ impl FixtureCopy {
 
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
 /// [`TempDir`], reproducing `relative` inside it, then prepend
-/// [`NORMALIZE_STDERR_DIRECTIVES`] to every `.rs` that has a sibling
-/// `.stderr`. The returned guard's `FixtureCopy::path` is the
-/// `src_base` the UI harness reads, and the guard has to outlive the
-/// run, which is why [`crate::ui_test`] holds it alongside the test.
+/// [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture
+/// [`fixture_sources`] collects. The returned guard's
+/// `FixtureCopy::path` is the `src_base` the UI harness reads, and the
+/// guard has to outlive the run, which is why [`crate::ui_test`] holds
+/// it alongside the test.
 ///
 /// An `auxiliary/` crate is copied verbatim, the directives on the
 /// fixture that builds against it already rewriting that fixture's
@@ -155,22 +156,18 @@ fn copy_dir(source: &Path, destination: &Path) {
 /// them.
 pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
-    collect_fixture_sources(dir, &mut found);
-    found
-}
-
-fn collect_fixture_sources(dir: &Path, found: &mut Vec<PathBuf>) {
     for entry in fs::read_dir(dir).expect("read fixture dir") {
         let entry = entry.expect("read fixture dir entry");
         let path = entry.path();
         if entry.file_type().expect("fixture file type").is_dir() {
             if entry.file_name() != "auxiliary" {
-                collect_fixture_sources(&path, found);
+                found.extend(fixture_sources(&path));
             }
         } else if path.extension().is_some_and(|extension| extension == "rs") {
             found.push(path);
         }
     }
+    found
 }
 
 /// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture under

@@ -68,12 +68,7 @@ impl ConfiguredUiTest {
         }
     }
 
-    /// The fixture tree is named again here rather than kept on the
-    /// struct, so that an ordinary run never walks it: only a
-    /// blessing run has anything to do with the committed tree.
     pub(crate) fn run(self, manifest_dir: &Path, src_base: &Path) {
-        // Destructured so the closure below can own the `Test` rather
-        // than borrow it out of `self`.
         let ConfiguredUiTest {
             mut test,
             _fixtures,
@@ -83,17 +78,17 @@ impl ConfiguredUiTest {
             test.run();
             return;
         }
+        // The tree is a parameter rather than a field so that this
+        // walk of it, which is a blessing run's business only, never
+        // happens on an ordinary one.
         let expectations = Expectations::of(manifest_dir, src_base);
         expectations.delete_staged();
         // `compiletest` ends a failed console run with a panic, so
         // catching it is what lets the output it left be read before
         // the test is over.
         let outcome = panic::catch_unwind(move || test.run());
-        // Recording nothing after a failure means the failure was not
-        // a mismatch, so its panic is the only report of it. Measured:
-        // a fixture that stops compiling is not this case, its output
-        // differing like any other, and the re-recorded diff is what
-        // reports that one.
+        // Nothing recorded after a failure means the failure was not a
+        // mismatch, and its panic is then the only report of it.
         let recorded = expectations.record();
         if recorded.is_empty()
             && let Err(payload) = outcome
