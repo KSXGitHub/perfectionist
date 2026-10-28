@@ -4,8 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
-/// Lay out a fixture tree under `root`, creating each path given and
-/// filling it with nothing: every caller that uses this reads paths
+/// Create each path under `root`, empty: every caller reads paths
 /// rather than contents.
 fn tree(root: &Path, paths: &[&str]) {
     for path in paths {
@@ -16,40 +15,34 @@ fn tree(root: &Path, paths: &[&str]) {
     }
 }
 
-/// The three spellings that mean "leave it off". Unset is the case
-/// every ordinary `cargo test` takes.
 #[test]
 fn absent_empty_and_false_are_off() {
-    assert!(!parse(None));
-    assert!(!parse(Some(OsStr::new(""))));
-    assert!(!parse(Some(OsStr::new("false"))));
+    assert_eq!(parse(None), Ok(false));
+    assert_eq!(parse(Some(OsStr::new(""))), Ok(false));
+    assert_eq!(parse(Some(OsStr::new("false"))), Ok(false));
 }
 
 #[test]
 fn true_is_on() {
-    assert!(parse(Some(OsStr::new("true"))));
+    assert_eq!(parse(Some(OsStr::new("true"))), Ok(true));
 }
 
-/// A value that is neither spelling is a typo in an opt-in, and
-/// reading it as "off" would leave the run comparing while its author
-/// believed it was recording.
+/// Reading an unrecognised value as "off" would leave the run
+/// comparing while its author believed it was recording.
 #[test]
-#[should_panic(expected = "must be 'true', 'false', empty, or unset")]
 fn any_other_value_is_rejected() {
-    parse(Some(OsStr::new("1")));
+    let error = parse(Some(OsStr::new("1"))).expect_err("1 is not a spelling");
+    assert_eq!(
+        error,
+        r#"PERFECTIONIST_BLESS must be 'true', 'false', empty, or unset; got: "1""#,
+    );
 }
 
-/// `true` is the whole spelling, so a different case is a typo rather
-/// than the same instruction.
 #[test]
-#[should_panic(expected = "must be 'true', 'false', empty, or unset")]
 fn a_differently_cased_true_is_rejected() {
-    parse(Some(OsStr::new("TRUE")));
+    assert!(parse(Some(OsStr::new("TRUE"))).is_err());
 }
 
-/// A fixture directly under the tree's root: compiletest names it by
-/// its stem alone, so the staged file sits directly under the
-/// directory it writes in.
 #[test]
 fn a_top_level_fixture_stages_beside_no_directory() {
     let temp = TempDir::new().expect("create a tree");
@@ -67,8 +60,7 @@ fn a_top_level_fixture_stages_beside_no_directory() {
     );
 }
 
-/// A tree whose `src_base` is itself nested keeps every component
-/// below the first one in the staged path, because that is what
+/// Every component below the first one survives, that being what
 /// compiletest put in the test's name.
 #[test]
 fn a_nested_tree_keeps_its_components_below_the_first() {
@@ -93,9 +85,6 @@ fn a_nested_tree_keeps_its_components_below_the_first() {
     );
 }
 
-/// A `.rs` with no `.stderr` beside it is left out: it is linted
-/// without the normalising directives, so its actual output is not a
-/// fixture's text.
 #[test]
 fn a_fixture_without_a_stderr_is_left_out() {
     let temp = TempDir::new().expect("create a tree");
@@ -126,8 +115,8 @@ fn of_stages_under_the_temp_directory() {
     );
 }
 
-/// Clearing a tree that has nothing staged is what every blessing run
-/// does for most of its fixtures, those having matched last time.
+/// What a blessing run does for most of its fixtures, those having
+/// matched last time.
 #[test]
 fn clearing_what_was_never_staged_is_fine() {
     let temp = TempDir::new().expect("create a tree");
@@ -136,8 +125,8 @@ fn clearing_what_was_never_staged_is_fine() {
     Expectations::under(temp.path(), Path::new("ui"), &staged_root).clear();
 }
 
-/// A staged actual left by an earlier failing run is deleted, which is
-/// what makes one found after a run mean that run wrote it.
+/// Deleting the leftover of an earlier failing run is what makes one
+/// found after a run mean that run wrote it.
 #[test]
 fn clearing_removes_a_stale_staged_actual() {
     let temp = TempDir::new().expect("create a tree");
@@ -153,7 +142,6 @@ fn clearing_removes_a_stale_staged_actual() {
     assert!(!staged.exists());
 }
 
-/// The copy a harvest performs, and the report of what it replaced.
 #[test]
 fn harvesting_replaces_the_committed_text() {
     let temp = TempDir::new().expect("create a tree");
@@ -174,8 +162,8 @@ fn harvesting_replaces_the_committed_text() {
     );
 }
 
-/// A fixture the run agreed with stages nothing, and a harvest leaves
-/// its committed text alone rather than reporting it.
+/// A fixture the run agreed with stages nothing, so its committed
+/// text is left alone rather than reported.
 #[test]
 fn harvesting_skips_what_staged_nothing() {
     let temp = TempDir::new().expect("create a tree");

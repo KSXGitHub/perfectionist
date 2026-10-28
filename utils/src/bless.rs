@@ -1,65 +1,52 @@
-//! Re-record what the UI fixtures are held to, from what the run
-//! itself produced.
+//! Re-record the `.stderr` fixtures from what the run produced.
 //!
-//! compiletest already computes the text a `.stderr` should hold. On
-//! a mismatch it writes its normalised actual output to a file of its
-//! own and prints where, so re-recording is a copy rather than a
-//! rendering, and the work here is naming that file and knowing when
-//! it is this run's.
+//! compiletest has already computed the text a `.stderr` should hold
+//! by the time a comparison fails, so re-recording is a copy. What it
+//! costs is that the file holding that text is named from
+//! `build_base`, which `dylint_testing` leaves at compiletest's
+//! default and neither crate's API promises: a drift there leaves a
+//! blessing run finding nothing rather than failing, which
+//! [`crate::ui_test`] answers by re-raising a failed run that
+//! recorded nothing.
 //!
-//! Naming it means knowing `build_base`, the directory compiletest
-//! writes under. `dylint_testing` builds compiletest's `Config`
-//! itself and leaves that field at its default, the system temp
-//! directory, so a fixture's actual output lands at
-//! `<temp dir>/<the fixture's path below `src_base`>` with its `.rs`
-//! replaced by [`STAGE_ID`] and `stderr`. Neither crate's API
-//! promises that, and a drift would leave [`Expectations::harvest`]
-//! finding nothing at all rather than failing, which is why it
-//! reports what it replaced and [`crate::ui_test`] re-raises a failed
-//! run that replaced none.
-//!
-//! Knowing it is this run's takes a deletion first. compiletest never
-//! removes one of those files, so an actual written by a failure
-//! outlives every later run that agrees with its fixture, and a
-//! harvest on its own would copy that stale text over a `.stderr` the
-//! current run was happy with. [`Expectations::clear`] goes first and
-//! makes a file found afterwards mean the run in between wrote it.
+//! compiletest never deletes one of those files, so an actual output
+//! written by a failure outlives every later run that agrees with its
+//! fixture. [`Expectations::clear`] therefore goes first.
 
 use crate::ui_fixtures::fixtures_with_stderr;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
-/// Set this to `true` to re-record the `.stderr` fixtures.
 pub(crate) const VAR: &str = "PERFECTIONIST_BLESS";
 
-/// compiletest's own default stage id, which `dylint_testing` leaves
-/// alone and which it puts in the name of every file it writes.
+/// compiletest's default stage id, which `dylint_testing` leaves
+/// alone and which lands in the name of every file it writes.
 const STAGE_ID: &str = "stage-id";
 
-/// Whether this run re-records the `.stderr` fixtures rather than
-/// holding them to what they contain.
+/// Whether this run re-records rather than compares.
 ///
-/// `true` turns re-recording on. `false`, empty and unset leave it
-/// off, and any other value is rejected rather than read as one of
-/// those, so a misspelt opt-in never quietly fails to apply. That
-/// tri-state is the one `PERFECTIONIST_CARGO_LOCKED` and the
-/// `commit-msg` hook's long-subject opt-out already take.
+/// Panicking is the end of the line for a bad value: the `#[test]`
+/// that reaches this through [`crate::ui_test`] returns `()`, so
+/// there is no caller left to hand a [`Result`] to.
 pub(crate) fn enabled() -> bool {
-    parse(env::var_os(VAR).as_deref())
+    parse(env::var_os(VAR).as_deref()).unwrap_or_else(|message| panic!("{message}"))
 }
 
-/// What [`enabled`] makes of one value, split out so that the
-/// tri-state can be exercised without setting a variable the rest of
-/// the process shares.
-fn parse(value: Option<&OsStr>) -> bool {
+/// `true` records, `false` and empty compare, and any other value is
+/// rejected rather than read as one of those, so a misspelt opt-in
+/// never quietly leaves the run comparing. That tri-state is the one
+/// `PERFECTIONIST_CARGO_LOCKED` takes.
+fn parse(value: Option<&OsStr>) -> Result<bool, String> {
     let Some(value) = value else {
-        return false;
+        return Ok(false);
     };
     match value.to_str() {
-        Some("true") => true,
-        Some("false" | "") => false,
-        _ => panic!("{VAR} must be 'true', 'false', empty, or unset; got: {value:?}"),
+        Some("true") => Ok(true),
+        Some("false" | "") => Ok(false),
+        _ => Err(format!(
+            "{VAR} must be 'true', 'false', empty, or unset; got: {value:?}",
+        )),
     }
 }
 
@@ -67,8 +54,6 @@ fn parse(value: Option<&OsStr>) -> bool {
 /// file compiletest writes that fixture's actual output to.
 pub(crate) struct Expectations(Vec<Expectation>);
 
-/// One committed `.stderr` and the actual output that would replace
-/// it.
 struct Expectation {
     /// The `.stderr` in the repository.
     committed: PathBuf,
@@ -77,32 +62,21 @@ struct Expectation {
 }
 
 impl Expectations {
-    /// The expectations of the fixture tree at
-    /// `<manifest_dir>/<relative>`, which is the committed tree and
-    /// not the copy the run reads.
-    ///
-    /// Only a `.rs` that already has a `.stderr` is included, which
-    /// is the set [`crate::ui_fixtures`] injects its normalising
-    /// directives into. A fixture without one is linted unnormalised,
-    /// so its actual output carries the real line and column numbers
-    /// a committed `.stderr` must not: re-recording from it would
-    /// write a fixture that the next edit above any diagnostic
-    /// breaks. Give a new fixture an empty `.stderr` first and the
-    /// two sets agree again.
+    /// The expectations of the committed tree at
+    /// `<manifest_dir>/<relative>`, rather than of the copy the run
+    /// reads.
     pub(crate) fn of(manifest_dir: &Path, relative: &Path) -> Self {
         Expectations::under(manifest_dir, relative, &env::temp_dir())
     }
 
-    /// The expectations of that tree, with the directory compiletest
-    /// writes under given rather than read from the environment, so a
-    /// test can exercise the arithmetic without writing where a real
-    /// run would look.
+    /// With the directory compiletest writes under given rather than
+    /// read from the environment, so a test exercises the arithmetic
+    /// without writing where a real run looks.
     fn under(manifest_dir: &Path, relative: &Path, staged_root: &Path) -> Self {
         // compiletest names a test after the fixture's path below
-        // `src_base`, and `src_base` is the copy of the first
-        // component of `relative`, so that same first component is
-        // what comes off a committed path to reach the name
-        // compiletest wrote.
+        // `src_base`, which is the copy of the first component of
+        // `relative`, so that component is what comes off a committed
+        // path to reach the name compiletest wrote.
         let root = manifest_dir.join(
             relative
                 .components()
@@ -130,13 +104,10 @@ impl Expectations {
     /// written by that run.
     pub(crate) fn clear(&self) {
         for expectation in &self.0 {
-            match fs::remove_file(&expectation.staged) {
-                Ok(()) => (),
-                // Nothing staged is the ordinary case: compiletest
-                // writes one only where a comparison failed, so most
-                // fixtures have none to begin with.
-                Err(error) if error.kind() == io::ErrorKind::NotFound => (),
-                Err(error) => panic!("remove {}: {error}", expectation.staged.display()),
+            if let Err(error) = fs::remove_file(&expectation.staged)
+                && error.kind() != io::ErrorKind::NotFound
+            {
+                panic!("remove {}: {error}", expectation.staged.display());
             }
         }
     }

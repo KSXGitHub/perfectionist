@@ -50,8 +50,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
-    /// The committed `.stderr` files this run may re-record, read
-    /// only where the run is blessing.
+    /// Read only where the run is blessing.
     expectations: Expectations,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.
@@ -78,20 +77,16 @@ impl ConfiguredUiTest {
             return;
         }
         self.expectations.clear();
-        // A mismatch reaches here as a panic, `compiletest` ending a
-        // failed console run with one, so catching it is what lets the
-        // actual output it left be read before the test is over.
+        // `compiletest` ends a failed console run with a panic, so
+        // catching it is what lets the output it left be read before
+        // the test is over.
         let test = &mut self.test;
         let outcome = panic::catch_unwind(AssertUnwindSafe(|| test.run()));
-        // A run that failed and left nothing to harvest failed at
-        // something re-recording does not answer, and its panic is
-        // the only report of that. Measured, the case this catches is
-        // the arithmetic in `bless` ceasing to name the file
-        // `compiletest` writes, which would otherwise read as a
-        // blessing run with nothing to do. A fixture that stopped
-        // compiling is *not* that case: its output differs, so it is
-        // staged and re-recorded like any other difference, and the
-        // diff of the re-recorded file is what reports it.
+        // Recording nothing after a failure means the failure was not
+        // a mismatch, so its panic is the only report of it. Measured:
+        // a fixture that stops compiling is not this case, its output
+        // differing like any other, and the re-recorded diff is what
+        // reports that one.
         let recorded = self.expectations.harvest();
         if recorded.is_empty()
             && let Err(payload) = outcome

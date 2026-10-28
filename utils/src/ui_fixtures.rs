@@ -148,12 +148,10 @@ fn copy_dir(source: &Path, destination: &Path) {
 /// Every `<name>.rs` under `dir`, at any depth, that has a sibling
 /// `<name>.stderr`.
 ///
-/// That pairing is what makes a fixture's output normalised, so it
-/// decides both which copies [`inject_directives`] writes a header
-/// into and which committed `.stderr` files [`crate::bless`] may
-/// re-record. The two have to be the same set: a fixture the header
-/// misses is linted with its real line and column numbers, and
-/// re-recording from that output would commit them.
+/// [`inject_directives`] and [`crate::bless`] have to agree on this
+/// set: a fixture the header misses is linted with its real line and
+/// column numbers, and re-recording from that output would commit
+/// them.
 pub(crate) fn fixtures_with_stderr(dir: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
     collect_fixtures_with_stderr(dir, &mut found);
