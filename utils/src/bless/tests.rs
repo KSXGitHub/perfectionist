@@ -17,23 +17,25 @@ fn tree(root: &Path, paths: &[&str]) {
 
 #[test]
 fn absent_empty_and_false_are_off() {
-    assert_eq!(parse(None), Ok(false));
-    assert_eq!(parse(Some(OsStr::new(""))), Ok(false));
-    assert_eq!(parse(Some(OsStr::new("false"))), Ok(false));
+    assert!(matches!(parse(None), Ok(false)));
+    assert!(matches!(parse(Some(OsStr::new(""))), Ok(false)));
+    assert!(matches!(parse(Some(OsStr::new("false"))), Ok(false)));
 }
 
 #[test]
 fn true_is_on() {
-    assert_eq!(parse(Some(OsStr::new("true"))), Ok(true));
+    assert!(matches!(parse(Some(OsStr::new("true"))), Ok(true)));
 }
 
 /// Reading an unrecognised value as "off" would leave the run
 /// comparing while its author believed it was recording.
 #[test]
 fn any_other_value_is_rejected() {
-    let error = parse(Some(OsStr::new("1"))).expect_err("1 is not a spelling");
+    let Err(error) = parse(Some(OsStr::new("1"))) else {
+        panic!("1 is not a spelling of the tri-state");
+    };
     assert_eq!(
-        error,
+        error.to_string(),
         r#"PERFECTIONIST_BLESS must be 'true', 'false', empty, or unset; got: "1""#,
     );
 }
@@ -137,17 +139,17 @@ fn of_stages_under_the_temp_directory() {
 /// What a blessing run does for most of its fixtures, those having
 /// matched last time.
 #[test]
-fn clearing_what_was_never_staged_is_fine() {
+fn deleting_what_was_never_staged_is_fine() {
     let temp = TempDir::new().expect("create a tree");
     let staged_root = temp.path().join("staged");
     tree(temp.path(), &["ui/absent.rs", "ui/absent.stderr"]);
-    Expectations::under(temp.path(), Path::new("ui"), &staged_root).clear();
+    Expectations::under(temp.path(), Path::new("ui"), &staged_root).delete_staged();
 }
 
 /// Deleting the leftover of an earlier failing run is what makes one
 /// found after a run mean that run wrote it.
 #[test]
-fn clearing_removes_a_stale_staged_actual() {
+fn deleting_removes_a_stale_staged_actual() {
     let temp = TempDir::new().expect("create a tree");
     let staged_root = temp.path().join("staged");
     tree(temp.path(), &["ui/stale.rs", "ui/stale.stderr"]);
@@ -156,13 +158,13 @@ fn clearing_removes_a_stale_staged_actual() {
     fs::create_dir_all(&staged_root).expect("create the staged dir");
     fs::write(staged, "from a run two days ago\n").expect("write the stale text");
 
-    expectations.clear();
+    expectations.delete_staged();
 
     assert!(!staged.exists());
 }
 
 #[test]
-fn harvesting_replaces_the_committed_text() {
+fn recording_replaces_the_committed_text() {
     let temp = TempDir::new().expect("create a tree");
     let staged_root = temp.path().join("staged");
     tree(temp.path(), &["ui/recorded.rs"]);
@@ -172,7 +174,7 @@ fn harvesting_replaces_the_committed_text() {
     fs::create_dir_all(&staged_root).expect("create the staged dir");
     fs::write(&expectations.0[0].staged, "fresh\n").expect("write the staged text");
 
-    let harvested = expectations.harvest();
+    let harvested = expectations.record();
 
     assert_eq!(harvested, vec![committed.as_path()]);
     assert_eq!(
@@ -181,10 +183,10 @@ fn harvesting_replaces_the_committed_text() {
     );
 }
 
-/// A fixture the run agreed with stages nothing, so its committed
+/// A fixture the run agreed with leaves no file, so its committed
 /// text is left alone rather than reported.
 #[test]
-fn harvesting_skips_what_staged_nothing() {
+fn recording_skips_what_staged_nothing() {
     let temp = TempDir::new().expect("create a tree");
     let staged_root = temp.path().join("staged");
     tree(temp.path(), &["ui/agreed.rs"]);
@@ -192,7 +194,7 @@ fn harvesting_skips_what_staged_nothing() {
     fs::write(&committed, "kept\n").expect("write the committed text");
     let expectations = Expectations::under(temp.path(), Path::new("ui"), &staged_root);
 
-    assert!(expectations.harvest().is_empty());
+    assert!(expectations.record().is_empty());
     assert_eq!(
         fs::read_to_string(&committed).expect("read the committed text"),
         "kept\n",

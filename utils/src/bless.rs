@@ -14,7 +14,9 @@
 //! fixture. [`Expectations::clear`] therefore goes first.
 
 use crate::ui_fixtures::fixture_sources;
-use std::ffi::OsStr;
+use derive_more::Display;
+use pipe_trait::Pipe;
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
@@ -30,28 +32,35 @@ const STAGE_ID: &str = "stage-id";
 /// that reaches this through [`crate::ui_test`] returns `()`, so
 /// there is no caller left to hand a [`Result`] to.
 pub(crate) fn enabled() -> bool {
-    parse(env::var_os(VAR).as_deref()).unwrap_or_else(|message| panic!("{message}"))
+    env::var_os(VAR)
+        .as_deref()
+        .pipe(parse)
+        .unwrap_or_else(|error| panic!("{error}"))
 }
+
+/// What a value of [`VAR`] can come out short of.
+#[derive(Display)]
+#[display("{VAR} must be 'true', 'false', empty, or unset; got: {_0:?}")]
+struct BlessValueError(OsString);
 
 /// `true` records, `false` and empty compare, and any other value is
 /// rejected rather than read as one of those, so a misspelt opt-in
 /// never quietly leaves the run comparing. That tri-state is the one
 /// `PERFECTIONIST_CARGO_LOCKED` takes.
-fn parse(value: Option<&OsStr>) -> Result<bool, String> {
+fn parse(value: Option<&OsStr>) -> Result<bool, BlessValueError> {
     let Some(value) = value else {
         return Ok(false);
     };
     match value.to_str() {
         Some("true") => Ok(true),
         Some("false" | "") => Ok(false),
-        _ => Err(format!(
-            "{VAR} must be 'true', 'false', empty, or unset; got: {value:?}",
-        )),
+        _ => Err(BlessValueError(value.to_owned())),
     }
 }
 
-/// The `.stderr` files one fixture tree commits, each paired with the
-/// file compiletest writes that fixture's actual output to.
+/// A pair of paths per fixture, and nothing read from either: the
+/// `.stderr` the tree commits, and the file compiletest writes that
+/// fixture's actual output to. Both methods go to the filesystem.
 pub(crate) struct Expectations(Vec<Expectation>);
 
 struct Expectation {
@@ -100,9 +109,10 @@ impl Expectations {
         Expectations(expectations)
     }
 
-    /// Delete every staged actual, so that one found after the run was
-    /// written by that run.
-    pub(crate) fn clear(&self) {
+    /// Delete the file compiletest would write each actual output to,
+    /// so that one found on disk after the run was written by that
+    /// run.
+    pub(crate) fn delete_staged(&self) {
         for expectation in &self.0 {
             if let Err(error) = fs::remove_file(&expectation.staged)
                 && error.kind() != io::ErrorKind::NotFound
@@ -112,9 +122,10 @@ impl Expectations {
         }
     }
 
-    /// Copy each staged actual over the `.stderr` it belongs to, and
-    /// hand back the ones replaced.
-    pub(crate) fn harvest(&self) -> Vec<&Path> {
+    /// Copy each actual output compiletest left on disk over the
+    /// `.stderr` it belongs to, and hand back the ones replaced. A
+    /// fixture whose output matched left no file, so it is skipped.
+    pub(crate) fn record(&self) -> Vec<&Path> {
         self.0
             .iter()
             .filter(|expectation| expectation.staged.exists())

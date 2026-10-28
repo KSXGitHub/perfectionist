@@ -30,9 +30,8 @@
 
 use crate::bless::{self, Expectations};
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
-use core::panic::AssertUnwindSafe;
 use std::panic;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Serialises the window in which `DYLINT_TOML` names one fixture's
@@ -50,8 +49,6 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
-    /// Read only where the run is blessing.
-    expectations: Expectations,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.
     _fixtures: FixtureCopy,
@@ -71,28 +68,33 @@ impl ConfiguredUiTest {
         }
     }
 
-    pub(crate) fn run(mut self) {
+    /// The fixture tree is named again here rather than kept on the
+    /// struct, so that an ordinary run never walks it: only a
+    /// blessing run has anything to do with the committed tree.
+    pub(crate) fn run(self, manifest_dir: &Path, src_base: &Path) {
+        // Destructured so the closure below can own the `Test` rather
+        // than borrow it out of `self`.
+        let ConfiguredUiTest {
+            mut test,
+            _fixtures,
+            _serial,
+        } = self;
         if !bless::enabled() {
-            self.test.run();
+            test.run();
             return;
         }
-        self.expectations.clear();
+        let expectations = Expectations::of(manifest_dir, src_base);
+        expectations.delete_staged();
         // `compiletest` ends a failed console run with a panic, so
         // catching it is what lets the output it left be read before
         // the test is over.
-        // A `&mut` is not `UnwindSafe` because an unwind can leave
-        // what it points at inconsistent for a later reader. There is
-        // no later reader: the borrow ends with this call, what
-        // follows touches `expectations` only, and `self` is dropped
-        // without `test` being read again.
-        let test = &mut self.test;
-        let outcome = panic::catch_unwind(AssertUnwindSafe(|| test.run()));
+        let outcome = panic::catch_unwind(move || test.run());
         // Recording nothing after a failure means the failure was not
         // a mismatch, so its panic is the only report of it. Measured:
         // a fixture that stops compiling is not this case, its output
         // differing like any other, and the re-recorded diff is what
         // reports that one.
-        let recorded = self.expectations.harvest();
+        let recorded = expectations.record();
         if recorded.is_empty()
             && let Err(payload) = outcome
         {
@@ -249,7 +251,9 @@ where
     /// but run, so handing one out could only widen the window it is
     /// held for.
     pub fn run(self) {
-        self.build().run();
+        let manifest_dir = PathBuf::from(self.manifest_dir.as_ref());
+        let src_base = PathBuf::from(self.src_base.as_ref());
+        self.build().run(&manifest_dir, &src_base);
     }
 
     /// Everything the builder deferred happens here.
@@ -258,10 +262,6 @@ where
         // so it stays outside the critical section.
         let fixtures =
             copy_fixtures_with_directives(self.manifest_dir.as_ref(), self.src_base.as_ref());
-        let expectations = Expectations::of(
-            Path::new(self.manifest_dir.as_ref()),
-            Path::new(self.src_base.as_ref()),
-        );
         let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
         let mut test =
             dylint_testing::ui::Test::src_base(self.library_name.as_ref(), fixtures.path());
@@ -269,7 +269,6 @@ where
         test.rustc_flags(self.rustc_flags);
         ConfiguredUiTest {
             test,
-            expectations,
             _fixtures: fixtures,
             _serial: serial,
         }
