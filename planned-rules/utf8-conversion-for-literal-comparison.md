@@ -87,16 +87,39 @@ objection one type over.
 
 ### Speed is not the argument
 
-Byte equality is cheaper, and the rule still does not rest on it.
-`<[u8]>::eq` compares lengths before any bytes, so a comparison
-against a literal of length *k* rejects a differently-sized input
-without reading it, where the UTF-8 validation scans all *n* bytes
-first whatever *k* is. That is a real difference in shape, and it is
-not a reason to change this code: the values are a handful of bytes,
-read once per run, and the project guide is explicit that measuring
-is how a performance question gets settled and that sites like this
-are not that. Anyone tempted to re-motivate the rule on throughput
-should produce a measurement first.
+Byte equality is cheaper for most of the sources, and the rule still
+does not rest on it. `<[u8]>::eq` compares lengths before any bytes,
+so a comparison against a literal of length *k* rejects a
+differently-sized input without reading it, where the UTF-8
+validation scans all *n* bytes first whatever *k* is. That is a real
+difference in shape, and it is not a reason to change this code: the
+values are a handful of bytes, read once per run, and the project
+guide is explicit that measuring is how a performance question gets
+settled and that sites like this are not that. Anyone tempted to
+re-motivate the rule on throughput should produce a measurement
+first.
+
+A C string is the case that shows why, because there the saving is
+the least secure. A NUL-terminated string's length is the index of
+its terminator, so reaching its bytes is a scan in C. It is not one
+through a Rust `&CStr`, which is a fat pointer carrying the length
+the way `&str` does — `size_of::<&CStr>()` is 16 on a 64-bit host
+against 8 for a thin pointer — so the scan happened once when the
+reference was built and `to_bytes` narrows the slice by one byte.
+`CStr::to_bytes` is nevertheless documented as a constant-time cast
+*today*, with the note that its definition is planned to compute the
+length on each call instead; `CString::as_bytes`, slicing an owned
+buffer whose length is stored, carries no such note.
+
+Under the planned definition the rewrite would trade a UTF-8
+validation for a `strlen`, which is a cheaper scan per byte but a
+scan of the same length, so what is left is a constant factor rather
+than the asymptotic difference the slice-backed sources give. How
+large a factor has not been measured here and the rule does not need
+it measured, because the reason to make the rewrite — a question
+asked and discarded — is the same either way. The rule covers C
+strings on that reason alone, which is the point of keeping cost out
+of the rationale.
 
 ### The rewrite is an identity
 
@@ -117,6 +140,7 @@ byte-string literal:
 |----------------------------------|---------------------------------|------------|
 | `v.to_str() == Some(LIT)`        | `v.as_encoded_bytes() == b"LIT"` | always |
 | `str::from_utf8(v) == Ok(LIT)`   | `v == b"LIT"`                    | always |
+| `c.to_str() == Ok(LIT)`          | `c.to_bytes() == b"LIT"`         | always |
 | `v.to_string_lossy() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | unless `LIT` contains U+FFFD |
 | `v.to_str().unwrap() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | drops a panic |
 
@@ -189,7 +213,8 @@ view to compare against:
 | `Path`, `PathBuf`                   | `as_os_str().as_encoded_bytes()` |
 | `[u8]`, `&[u8]`                     | the value itself |
 | `Vec<u8>`, `Box<[u8]>`              | the value, dereferenced for a pattern |
-| `CStr`, `CString`                   | `to_bytes()` |
+| `CStr`                              | `to_bytes()` |
+| `CString`                           | `as_bytes()` |
 
 `as_encoded_bytes` is the view to suggest rather than the
 `OsStrExt::as_bytes` that review's opening question named: the two
@@ -202,8 +227,27 @@ them because they satisfy none of its sink bounds and because
 "with or without the trailing NUL?" has no safe default answer when
 the bytes are being handed onward. Against a literal the question
 settles itself: a string literal cannot contain a NUL terminator, so
-`to_bytes()` — the view that excludes it — is the only one that can
+the view that excludes the terminator is the only one that can
 compare equal.
+
+Which view that is has to be stated rather than left to whoever
+writes the suggestion, because the alternative is adjacent and fails
+quietly. `CStr::to_bytes` and `CString::as_bytes` exclude the
+terminator, so the literal stays plain: for a `CStr` holding
+`"true\0"`, `to_bytes() == b"true"` holds. Their
+`to_bytes_with_nul` / `as_bytes_with_nul` counterparts retain it, and
+`to_bytes_with_nul() == b"true"` is **false** for that same C string
+— a comparison that compiles, never matches, and reports nothing. A
+suggestion reaching for a `*_with_nul` view would have to emit
+`b"true\0"` to work at all, which states a terminator the original
+comparison never mentioned. So the `*_with_nul` family is not a view
+this rule may suggest, and an implementation that recognises one as a
+*source* of bytes must not pair it with a plain literal.
+
+Checked on this host: `to_bytes()` agreed with `to_str() == Ok(LIT)`
+on every C string tried — the words themselves, differing case, a
+`0xFF` byte, valid non-ASCII UTF-8, and the empty C string — against
+literals including `é` and the empty one.
 
 ### (c) The consumer
 
@@ -292,6 +336,19 @@ matches!(str::from_utf8(bytes), Ok("yes" | "no"))
 
 ```rust
 matches!(bytes, b"yes" | b"no")
+```
+
+**Avoid** — a C string, whose byte view drops the terminator the
+literal never mentions:
+
+```rust
+if c_str.to_str() == Ok("yes") { .. }
+```
+
+**Prefer**:
+
+```rust
+if c_str.to_bytes() == b"yes" { .. }
 ```
 
 **Avoid** — a lossy conversion, with no U+FFFD in the literal:
