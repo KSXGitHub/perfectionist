@@ -34,8 +34,8 @@ const STAGE_ID: &str = "stage-id";
 pub(crate) fn enabled() -> bool {
     BLESS_ENV
         .pipe(env::var_os)
-        .as_deref()
-        .pipe(parse)
+        .unwrap_or_default()
+        .pipe_deref(parse)
         .unwrap_or_else(|error| panic!("{error}"))
 }
 
@@ -48,10 +48,7 @@ struct BlessValueError(OsString);
 /// rejected rather than read as one of those, so a misspelt opt-in
 /// never quietly leaves the run comparing. That tri-state is the one
 /// `PERFECTIONIST_CARGO_LOCKED` takes.
-fn parse(value: Option<&OsStr>) -> Result<bool, BlessValueError> {
-    let Some(value) = value else {
-        return Ok(false);
-    };
+fn parse(value: &OsStr) -> Result<bool, BlessValueError> {
     match value.to_str() {
         Some("true") => Ok(true),
         Some("false" | "") => Ok(false),

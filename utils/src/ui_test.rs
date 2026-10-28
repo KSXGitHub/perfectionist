@@ -49,10 +49,7 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
-    /// The committed fixture tree, which only a blessing run reads.
     manifest_dir: PathBuf,
-    /// The committed fixture tree's path below `manifest_dir`, which
-    /// only a blessing run reads.
     src_base: PathBuf,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.

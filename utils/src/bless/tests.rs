@@ -15,23 +15,24 @@ fn tree(root: &Path, paths: &[&str]) {
     }
 }
 
+/// Empty is how an unset variable reaches [`parse`], the two meaning
+/// the same thing.
 #[test]
-fn absent_empty_and_false_are_off() {
-    assert!(matches!(parse(None), Ok(false)));
-    assert!(matches!(parse(Some(OsStr::new(""))), Ok(false)));
-    assert!(matches!(parse(Some(OsStr::new("false"))), Ok(false)));
+fn empty_and_false_are_off() {
+    assert!(matches!(parse(OsStr::new("")), Ok(false)));
+    assert!(matches!(parse(OsStr::new("false")), Ok(false)));
 }
 
 #[test]
 fn true_is_on() {
-    assert!(matches!(parse(Some(OsStr::new("true"))), Ok(true)));
+    assert!(matches!(parse(OsStr::new("true")), Ok(true)));
 }
 
 /// Reading an unrecognised value as "off" would leave the run
 /// comparing while its author believed it was recording.
 #[test]
 fn any_other_value_is_rejected() {
-    let Err(error) = parse(Some(OsStr::new("1"))) else {
+    let Err(error) = parse(OsStr::new("1")) else {
         panic!("1 is not a spelling of the tri-state");
     };
     assert_eq!(
@@ -42,7 +43,7 @@ fn any_other_value_is_rejected() {
 
 #[test]
 fn a_differently_cased_true_is_rejected() {
-    assert!(parse(Some(OsStr::new("TRUE"))).is_err());
+    assert!(parse(OsStr::new("TRUE")).is_err());
 }
 
 #[test]
