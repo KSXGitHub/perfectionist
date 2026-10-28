@@ -601,9 +601,6 @@ performs the normalisation and explains how.
 
 `just bless` updates the `.stderr` fixtures. Read the diff it leaves.
 
-Never bless while mutation-checking: it rewrites the fixture that was
-meant to catch the flip, leaving the suite green on it.
-
 ## Generated documentation site (`tools/gen-docs/`)
 
 The lint catalogue at <https://ksxgithub.github.io/perfectionist/>
