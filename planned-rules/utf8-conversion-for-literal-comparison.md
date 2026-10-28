@@ -144,6 +144,7 @@ byte-string literal:
 | `str::from_utf8(v) == Ok(LIT)`   | `v == b"LIT"`                    | always |
 | `c.to_str() == Ok(LIT)`          | `c.to_bytes() == b"LIT"`         | always |
 | `v.to_string_lossy() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | unless `LIT` contains U+FFFD |
+| `String::from_utf8_lossy(v) == LIT` | `v == b"LIT"`                | unless `LIT` contains U+FFFD |
 | `v.to_str().unwrap() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | drops a panic |
 
 The lossy and `unwrap` rows are fidelity-destroying conversions, and
@@ -155,24 +156,48 @@ where the rewrite also retires a fidelity defect, which is
 `perfectionist::needless_utf8_conversion`'s reasoning arriving at a
 consumer that rule does not cover.
 
-The lossy row is the one with a guard worth stating precisely.
-`to_string_lossy` maps each ill-formed sequence to U+FFFD, so a
-literal that *contains* U+FFFD can be matched by an input that does
-not contain those bytes at all: a lone `0xFF` renders as `"\u{FFFD}"`
-and compares equal, while its encoded bytes do not. A literal with no
-U+FFFD in it has no such pre-image, and the rewrite is exact. The
-condition is a scan of the literal, so it is a guard the rule applies
-rather than a knob the consumer sets.
+The lossy rows are the ones with a guard worth stating precisely, and
+the mechanism behind the guard is worth stating first, because the
+obvious worry about a lossy conversion is the wrong one. A lossy
+conversion **replaces**, and never deletes. Each ill-formed sequence
+becomes U+FFFD, three bytes, so the output cannot come out shorter
+than the input and an input that differs from the literal's bytes
+cannot quietly shrink to match it.
 
-The `to_str` and `to_string_lossy` rows were checked on this host
-over an input set spanning the words themselves, ASCII that differs
-in case, valid non-ASCII UTF-8 (`é`), a lone `0xFF`, a truncated
-U+FFFD prefix, an unpaired surrogate, and the empty string, against
-literals including `é` and U+FFFD: the `to_str` rewrite disagreed on
-nothing, and the `to_string_lossy` rewrite disagreed only on the
-U+FFFD-literal cases the guard excludes. The cross-platform half of
-the claim rests on the documented guarantee rather than on that run,
-which was Linux only.
+What follows is the guard. A lossy output is the concatenation of the
+input's valid runs, copied verbatim, with one or more U+FFFD per
+ill-formed sequence. If that output equals a literal holding no
+U+FFFD, then no U+FFFD was emitted, so no ill-formed sequence was
+present, so the input was valid UTF-8 copied verbatim and is the
+literal's bytes. The literal's own content is therefore the whole
+condition: with no U+FFFD in it, the lossy comparison and the byte
+comparison agree. With one, they need not, since a literal that
+*contains* U+FFFD can be matched by an input that does not contain
+those bytes at all, a lone `0xFF` rendering as `"\u{FFFD}"` and
+comparing equal while its encoded bytes do not. The condition is a
+scan of the literal, so it is a guard the rule applies rather than a
+knob the consumer sets.
+
+The replacement property was checked rather than argued, and
+exhaustively, because the whole guard rests on it. Over all 16843008
+byte strings of length 1 to 3: every input that is not valid UTF-8
+left a U+FFFD in its output, and no input produced an output shorter
+than itself. Over all byte strings of length 3, the only one whose
+lossy form is `"yes"` is `b"yes"`, and no perturbation of `b"yes"` is
+another, taking every byte inserted at every position and every byte
+substituted at every position. An ill-formed byte beside the word
+behaves as the mechanism says: `b"yes\xFF"` renders as
+`"yes\u{FFFD}"`, `b"yes\xC3"` likewise renders as `"yes\u{FFFD}"`,
+and neither equals `"yes"`.
+
+Each row was then checked over an input set spanning the words
+themselves, ASCII that differs in case, valid non-ASCII UTF-8 (`é`),
+a lone `0xFF`, a truncated U+FFFD prefix, an unpaired surrogate, and
+the empty string, against literals including `é` and U+FFFD. The
+faithful rewrites disagreed on nothing, and the lossy rewrites
+disagreed only on the U+FFFD-literal cases the guard excludes. The
+cross-platform half of the claim rests on the documented guarantee
+rather than on that run, which was Linux only.
 
 ## What to lint
 
