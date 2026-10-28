@@ -219,9 +219,30 @@ view to compare against:
 | `CString`                           | `as_bytes()` |
 
 `as_encoded_bytes` is the view to suggest rather than the
-`OsStrExt::as_bytes` that review's opening question named: the two
-agree on Unix, and `as_encoded_bytes` is the one that also exists on
-Windows.
+`OsStrExt::as_bytes` that review's opening question named. On Unix the
+choice is invisible: the two hand back the same slice, same pointer
+and same length, for every byte sequence including ones that are not
+valid UTF-8. Checked on this host over all 256 byte values.
+
+What separates them is the contract rather than the bytes, and it
+shows up on the way back. `OsStrExt::from_bytes` is safe, because on
+Unix any byte sequence is a valid OS string, while
+`OsStr::from_encoded_bytes_unchecked` is `unsafe`, because the
+encoding it accepts is unspecified. This rule only ever reads the
+bytes forward and compares them, never reconstructing an `OsStr` from
+them, so the unsafe inverse and the opacity caveat that motivates it
+never arise.
+
+Portability is what settles it. `OsStrExt::as_bytes` is Unix-only, and
+the Windows `OsStrExt` offers no byte view to stand in for it: its one
+method is `encode_wide`, which yields `u16` code units and so cannot
+meet a byte-string literal at all. `as_encoded_bytes` is an inherent
+method on `OsStr`, present on every target. There it reads the storage
+`OsString` documents as "a less-strict variant of UTF-8", the encoding
+usually called WTF-8, which keeps every valid-UTF-8 sequence spelled
+as itself and gives an unpaired surrogate a three-byte form that UTF-8
+rejects. A literal therefore compares the same way on both platforms,
+and a surrogate fails `to_str` and the byte comparison alike.
 
 C strings are **in** scope here, which is a deliberate divergence
 from `perfectionist::needless_utf8_conversion`. That rule excludes
