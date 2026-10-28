@@ -73,9 +73,17 @@ case by case. The objection is to what the reader has to carry:
   who meets `to_str` reasonably expects the encoding to matter
   somewhere, and here it does not.
 
-`perfectionist::some_bool_comparison` makes this objection one type
-over; [Interaction with sibling rules](#interaction-with-sibling-rules)
-says how the two relate.
+Note which property of the conversion this objection does *not* rest
+on. The conversion need not lose anything: the motivating shape's
+`to_str()` is faithful, reports the non-UTF-8 case accurately, and is
+still the thing to remove, because the comparison had no use for the
+report. Fidelity is the axis
+`perfectionist::needless_utf8_conversion` sorts on, and it places
+this shape outside itself by default;
+[Interaction with sibling rules](#interaction-with-sibling-rules)
+works that through, and relates
+`perfectionist::some_bool_comparison`, which makes this same
+objection one type over.
 
 ### Speed is not the argument
 
@@ -112,6 +120,15 @@ byte-string literal:
 | `v.to_string_lossy() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | unless `LIT` contains U+FFFD |
 | `v.to_str().unwrap() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | drops a panic |
 
+The lossy and `unwrap` rows are fidelity-destroying conversions, and
+they are in scope here for the relevance reason rather than that
+one: feeding a corrupted or panicking conversion into a literal
+comparison corrupts nothing, since the answer is the one the faithful
+conversion would have given. The `unwrap` row is the single place
+where the rewrite also retires a fidelity defect, which is
+`perfectionist::needless_utf8_conversion`'s reasoning arriving at a
+consumer that rule does not cover.
+
 The lossy row is the one with a guard worth stating precisely.
 `to_string_lossy` maps each ill-formed sequence to U+FFFD, so a
 literal that *contains* U+FFFD can be matched by an input that does
@@ -127,9 +144,9 @@ in case, valid non-ASCII UTF-8 (`é`), a lone `0xFF`, a truncated
 U+FFFD prefix, an unpaired surrogate, and the empty string, against
 literals including `é` and U+FFFD: the `to_str` rewrite disagreed on
 nothing, and the `to_string_lossy` rewrite disagreed only on the
-U+FFFD-literal cases the guard excludes. The cross-platform half of the claim rests
-on the documented guarantee rather than on that run, which was Linux
-only.
+U+FFFD-literal cases the guard excludes. The cross-platform half of
+the claim rests on the documented guarantee rather than on that run,
+which was Linux only.
 
 ## What to lint
 
@@ -369,9 +386,9 @@ respect:
 Applicability follows the identity table in
 [The rewrite is an identity](#the-rewrite-is-an-identity):
 `MachineApplicable` where the rewrite computes the answer the
-conversion did, `MaybeIncorrect` where it removes a panic, since a program relying
-on that panic to reject non-UTF-8 input is using the conversion for
-something the comparison does not show.
+conversion did, `MaybeIncorrect` where it removes a panic, since a
+program relying on that panic to reject non-UTF-8 input is using the
+conversion for something the comparison does not show.
 
 ## Configuration
 
@@ -497,15 +514,35 @@ asks for when no counterpart exists.
 
 ## Interaction with sibling rules
 
-- **`perfectionist::needless_utf8_conversion`** recognises the same
-  conversions and differs in what consumes them. There the consumer
-  is a parameter position whose bound already accepts the native form
-  and the fix drops the conversion outright; here the consumer is a
-  comparison against literals and the fix replaces the conversion
-  with a lossless byte view and rewrites the literals. The triggers
-  are disjoint — a call argument is not a comparison operand — so
-  neither rule subsumes the other, and the two reach opposite
-  conclusions about `CStr`, for the reason
+- **`perfectionist::needless_utf8_conversion`** sorts the same
+  conversions on a different axis, which is what keeps the two rules
+  apart more cleanly than their consumers do.
+
+  That rule's axis is **fidelity**. It recognises the conversions
+  that lose something — `to_string_lossy()`, `display().to_string()`,
+  and the `unwrap`-on-`None` forms — and says in as many words that a
+  faithful, fully-handled conversion is not flagged by default,
+  naming `match recv.to_str() { Some(s) => …, None => … }` as a shape
+  it leaves alone. Its rationale follows from that axis: a corrupted
+  path reaching the OS names the wrong file, and a panic on a valid
+  path is a needless abort.
+
+  This rule's axis is **relevance**. What it objects to is a question
+  asked and discarded, so a conversion qualifies however faithful it
+  is, and the motivating shape — a bare `to_str()` under a `match`,
+  losing nothing and reporting the non-UTF-8 case accurately — is
+  precisely one the fidelity axis places outside itself. The two
+  default trigger sets are therefore close to complementary rather
+  than overlapping: a `to_str()` with no `unwrap` is this rule's
+  core and that rule's documented exemption.
+
+  The consumers differ too, and that is what makes the triggers
+  provably disjoint rather than merely differently motivated: a call
+  argument in a position whose bound accepts the native form is not a
+  comparison operand. The fixes differ with them — dropping the
+  conversion there, replacing it with a lossless byte view and
+  respelling the literals here. Neither rule subsumes the other, and
+  the two reach opposite conclusions about `CStr` for the reason
   [(b)](#b-the-source-type) records.
 - **`perfectionist::some_bool_comparison`** is the same objection one
   type over: it flags `Option<bool>` compared against `Some` of a

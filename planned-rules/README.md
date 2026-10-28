@@ -83,7 +83,12 @@ pattern that several rules call out by reference — live in
   byte-string literals. Exempt where the decoded text is used as
   text, where a `match` gives the non-UTF-8 case an outcome of its
   own, and where a lossy conversion meets a literal containing
-  U+FFFD. Active by default.
+  U+FFFD. Sorts the same conversions as
+  [`needless-utf8-conversion.md`](./needless-utf8-conversion.md) on a
+  different axis: that rule fires on the ones that lose fidelity,
+  this one on the ones whose answer is discarded, so a faithful
+  `to_str()` is this rule's core and that rule's exemption. Active by
+  default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive

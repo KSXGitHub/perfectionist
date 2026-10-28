@@ -596,25 +596,36 @@ default policy stays purely on the objective-defect cases.
   rule removes an `OsStr → str` *fidelity-destroying* conversion at
   a *call site*. Neither subsumes the other.
 - **[`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)**
-  recognises the same conversions this rule does and differs in what
-  consumes them: there the result is compared against string
-  literals, and the fix swaps the conversion for a lossless byte view
-  (`as_encoded_bytes()`, `to_bytes()`) with the literals respelled as
-  byte-string literals. Here the result feeds a sink whose bound
-  already accepts the native form, and the fix drops the conversion
-  outright. A call argument is not a comparison operand, so the
-  triggers are disjoint. Some differences are worth noting where they
-  could otherwise read as inconsistency. That rule covers
-  `CStr`/`CString`, which [(b) The source type](#b-the-source-type)
-  excludes here: a literal cannot hold a NUL terminator, so
-  `to_bytes()` is the only view that can compare equal, and the
-  ambiguity this rule declines to guess at does not arise. And that rule's rationale is a
-  preference rather than the objective defect
-  [Why is this bad?](#why-is-this-bad) states here, because a
-  comparison's answer is unchanged by the rewrite where a corrupted
-  path handed to the OS is not. Whichever of the two ships first
-  factors the conversion recognition into a crate-internal module for
-  the other to reuse.
+  reads the same conversions this rule does and sorts them on a
+  different axis. This rule's axis is **fidelity**: the conversions
+  in [(a) The conversion](#a-the-conversion) are the ones that lose
+  something, and a faithful, fully-handled conversion is exempt by
+  default. That rule's axis is **relevance**: it objects to a
+  conversion whose answer is discarded, so it fires however faithful
+  the conversion is, and its core trigger is the bare
+  `match recv.to_str() { … }` that this rule's default set explicitly
+  leaves alone. The two default sets are closer to complementary than
+  to overlapping.
+
+  The consumers differ with the axes, which is what makes the
+  triggers provably disjoint: there the result is compared against
+  string literals and the fix swaps the conversion for a lossless
+  byte view (`as_encoded_bytes()`, `to_bytes()`) with the literals
+  respelled as byte-string literals; here it feeds a sink whose bound
+  already accepts the native form and the fix drops the conversion
+  outright. A call argument is not a comparison operand.
+
+  Some differences are worth noting where they could otherwise read
+  as inconsistency. That rule covers `CStr`/`CString`, which
+  [(b) The source type](#b-the-source-type) excludes here: a literal
+  cannot hold a NUL terminator, so `to_bytes()` is the only view that
+  can compare equal, and the ambiguity this rule declines to guess at
+  does not arise. And that rule's rationale is a preference rather
+  than the objective defect [Why is this bad?](#why-is-this-bad)
+  states here, which follows from the axes: a comparison's answer
+  survives the rewrite where a corrupted path handed to the OS does
+  not. Whichever of the two ships first factors the conversion
+  recognition into a crate-internal module for the other to reuse.
 
 - See [`IMPLEMENTATION_CONVENTIONS.md`](./IMPLEMENTATION_CONVENTIONS.md)
   for cross-cutting conventions that apply to every rule in this
