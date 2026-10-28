@@ -84,10 +84,9 @@ impl FixtureCopy {
 /// `src_base` the UI harness reads, and the guard has to outlive the
 /// run, which is why [`crate::ui_test`] holds it alongside the test.
 ///
-/// Only `.rs` files paired with a `.stderr` are touched, so `auxiliary/`
-/// crates and `include!`-ed sources are copied verbatim. The injected
-/// directives on the paired fixture already rewrite that fixture's whole
-/// output, wherever a span originates.
+/// An `auxiliary/` crate is copied verbatim, the directives on the
+/// fixture that builds against it already rewriting that fixture's
+/// whole output, wherever a span originates.
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
     let manifest_dir = Path::new(manifest_dir);
     let relative = Path::new(relative);
@@ -145,38 +144,40 @@ fn copy_dir(source: &Path, destination: &Path) {
     }
 }
 
-/// Every `<name>.rs` under `dir`, at any depth, that has a sibling
-/// `<name>.stderr`.
+/// Every fixture under `dir` that compiletest will run, which is
+/// every `.rs` at any depth outside an `auxiliary` directory.
+/// compiletest skips those itself, treating what is in one as
+/// something a fixture builds against rather than a test.
 ///
 /// [`inject_directives`] and [`crate::bless`] have to agree on this
 /// set: a fixture the header misses is linted with its real line and
 /// column numbers, and re-recording from that output would commit
 /// them.
-pub(crate) fn fixtures_with_stderr(dir: &Path) -> Vec<PathBuf> {
+pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
-    collect_fixtures_with_stderr(dir, &mut found);
+    collect_fixture_sources(dir, &mut found);
     found
 }
 
-fn collect_fixtures_with_stderr(dir: &Path, found: &mut Vec<PathBuf>) {
+fn collect_fixture_sources(dir: &Path, found: &mut Vec<PathBuf>) {
     for entry in fs::read_dir(dir).expect("read fixture dir") {
         let entry = entry.expect("read fixture dir entry");
         let path = entry.path();
         if entry.file_type().expect("fixture file type").is_dir() {
-            collect_fixtures_with_stderr(&path, found);
-        } else if path.extension().is_some_and(|extension| extension == "rs")
-            && path.with_extension("stderr").exists()
-        {
+            if entry.file_name() != "auxiliary" {
+                collect_fixture_sources(&path, found);
+            }
+        } else if path.extension().is_some_and(|extension| extension == "rs") {
             found.push(path);
         }
     }
 }
 
 /// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture under
-/// `dir` that [`fixtures_with_stderr`] collects.
+/// `dir` that [`fixture_sources`] collects.
 fn inject_directives(dir: &Path) {
     let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
-    for path in fixtures_with_stderr(dir) {
+    for path in fixture_sources(dir) {
         let body = fs::read_to_string(&path).expect("read fixture .rs");
         fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
     }

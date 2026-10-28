@@ -80,6 +80,11 @@ impl ConfiguredUiTest {
         // `compiletest` ends a failed console run with a panic, so
         // catching it is what lets the output it left be read before
         // the test is over.
+        // A `&mut` is not `UnwindSafe` because an unwind can leave
+        // what it points at inconsistent for a later reader. There is
+        // no later reader: the borrow ends with this call, what
+        // follows touches `expectations` only, and `self` is dropped
+        // without `test` being read again.
         let test = &mut self.test;
         let outcome = panic::catch_unwind(AssertUnwindSafe(|| test.run()));
         // Recording nothing after a failure means the failure was not

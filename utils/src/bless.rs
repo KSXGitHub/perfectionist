@@ -13,7 +13,7 @@
 //! written by a failure outlives every later run that agrees with its
 //! fixture. [`Expectations::clear`] therefore goes first.
 
-use crate::ui_fixtures::fixtures_with_stderr;
+use crate::ui_fixtures::fixture_sources;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
@@ -83,7 +83,7 @@ impl Expectations {
                 .next()
                 .expect("fixture path is not empty"),
         );
-        let expectations = fixtures_with_stderr(&manifest_dir.join(relative))
+        let expectations = fixture_sources(&manifest_dir.join(relative))
             .into_iter()
             .map(|fixture| {
                 let below = fixture

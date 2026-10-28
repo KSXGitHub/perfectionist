@@ -599,17 +599,10 @@ performs the normalisation and explains how.
 
 ## Re-recording a `.stderr`
 
-`just bless` runs the suite with `PERFECTIONIST_BLESS=true` and
-replaces every `.stderr` the run disagreed with. The run comes out
-green, so `git diff` is the report.
+`just bless` updates the `.stderr` fixtures. Read the diff it leaves.
 
-A new fixture needs an empty `.stderr` beside it before recording, or
-what lands in the file carries the real line and column numbers
-[the normalisation](#normalised-stderr-fixtures) exists to keep out.
-Recording while mutation-checking defeats the check, rewriting the
-fixture that was meant to catch the flip.
-
-[`utils/src/bless.rs`](utils/src/bless.rs) has the rest.
+Never bless while mutation-checking: it rewrites the fixture that was
+meant to catch the flip, leaving the suite green on it.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

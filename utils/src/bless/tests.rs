@@ -85,13 +85,32 @@ fn a_nested_tree_keeps_its_components_below_the_first() {
     );
 }
 
+/// A fixture with no `.stderr` yet is still covered, which is what
+/// lets a new one be recorded rather than hand-written.
 #[test]
-fn a_fixture_without_a_stderr_is_left_out() {
+fn a_fixture_without_a_stderr_is_covered() {
+    let temp = TempDir::new().expect("create a tree");
+    let staged_root = temp.path().join("staged");
+    tree(temp.path(), &["ui/newborn.rs"]);
+    let expectations = Expectations::under(temp.path(), Path::new("ui"), &staged_root);
+    let committed: Vec<_> = expectations
+        .0
+        .iter()
+        .map(|expectation| expectation.committed.clone())
+        .collect();
+    assert_eq!(committed, vec![temp.path().join("ui/newborn.stderr")]);
+}
+
+/// compiletest treats what is under `auxiliary` as something a
+/// fixture builds against rather than a test of its own, so there is
+/// no output of its own to record.
+#[test]
+fn an_auxiliary_crate_is_left_out() {
     let temp = TempDir::new().expect("create a tree");
     let staged_root = temp.path().join("staged");
     tree(
         temp.path(),
-        &["ui/paired.rs", "ui/paired.stderr", "ui/unpaired.rs"],
+        &["ui/fixture.rs", "ui/auxiliary/dependency.rs"],
     );
     let expectations = Expectations::under(temp.path(), Path::new("ui"), &staged_root);
     let committed: Vec<_> = expectations
@@ -99,7 +118,7 @@ fn a_fixture_without_a_stderr_is_left_out() {
         .iter()
         .map(|expectation| expectation.committed.clone())
         .collect();
-    assert_eq!(committed, vec![temp.path().join("ui/paired.stderr")]);
+    assert_eq!(committed, vec![temp.path().join("ui/fixture.stderr")]);
 }
 
 /// Where the environment names the directory, which is the arithmetic
