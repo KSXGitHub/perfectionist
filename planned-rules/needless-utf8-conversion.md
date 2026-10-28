@@ -483,9 +483,14 @@ and the default follows **detection difficulty**:
   the binding to the sink (the same local-dataflow problem as the
   deferred "build-a-`String`-then-pass" case below) *and* prove the
   `&str` is consumed **only** by OsStr/Path sinks. If the `&str` is
-  also used as text (printed, parsed, compared, stored), the
-  conversion is genuinely needed and flagging it is a false
-  positive. Establishing "only fed to a sink" needs whole-binding
+  also used as text (printed, parsed, stored, or compared against
+  another `&str`), the conversion is genuinely needed and flagging it
+  is a false positive. Comparison against a *string literal* is the
+  exception, since the literal can be respelled as a byte-string
+  literal and the comparison moved to the bytes; that is
+  [`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)'s
+  trigger rather than a text use that rescues the conversion.
+  Establishing "only fed to a sink" needs whole-binding
   use-analysis.
 - Per the project's policy for difficult, false-positive-prone
   triggers, a check this hard to get right ships **off by default**.
