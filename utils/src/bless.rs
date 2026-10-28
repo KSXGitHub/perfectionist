@@ -49,9 +49,9 @@ struct BlessValueError<'a>(&'a OsStr);
 /// never quietly leaves the run comparing. That tri-state is the one
 /// `PERFECTIONIST_CARGO_LOCKED` takes.
 fn parse(value: &OsStr) -> Result<bool, BlessValueError<'_>> {
-    match value.to_str() {
-        Some("true") => Ok(true),
-        Some("false" | "") => Ok(false),
+    match value.as_encoded_bytes() {
+        b"true" => Ok(true),
+        b"false" | b"" => Ok(false),
         _ => Err(BlessValueError(value)),
     }
 }
