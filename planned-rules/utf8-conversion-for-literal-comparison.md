@@ -20,11 +20,12 @@ does not reintroduce it.
 
 ## Statement
 
-A value whose native representation is *not* UTF-8 — an OS string
-(`OsStr`, `OsString`, `Path`, `PathBuf`), a byte buffer (`[u8]`,
-`Vec<u8>`, `Box<[u8]>`), or a C string (`CStr`, `CString`) — converted
-to UTF-8 where **every** use of the result is a comparison against a
-string literal should be compared in its native byte form instead.
+Some values have a native representation that is not UTF-8: an OS
+string (`OsStr`, `OsString`, `Path`, `PathBuf`), a byte buffer
+(`[u8]`, `Vec<u8>`, `Box<[u8]>`), or a C string (`CStr`, `CString`).
+Where such a value is converted to UTF-8 and **every** use of the
+result is a comparison against a string literal, the comparison
+belongs on the native byte form instead.
 
 The conversion answers "is this valid UTF-8?" on the way to answering
 "is this one of these few literals?". Nothing downstream consumes the
@@ -33,7 +34,7 @@ first answer, so the question is asked and discarded.
 The motivating shape, from the commit that review produced
 ([`015ee9a`](https://github.com/KSXGitHub/perfectionist/commit/015ee9a8e4a8c38287683c2bc3681149d5460b9d)):
 
-**Avoid** — the `Option` the conversion returns is threaded through
+**Avoid.** The `Option` the conversion returns is threaded through
 arms that are deciding between three words:
 
 ```rust
@@ -44,7 +45,7 @@ match value.to_str() {
 }
 ```
 
-**Prefer** — the arms are the words:
+**Prefer.** The arms are the words:
 
 ```rust
 match value.as_encoded_bytes() {
@@ -65,8 +66,9 @@ case by case. The objection is to what the reader has to carry:
 - **A `Some` that has nothing to do with the question.** The match is
   deciding which of three words the value is. Threading the
   conversion's `Option` through the arms makes every arm answer a
-  second question — "and was it valid UTF-8?" — that no arm asked.
-  Spelling the arms as the words removes a wrapper from each one.
+  second question that no arm asked, which is whether the value was
+  valid UTF-8. Spelling the arms as the words removes a wrapper from
+  each one.
 - **The validity test has no consumer.** A conversion whose `None` /
   `Err` case is folded into the same wildcard as "some other string"
   has established something the code then declines to use. A reader
@@ -103,9 +105,9 @@ A C string is the case that shows why, because there the saving is
 the least secure. A NUL-terminated string's length is the index of
 its terminator, so reaching its bytes is a scan in C. It is not one
 through a Rust `&CStr`, which is a fat pointer carrying the length
-the way `&str` does — `size_of::<&CStr>()` is 16 on a 64-bit host
-against 8 for a thin pointer — so the scan happened once when the
-reference was built and `to_bytes` narrows the slice by one byte.
+the way `&str` does. On a 64-bit host `size_of::<&CStr>()` is 16
+against 8 for a thin pointer. So the scan happened once, when the
+reference was built, and `to_bytes` narrows the slice by one byte.
 `CStr::to_bytes` is nevertheless documented as a constant-time cast
 *today*, with the note that its definition is planned to compute the
 length on each call instead; `CString::as_bytes`, slicing an owned
@@ -116,8 +118,8 @@ validation for a `strlen`, which is a cheaper scan per byte but a
 scan of the same length, so what is left is a constant factor rather
 than the asymptotic difference the slice-backed sources give. How
 large a factor has not been measured here and the rule does not need
-it measured, because the reason to make the rewrite — a question
-asked and discarded — is the same either way. The rule covers C
+it measured. The reason to make the rewrite is the same either way,
+that being a question asked and discarded. The rule covers C
 strings on that reason alone, which is the point of keeping cost out
 of the rationale.
 
@@ -236,8 +238,8 @@ quietly. `CStr::to_bytes` and `CString::as_bytes` exclude the
 terminator, so the literal stays plain: for a `CStr` holding
 `"true\0"`, `to_bytes() == b"true"` holds. Their
 `to_bytes_with_nul` / `as_bytes_with_nul` counterparts retain it, and
-`to_bytes_with_nul() == b"true"` is **false** for that same C string
-— a comparison that compiles, never matches, and reports nothing. A
+`to_bytes_with_nul() == b"true"` is **false** for that same C string.
+That comparison compiles, never matches, and reports nothing. A
 suggestion reaching for a `*_with_nul` view would have to emit
 `b"true\0"` to work at all, which states a terminator the original
 comparison never mentioned. So the `*_with_nul` family is not a view
@@ -245,9 +247,9 @@ this rule may suggest, and an implementation that recognises one as a
 *source* of bytes must not pair it with a plain literal.
 
 Checked on this host: `to_bytes()` agreed with `to_str() == Ok(LIT)`
-on every C string tried — the words themselves, differing case, a
-`0xFF` byte, valid non-ASCII UTF-8, and the empty C string — against
-literals including `é` and the empty one.
+on every C string tried, against literals including `é` and the
+empty one. The inputs spanned the words themselves, differing case, a
+`0xFF` byte, valid non-ASCII UTF-8, and the empty C string.
 
 ### (c) The consumer
 
@@ -256,7 +258,7 @@ Every use of the conversion's result must be one of these:
 - An `==` or `!=` whose other operand is a string literal, or a
   `Some` / `Ok` of one. Either operand may be the literal.
 - A `match`, `matches!`, `if let` or let-else whose patterns are
-  string literals, `Some` / `Ok` of string literals, and wildcards —
+  string literals, `Some` / `Ok` of string literals, and wildcards,
   with **no** arm binding the decoded text. An arm that binds it
   (`Some(other) => f(other)`, or a guard reading the binding) is
   using the value as text, which is what the conversion is for.
@@ -276,10 +278,10 @@ inputs apart:
 
 A byte match separates 1 from everything else and cannot separate 2
 from 3. So the rule may fire only where 2 and 3 already reach the
-same outcome — a single wildcard arm covering both, as the
-`_ => Err(BlessValueError(value))` of the motivating shape does. A
-`match` that gives the non-UTF-8 case an arm of its own is using the
-conversion for what it is for, and is not a violation.
+same outcome, by way of a single wildcard arm covering both. The
+`_ => Err(BlessValueError(value))` of the motivating shape is such an
+arm. A `match` that gives the non-UTF-8 case an arm of its own is
+using the conversion for what it is for, and is not a violation.
 
 An `==`, a `matches!`, an `if let` and a let-else each collapse to
 one boolean, leaving nothing to distinguish, so this condition is
@@ -302,75 +304,75 @@ only ever live for a `match`.
 
 ### The shape
 
-**Avoid** — an `Option` wrapping a question about one word:
+**Avoid.** An `Option` wrapping a question about one word:
 
 ```rust
 if value.to_str() == Some("true") { .. }
 ```
 
-**Prefer**:
+**Prefer:**
 
 ```rust
 if value.as_encoded_bytes() == b"true" { .. }
 ```
 
-**Avoid** — a `Path` receiver, reached through its OS string:
+**Avoid.** A `Path` receiver, reached through its OS string:
 
 ```rust
 if path.to_str() == Some("-") { .. }
 ```
 
-**Prefer**:
+**Prefer:**
 
 ```rust
 if path.as_os_str().as_encoded_bytes() == b"-" { .. }
 ```
 
-**Avoid** — a byte buffer validated to be compared:
+**Avoid.** A byte buffer validated to be compared:
 
 ```rust
 matches!(str::from_utf8(bytes), Ok("yes" | "no"))
 ```
 
-**Prefer** — the buffer is already what the comparison wants:
+**Prefer.** The buffer is already what the comparison wants:
 
 ```rust
 matches!(bytes, b"yes" | b"no")
 ```
 
-**Avoid** — a C string, whose byte view drops the terminator the
+**Avoid.** A C string, whose byte view drops the terminator the
 literal never mentions:
 
 ```rust
 if c_str.to_str() == Ok("yes") { .. }
 ```
 
-**Prefer**:
+**Prefer:**
 
 ```rust
 if c_str.to_bytes() == b"yes" { .. }
 ```
 
-**Avoid** — a lossy conversion, with no U+FFFD in the literal:
+**Avoid.** A lossy conversion, with no U+FFFD in the literal:
 
 ```rust
 if String::from_utf8_lossy(bytes) == "yes" { .. }
 ```
 
-**Prefer**:
+**Prefer:**
 
 ```rust
 if bytes == b"yes" { .. }
 ```
 
-**Avoid** — a panicking conversion, whose rewrite also removes the
+**Avoid.** A panicking conversion, whose rewrite also removes the
 panic:
 
 ```rust
 if os_string.into_string().unwrap() == "yes" { .. }
 ```
 
-**Prefer**:
+**Prefer:**
 
 ```rust
 if os_string.as_encoded_bytes() == b"yes" { .. }
@@ -438,7 +440,7 @@ respect:
 - **A non-ASCII literal needs escapes.** `b"é"` does not compile
   ("non-ASCII character in byte string literal … must be ASCII"), so
   a literal outside 7-bit ASCII is emitted as the `\xHH` escapes of
-  its UTF-8 bytes — `b"\xc3\xa9"` for `é`.
+  its UTF-8 bytes, so `é` is emitted as `b"\xc3\xa9"`.
 
 Applicability follows the identity table in
 [The rewrite is an identity](#the-rewrite-is-an-identity):
@@ -449,20 +451,19 @@ conversion for something the comparison does not show.
 
 ## Configuration
 
-None. The conversions are a closed set of std functions, the
-comparison is an operator or a pattern, and the one condition a
-project might otherwise want to tune — whether the lossy forms are
-safe to rewrite — is decided per site by reading the literal rather
-than per project by taste.
+None. The conversions are a closed set of std functions, and the
+comparison is an operator or a pattern. One condition might otherwise
+invite a knob, which is whether the lossy forms are safe to rewrite.
+Reading the literal settles that per site, so taste never has to
+settle it per project.
 
 ## Default state
 
-Active by default. The conditions in
-[What to lint](#what-to-lint) are each a local property of one
-expression, and the conditions carrying the false-positive risk — a
-bound arm and a distinguished non-UTF-8 outcome — are exclusions
-rather than heuristics, so a site that satisfies all of them is a
-violation and not a guess.
+Active by default. The conditions in [What to lint](#what-to-lint)
+are each a local property of one expression. The conditions carrying
+the false-positive risk, a bound arm and a distinguished non-UTF-8
+outcome, are exclusions rather than heuristics. So a site that
+satisfies all of them is a violation and not a guess.
 
 ## Implementation notes
 
@@ -488,7 +489,7 @@ and verify, since none of them has been compiled against here.
   duplicating the list.
 - **Proc-macro suppression.** The natural diagnostic span is the
   conversion sub-expression, which is narrower than the enclosing
-  comparison — the case the
+  comparison. That is the case the
   [proc-macro suppression convention](./IMPLEMENTATION_CONVENTIONS.md#suppressing-proc-macro-synthesised-violations)
   identifies as uncovered by `report_in_external_macro: false`.
   Apply the late-pass `crate::common::hir_in_external_macro` guard it
@@ -510,9 +511,9 @@ motivating shape is in this tier.
 - `starts_with` / `ends_with` against a literal.
   `<[u8]>::starts_with` takes a slice, so a string-literal argument
   translates and an ASCII `char` literal translates to a one-byte
-  literal, while the `str` method's other `Pattern` arguments — a
-  closure, a `char` predicate — have no byte counterpart and are
-  outside the trigger.
+  literal. The `str` method's other `Pattern` arguments have no byte
+  counterpart and are outside the trigger, a closure and a `char`
+  predicate among them.
 - `Path::display()` consumed by `to_string()`, which needs the
   `Display` impl recognised as the lossy conversion it wraps.
 
@@ -531,10 +532,10 @@ motivating shape is in this tier.
 
 **Neither has a lint for this.** Checked against
 `clippy-driver 0.1.97` by running the shapes in
-[Examples](#examples) — the OS-string, byte-buffer, equality,
-`match`, `matches!`, `if let` and `unwrap` forms — under
-`clippy::all`, `clippy::pedantic`, `clippy::nursery` and
-`clippy::restriction` together. Nothing fired on the conversion. The
+[Examples](#examples) under `clippy::all`, `clippy::pedantic`,
+`clippy::nursery` and `clippy::restriction` together. Those shapes
+cover the OS-string, byte-buffer, equality, `match`, `matches!`,
+`if let` and `unwrap` forms. Nothing fired on the conversion. The
 only diagnostics were about the probe's own unrelated style
 (`clippy::ptr_arg`, `clippy::unwrap_used`, `clippy::must_use_candidate`
 and others of that kind), and the suggested replacements drew no
@@ -551,7 +552,7 @@ standing:
   `len()` or `is_empty()`, where the `str` method answers the same
   question. It is scoped to those two calls and does not reach a
   comparison, so it neither covers this rule nor objects to its
-  suggestion — confirmed by running both.
+  suggestion. Both were confirmed by running them.
 - **`clippy::string_lit_as_bytes`** fires on `"lit".as_bytes()` and
   suggests `b"lit"`. It constrains how this rule spells its
   suggestion, per [Suggested fix](#suggested-fix), rather than
@@ -576,19 +577,20 @@ asks for when no counterpart exists.
   apart more cleanly than their consumers do.
 
   That rule's axis is **fidelity**. It recognises the conversions
-  that lose something — `to_string_lossy()`, `display().to_string()`,
-  and the `unwrap`-on-`None` forms — and says in as many words that a
-  faithful, fully-handled conversion is not flagged by default,
-  naming `match recv.to_str() { Some(s) => …, None => … }` as a shape
-  it leaves alone. Its rationale follows from that axis: a corrupted
+  that lose something, among them `to_string_lossy()`,
+  `display().to_string()` and the `unwrap`-on-`None` forms. It then
+  says in as many words that a faithful, fully-handled conversion is
+  not flagged by default, naming
+  `match recv.to_str() { Some(s) => …, None => … }` as a shape it
+  leaves alone. Its rationale follows from that axis: a corrupted
   path reaching the OS names the wrong file, and a panic on a valid
   path is a needless abort.
 
   This rule's axis is **relevance**. What it objects to is a question
   asked and discarded, so a conversion qualifies however faithful it
-  is, and the motivating shape — a bare `to_str()` under a `match`,
-  losing nothing and reporting the non-UTF-8 case accurately — is
-  precisely one the fidelity axis places outside itself. The two
+  is. The motivating shape is a bare `to_str()` under a `match`,
+  which loses nothing and reports the non-UTF-8 case accurately, so
+  the fidelity axis places it outside itself. The two
   default trigger sets are therefore close to complementary rather
   than overlapping: a `to_str()` with no `unwrap` is this rule's
   core and that rule's documented exemption.
@@ -596,7 +598,7 @@ asks for when no counterpart exists.
   The consumers differ too, and that is what makes the triggers
   provably disjoint rather than merely differently motivated: a call
   argument in a position whose bound accepts the native form is not a
-  comparison operand. The fixes differ with them — dropping the
+  comparison operand. The fixes differ with them: dropping the
   conversion there, replacing it with a lossless byte view and
   respelling the literals here. Neither rule subsumes the other, and
   the two reach opposite conclusions about `CStr` for the reason

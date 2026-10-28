@@ -72,9 +72,9 @@ pattern that several rules call out by reference — live in
   `CStr`/`CString` are out of scope (FFI-shaped; satisfy no sink
   bound). Active by default.
 - [`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)
-  — flag a UTF-8 conversion of a value whose native form is not UTF-8
-  — an OS string, a byte buffer, or a `CStr`/`CString` — where every
-  use of the result is a comparison against a string literal
+  — flag a UTF-8 conversion of an OS string, a byte buffer or a
+  `CStr`/`CString` where every use of the result is a comparison
+  against a string literal
   (`value.to_str() == Some("true")`, a `match` whose arms are all
   literal patterns, `matches!(str::from_utf8(b), Ok("yes" | "no"))`).
   The validity the conversion establishes reaches no arm, so the
