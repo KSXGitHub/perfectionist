@@ -29,6 +29,7 @@
 //! clears them instead. See [`crate::dylint`].
 
 use crate::bless::{self, Expectations};
+use crate::build_base;
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
 use std::panic;
 use std::path::PathBuf;
@@ -252,6 +253,11 @@ where
         // so it stays outside the critical section.
         let fixtures =
             copy_fixtures_with_directives(self.manifest_dir.as_ref(), self.src_base.as_ref());
+        let manifest_dir = PathBuf::from(self.manifest_dir.as_ref());
+        let src_base = PathBuf::from(self.src_base.as_ref());
+        // The copy is made first because its own assertions vet the two
+        // paths; the tree read here is the one they name.
+        build_base::check_fixtures(&manifest_dir.join(&src_base));
         let serial = SERIAL.lock().unwrap_or_else(PoisonError::into_inner);
         let mut test =
             dylint_testing::ui::Test::src_base(self.library_name.as_ref(), fixtures.path());
@@ -259,8 +265,8 @@ where
         test.rustc_flags(self.rustc_flags);
         ConfiguredUiTest {
             test,
-            manifest_dir: PathBuf::from(self.manifest_dir.as_ref()),
-            src_base: PathBuf::from(self.src_base.as_ref()),
+            manifest_dir,
+            src_base,
             _fixtures: fixtures,
             _serial: serial,
         }

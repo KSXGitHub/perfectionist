@@ -1,5 +1,5 @@
 use super::{Expectations, parse};
-use crate::TempDir;
+use crate::{TempDir, build_base};
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
@@ -123,7 +123,7 @@ fn of_stages_under_the_temp_directory() {
     let expectations = Expectations::of(temp.path(), Path::new("ui"));
     assert_eq!(
         expectations.0[0].staged,
-        std::env::temp_dir().join("located.stage-id.stderr"),
+        build_base::path().join("located.stage-id.stderr"),
     );
 }
 
@@ -187,4 +187,23 @@ fn recording_skips_what_staged_nothing() {
         fs::read_to_string(&committed).expect("read the committed text"),
         "kept\n",
     );
+}
+
+/// What stops a run whose temp directory was rewritten out of its
+/// output from committing the rewrite.
+#[test]
+#[should_panic(expected = "an expectation must not hold `$TEST_BUILD_DIR`")]
+fn recording_refuses_text_a_temp_directory_was_rewritten_out_of() {
+    let temp = TempDir::new().expect("create a tree");
+    let staged_root = temp.path().join("staged");
+    tree(temp.path(), &["ui/rewritten.rs"]);
+    let expectations = Expectations::under(temp.path(), Path::new("ui"), &staged_root);
+    fs::create_dir_all(&staged_root).expect("create the staged dir");
+    fs::write(
+        &expectations.0[0].staged,
+        "LL |     let _ = \"$TEST_BUILD_DIR\";\n",
+    )
+    .expect("write the staged text");
+
+    expectations.record();
 }

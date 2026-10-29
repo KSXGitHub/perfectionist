@@ -11,6 +11,12 @@ locked := if perfectionist_cargo_locked == "true" {
     error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
   }
 
+# Where `test` points `TMPDIR`, so a run's scratch files land in one
+# directory rather than throughout the temp directory itself:
+# `compiletest_rs` takes its own output directory from
+# `std::env::temp_dir()` and offers no way to override it. Correctness
+# does not rest on this: `utils/src/build_base.rs` holds every fixture
+# to a `.stderr` that reads the same wherever that directory is.
 test_tmp_dir := env_var_or_default("TMPDIR", "/tmp") + "/perfectionist-tests"
 
 _default:

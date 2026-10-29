@@ -1,12 +1,14 @@
 //! Re-record the `.stderr` fixtures from what the run produced.
 //!
 //! Where compiletest writes a fixture's actual output is promised by
-//! no API: the path here is built from compiletest's own defaults,
-//! which `dylint_testing` leaves alone.
+//! no API: the directory is [`crate::build_base`]'s, and the file name
+//! is built from compiletest's own defaults, which `dylint_testing`
+//! leaves alone.
 //!
 //! compiletest never deletes one of those files, so a stale one has to
 //! go before the run rather than after.
 
+use crate::build_base;
 use crate::ui_fixtures::fixture_sources;
 use derive_more::Display;
 use pipe_trait::Pipe;
@@ -54,7 +56,7 @@ impl Expectations {
     /// The expectations for the fixtures under
     /// `<manifest_dir>/<relative>`.
     pub(crate) fn of(manifest_dir: &Path, relative: &Path) -> Self {
-        Expectations::under(manifest_dir, relative, &env::temp_dir())
+        Expectations::under(manifest_dir, relative, &build_base::path())
     }
 
     /// [`Expectations::of`] with `staged_root` given rather than read
@@ -96,20 +98,20 @@ impl Expectations {
         }
     }
 
-    /// Copy each staged actual output over the `.stderr` it belongs to,
-    /// returning the `.stderr`s replaced.
+    /// Write each staged actual output over the `.stderr` it belongs
+    /// to, returning the `.stderr`s replaced. A fixture whose output
+    /// matched its `.stderr` staged nothing, and is left alone.
     pub(crate) fn record(&self) -> Vec<&Path> {
         let mut recorded = Vec::new();
         for expectation in &self.0 {
-            if !expectation.staged.exists() {
-                continue;
-            }
-            fs::copy(&expectation.staged, &expectation.committed).unwrap_or_else(|error| {
-                panic!(
-                    "copy {} over {}: {error}",
-                    expectation.staged.display(),
-                    expectation.committed.display(),
-                )
+            let text = match fs::read_to_string(&expectation.staged) {
+                Ok(text) => text,
+                Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+                Err(error) => panic!("read {}: {error}", expectation.staged.display()),
+            };
+            build_base::check_expectation(&expectation.committed, &text);
+            fs::write(&expectation.committed, text).unwrap_or_else(|error| {
+                panic!("write {}: {error}", expectation.committed.display())
             });
             recorded.push(expectation.committed.as_path());
         }
