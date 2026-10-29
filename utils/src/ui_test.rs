@@ -78,7 +78,7 @@ impl ConfiguredUiTest {
             _fixtures,
             _serial,
         } = self;
-        if !bless::enabled() {
+        if !*bless::ENABLED {
             test.run();
             return;
         }

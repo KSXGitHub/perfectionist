@@ -12,6 +12,7 @@ use derive_more::Display;
 use pipe_trait::Pipe;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 use std::{env, fs, io};
 
 const BLESS_ENV: &str = "PERFECTIONIST_BLESS";
@@ -20,13 +21,13 @@ const BLESS_ENV: &str = "PERFECTIONIST_BLESS";
 const STAGE_ID: &str = "stage-id";
 
 /// Whether this run re-records rather than compares.
-pub(crate) fn enabled() -> bool {
+pub(crate) static ENABLED: LazyLock<bool> = LazyLock::new(|| {
     BLESS_ENV
         .pipe(env::var_os)
         .unwrap_or_default()
         .pipe_deref(parse)
         .unwrap_or_else(|error| panic!("{error}"))
-}
+});
 
 #[derive(Display)]
 #[display("{BLESS_ENV} must be 'true', 'false', empty, or unset; got: {_0:?}")]
