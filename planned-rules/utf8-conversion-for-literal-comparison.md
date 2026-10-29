@@ -549,13 +549,14 @@ allocation.
 A `Path` or `PathBuf` source reaches this spelling through
 `as_os_str()`, and the detour is **not** optional.
 
+> [!IMPORTANT]
 > `Path::new` looks like the counterpart and is not one. `Path`
 > compares by normalised components rather than by bytes, so
 > `Path::new("a/b") == Path::new("a//b")` holds, as do the `.` and
 > trailing-separator cases `Path::components` documents. That makes
 > `p == Path::new(LIT)` a *weaker* predicate than
-> `p.to_str() == Some(LIT)`, and substituting it would change the
-> answer rather than preserve it.
+> `p.to_str() == Some(LIT)`, so a rule suggesting it would rewrite a
+> consumer's comparison into one that answers differently.
 
 Checked over paths including `a//b`, `a/./b` and `main.rs/` against
 the literals they normalise onto: `p.as_os_str() == OsStr::new(LIT)`
