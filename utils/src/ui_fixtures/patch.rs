@@ -14,14 +14,15 @@
 //! moved under its diff, and saying so beats patching the wrong
 //! region.
 //!
-//! Recording one is by hand. A run that finds a diff out of date
-//! leaves what rustfix made of the fixture under the test's own
-//! output directory, as a `.stage-id.fixed`, and diffing the
-//! committed fixture against that file is the shortest way to a hunk
-//! that fits. That file comes from the throwaway copy, which carries
-//! the `normalize-stderr-test` header the committed fixture does not,
-//! so the header comes off first or every offset lands short by as
-//! many lines as it runs to.
+//! Recording one is by hand: `just bless` records a `.stderr` and
+//! nothing else. A run that finds a diff out of date leaves what
+//! rustfix made of the fixture beside the staged output
+//! [`crate::bless`] reads, under the same stem with a `.fixed`
+//! extension, and diffing the committed fixture against that file is
+//! the shortest way to a hunk that fits. That file comes from the
+//! throwaway copy, which carries the `normalize-stderr-test` header
+//! the committed fixture does not, so the header comes off first or
+//! every offset lands short by as many lines as it runs to.
 
 use core::str::Lines;
 
