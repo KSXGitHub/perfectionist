@@ -10,8 +10,8 @@
 //! The harness itself is `_utils::autofix`, whose module
 //! documentation explains what a round, a settled project and a run
 //! are, and what each round is held to. Re-record every expectation
-//! with `PERFECTIONIST_BLESS_AUTOFIX=1`, then read the diff of the
-//! fixture files as the review of the autofixes.
+//! with `just bless`, then read the diff of the fixture files as the
+//! review of the autofixes.
 
 pub mod _utils;
 

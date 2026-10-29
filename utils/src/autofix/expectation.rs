@@ -2,26 +2,17 @@
 //!
 //! Every expectation this harness compares is a text file beside the
 //! run's configuration, so reviewing a change to an autofix is
-//! reading the diff of those files. Re-recording is opt-in through
-//! an environment variable rather than a flag, because the harness is
-//! driven by `cargo test` and a flag would have to cross the test
-//! binary's own argument parsing.
+//! reading the diff of those files.
 
-use crate::autofix::report::BLESS;
+use crate::bless;
 use std::fs;
 use std::path::Path;
 
-/// Whether this run re-records the expectations instead of comparing
-/// against them.
-pub fn blessing() -> bool {
-    std::env::var_os(BLESS).is_some_and(|value| !value.is_empty())
-}
-
 /// Compare `actual` against the text stored in `file`, or store it
-/// where this run is [`blessing`]. `what` names the expectation in
-/// the failure, and reads as the subject of "does not match".
+/// where this run re-records. `what` names the expectation in the
+/// failure, and reads as the subject of "does not match".
 pub fn check(file: &Path, actual: &str, what: &str) -> Result<(), String> {
-    if blessing() {
+    if *bless::ENABLED {
         let parent = file.parent().expect("an expectation file has a parent");
         fs::create_dir_all(parent)
             .unwrap_or_else(|error| panic!("create {}: {error}", parent.display()));
@@ -30,7 +21,7 @@ pub fn check(file: &Path, actual: &str, what: &str) -> Result<(), String> {
     }
     let Ok(expected) = fs::read_to_string(file) else {
         return Err(format!(
-            "{what} has no stored expectation at {}; record one with {BLESS}=1\n\
+            "{what} has no stored expectation at {}; record one with `just bless`\n\
              what this run produced:\n{actual}",
             file.display(),
         ));
