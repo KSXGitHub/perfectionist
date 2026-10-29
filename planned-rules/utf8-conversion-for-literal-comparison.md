@@ -18,6 +18,50 @@ under [Why restrict this?](#why-restrict-this) is the one that review
 settled on, and the one it rejected is written down so a later reader
 does not reintroduce it.
 
+## Status
+
+The core is implemented in
+[`src/rules/utf8_conversion_for_literal_comparison.rs`](../src/rules/utf8_conversion_for_literal_comparison.rs),
+with the conversion recognition in
+[`src/utf8_conversion.rs`](../src/utf8_conversion.rs) for the sibling
+rule to reuse. This file stays as the spec for what is left.
+
+Implemented:
+
+- Every conversion in [(a)](#a-the-conversion) but
+  `Path::display()`, each optionally under `unwrap` or `expect`.
+- Every source in [(b)](#b-the-source-type).
+- Both consumers in [(c)](#c-the-consumer) that collapse to an `==`
+  or a `match`, the latter covering `matches!`, with the arm
+  conditions of [(d)](#d-the-outcomes-the-conversion-distinguishes)
+  and every exemption.
+- The conversion reached through an `Option::map` or
+  `Option::and_then` whose closure converts its own parameter. This
+  goes beyond what [Difficulty](#difficulty) calls the core, which
+  named only the conversion sitting in the operand or the scrutinee.
+  It was added because the adapter is where the shape actually
+  occurs: both sites the rule reports in this repository are written
+  that way, and the closure is local, so none of the dataflow the
+  deferred tier needs is involved.
+
+Pending:
+
+- **An applied fix.** The rule names the replacement in help text
+  and applies nothing, so the applicability the
+  [Suggested fix](#suggested-fix) section describes is not yet
+  expressed. A pattern consumer's rewrite changes the scrutinee and
+  every arm at once, which one span replacement cannot carry.
+- **`if let` and let-else consumers.** Each collapses to one boolean
+  like an `==` does, so [(d)](#d-the-outcomes-the-conversion-distinguishes)
+  stays satisfied; only the HIR shapes are unread.
+- **A `Result` adapter.** `Option::map` and `Option::and_then` are
+  read where `Result::map` and `Result::and_then` are not, since an
+  `Err` carries a payload the rewrite would have to preserve.
+- Everything [Difficulty](#difficulty) lists as a follow-up:
+  `starts_with` / `ends_with`, `Path::display()` consumed by
+  `to_string()`, the conversion bound to a local first, and a
+  conversion inside a `format!` template.
+
 ## Statement
 
 Some values have a native representation that is not UTF-8: an OS
