@@ -10,10 +10,10 @@
 //! project's own source says can reach it, which is what the settling
 //! check reads.
 //!
-//! Normalisation follows the rules
-//! [`crate::ui_fixtures`] states for a `.stderr` under `ui/`, and for
-//! the same reason: a span header's `line:column` would otherwise
-//! renumber every header below an inserted line. The absolute paths
+//! Normalisation follows the rules `utils/src/ui_fixtures.rs` states
+//! for a `.stderr` under `ui/`, and for the same reason: a span
+//! header's `line:column` would otherwise renumber every header below
+//! an inserted line. The absolute paths
 //! this harness works in are normalised too, since a temp directory's
 //! name is different on every run.
 //!

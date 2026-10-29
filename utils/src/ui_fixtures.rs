@@ -79,14 +79,14 @@ impl FixtureCopy {
 
 /// Copy the fixture directory `<manifest_dir>/<relative>` into a fresh
 /// [`TempDir`], reproducing `relative` inside it, then prepend
-/// [`NORMALIZE_STDERR_DIRECTIVES`] to every `.rs` that has a sibling
-/// `.stderr`. The returned guard's `FixtureCopy::path` is the
-/// `src_base` the UI harness reads, and the guard has to outlive the
-/// run, which is why [`crate::ui_test`] holds it alongside the test.
+/// [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture
+/// [`fixture_sources`] collects. The returned guard's
+/// `FixtureCopy::path` is the `src_base` the UI harness reads, and the
+/// guard has to outlive the run, which is why [`crate::ui_test`] holds
+/// it alongside the test.
 ///
-/// Only `.rs` files paired with a `.stderr` are touched, so `auxiliary/`
-/// crates and `include!`-ed sources are copied verbatim. The injected
-/// directives on the paired fixture already rewrite that fixture's whole
+/// An `auxiliary/` crate gets no header of its own: the directives on
+/// the fixture that builds against it rewrite that fixture's whole
 /// output, wherever a span originates.
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
     let manifest_dir = Path::new(manifest_dir);
@@ -145,21 +145,36 @@ fn copy_dir(source: &Path, destination: &Path) {
     }
 }
 
-/// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every `<name>.rs` under
-/// `dir` that has a sibling `<name>.stderr`.
-fn inject_directives(dir: &Path) {
-    for entry in fs::read_dir(dir).expect("read fixture copy dir") {
-        let entry = entry.expect("read fixture copy entry");
+/// Every fixture under `dir` that compiletest will run. compiletest
+/// skips an `auxiliary` directory itself, treating what is in one as
+/// something a fixture builds against rather than a test.
+///
+/// [`inject_directives`] and [`crate::bless`] have to agree on this
+/// set: a fixture the header misses is linted at its real line and
+/// column numbers, and recording that output would commit them.
+pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
+    let mut found = Vec::new();
+    for entry in fs::read_dir(dir).expect("read fixture dir") {
+        let entry = entry.expect("read fixture dir entry");
         let path = entry.path();
-        if entry.file_type().expect("fixture copy file type").is_dir() {
-            inject_directives(&path);
-        } else if path.extension().is_some_and(|extension| extension == "rs")
-            && path.with_extension("stderr").exists()
-        {
-            let body = fs::read_to_string(&path).expect("read fixture .rs");
-            let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
-            fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
+        if entry.file_type().expect("fixture file type").is_dir() {
+            if entry.file_name() != "auxiliary" {
+                found.extend(fixture_sources(&path));
+            }
+        } else if path.extension().is_some_and(|extension| extension == "rs") {
+            found.push(path);
         }
+    }
+    found
+}
+
+/// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture under
+/// `dir` that [`fixture_sources`] collects.
+fn inject_directives(dir: &Path) {
+    let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
+    for path in fixture_sources(dir) {
+        let body = fs::read_to_string(&path).expect("read fixture .rs");
+        fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
     }
 }
 

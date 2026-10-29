@@ -15,9 +15,6 @@ use crate::autofix::snapshot::{self, Snapshot};
 use core::fmt::Write as _;
 use std::path::PathBuf;
 
-/// How to re-record every expectation this harness compares against.
-pub const BLESS: &str = "PERFECTIONIST_BLESS_AUTOFIX";
-
 /// What one run got wrong, with the project of each round it got
 /// through kept alongside.
 pub struct Report {
@@ -75,7 +72,7 @@ impl Report {
             message,
             "\nThe project after each round is laid out under\n  {}\n\
              as `round-<n>`, with `round-0` the project as stored.\n\
-             Re-record every expectation with {BLESS}=1.",
+             Re-record every expectation with `just bless`.",
             dump.display(),
         )
         .expect("write the dump location");

@@ -53,7 +53,7 @@ pub mod round;
 pub mod snapshot;
 
 pub use config::{Fixture, Run};
-pub use report::{BLESS, Report};
+pub use report::Report;
 pub use snapshot::Snapshot;
 
 use crate::manifest::fixture_dylint_toml;

@@ -592,8 +592,15 @@ A `.stderr` under `ui/` or `ui-toml/` is a normalised copy of the
 driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
-writing one, since pasting the driver's real numbers in will not match. [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
+writing one, since pasting the driver's real numbers in will not match, or
+let [`just bless`](#re-recording-a-fixture) record it.
+[`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
+
+## Re-recording a fixture
+
+`just bless` updates the `.stderr` fixtures and the autofix
+expectations. Read the diff it leaves.
 
 ## Fixtures for the autofixes
 
@@ -615,9 +622,9 @@ crate. A rewrite the rule withholds belongs here least of all, what a
 round would pin being `cargo fix`'s uniform handling of it rather than
 any decision of this plugin's.
 
-Re-record with `PERFECTIONIST_BLESS_AUTOFIX=1` and read the diff of
-the expectations: that diff is the review, since a shape the rule
-never reached leaves it short rather than failing.
+Re-record with [`just bless`](#re-recording-a-fixture) and read the
+diff of the expectations: that diff is the review, since a shape the
+rule never reached leaves it short rather than failing.
 
 A fixture is linted like any other crate, doc comments included, so
 all of it has to settle: keep it dull, or a second rule lands in the
