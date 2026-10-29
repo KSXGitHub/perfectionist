@@ -169,14 +169,36 @@ input's valid runs, copied verbatim, with one or more U+FFFD per
 ill-formed sequence. If that output equals a literal holding no
 U+FFFD, then no U+FFFD was emitted, so no ill-formed sequence was
 present, so the input was valid UTF-8 copied verbatim and is the
-literal's bytes. The literal's own content is therefore the whole
-condition: with no U+FFFD in it, the lossy comparison and the byte
-comparison agree. With one, they need not, since a literal that
+literal's bytes.
+
+A divergence has two directions, and they are not symmetric, so each
+is worth naming rather than leaving to be derived. Write the original
+comparison A and the rewritten one B:
+
+| Direction       | Possible?                              |
+|-----------------|----------------------------------------|
+| A true, B false | only where the literal contains U+FFFD |
+| A false, B true | never, whatever the literal            |
+
+The first direction is what the guard is for. A literal that
 *contains* U+FFFD can be matched by an input that does not contain
 those bytes at all, a lone `0xFF` rendering as `"\u{FFFD}"` and
-comparing equal while its encoded bytes do not. The condition is a
-scan of the literal, so it is a guard the rule applies rather than a
-knob the consumer sets.
+comparing equal while its encoded bytes do not. A literal holding no
+U+FFFD has no such pre-image, by the reasoning above.
+
+The second direction needs no guard because it cannot happen. B true
+says the value's bytes are the literal's bytes, and a string literal
+is valid UTF-8, so the value is valid UTF-8 and every conversion in
+[(a) The conversion](#a-the-conversion) hands back exactly that text:
+the lossy ones find nothing to replace, and the faithful ones
+succeed. A is then true as well. The one case where the original does
+not answer true or false is the `unwrap` row on input that is not
+valid UTF-8, where it panics rather than compares, which
+[Suggested fix](#suggested-fix) prices into that row's applicability.
+
+So the literal's own content is the whole condition, and the
+condition is a scan of it, which makes it a guard the rule applies
+rather than a knob the consumer sets.
 
 The replacement property was checked rather than argued, and
 exhaustively, because the whole guard rests on it. Over all 16843008
@@ -189,6 +211,15 @@ substituted at every position. An ill-formed byte beside the word
 behaves as the mechanism says: `b"yes\xFF"` renders as
 `"yes\u{FFFD}"`, `b"yes\xC3"` likewise renders as `"yes\u{FFFD}"`,
 and neither equals `"yes"`.
+
+Each direction was checked separately, over the same length 1 to 3
+inputs. For A true and B false: zero cases against the literals
+`"y"`, `"ye"`, `"yes"` and `"é"`, and 17728 against `"\u{FFFD}"` with
+1344 against `"a\u{FFFD}"`, which is the guard earning its place
+rather than failing. For A false and B true: zero cases over all
+2668544 valid-UTF-8 inputs, counting the lossy conversions of a byte
+buffer and of an OS string, the faithful `to_str`, and `to_str`
+followed by `unwrap`, each against the literal its own bytes spell.
 
 Each row was then checked over an input set spanning the words
 themselves, ASCII that differs in case, valid non-ASCII UTF-8 (`é`),
