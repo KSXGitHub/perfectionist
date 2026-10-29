@@ -37,7 +37,7 @@ build:
 doc:
   just gen-docs
   just check-rules-md
-  RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{locked}}
+  RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --document-private-items {{locked}}
 
 # Run all the lints
 lint:
