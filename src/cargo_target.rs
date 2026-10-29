@@ -148,7 +148,7 @@ fn target_directory(root: &Path) -> Option<&str> {
     // *name*, and only `examples` is the directory Cargo rooted it in.
     // The fallback covers `tests/main.rs`, whose grandparent is
     // nothing.
-    (root.file_name().and_then(|name| name.to_str()) == Some("main.rs"))
+    (root.file_name() == Some(OsStr::new("main.rs")))
         .then(|| directory_name(parent.and_then(Path::parent)))
         .flatten()
         .or_else(|| directory_name(parent))
