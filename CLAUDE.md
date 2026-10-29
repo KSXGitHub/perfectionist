@@ -593,13 +593,14 @@ driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
 writing one, since pasting the driver's real numbers in will not match, or
-let [`just bless`](#re-recording-a-stderr) record it.
+let [`just bless`](#re-recording-a-fixture) record it.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
 
-## Re-recording a `.stderr`
+## Re-recording a fixture
 
-`just bless` updates the `.stderr` fixtures. Read the diff it leaves.
+`just bless` updates the `.stderr` and `.diff` fixtures. Read the
+diff it leaves.
 
 ## Applicability fixtures
 
@@ -616,11 +617,12 @@ fixture into the form the machine-applicable suggestions leave, so an
 empty one is the assertion that the fixture offers none, and the fixed
 text has to compile.
 
-`just bless` records a `.stderr` and nothing else, so a `.diff` is
-written by hand. [`utils/src/ui_fixtures/patch.rs`](utils/src/ui_fixtures/patch.rs)
-carries the form it has to take, where to read the fixed text a
-failing run leaves, what comes off that text first, and what a
-misfitting `.diff` is answered with.
+[`just bless`](#re-recording-a-fixture) records a `.diff` from what
+rustfix produced, including the first one for a fixture that has none
+and a stored one the fixture has outgrown.
+[`utils/src/ui_fixtures/patch.rs`](utils/src/ui_fixtures/patch.rs)
+carries the form it takes and what a misfitting one is answered with
+outside a blessing run.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

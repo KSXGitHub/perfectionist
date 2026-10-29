@@ -1,4 +1,4 @@
-use super::apply;
+use super::try_apply;
 use text_block_macros::text_block_fnl;
 
 const WHAT: &str = "the diff";
@@ -14,7 +14,7 @@ const ORIGINAL: &str = text_block_fnl! {
 /// empty diff, which is the whole of that claim.
 #[test]
 fn an_empty_diff_leaves_the_fixture_alone() {
-    assert_eq!(apply(ORIGINAL, "", WHAT), ORIGINAL);
+    assert_eq!(try_apply(ORIGINAL, "", WHAT), Ok(ORIGINAL.to_string()));
 }
 
 /// The shape `git diff --no-index` writes, header lines included: a
@@ -36,7 +36,7 @@ fn a_hunk_replaces_the_lines_it_names() {
         "TWO"
         "three"
     };
-    assert_eq!(apply(ORIGINAL, diff, WHAT), expected);
+    assert_eq!(try_apply(ORIGINAL, diff, WHAT), Ok(expected.to_string()));
 }
 
 /// A hunk naming one line spells its count as a bare start, which the
@@ -55,7 +55,7 @@ fn a_single_line_hunk_carries_no_count() {
         "TWO"
         "three"
     };
-    assert_eq!(apply(ORIGINAL, diff, WHAT), expected);
+    assert_eq!(try_apply(ORIGINAL, diff, WHAT), Ok(expected.to_string()));
 }
 
 /// Distant rewrites arrive as a hunk each, and the lines between them
@@ -90,7 +90,7 @@ fn two_hunks_apply_in_order() {
         "f"
         "G"
     };
-    assert_eq!(apply(original, diff, WHAT), expected);
+    assert_eq!(try_apply(original, diff, WHAT), Ok(expected.to_string()));
 }
 
 /// An addition with no removal beside it, which is what a suggestion
@@ -110,7 +110,7 @@ fn an_addition_needs_no_removal() {
         "two"
         "three"
     };
-    assert_eq!(apply(ORIGINAL, diff, WHAT), expected);
+    assert_eq!(try_apply(ORIGINAL, diff, WHAT), Ok(expected.to_string()));
 }
 
 /// A blank line in the fixture reaches the diff as a bare empty line,
@@ -137,13 +137,12 @@ fn a_blank_context_line_is_copied() {
         ""
         "THREE"
     };
-    assert_eq!(apply(original, diff, WHAT), expected);
+    assert_eq!(try_apply(original, diff, WHAT), Ok(expected.to_string()));
 }
 
 /// The fixture moved under its diff, which is worth saying rather
 /// than patching whatever sits at those line numbers now.
 #[test]
-#[should_panic(expected = "line 2 of the fixture reads differently")]
 fn a_context_line_that_does_not_match_fails() {
     let diff = text_block_fnl! {
         "--- a/fixture.rs"
@@ -154,13 +153,18 @@ fn a_context_line_that_does_not_match_fails() {
         "+two"
         " three"
     };
-    apply(ORIGINAL, diff, WHAT);
+    let Err(reason) = try_apply(ORIGINAL, diff, WHAT) else {
+        panic!("this diff does not fit the fixture");
+    };
+    assert!(
+        reason.contains("line 2 of the fixture reads differently"),
+        "{reason}",
+    );
 }
 
 /// A diff recorded against a longer fixture than the one it is
 /// applied to.
 #[test]
-#[should_panic(expected = "runs past the end of the fixture")]
 fn a_diff_reaching_past_the_fixture_fails() {
     let diff = text_block_fnl! {
         "--- a/fixture.rs"
@@ -169,13 +173,18 @@ fn a_diff_reaching_past_the_fixture_fails() {
         "-four"
         "+FOUR"
     };
-    apply(ORIGINAL, diff, WHAT);
+    let Err(reason) = try_apply(ORIGINAL, diff, WHAT) else {
+        panic!("this diff does not fit the fixture");
+    };
+    assert!(
+        reason.contains("runs past the end of the fixture"),
+        "{reason}",
+    );
 }
 
 /// Hunks out of order would have the second one re-read lines the
 /// first consumed, so the arithmetic is held to ascending starts.
 #[test]
-#[should_panic(expected = "an earlier hunk already covered")]
 fn hunks_out_of_order_fail() {
     let diff = text_block_fnl! {
         "--- a/fixture.rs"
@@ -187,7 +196,13 @@ fn hunks_out_of_order_fail() {
         "-one"
         "+ONE"
     };
-    apply(ORIGINAL, diff, WHAT);
+    let Err(reason) = try_apply(ORIGINAL, diff, WHAT) else {
+        panic!("this diff does not fit the fixture");
+    };
+    assert!(
+        reason.contains("an earlier hunk already covered"),
+        "{reason}",
+    );
 }
 
 /// `git diff` opens with a `diff --git` line, which carries no hunk
@@ -209,5 +224,5 @@ fn the_git_preamble_is_ignored() {
         "TWO"
         "three"
     };
-    assert_eq!(apply(ORIGINAL, diff, WHAT), expected);
+    assert_eq!(try_apply(ORIGINAL, diff, WHAT), Ok(expected.to_string()));
 }

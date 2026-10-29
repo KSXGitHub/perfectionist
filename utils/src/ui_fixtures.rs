@@ -24,8 +24,10 @@
 //! touches, so what is committed is a `.diff`, and the `.fixed` the
 //! copy holds is written from it.
 
+pub(crate) mod patch;
+
 use crate::TempDir;
-use patch::apply;
+use patch::try_apply;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -62,6 +64,37 @@ const NORMALIZE_STDERR_DIRECTIVES: &[&str] = &[
     r#"// normalize-stderr-test: "(?m) +$" -> """#,
     r#"// normalize-stderr-test: "(\n)\n+\z" -> "$1""#,
 ];
+
+/// The directive a fixture carries to have rustfix rewrite the copy
+/// and compiletest compare that rewrite against a `.fixed`.
+const RUN_RUSTFIX: &str = "// run-rustfix";
+
+/// Whether rustfix rewrites `source`, which is the fixture whose
+/// fixed form a `.diff` stores.
+pub(crate) fn runs_rustfix(source: &str) -> bool {
+    source.lines().any(|line| line == RUN_RUSTFIX)
+}
+
+/// `text` with the header [`inject_directives`] put in front of it
+/// taken back off, which is what a fixture's own text looks like.
+///
+/// Each directive is required in place rather than counted off, so a
+/// header that stops matching fails rather than eating a line of the
+/// fixture.
+pub(crate) fn strip_directives(text: &str) -> &str {
+    let mut rest = text;
+    for directive in NORMALIZE_STDERR_DIRECTIVES {
+        let (line, tail) = rest
+            .split_once('\n')
+            .unwrap_or_else(|| panic!("a staged fixture carries the header, got {rest:?}"));
+        assert_eq!(
+            line, *directive,
+            "the header is out of step with what it writes",
+        );
+        rest = tail;
+    }
+    rest
+}
 
 /// A throwaway copy of a fixture tree, laid out so that compiletest
 /// names each test after the fixture's repository-relative path.
@@ -153,8 +186,15 @@ fn materialise_fixed(dir: &Path) {
         let stored = fs::read_to_string(&diff)
             .unwrap_or_else(|error| panic!("read {}: {error}", diff.display()));
         let what = format!("{}", diff.display());
+        let text = match try_apply(&original, &stored, &what) {
+            Ok(text) => text,
+            // A diff that no longer fits its fixture is the one a
+            // blessing run exists to replace, and writing nothing
+            // leaves compiletest to stage what rustfix produced.
+            Err(_) if *crate::bless::ENABLED => continue,
+            Err(reason) => panic!("{reason}"),
+        };
         let fixed = path.with_extension("fixed");
-        let text = apply(&original, &stored, &what);
         fs::write(&fixed, text)
             .unwrap_or_else(|error| panic!("write {}: {error}", fixed.display()));
     }
@@ -225,8 +265,6 @@ fn inject_directives(dir: &Path) {
         }
     }
 }
-
-mod patch;
 
 #[cfg(test)]
 mod tests;

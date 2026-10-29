@@ -14,15 +14,10 @@
 //! moved under its diff, and saying so beats patching the wrong
 //! region.
 //!
-//! Recording one is by hand: `just bless` records a `.stderr` and
-//! nothing else. A run that finds a diff out of date leaves what
-//! rustfix made of the fixture beside the staged output
-//! [`crate::bless`] reads, under the same stem with a `.fixed`
-//! extension, and diffing the committed fixture against that file is
-//! the shortest way to a hunk that fits. That file comes from the
-//! throwaway copy, which carries the `normalize-stderr-test` header
-//! the committed fixture does not, so the header comes off first or
-//! every offset lands short by as many lines as it runs to.
+//! `just bless` records one, from rustfix's own output, through
+//! [`write::unified`].
+
+pub(crate) mod write;
 
 use core::str::Lines;
 
@@ -34,40 +29,43 @@ struct Hunk {
     start: usize,
 }
 
-/// The fixed form of `original`, with `diff` applied.
+/// The fixed form of `original` with `diff` applied, or why the diff
+/// does not fit it.
 ///
 /// `what` names the diff in a failure, and reads as the subject of
 /// "does not apply".
-pub(super) fn apply(original: &str, diff: &str, what: &str) -> String {
+pub(crate) fn try_apply(original: &str, diff: &str, what: &str) -> Result<String, String> {
     let mut lines = original.lines();
     let mut fixed: Vec<&str> = Vec::new();
     let mut taken = 0;
     for line in diff.lines() {
-        if let Some(hunk) = take_hunk_header(line) {
-            assert!(
-                hunk.start > taken,
-                "{what} does not apply: a hunk starts at line {} of the fixture, \
-                 which an earlier hunk already covered",
-                hunk.start,
-            );
+        if let Some(hunk) = take_hunk_header(line, what)? {
+            if hunk.start <= taken {
+                return Err(format!(
+                    "{what} does not apply: a hunk starts at line {} of the fixture, \
+                     which an earlier hunk already covered",
+                    hunk.start,
+                ));
+            }
             while taken + 1 < hunk.start {
-                fixed.push(next(&mut lines, what));
+                fixed.push(next(&mut lines, what)?);
                 taken += 1;
             }
             continue;
         }
-        let Some((marker, text)) = split_marker(line) else {
+        let Some((marker, text)) = split_marker(line, what)? else {
             continue;
         };
         match marker {
             ' ' | '-' => {
-                let found = next(&mut lines, what);
+                let found = next(&mut lines, what)?;
                 taken += 1;
-                assert_eq!(
-                    found, text,
-                    "{what} does not apply: line {taken} of the fixture reads \
-                     differently from what the diff expects there",
-                );
+                if found != text {
+                    return Err(format!(
+                        "{what} does not apply: line {taken} of the fixture reads \
+                         differently from what the diff expects there",
+                    ));
+                }
                 if marker == ' ' {
                     fixed.push(found);
                 }
@@ -81,14 +79,14 @@ pub(super) fn apply(original: &str, diff: &str, what: &str) -> String {
     }
     let mut text = fixed.join("\n");
     text.push('\n');
-    text
+    Ok(text)
 }
 
 /// The next line of the original, or a failure naming what ran out.
-fn next<'a>(lines: &mut Lines<'a>, what: &str) -> &'a str {
+fn next<'a>(lines: &mut Lines<'a>, what: &str) -> Result<&'a str, String> {
     lines
         .next()
-        .unwrap_or_else(|| panic!("{what} does not apply: it runs past the end of the fixture"))
+        .ok_or_else(|| format!("{what} does not apply: it runs past the end of the fixture"))
 }
 
 /// The hunk `line` opens, where it is a hunk header.
@@ -97,14 +95,20 @@ fn next<'a>(lines: &mut Lines<'a>, what: &str) -> &'a str {
 /// silently become a body line, so the shape is required in full:
 /// `@@ -` then the start, then whatever the counts and the new side
 /// spell, then ` @@`.
-fn take_hunk_header(line: &str) -> Option<Hunk> {
-    let rest = line.strip_prefix("@@ -")?;
-    let (start, rest) = take_number(rest)?;
-    assert!(
-        rest.contains(" @@"),
-        "a hunk header is `@@ -<start>,<count> +<start>,<count> @@`, got {line:?}",
-    );
-    Some(Hunk { start })
+fn take_hunk_header(line: &str, what: &str) -> Result<Option<Hunk>, String> {
+    let Some(rest) = line.strip_prefix("@@ -") else {
+        return Ok(None);
+    };
+    let Some((start, rest)) = take_number(rest) else {
+        return Ok(None);
+    };
+    if !rest.contains(" @@") {
+        return Err(format!(
+            "{what} is malformed: a hunk header is \
+             `@@ -<start>,<count> +<start>,<count> @@`, got {line:?}",
+        ));
+    }
+    Ok(Some(Hunk { start }))
 }
 
 /// The decimal number `text` opens with, and what follows it.
@@ -127,15 +131,17 @@ fn take_number(text: &str) -> Option<(usize, &str)> {
 /// they are answered for here rather than skipped by counting lines.
 /// `\ No newline at end of file` cannot appear: every fixture ends in
 /// one, which `read_text` holds them to.
-fn split_marker(line: &str) -> Option<(char, &str)> {
+fn split_marker<'a>(line: &'a str, what: &str) -> Result<Option<(char, &'a str)>, String> {
     if line.starts_with("--- ") || line.starts_with("+++ ") {
-        return None;
+        return Ok(None);
     }
-    assert!(
-        !line.starts_with('\\'),
-        "a fixture ends in a newline, so its diff carries no {line:?}",
-    );
-    match line.chars().next() {
+    if line.starts_with('\\') {
+        return Err(format!(
+            "{what} is malformed: a fixture ends in a newline, \
+             so its diff carries no {line:?}",
+        ));
+    }
+    Ok(match line.chars().next() {
         Some(marker @ (' ' | '-' | '+')) => Some((marker, &line[1..])),
         // `git diff` writes a bare empty line for an unchanged empty
         // line, the trailing space having been stripped on the way
@@ -144,7 +150,7 @@ fn split_marker(line: &str) -> Option<(char, &str)> {
         // Anything else is a line of the `diff --git` preamble, which
         // a diff recorded with it left on carries.
         Some(_) => None,
-    }
+    })
 }
 
 #[cfg(test)]
