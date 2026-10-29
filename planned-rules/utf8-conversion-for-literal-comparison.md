@@ -138,14 +138,14 @@ That gives the per-conversion picture, in which `LIT` stands for any
 string literal and `b"LIT"` for that literal respelled as a
 byte-string literal:
 
-| Comparison                       | Byte form                       | Identical? |
-|----------------------------------|---------------------------------|------------|
-| `v.to_str() == Some(LIT)`        | `v.as_encoded_bytes() == b"LIT"` | always |
-| `str::from_utf8(v) == Ok(LIT)`   | `v == b"LIT"`                    | always |
-| `c.to_str() == Ok(LIT)`          | `c.to_bytes() == b"LIT"`         | always |
-| `v.to_string_lossy() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | unless `LIT` contains U+FFFD |
-| `String::from_utf8_lossy(v) == LIT` | `v == b"LIT"`                | unless `LIT` contains U+FFFD |
-| `v.to_str().unwrap() == LIT`     | `v.as_encoded_bytes() == b"LIT"` | drops a panic |
+| Comparison                          | Byte form                        | Identical?                   |
+|-------------------------------------|----------------------------------|------------------------------|
+| `v.to_str() == Some(LIT)`           | `v.as_encoded_bytes() == b"LIT"` | always                       |
+| `str::from_utf8(v) == Ok(LIT)`      | `v == b"LIT"`                    | always                       |
+| `c.to_str() == Ok(LIT)`             | `c.to_bytes() == b"LIT"`         | always                       |
+| `v.to_string_lossy() == LIT`        | `v.as_encoded_bytes() == b"LIT"` | unless `LIT` contains U+FFFD |
+| `String::from_utf8_lossy(v) == LIT` | `v == b"LIT"`                    | unless `LIT` contains U+FFFD |
+| `v.to_str().unwrap() == LIT`        | `v.as_encoded_bytes() == b"LIT"` | drops a panic                |
 
 The lossy and `unwrap` rows are fidelity-destroying conversions, and
 they are in scope here for the relevance reason rather than that
@@ -234,14 +234,14 @@ Resolved through `typeck_results`, so a `str` that merely shares a
 method name is never flagged. Each native form has a lossless byte
 view to compare against:
 
-| Source                              | Byte view |
-|-------------------------------------|-----------|
-| `OsStr`, `OsString`                 | `as_encoded_bytes()` |
-| `Path`, `PathBuf`                   | `as_os_str().as_encoded_bytes()` |
-| `[u8]`, `&[u8]`                     | the value itself |
-| `Vec<u8>`, `Box<[u8]>`              | the value, dereferenced for a pattern |
-| `CStr`                              | `to_bytes()` |
-| `CString`                           | `as_bytes()` |
+| Source                 | Byte view                             |
+|------------------------|---------------------------------------|
+| `OsStr`, `OsString`    | `as_encoded_bytes()`                  |
+| `Path`, `PathBuf`      | `as_os_str().as_encoded_bytes()`      |
+| `[u8]`, `&[u8]`        | the value itself                      |
+| `Vec<u8>`, `Box<[u8]>` | the value, dereferenced for a pattern |
+| `CStr`                 | `to_bytes()`                          |
+| `CString`              | `as_bytes()`                          |
 
 `as_encoded_bytes` is the view to suggest rather than the
 `OsStrExt::as_bytes` that review's opening question named. On Unix the
