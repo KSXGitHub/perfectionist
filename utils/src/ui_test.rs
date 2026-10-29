@@ -28,7 +28,10 @@
 //! problem, and no lock can scope them; a spawned `cargo dylint`
 //! clears them instead. See [`crate::dylint`].
 
+use crate::bless::{self, Expectations};
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
+use std::panic;
+use std::path::PathBuf;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Serialises the window in which `DYLINT_TOML` names one fixture's
@@ -46,6 +49,8 @@ static SERIAL: Mutex<()> = Mutex::new(());
 /// A `dylint_testing` UI test, described and ready to run.
 pub struct ConfiguredUiTest {
     test: dylint_testing::ui::Test,
+    manifest_dir: PathBuf,
+    src_base: PathBuf,
     /// Held only for its `Drop`, which removes the fixture copy from
     /// disk.
     _fixtures: FixtureCopy,
@@ -65,8 +70,28 @@ impl ConfiguredUiTest {
         }
     }
 
-    pub(crate) fn run(mut self) {
-        self.test.run();
+    pub(crate) fn run(self) {
+        let ConfiguredUiTest {
+            mut test,
+            manifest_dir,
+            src_base,
+            _fixtures,
+            _serial,
+        } = self;
+        if !*bless::ENABLED {
+            test.run();
+            return;
+        }
+        let expectations = Expectations::of(&manifest_dir, &src_base);
+        expectations.delete_staged();
+        // `compiletest` ends a failed console run with a panic.
+        let outcome = panic::catch_unwind(move || test.run());
+        let recorded = expectations.record();
+        if recorded.is_empty()
+            && let Err(payload) = outcome
+        {
+            panic::resume_unwind(payload);
+        }
     }
 }
 
@@ -234,6 +259,8 @@ where
         test.rustc_flags(self.rustc_flags);
         ConfiguredUiTest {
             test,
+            manifest_dir: PathBuf::from(self.manifest_dir.as_ref()),
+            src_base: PathBuf::from(self.src_base.as_ref()),
             _fixtures: fixtures,
             _serial: serial,
         }

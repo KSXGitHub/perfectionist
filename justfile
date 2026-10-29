@@ -37,7 +37,7 @@ build:
 doc:
   just gen-docs
   just check-rules-md
-  RUSTDOCFLAGS='-D warnings' cargo doc --no-deps --document-private-items {{locked}}
+  RUSTDOCFLAGS='-D warnings' cargo doc --workspace --no-deps --document-private-items {{locked}}
 
 # Run all the lints
 lint:
@@ -48,6 +48,10 @@ test:
   mkdir -pv "{{test_tmp_dir}}"
   just warmup-integration-tests
   TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
+
+# Re-record every `.stderr` fixture from what the run produces
+bless:
+  PERFECTIONIST_BLESS=true just test
 
 # Run perfectionist's own lints on its source
 self-lint:
