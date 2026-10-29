@@ -549,7 +549,7 @@ allocation.
 A `Path` or `PathBuf` source reaches this spelling through
 `as_os_str()`, and the detour is **not** optional.
 
-> [!IMPORTANT]
+> [!WARNING]
 > `Path::new` looks like the counterpart and is not one. `Path`
 > compares by normalised components rather than by bytes, so
 > `Path::new("a/b") == Path::new("a//b")` holds, as do the `.` and
