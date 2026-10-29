@@ -78,9 +78,12 @@ pattern that several rules call out by reference — live in
   (`value.to_str() == Some("true")`, a `match` whose arms are all
   literal patterns, `matches!(str::from_utf8(b), Ok("yes" | "no"))`).
   The validity the conversion establishes reaches no arm, so the
-  comparison belongs on the native byte view
-  (`as_encoded_bytes()`, `to_bytes()`, the buffer itself) against
-  byte-string literals. Exempt where the decoded text is used as
+  comparison belongs on the native form: `== OsStr::new(lit)` for an
+  equality, and the byte view (`as_encoded_bytes()`, `to_bytes()`,
+  the buffer itself) against byte-string literals for a pattern,
+  which cannot hold an `OsStr`. A `Path` reaches either through
+  `as_os_str()`, never through `Path::new`, whose equality compares
+  normalised components. Exempt where the decoded text is used as
   text, where a `match` gives the non-UTF-8 case an outcome of its
   own, and where a lossy conversion meets a literal containing
   U+FFFD. Sorts the same conversions as

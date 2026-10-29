@@ -25,7 +25,9 @@ string (`OsStr`, `OsString`, `Path`, `PathBuf`), a byte buffer
 (`[u8]`, `Vec<u8>`, `Box<[u8]>`), or a C string (`CStr`, `CString`).
 Where such a value is converted to UTF-8 and **every** use of the
 result is a comparison against a string literal, the comparison
-belongs on the native byte form instead.
+belongs on the native form instead. Which spelling of the native form
+depends on the consumer, and
+[Suggested fix](#suggested-fix) settles that.
 
 The conversion answers "is this valid UTF-8?" on the way to answering
 "is this one of these few literals?". Nothing downstream consumes the
@@ -263,7 +265,9 @@ than replacing it; the implementation peels them to reach it.
 
 Resolved through `typeck_results`, so a `str` that merely shares a
 method name is never flagged. Each native form has a lossless byte
-view to compare against:
+view to compare against, which a pattern consumer has to use and an
+equality consumer may skip, per
+[Suggested fix](#suggested-fix):
 
 | Source                 | Byte view                             |
 |------------------------|---------------------------------------|
@@ -504,12 +508,68 @@ if text.to_lowercase() == "true" { .. }
 
 ## Suggested fix
 
-Replace the conversion with the source's byte view from
-[(b)](#b-the-source-type) and rewrite each literal in the comparison
-as a byte-string literal.
+The consumer decides which spelling the fix takes, and for an
+OS-string source the choice is real rather than cosmetic.
 
-Emitting the literal has constraints that a suggestion has to
-respect:
+### A pattern consumer forces the byte view
+
+A `match`, `matches!`, `if let` or let-else needs its literal in
+pattern position, and there is no `OsStr` literal to put there:
+`OsStr::new("x")` is a function call, which a pattern cannot be. So
+the scrutinee becomes the source's byte view from
+[(b)](#b-the-source-type) and every arm becomes a byte-string
+literal. The shape in [Statement](#statement) is this case, which is
+why its fix reads `as_encoded_bytes`.
+
+### An `==` consumer should compare as `OsStr`
+
+`OsStr` implements `PartialEq`, so an equality against a literal can
+keep the literal exactly as written:
+
+**Avoid:**
+
+```rust
+if value.to_str() == Some("true") { .. }
+```
+
+**Prefer:**
+
+```rust
+if value == OsStr::new("true") { .. }
+```
+
+Nothing is respelled, so none of the literal constraints below
+arise, and the reader still sees one comparison against the word
+rather than a comparison of byte views. Prefer this wherever the
+source is an OS string and the consumer is `==` or `!=`. It costs
+nothing: `OsStr::new` returns a borrow whose lifetime is its
+argument's, so it cannot allocate and hand back a reference to the
+allocation.
+
+A `Path` or `PathBuf` source reaches this spelling through
+`as_os_str()`, and the detour is **not** optional.
+
+> `Path::new` looks like the counterpart and is not one. `Path`
+> compares by normalised components rather than by bytes, so
+> `Path::new("a/b") == Path::new("a//b")` holds, as do the `.` and
+> trailing-separator cases `Path::components` documents. That makes
+> `p == Path::new(LIT)` a *weaker* predicate than
+> `p.to_str() == Some(LIT)`, and substituting it would change the
+> answer rather than preserve it.
+
+Checked over paths including `a//b`, `a/./b` and `main.rs/` against
+the literals they normalise onto: `p.as_os_str() == OsStr::new(LIT)`
+disagreed with `p.to_str() == Some(LIT)` on nothing, for `&Path`,
+`PathBuf`, `&OsStr` and `OsString` receivers alike, while
+`p == Path::new(LIT)` disagreed on three.
+
+A byte buffer needs no counterpart to `OsStr::new`, being already
+its own native form. Its literal is a byte-string literal, and the
+constraints below are what settle its spelling.
+
+### Emitting a byte-string literal
+
+Where the fix does emit one, two constraints apply:
 
 - **`b"…"`, never `"…".as_bytes()`.** `clippy::string_lit_as_bytes`
   flags `"…".as_bytes()` and suggests `b"…"`, so a fix reaching for
