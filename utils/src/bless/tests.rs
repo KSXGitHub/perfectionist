@@ -4,8 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
 
-/// Create each path under `root`, empty: every caller reads paths
-/// rather than contents.
+/// Create each path under `root`, empty.
 fn tree(root: &Path, paths: &[&str]) {
     for path in paths {
         let path = root.join(path);
@@ -15,8 +14,7 @@ fn tree(root: &Path, paths: &[&str]) {
     }
 }
 
-/// Empty is how an unset variable reaches [`parse`], the two meaning
-/// the same thing.
+/// Empty is how an unset variable reaches [`parse`].
 #[test]
 fn empty_and_false_are_off() {
     assert!(matches!(parse(OsStr::new("")), Ok(false)));
@@ -63,8 +61,6 @@ fn a_top_level_fixture_stages_beside_no_directory() {
     );
 }
 
-/// Every component below the first one survives, that being what
-/// compiletest put in the test's name.
 #[test]
 fn a_nested_tree_keeps_its_components_below_the_first() {
     let temp = TempDir::new().expect("create a tree");
@@ -88,8 +84,7 @@ fn a_nested_tree_keeps_its_components_below_the_first() {
     );
 }
 
-/// A fixture with no `.stderr` yet is still covered, which is what
-/// lets a new one be recorded rather than hand-written.
+/// What lets a new fixture be recorded rather than hand-written.
 #[test]
 fn a_fixture_without_a_stderr_is_covered() {
     let temp = TempDir::new().expect("create a tree");
@@ -104,9 +99,6 @@ fn a_fixture_without_a_stderr_is_covered() {
     assert_eq!(committed, vec![temp.path().join("ui/newborn.stderr")]);
 }
 
-/// compiletest treats what is under `auxiliary` as something a
-/// fixture builds against rather than a test of its own, so there is
-/// no output of its own to record.
 #[test]
 fn an_auxiliary_crate_is_left_out() {
     let temp = TempDir::new().expect("create a tree");
@@ -124,8 +116,6 @@ fn an_auxiliary_crate_is_left_out() {
     assert_eq!(committed, vec![temp.path().join("ui/fixture.stderr")]);
 }
 
-/// Where the environment names the directory, which is the arithmetic
-/// every real run does.
 #[test]
 fn of_stages_under_the_temp_directory() {
     let temp = TempDir::new().expect("create a tree");
@@ -137,8 +127,7 @@ fn of_stages_under_the_temp_directory() {
     );
 }
 
-/// What a blessing run does for most of its fixtures, those having
-/// matched last time.
+/// The common case: a fixture that matched last time staged nothing.
 #[test]
 fn deleting_what_was_never_staged_is_fine() {
     let temp = TempDir::new().expect("create a tree");
@@ -147,8 +136,8 @@ fn deleting_what_was_never_staged_is_fine() {
     Expectations::under(temp.path(), Path::new("ui"), &staged_root).delete_staged();
 }
 
-/// Deleting the leftover of an earlier failing run is what makes one
-/// found after a run mean that run wrote it.
+/// A leftover from an earlier failing run must not be recorded as
+/// this run's output.
 #[test]
 fn deleting_removes_a_stale_staged_actual() {
     let temp = TempDir::new().expect("create a tree");
@@ -184,8 +173,6 @@ fn recording_replaces_the_committed_text() {
     );
 }
 
-/// A fixture the run agreed with leaves no file, so its committed
-/// text is left alone rather than reported.
 #[test]
 fn recording_skips_what_staged_nothing() {
     let temp = TempDir::new().expect("create a tree");

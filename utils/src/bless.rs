@@ -1,17 +1,11 @@
 //! Re-record the `.stderr` fixtures from what the run produced.
 //!
-//! compiletest has already computed the text a `.stderr` should hold
-//! by the time a comparison fails, so re-recording is a copy. What it
-//! costs is that the file holding that text is named from
-//! `build_base`, which `dylint_testing` leaves at compiletest's
-//! default and neither crate's API promises: a drift there leaves a
-//! blessing run finding nothing rather than failing, which
-//! [`crate::ui_test`] answers by re-raising a failed run that
-//! recorded nothing.
+//! Where compiletest writes a fixture's actual output is promised by
+//! no API: the path here is built from compiletest's own defaults,
+//! which `dylint_testing` leaves alone.
 //!
-//! compiletest never deletes one of those files, so an actual output
-//! written by a failure outlives every later run that agrees with its
-//! fixture. [`Expectations::clear`] therefore goes first.
+//! compiletest never deletes one of those files, so a stale one has to
+//! go before the run rather than after.
 
 use crate::ui_fixtures::fixture_sources;
 use derive_more::Display;
@@ -22,15 +16,10 @@ use std::{env, fs, io};
 
 const BLESS_ENV: &str = "PERFECTIONIST_BLESS";
 
-/// compiletest's default stage id, which `dylint_testing` leaves
-/// alone and which lands in the name of every file it writes.
+/// compiletest's default.
 const STAGE_ID: &str = "stage-id";
 
 /// Whether this run re-records rather than compares.
-///
-/// Panicking is the end of the line for a bad value: the `#[test]`
-/// that reaches this through [`crate::ui_test`] returns `()`, so
-/// there is no caller left to hand a [`Result`] to.
 pub(crate) fn enabled() -> bool {
     BLESS_ENV
         .pipe(env::var_os)
@@ -39,15 +28,10 @@ pub(crate) fn enabled() -> bool {
         .unwrap_or_else(|error| panic!("{error}"))
 }
 
-/// What a value of [`BLESS_ENV`] can come out short of.
 #[derive(Display)]
 #[display("{BLESS_ENV} must be 'true', 'false', empty, or unset; got: {_0:?}")]
 struct BlessValueError<'a>(&'a OsStr);
 
-/// `true` records, `false` and empty compare, and any other value is
-/// rejected rather than read as one of those, so a misspelt opt-in
-/// never quietly leaves the run comparing. That tri-state is the one
-/// `PERFECTIONIST_CARGO_LOCKED` takes.
 fn parse(value: &OsStr) -> Result<bool, BlessValueError<'_>> {
     match value.as_encoded_bytes() {
         b"true" => Ok(true),
@@ -56,34 +40,27 @@ fn parse(value: &OsStr) -> Result<bool, BlessValueError<'_>> {
     }
 }
 
-/// A pair of paths per fixture, and nothing read from either: the
-/// `.stderr` the tree commits, and the file compiletest writes that
-/// fixture's actual output to. Both methods go to the filesystem.
 pub(crate) struct Expectations(Vec<Expectation>);
 
 struct Expectation {
-    /// The `.stderr` in the repository.
+    /// The `.stderr` the repository commits.
     committed: PathBuf,
-    /// Where compiletest leaves its actual output on a mismatch.
+    /// Where compiletest writes the actual output on a mismatch.
     staged: PathBuf,
 }
 
 impl Expectations {
-    /// The expectations of the committed tree at
-    /// `<manifest_dir>/<relative>`, rather than of the copy the run
-    /// reads.
+    /// The expectations for the fixtures under
+    /// `<manifest_dir>/<relative>`.
     pub(crate) fn of(manifest_dir: &Path, relative: &Path) -> Self {
         Expectations::under(manifest_dir, relative, &env::temp_dir())
     }
 
-    /// With the directory compiletest writes under given rather than
-    /// read from the environment, so a test exercises the arithmetic
-    /// without writing where a real run looks.
+    /// [`Expectations::of`] with `staged_root` given rather than read
+    /// from the environment.
     fn under(manifest_dir: &Path, relative: &Path, staged_root: &Path) -> Self {
-        // compiletest names a test after the fixture's path below
-        // `src_base`, which is the copy of the first component of
-        // `relative`, so that component is what comes off a committed
-        // path to reach the name compiletest wrote.
+        // compiletest names a test by the fixture's path below
+        // `src_base`, which is a copy of `relative`'s first component.
         let root = manifest_dir.join(
             relative
                 .components()
@@ -107,9 +84,7 @@ impl Expectations {
         Expectations(expectations)
     }
 
-    /// Delete the file compiletest would write each actual output to,
-    /// so that one found on disk after the run was written by that
-    /// run.
+    /// Delete the file compiletest writes each actual output to.
     pub(crate) fn delete_staged(&self) {
         for expectation in &self.0 {
             if let Err(error) = fs::remove_file(&expectation.staged)
@@ -120,9 +95,8 @@ impl Expectations {
         }
     }
 
-    /// Copy each actual output compiletest left on disk over the
-    /// `.stderr` it belongs to, and hand back the ones replaced. A
-    /// fixture whose output matched left no file, so it is skipped.
+    /// Copy each staged actual output over the `.stderr` it belongs to,
+    /// returning the `.stderr`s replaced.
     pub(crate) fn record(&self) -> Vec<&Path> {
         let mut recorded = Vec::new();
         for expectation in &self.0 {

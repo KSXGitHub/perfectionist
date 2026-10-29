@@ -85,9 +85,9 @@ impl FixtureCopy {
 /// guard has to outlive the run, which is why [`crate::ui_test`] holds
 /// it alongside the test.
 ///
-/// An `auxiliary/` crate is copied verbatim, the directives on the
-/// fixture that builds against it already rewriting that fixture's
-/// whole output, wherever a span originates.
+/// An `auxiliary/` crate gets no header of its own: the directives on
+/// the fixture that builds against it rewrite that fixture's whole
+/// output, wherever a span originates.
 pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) -> FixtureCopy {
     let manifest_dir = Path::new(manifest_dir);
     let relative = Path::new(relative);
@@ -145,15 +145,13 @@ fn copy_dir(source: &Path, destination: &Path) {
     }
 }
 
-/// Every fixture under `dir` that compiletest will run, which is
-/// every `.rs` at any depth outside an `auxiliary` directory.
-/// compiletest skips those itself, treating what is in one as
+/// Every fixture under `dir` that compiletest will run. compiletest
+/// skips an `auxiliary` directory itself, treating what is in one as
 /// something a fixture builds against rather than a test.
 ///
 /// [`inject_directives`] and [`crate::bless`] have to agree on this
-/// set: a fixture the header misses is linted with its real line and
-/// column numbers, and re-recording from that output would commit
-/// them.
+/// set: a fixture the header misses is linted at its real line and
+/// column numbers, and recording that output would commit them.
 pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
     for entry in fs::read_dir(dir).expect("read fixture dir") {
