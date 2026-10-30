@@ -165,7 +165,7 @@ LL |     Command::new("ls").with_stdin(Stdio::null());
 warning: `Command::current_dir` takes `&mut self`, so it cannot yield the command
   --> $DIR/mutating_command_builder_rewrite.rs:LL:CC
    |
-LL |             .current_dir("/var/empty")
+LL |             .current_dir("/tmp")
    |              ^^^^^^^^^^^
    |
    = help: use `CommandExtra::with_current_dir`, which takes `self` and returns `Self`, keeping the whole construction in expression position

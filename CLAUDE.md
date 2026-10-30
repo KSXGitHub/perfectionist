@@ -597,18 +597,6 @@ let [`just bless`](#re-recording-a-stderr) record it.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
 
-One normalisation is compiletest's own rather than this
-repository's, and constrains what a fixture may say: the directory
-compiletest writes a run's output to, which is
-`std::env::temp_dir()`, is substituted out of the rendered output
-wherever it appears, the echoed source lines included. So a
-fixture must not hold the path of a temp directory, `/tmp`
-included, or it is judged on text it was not written as, and on
-differing text from one machine to the next. A run whose fixtures
-hold one is refused;
-[`utils/src/build_base.rs`](utils/src/build_base.rs) explains why
-nothing pins the directory instead.
-
 ## Re-recording a `.stderr`
 
 `just bless` updates the `.stderr` fixtures. Read the diff it leaves.

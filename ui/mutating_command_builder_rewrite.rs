@@ -392,7 +392,7 @@ mod partial_rename_would_move_a_call {
 
     fn run() {
         let _ = Command::new("ls")
-            .current_dir("/var/empty")
+            .current_dir("/tmp")
             .arg("partial-rename");
     }
 }
