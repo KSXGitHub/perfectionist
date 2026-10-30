@@ -36,9 +36,6 @@ fn check_against<'a>(
     temp_dir: &'a Path,
     expected: Option<&'a OsStr>,
 ) -> Result<(), TempDirError<'a>> {
-    // An empty value is what a recipe forwarding an unset variable
-    // passes on, so it says no more than the variable's absence does.
-    let expected = expected.filter(|value| !value.as_encoded_bytes().is_empty());
     let Some(expected) = expected else {
         return Err(TempDirError::Unstated { actual: temp_dir });
     };
@@ -53,7 +50,7 @@ fn check_against<'a>(
 
 /// Why a run's temp directory cannot be taken for the one the `test`
 /// recipe chose.
-#[derive(Display)]
+#[derive(Debug, Display)]
 enum TempDirError<'a> {
     #[display(
         "{EXPECTED_VAR} is unset, so nothing says which temp directory the `.stderr` fixtures \
