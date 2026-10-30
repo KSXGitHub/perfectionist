@@ -32,7 +32,7 @@ Implemented:
   `Path::display()`, each optionally under `unwrap` or `expect`.
 - Every source in [(b)](#b-the-source-type).
 - Both consumers in [(c)](#c-the-consumer) that collapse to an `==`
-  or a `match`, the latter covering `matches!`, with the arm
+  or a `match`, with `matches!` counted as a `match`, under the arm
   conditions of [(d)](#d-the-outcomes-the-conversion-distinguishes)
   and every exemption.
 - The conversion reached through an `Option::map` or

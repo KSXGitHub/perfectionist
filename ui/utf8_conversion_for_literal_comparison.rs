@@ -54,7 +54,8 @@ fn match_over_an_os_string(value: &OsStr) -> Result<bool, ()> {
     }
 }
 
-// Bad: a `matches!` is a `match`, so the same reading applies.
+// Bad: a `matches!` expands to a `match`, so the rule reads its arms
+// as literal patterns.
 fn matches_over_a_path(path: &Path) -> bool {
     matches!(path.to_str(), Some("lib.rs" | "main.rs" | "mod.rs"))
 }
@@ -65,7 +66,8 @@ fn through_an_option_adapter(path: &Path) -> bool {
     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
 }
 
-// Bad: the same adapter under a `matches!`.
+// Bad: an `Option` adapter whose consumer is a `matches!` rather than
+// an equality.
 fn through_an_option_adapter_in_a_match(path: &Path) -> bool {
     matches!(
         path.file_name().and_then(|name| name.to_str()),

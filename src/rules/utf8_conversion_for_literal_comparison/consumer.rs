@@ -167,8 +167,9 @@ fn pattern_literals(pat: &Pat<'_>, literals: &mut Vec<Symbol>) -> Option<Reach> 
         PatKind::TupleStruct(ref path, [inner], _) if is_some_or_ok_path(path) => {
             pattern_literals(inner, literals)
         }
-        // An `Err` arm reaches an outcome of its own for the same
-        // reason a `None` arm does.
+        // An `Err` arm is where a fallible conversion's report reaches
+        // an outcome of its own, which the byte comparison cannot
+        // distinguish from unlisted text.
         PatKind::TupleStruct(ref path, [inner], _)
             if is_err_path(path) && matches!(inner.kind, PatKind::Wild) =>
         {

@@ -52,8 +52,8 @@ Left alone:
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The
-comparison answers the same way either spelling, which is why
-the rule reports only where that holds. The objection is to
+comparison answers alike whichever spelling it takes, which is
+why the rule reports only where that holds. The objection is to
 what the reader has to carry:
 
 - **A wrapper no arm asked for.** A `match` deciding which of
