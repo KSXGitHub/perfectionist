@@ -71,6 +71,27 @@ pattern that several rules call out by reference — live in
   default and opt-in behind `include_handled_conversions`.
   `CStr`/`CString` are out of scope (FFI-shaped; satisfy no sink
   bound). Active by default.
+- [`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)
+  — flag a UTF-8 conversion of an OS string, a byte buffer or a
+  `CStr`/`CString` where every use of the result is a comparison
+  against a string literal
+  (`value.to_str() == Some("true")`, a `match` whose arms are all
+  literal patterns, `matches!(str::from_utf8(b), Ok("yes" | "no"))`).
+  The validity the conversion establishes reaches no arm, so the
+  comparison belongs on the native form: `== OsStr::new(lit)` for an
+  equality, and the byte view (`as_encoded_bytes()`, `to_bytes()`,
+  the buffer itself) against byte-string literals for a pattern,
+  which cannot hold an `OsStr`. A `Path` reaches either through
+  `as_os_str()`, never through `Path::new`, whose equality compares
+  normalised components. Exempt where the decoded text is used as
+  text, where a `match` gives the non-UTF-8 case an outcome of its
+  own, and where a lossy conversion meets a literal containing
+  U+FFFD. Sorts the same conversions as
+  [`needless-utf8-conversion.md`](./needless-utf8-conversion.md) on a
+  different axis: that rule fires on the ones that lose fidelity,
+  this one on the ones whose answer is discarded, so a faithful
+  `to_str()` is this rule's core and that rule's exemption. Active by
+  default.
 
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive
