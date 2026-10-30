@@ -2,15 +2,9 @@
 //!
 //! `dylint_testing` leaves it at compiletest's default,
 //! [`env::temp_dir`], and compiletest substitutes `$TEST_BUILD_DIR`
-//! for its path throughout a fixture's rendered output, the echoed
-//! source lines included. A fixture that names a temp directory is
-//! therefore judged on text `TMPDIR` decides, and `ui/` holds such a
-//! fixture.
-//!
-//! Nothing here can choose the directory: `dylint_testing::ui::Test`
-//! exposes no `build_base` setter, and setting `TMPDIR` in-process is
-//! unsafe in edition 2024. The `test` recipe chooses it and states the
-//! choice in [`EXPECTED_VAR`].
+//! for its path throughout a fixture's rendered output. The `test`
+//! recipe chooses the directory and states the choice in
+//! [`EXPECTED_VAR`].
 
 use derive_more::Display;
 use std::env;
