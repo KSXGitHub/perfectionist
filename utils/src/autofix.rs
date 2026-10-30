@@ -19,19 +19,19 @@
 //!   about it.
 //!
 //! Once the last round has run, the project has to report nothing at
-//! all, which is what settling means. That one is an assertion rather
-//! than a stored file, since a blessing run re-records every stored
-//! expectation and would absorb a regression that left findings
-//! behind.
+//! all, which is what settling means. That one is an assertion
+//! rather than a stored file: a blessing run writes what the run
+//! produced, so a stored copy would absorb a regression that left
+//! findings behind.
 //!
 //! Once the last round has run, a run also asserts the project still
-//! behaves: its own tests pass, and its `main` prints the bytes the
-//! fixture stored for it. A rewrite that compiles and answers
-//! differently is the failure these catch and the rest cannot. Both
-//! are asserted only there, that being the only tree whose behaviour
-//! is in question, and compiling the project's test targets a second
-//! time would cost more than running them over the tree the rounds
-//! started from is worth.
+//! behaves: its own tests pass, and its `main` prints what it
+//! printed before the first round. A rewrite that compiles and
+//! answers differently is the failure these catch and the rest
+//! cannot. The tests run over the settled tree alone, that being the
+//! one whose behaviour is in question. A blessing run also runs
+//! `main` over the project the rounds start from, because its output
+//! there is what the settled tree is held to.
 //!
 //! Clippy's own lints are not under test. Clippy is in a round to
 //! show that its rewrites and this plugin's do not fight, so a
@@ -70,9 +70,9 @@ const FIXTURES: &str = "tests/fixtures/autofix";
 const CLIPPY: &str = "clippy::";
 
 /// What a fixture stores its `main`'s output under, relative to the
-/// fixture. One file per fixture rather than per run: every run
-/// rewrites the same project, and arriving at the same behaviour
-/// whatever it rewrote is the claim.
+/// fixture. One file per fixture rather than per run: it holds what
+/// the project printed before any round, which is the same project
+/// whatever a run then rewrites.
 const OUTPUT: &str = "cli.stdout";
 
 /// Where the fixtures' build caches live, relative to this checkout.
@@ -139,6 +139,9 @@ fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
     snapshot::write(dir, stored);
     write_dylint_toml(dir, context, run);
     report.record(stored.clone());
+    if *crate::bless::ENABLED {
+        record_output(dir, context, &mut report);
+    }
 
     let mut previous = stored.clone();
     let mut reported = collect(dir, context, &mut report);
@@ -268,9 +271,9 @@ fn check_handed(
 /// test had a say.
 ///
 /// Nothing is stored for this, deliberately, for the reason
-/// [`check_settled`] states: a blessing run re-records every stored
-/// expectation, so a planted finding would be written into the file
-/// and read as expected.
+/// [`check_settled`] states: a blessing run writes what the run
+/// itself produced, so a planted finding would be written into the
+/// file and read as expected.
 fn check_unplanted(reported: &Reported, report: &mut Report) {
     let planted: Vec<&str> = reported
         .lints
@@ -290,11 +293,10 @@ fn check_unplanted(reported: &Reported, report: &mut Report) {
 
 /// Hold the project to having settled once the last round has run.
 ///
-/// Nothing is stored for this, deliberately. Every other expectation
-/// here is re-recorded by a blessing run, so a regression that left
-/// findings behind after the last round would be written into the
-/// file and pass. This is the one claim a blessing run cannot
-/// launder.
+/// Nothing is stored for this, deliberately. An expectation recorded
+/// from the run itself is written by a blessing run, so a regression
+/// that left findings behind after the last round would be written
+/// into the file and pass.
 fn check_settled(reported: &Reported, report: &mut Report) {
     if reported.lints.is_empty() {
         return;
@@ -305,18 +307,54 @@ fn check_settled(reported: &Reported, report: &mut Report) {
     ));
 }
 
-/// Hold the fixture's `main`, run over the settled project, to the
-/// output the fixture stored for it. A rewrite that changed what the
+/// Store what the fixture's `main` prints over the project as the
+/// rounds receive it, which is the behaviour they have to preserve.
+///
+/// [`check_output`] relies on this being recorded here rather than
+/// from the settled project: a blessing run then has to pass that
+/// comparison instead of writing it.
+fn record_output(project_dir: &Path, context: &Context, report: &mut Report) {
+    let Some(stdout) = output(project_dir, context, report, "before the first round") else {
+        return;
+    };
+    expectation::record(&context.fixture_dir.join(OUTPUT), &stdout);
+}
+
+/// Hold the fixture's `main`, run over the settled project, to what
+/// it printed before the rounds. A rewrite that changed what the
 /// project prints is the failure this reports.
 ///
-/// A `main` that prints nothing would pass against an equally empty
-/// stored file, so the empty case is a failure of the fixture rather
-/// than a pass.
+/// The comparison runs whether or not this run re-records, because
+/// what it is held to was recorded from the project the rounds
+/// started from.
 fn check_output(project_dir: &Path, context: &Context, report: &mut Report) {
+    let Some(stdout) = output(project_dir, context, report, "after the last round") else {
+        return;
+    };
+    let file = context.fixture_dir.join(OUTPUT);
+    let what = "the output of the fixture's `main`";
+    if let Err(failure) = expectation::compare(&file, &stdout, what) {
+        report.fail(failure);
+    }
+}
+
+/// What the fixture's `main` prints over the project as it now
+/// stands, or `None` where it cannot stand in for the behaviour.
+/// `when` names the moment in the run for a failure to carry.
+///
+/// A `main` that prints nothing would match an equally empty stored
+/// file, so the empty case is a failure of the fixture rather than a
+/// pass.
+fn output(
+    project_dir: &Path,
+    context: &Context,
+    report: &mut Report,
+    when: &str,
+) -> Option<String> {
     let outcome = round::run_cli(project_dir, context.target_dir, context.cli_package);
     if !outcome.success {
-        expect_success_when(outcome, report, "after the last round");
-        return;
+        expect_success_when(outcome, report, when);
+        return None;
     }
     if outcome.stdout.is_empty() {
         report.fail(
@@ -325,13 +363,9 @@ fn check_output(project_dir: &Path, context: &Context, report: &mut Report) {
              contributes"
                 .to_owned(),
         );
-        return;
+        return None;
     }
-    let file = context.fixture_dir.join(OUTPUT);
-    let what = "the output of the fixture's `main`";
-    if let Err(failure) = expectation::check(&file, &outcome.stdout, what) {
-        report.fail(failure);
-    }
+    Some(outcome.stdout)
 }
 
 fn expect_success(outcome: round::Outcome, report: &mut Report) {
