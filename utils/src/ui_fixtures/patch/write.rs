@@ -12,8 +12,7 @@ use std::process::Command;
 use std::{fs, str};
 
 /// The unified diff from `original` to `fixed`, naming `name` in its
-/// header lines. Two texts that agree have an empty diff, which is a
-/// fixture's way of saying it offers nothing to fix.
+/// header lines. Two texts that agree have an empty diff.
 pub(crate) fn unified(name: &str, original: &str, fixed: &str) -> String {
     assert!(
         original.ends_with('\n') && fixed.ends_with('\n'),

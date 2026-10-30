@@ -617,25 +617,20 @@ diff it leaves.
 
 ## Applicability fixtures
 
-A `.stderr` cannot show an applicability. rustc renders a suggestion
-the same way whether or not the fixer would apply it, so promoting one
-to `MachineApplicable`, or demoting one away from it, moves nothing in
-any `.stderr` and no fixture notices. What pins the choice is a
-`.diff` beside the fixture.
+rustc renders a suggestion the same way whether or not the fixer
+would apply it, so no `.stderr` can show an applicability. A `.diff`
+beside the fixture pins it.
 
 Opt a fixture in with `// run-rustfix` and
-`// rustfix-only-machine-applicable` at its top and a committed
-`.diff`; neither works without the other. The `.diff` turns the
-fixture into the form the machine-applicable suggestions leave, so an
-empty one is the assertion that the fixture offers none, and the fixed
-text has to compile.
+`// rustfix-only-machine-applicable` at its top, then record its
+`.diff`; a run needs the `.diff` as well as the directives. An empty
+`.diff` is the assertion that the fixture offers nothing
+machine-applicable, and compiletest compiles what a non-empty one
+produces.
 
 [`just bless`](#re-recording-a-fixture) records a `.diff` from what
 rustfix produced, including the first one for a fixture that has none
 and a stored one the fixture has outgrown.
-[`utils/src/ui_fixtures/patch.rs`](utils/src/ui_fixtures/patch.rs)
-carries the form it takes and what a misfitting one is answered with
-outside a blessing run.
 
 ## Generated documentation site (`tools/gen-docs/`)
 
