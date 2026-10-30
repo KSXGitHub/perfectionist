@@ -458,6 +458,19 @@ already had to be corrected once for `ReferenceScope::Crate` in
 expresses the `Default` impl rather than prose claiming a default. Only
 the prose is governed here.
 
+## Re-read new prose before committing
+
+Prose that breaks this guide's documentation conventions still
+compiles, lints clean and passes the fixtures, so no step of
+`just all` will catch it. You are the only check it has, and
+writing a passage is a separate pass from checking one.
+
+So before you commit, re-read every doc comment, guide sentence and
+fixture label the diff adds or touches against the conventions that
+govern it, and fix what fails; where a convention names a grep or a
+sweep, run it. A passage written with a convention in mind still has
+to be read against it.
+
 ## When the implementation is complete
 
 If a PR fully implements a rule, every sub-check and configuration
