@@ -36,9 +36,7 @@ fn check_against<'a>(
     temp_dir: &'a Path,
     expected: Option<&'a OsStr>,
 ) -> Result<(), TempDirError<'a>> {
-    let Some(expected) = expected else {
-        return Err(TempDirError::Unstated { actual: temp_dir });
-    };
+    let expected = expected.ok_or(TempDirError::Unstated { actual: temp_dir })?;
     if temp_dir == Path::new(expected) {
         return Ok(());
     }
