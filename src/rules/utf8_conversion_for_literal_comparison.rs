@@ -14,24 +14,29 @@ use source::Converted;
 declare_tool_lint! {
     /// ### What it does
     ///
-    /// Flags a UTF-8 conversion whose result only ever meets string
-    /// literals. The converted value's own representation is not
-    /// UTF-8: an OS string (`OsStr`, `OsString`, `Path`, `PathBuf`),
-    /// a byte buffer (`[u8]`, `Vec<u8>`, `Box<[u8]>`), or a C string
-    /// (`CStr`, `CString`).
+    /// Flags a value converted to UTF-8 only to be measured against
+    /// string literals. An OS string, a byte buffer and a C string
+    /// each hold something other than UTF-8, and the comparison can
+    /// be made on what they do hold:
     ///
-    /// The conversions read are `to_str`, `to_string_lossy`,
-    /// `OsString::into_string`, `str::from_utf8`, `String::from_utf8`
-    /// and `String::from_utf8_lossy`, each optionally followed by
-    /// `unwrap` or `expect`.
+    /// | Written                             | Prefer                                |
+    /// |-------------------------------------|---------------------------------------|
+    /// | `os_str.to_str() == Some("x")`      | `os_str == OsStr::new("x")`           |
+    /// | `path.to_str() == Some("x")`        | `path.as_os_str() == OsStr::new("x")` |
+    /// | `str::from_utf8(bytes) == Ok("x")`  | `bytes == b"x"`                       |
+    /// | `c_str.to_str() == Ok("x")`         | `c_str.to_bytes() == b"x"`            |
     ///
-    /// Two consumers count as meeting only literals:
+    /// An equality keeps its literal as written, since an `OsStr`
+    /// compares against one directly. A `match` cannot, because a
+    /// pattern needs a literal where `OsStr::new("x")` is a call, so
+    /// its scrutinee becomes the bytes and its arms become
+    /// byte-string literals.
     ///
-    /// - an `==` or `!=` whose other operand is a string literal, or
-    ///   a `Some` or `Ok` of one, and
-    /// - a `match` whose every arm is a string literal, a `Some` or
-    ///   `Ok` of one, or a wildcard, with no arm binding the decoded
-    ///   text.
+    /// Either operand may carry the literal, `matches!` counts as a
+    /// `match`, and a conversion under `unwrap` or `expect` reads the
+    /// same way. `to_string_lossy` and `String::from_utf8_lossy` are
+    /// read beside the conversions that report instead of replacing,
+    /// and `OsString::into_string` beside `to_str`.
     ///
     /// Left alone:
     ///
@@ -84,32 +89,24 @@ declare_tool_lint! {
     ///
     /// ### Example
     ///
+    /// **Avoid:**
+    ///
     /// ```rust,ignore
-    /// // Bad: the `Option` is threaded through arms deciding between
-    /// // three words.
-    /// match value.to_str() {
+    /// match flag.to_str() {
     ///     Some("true") => Ok(true),
     ///     Some("false") | Some("") => Ok(false),
-    ///     _ => Err(error),
+    ///     _ => Err(BadFlag(flag)),
     /// }
-    ///
-    /// // Bad: the equality asks about encoding on the way to asking
-    /// // about one word.
-    /// if value.to_str() == Some("true") {}
     /// ```
     ///
-    /// Use instead:
+    /// **Prefer:**
     ///
     /// ```rust,ignore
-    /// // Good: the arms are the words.
-    /// match value.as_encoded_bytes() {
+    /// match flag.as_encoded_bytes() {
     ///     b"true" => Ok(true),
     ///     b"false" | b"" => Ok(false),
-    ///     _ => Err(error),
+    ///     _ => Err(BadFlag(flag)),
     /// }
-    ///
-    /// // Good: an equality keeps its literal as written.
-    /// if value == OsStr::new("true") {}
     /// ```
     pub perfectionist::UTF8_CONVERSION_FOR_LITERAL_COMPARISON,
     Warn,
