@@ -11,6 +11,14 @@ locked := if perfectionist_cargo_locked == "true" {
     error("PERFECTIONIST_CARGO_LOCKED must be 'true', 'false', empty, or unset; got: " + perfectionist_cargo_locked)
   }
 
+# Where `test` points `TMPDIR`. `compiletest_rs` takes its own output
+# directory from `std::env::temp_dir()` and offers no way to override
+# it, so without this every fixture litters the temp directory itself.
+# `test` also states the choice in `PERFECTIONIST_TEST_TMPDIR`, which
+# is how `utils/src/build_base.rs` holds a run to it: compiletest
+# substitutes that directory's path out of every fixture's rendered
+# output, so a run under any other one judges the fixtures on text
+# they were not recorded against.
 test_tmp_dir := env_var_or_default("TMPDIR", "/tmp") + "/perfectionist-tests"
 
 _default:
@@ -47,7 +55,7 @@ lint:
 test:
   mkdir -pv "{{test_tmp_dir}}"
   just warmup-integration-tests
-  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
+  TMPDIR="{{test_tmp_dir}}" PERFECTIONIST_TEST_TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
 # Re-record every `.stderr` fixture from what the run produces
 bless:

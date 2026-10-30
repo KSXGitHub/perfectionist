@@ -546,6 +546,15 @@ running a single sub-recipe (e.g. only `cargo test`). The
 `self-lint` step runs perfectionist's own lints on its source and
 catches violations the other steps miss.
 
+The UI suite enforces part of this rather than trusting it: every
+compiletest fixture is judged against a `.stderr` recorded under
+the temp directory the `test` recipe chooses, so a UI test refuses
+to run unless that recipe set it up.
+[`utils/src/build_base.rs`](utils/src/build_base.rs) holds the run
+to it and explains why the directory cannot be pinned from inside
+the process. A bare `cargo test` therefore fails the UI tests by
+design, naming the recipe to use.
+
 If `just install-dev-tools` cannot complete for any reason (an
 extremely rare failure, such as a sandboxed environment without
 network access, an upstream registry outage or an incompatible
