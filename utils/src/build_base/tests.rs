@@ -1,4 +1,4 @@
-use super::check_against;
+use super::{TempDirError, check_against};
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -27,22 +27,21 @@ fn a_trailing_separator_is_not_a_mismatch() {
 /// nothing stating what the `.stderr` fixtures were recorded under.
 #[test]
 fn a_run_the_recipe_did_not_set_up_is_refused() {
-    let error =
-        check_against(Path::new("/tmp"), None).expect_err("an unstated directory is a refusal");
     assert_eq!(
-        error.to_string(),
-        "PERFECTIONIST_TEST_TMPDIR is unset, so nothing says which temp directory the \
-         `.stderr` fixtures were recorded under; this run's is \"/tmp\". Run `just test`.",
+        check_against(Path::new("/tmp"), None),
+        Err(TempDirError::Unstated {
+            actual: Path::new("/tmp"),
+        }),
     );
 }
 
 #[test]
 fn a_temp_directory_other_than_the_recipes_is_refused() {
-    let error = check_against(Path::new("/tmp"), Some(OsStr::new(CHOSEN_TMPDIR)))
-        .expect_err("a directory other than the stated one is a refusal");
     assert_eq!(
-        error.to_string(),
-        "this run's temp directory is \"/tmp\", but PERFECTIONIST_TEST_TMPDIR says the \
-         `.stderr` fixtures were recorded under \"/tmp/perfectionist-tests\".",
+        check_against(Path::new("/tmp"), Some(OsStr::new(CHOSEN_TMPDIR))),
+        Err(TempDirError::Mismatched {
+            actual: Path::new("/tmp"),
+            stated: OsStr::new(CHOSEN_TMPDIR),
+        }),
     );
 }

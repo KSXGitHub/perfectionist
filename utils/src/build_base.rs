@@ -50,7 +50,7 @@ fn check_against<'a>(
 
 /// Why a run's temp directory cannot be taken for the one the `test`
 /// recipe chose.
-#[derive(Debug, Display)]
+#[derive(Debug, Display, PartialEq)]
 enum TempDirError<'a> {
     #[display(
         "{EXPECTED_VAR} is unset, so nothing says which temp directory the `.stderr` fixtures \
