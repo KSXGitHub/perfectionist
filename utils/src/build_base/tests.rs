@@ -2,12 +2,12 @@ use super::check_against;
 use std::ffi::OsStr;
 use std::path::Path;
 
-/// The directory the `test` recipe chooses, as both the recipe and
-/// the process see it.
-const RECIPE_TMPDIR: &str = "/tmp/perfectionist-tests";
+/// A directory for a case to state and to run under, standing in for
+/// whatever the `test` recipe chooses.
+const CHOSEN_TMPDIR: &str = "/tmp/perfectionist-tests";
 
-/// Accept `temp_dir` against `expected`, reporting the refusal where
-/// there is one.
+/// Require [`check_against`] to accept `temp_dir` against `expected`,
+/// failing with its refusal where it does not.
 fn accept(temp_dir: &str, expected: &str) {
     if let Err(error) = check_against(Path::new(temp_dir), Some(OsStr::new(expected))) {
         panic!("{error}");
@@ -24,18 +24,18 @@ fn refusal(temp_dir: &str, expected: Option<&str>) -> String {
 
 #[test]
 fn the_recipes_directory_is_accepted() {
-    accept(RECIPE_TMPDIR, RECIPE_TMPDIR);
+    accept(CHOSEN_TMPDIR, CHOSEN_TMPDIR);
 }
 
 /// A `Path` compares by component, so a trailing separator on one
 /// side of the comparison is a spelling rather than a mismatch.
 #[test]
 fn a_trailing_separator_is_not_a_mismatch() {
-    accept(RECIPE_TMPDIR, "/tmp/perfectionist-tests/");
+    accept(CHOSEN_TMPDIR, "/tmp/perfectionist-tests/");
 }
 
 /// What a bare `cargo test` reaches: whatever `TMPDIR` says, and
-/// nothing stating what the fixtures were recorded under.
+/// nothing stating what the `.stderr` fixtures were recorded under.
 #[test]
 fn a_run_the_recipe_did_not_set_up_is_refused() {
     assert_eq!(
@@ -45,8 +45,6 @@ fn a_run_the_recipe_did_not_set_up_is_refused() {
     );
 }
 
-/// An empty value is what a recipe forwarding an unset variable
-/// passes on, so it is read as the variable's absence.
 #[test]
 fn an_empty_value_is_read_as_unset() {
     assert_eq!(refusal("/tmp", Some("")), refusal("/tmp", None));
@@ -55,7 +53,7 @@ fn an_empty_value_is_read_as_unset() {
 #[test]
 fn a_temp_directory_other_than_the_recipes_is_refused() {
     assert_eq!(
-        refusal("/tmp", Some(RECIPE_TMPDIR)),
+        refusal("/tmp", Some(CHOSEN_TMPDIR)),
         "this run's temp directory is \"/tmp\", but PERFECTIONIST_TEST_TMPDIR says the \
          `.stderr` fixtures were recorded under \"/tmp/perfectionist-tests\".",
     );
