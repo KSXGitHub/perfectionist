@@ -1,4 +1,4 @@
-//! A crate folding a singular command setter over a sequence, which
+//! A module folding a singular command setter over a sequence, which
 //! `perfectionist::folded_command_setter` replaces with the plural
 //! setter the same trait offers.
 
@@ -11,7 +11,7 @@ pub fn without_each(names: &[&str]) -> Command {
     names.iter().fold(start, CommandExtra::without_env)
 }
 
-/// What this crate contributes to the fixture's output.
+/// What this module contributes to the fixture's output.
 pub fn report() -> String {
     let removed = without_each(&["ALPHA", "BETA"]).get_envs().count();
     format!("folded_command_setter: {removed}\n")

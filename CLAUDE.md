@@ -620,16 +620,20 @@ expectations. Read the diff it leaves.
 [`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture
 through the rounds, and its module docs carry the model.
 
-A crate here earns its place by needing a *round*: a rewrite that
+A shape here earns its place by needing a *round*: a rewrite that
 another rule's rewrite feeds, or that the formatter leaves more work
 after. A rewrite one pass applies and nothing reacts to needs no
-project driven through rounds. One that does earn its place is named
-after the rule, sits in the fixture whose dependency list it needs,
-and holds the shape, a `#[cfg(test)] mod tests` asserting what the
-shape *does*, and a line in what the fixture's `main` prints. A
-rewrite the rule withholds belongs here least of all, what a round
-would pin being `cargo fix`'s uniform handling of it rather than any
-decision of this plugin's.
+project driven through rounds. One that does earn its place is a
+module of the `shapes` crate of the fixture whose dependency list it
+needs, named after the rule, holding the shape, a
+`#[cfg(test)] mod tests` asserting what the shape *does*, and a line
+in what the fixture's `main` prints. It earns a crate of its own only
+where the rule reads the project's layout rather than one item, the
+shape needs a dependency the other modules do not, or the shape needs
+a proc macro, since every linter and every fixer pays a fixed cost per
+crate. A rewrite the rule withholds belongs here least of all, what a
+round would pin being `cargo fix`'s uniform handling of it rather than
+any decision of this plugin's.
 
 Re-record with [`just bless`](#re-recording-a-fixture) and read the
 diff of the expectations: that diff is the review, since a shape the

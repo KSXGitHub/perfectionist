@@ -9,7 +9,7 @@ LL | | pub struct Name(pub String);
    = note: `#[warn(perfectionist::redundant_derive_more_forward_template)]` on by default
    = applicability: MachineApplicable (remove the attribute)
 warning: `Command::arg` takes `&mut self`, so it cannot yield the command
-  --> crates/mutating-command-builder/src/lib.rs:LL:CC
+  --> crates/shapes/src/mutating_command_builder.rs:LL:CC
    |
 LL |     count_args(Command::new("ls").arg("chained"))
    |                                   ^^^
@@ -22,7 +22,7 @@ LL |     count_args(&mut Command::new("ls").with_arg("chained"))
    = applicability: MachineApplicable (use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position)
    = applicability: MachineApplicable (use `CommandExtra::with_arg`, which takes `self` and returns `Self`, keeping the whole construction in expression position)
 warning: this fold over `without_env` re-implements `without_envs`
-  --> crates/folded-command-setter/src/lib.rs:LL:CC
+  --> crates/shapes/src/folded_command_setter.rs:LL:CC
    |
 LL |     names.iter().fold(start, CommandExtra::without_env)
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use `without_envs`: `start.without_envs(names.iter())`

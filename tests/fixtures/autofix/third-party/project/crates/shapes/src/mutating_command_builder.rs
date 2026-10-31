@@ -1,4 +1,4 @@
-//! A crate configuring a command through the mutating setters
+//! A module configuring a command through the mutating setters
 //! `std::process::Command` offers, which
 //! `perfectionist::mutating_command_builder` replaces with the
 //! consuming setters of the same name from
@@ -33,7 +33,7 @@ fn count_args(command: &mut Command) -> usize {
     command.get_args().count()
 }
 
-/// What this crate contributes to the fixture's output.
+/// What this module contributes to the fixture's output.
 pub fn report() -> String {
     format!("mutating_command_builder: {}\n", chained_arg_count())
 }
