@@ -290,8 +290,8 @@ The shapes to avoid:
 - **Anthropomorphism**: "the rule wants a `Symbol`", "the parser is
   happy with an empty remainder". An item does what it does; write
   that.
-- **A vogue phrase**: "low-hanging fruit", "moves the needle", "worth
-  naming". Each is filler that names nothing.
+- **A vogue phrase**: "low-hanging fruit", "moves the needle", "at the
+  end of the day". Each is filler that names nothing.
 
 These are *not* the fault, and a sweep that rewrites them makes the
 prose worse:
