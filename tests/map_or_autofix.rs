@@ -156,7 +156,7 @@ fn the_autofix_leaves_the_crate_compiling() {
     );
 
     // A revert would also leave the file untouched, which the stderr
-    // assertion cannot tell from a rule that stood down. Comparing the
+    // assertion cannot tell from a rule that never fired. Comparing the
     // whole file pins every rewrite, and pins that `Port::new()` kept
     // its call.
     assert_eq!(

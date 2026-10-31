@@ -2,7 +2,7 @@
 //!
 //! A run that loads no libraries reports no diagnostics and exits
 //! zero, which an assertion that a rule *stays silent* cannot tell
-//! from the rule standing down. `--fail-on-no-libraries` turns that
+//! from the rule never running. `--fail-on-no-libraries` turns that
 //! into a test failure.
 //!
 //! A `cargo dylint` that predates a flag passed here rejects the

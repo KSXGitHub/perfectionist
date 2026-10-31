@@ -25,7 +25,7 @@ pub(crate) struct RenderContext<'a> {
     pub(crate) git_ref: &'a str,
     /// Commit SHA `git_ref` resolved to. Used for the per-rule
     /// "Source:" blob URLs (which must be permalinks so they don't
-    /// rot when the branch advances) and for the footer's
+    /// drift when the branch advances) and for the footer's
     /// generated-from line, where the exact commit is the useful
     /// piece of information.
     pub(crate) commit_sha: &'a str,

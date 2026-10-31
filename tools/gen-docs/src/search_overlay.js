@@ -16,7 +16,7 @@
 // ============================================================================
 
 ;(function () {
-  // Load-bearing: if either library never ran, this throws before anything
+  // A guard: if either library never ran, this throws before anything
   // is revealed.
   var rank = perfectionistRank.rank
   var renderName = perfectionistHighlight.renderName
@@ -485,7 +485,7 @@
       return
     }
     // `preventDefault` goes only on the keystroke each branch handles,
-    // never on one it declined. On the way in it is load-bearing twice
+    // never on one it declined. On the way in it is needed twice
     // over: it keeps Firefox's Quick Find shut, and it keeps the browser
     // from inserting the slash into the input this is about to focus.
     if (isOpen()) {

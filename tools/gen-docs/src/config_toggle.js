@@ -24,7 +24,7 @@
 //
 // The buttons also reflect state: "Expand all" is highlighted while every
 // panel is open, "Collapse all" while every panel is closed, neither in a
-// mixed state. The highlight rides on `aria-pressed`, which is both the
+// mixed state. The highlight comes from `aria-pressed`, which is both the
 // accessibility signal (the pair become toggle buttons) and the CSS hook the
 // colour layer keys off. State is kept live by listening for the <details>
 // `toggle` event, which the browser fires whenever a panel's open state
