@@ -148,12 +148,6 @@ pub(super) fn literal_patterns(arms: &[Arm<'_>]) -> Option<Consumer> {
     let mut wildcards = 0_usize;
     let mut failure = None;
     for arm in arms {
-        // A guard reads the binding its pattern made, or some other
-        // value, and either way the arm is deciding on more than which
-        // literal the text is.
-        if arm.guard.is_some() {
-            return None;
-        }
         let mut literals = Vec::new();
         match pattern_literals(arm.pat, &mut literals)? {
             Reach::Literals => literal_arms.push(LiteralArm {

@@ -28,6 +28,8 @@
 //!   comparison it leaves behind cannot fail.
 //! - A closure parameter, carrying a second layer of reference that a
 //!   comparison against a literal does not reach through.
+//! - A guard on a literal arm, which the rewrite carries across
+//!   untouched.
 //! - An `Option` adapter, where the comparison keeps its `Some` and the
 //!   literal is sliced to meet the `Option` the adapter now yields.
 //! - An `unwrap` between the conversion and the comparison, whose
@@ -110,6 +112,13 @@ const SOURCE: &str = text_block_fnl! {
     r#"    names.iter().any(|name| name.to_str() == Some("main.rs"))"#
     "}"
     ""
+    "pub fn a_guarded_arm(value: &OsStr, strict: bool) -> u8 {"
+    "    match value.to_str() {"
+    r#"        Some("true") if strict => 1,"#
+    "        _ => 0,"
+    "    }"
+    "}"
+    ""
     "pub fn an_unwrap_is_left_alone(value: &CStr) -> bool {"
     r#"    value.to_str().unwrap() == "yes""#
     "}"
@@ -172,6 +181,13 @@ const FIXED: &str = text_block_fnl! {
     ""
     "pub fn a_second_reference(names: &[&OsStr]) -> bool {"
     r#"    names.iter().any(|name| *name == "main.rs")"#
+    "}"
+    ""
+    "pub fn a_guarded_arm(value: &OsStr, strict: bool) -> u8 {"
+    "    match value.as_encoded_bytes() {"
+    r#"        b"true" if strict => 1,"#
+    "        _ => 0,"
+    "    }"
     "}"
     ""
     "pub fn an_unwrap_is_left_alone(value: &CStr) -> bool {"

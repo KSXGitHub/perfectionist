@@ -266,4 +266,16 @@ LL ~         path.file_name().map(|value| value.as_encoded_bytes()),
 LL ~         Some(b"main.rs"),
    |
 
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
+   |
+LL |     match value.to_str() {
+   |           ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~     match value.as_encoded_bytes() {
+LL ~         b"true" if strict => 1,
+   |
+
 warning: N warnings emitted

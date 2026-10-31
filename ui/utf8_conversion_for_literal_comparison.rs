@@ -255,7 +255,27 @@ fn an_arm_binds_the_text(path: &Path) -> Option<String> {
     }
 }
 
-// Not flagged: a guard reads more than which literal the text is.
+// Bad: a guard on a literal arm. The guard weighs something other than
+// the text, and a pattern naming only literals leaves it nothing of the
+// text to read, so the rewrite carries the guard across untouched.
+fn an_arm_carries_a_guard(value: &OsStr, strict: bool) -> u8 {
+    match value.to_str() {
+        Some("true") if strict => 1,
+        _ => 0,
+    }
+}
+
+// Good: `an_arm_carries_a_guard` as the rule asks for it, the guard
+// standing where it was written.
+fn an_arm_carries_a_guard_rewritten(value: &OsStr, strict: bool) -> u8 {
+    match value.as_encoded_bytes() {
+        b"true" if strict => 1,
+        _ => 0,
+    }
+}
+
+// Not flagged: the arm binds the decoded text for its guard to read, so
+// the conversion is what lets the guard ask what it asks.
 fn a_guard_reads_the_binding(path: &Path) -> bool {
     match path.to_str() {
         Some(name) if name.starts_with("main") => true,
@@ -300,12 +320,12 @@ fn the_closure_converts_elsewhere(path: &Path, other: &OsStr) -> bool {
 }
 
 // Not flagged: an alternation naming both a literal and everything
-// else. A wildcard branch reaches every input, so an arm keeping it
-// would answer for the arms after it.
-fn an_alternation_mixes_a_literal_and_a_wildcard(value: &OsStr) -> u8 {
-    match value.to_str() {
-        Some("true") | None => 1,
-        _ => 2,
+// else. The arm reaches every input, so the rewrite has nothing to put
+// in place of the literal inside it.
+fn an_alternation_mixes_a_literal_and_a_wildcard(path: &Path) -> u8 {
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some("lib.rs") => 1,
+        Some("main.rs" | _) | None => 2,
     }
 }
 
