@@ -1,16 +1,20 @@
 use super::{TempDirError, check_against};
+use pipe_trait::Pipe;
 use std::path::Path;
 
 #[test]
 fn the_directory_just_test_chooses_is_accepted() {
-    check_against(Path::new("/tmp/perfectionist-tests")).expect("a chosen temp directory");
+    "/tmp/perfectionist-tests"
+        .pipe_as_ref(check_against)
+        .expect("a chosen temp directory");
 }
 
 /// Only the last component is read, because the path above it is
 /// whatever `TMPDIR` already held and differs between machines.
 #[test]
 fn the_path_above_the_chosen_directory_may_be_anything() {
-    check_against(Path::new("/var/folders/a1/b2/T/perfectionist-tests"))
+    "/var/folders/a1/b2/T/perfectionist-tests"
+        .pipe_as_ref(check_against)
         .expect("a chosen temp directory below another root");
 }
 
@@ -18,7 +22,9 @@ fn the_path_above_the_chosen_directory_may_be_anything() {
 /// separator follows it, so the spelling of one is not a refusal.
 #[test]
 fn a_trailing_separator_is_accepted() {
-    check_against(Path::new("/tmp/perfectionist-tests/")).expect("a chosen temp directory");
+    "/tmp/perfectionist-tests/"
+        .pipe_as_ref(check_against)
+        .expect("a chosen temp directory");
 }
 
 /// What a bare `cargo test` reaches: whatever `TMPDIR` says, which is
