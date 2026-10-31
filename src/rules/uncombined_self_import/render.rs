@@ -18,7 +18,7 @@ pub(super) fn real_segments(path: &Path) -> &[PathSegment] {
 }
 
 /// Whether the path is rooted at a leading `::` (a `{{root}}`
-/// `PathRoot` segment). The leading `::` is load-bearing: `::foo` names
+/// `PathRoot` segment). The leading `::` changes resolution: `::foo` names
 /// an external crate, while `foo` is resolved through the extern
 /// prelude / crate-relative, and the two can differ when a local item
 /// shadows a crate name. Rewrites must preserve it, and `combined` must

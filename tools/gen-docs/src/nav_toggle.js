@@ -94,7 +94,7 @@
 //      animations (`view-timeline` / `animation-timeline`) could
 //      do this declaratively, but they're not yet available across
 //      the project's reader baseline. The IntersectionObserver
-//      fallback is a UX nicety rather than load-bearing. If it doesn't
+//      fallback is an enhancement rather than a requirement. If it doesn't
 //      run, the hamburger just stays visible throughout, which is
 //      harmless.
 //
@@ -192,8 +192,8 @@
 
   // ---- Open / close + body scroll lock ----------------------------------
   //
-  // See category A item 1 in the file header for the load-bearing role
-  // of the scroll lock. The drawer is opened by tapping `.nav-toggle` and
+  // See category A item 1 in the file header for why the scroll lock
+  // is needed. The drawer is opened by tapping `.nav-toggle` and
   // closed by tapping `.nav-sidebar-close` (the close button inside the
   // overlay) or the page behind the drawer. Body scroll lock has the
   // side benefit of stopping the page behind from scrolling when the
@@ -237,7 +237,7 @@
   // standard, Baseline 2023) to every direct child of <body> except
   // the toggle and the sidebar while the drawer is open; restore on
   // close. `inert` removes focusability and AT exposure of the
-  // subtree without needing a manual focus trap or aria-hidden dance.
+  // subtree without needing a manual focus trap or aria-hidden toggling.
   /** @type {HTMLElement[]} */
   var inertedChildren = []
   function setBackgroundInert() {
@@ -308,7 +308,7 @@
   // act as if `pointer-events: none` were set, so the click lands on
   // <body> and bubbles from there.
   //
-  // Excluding the toggle is load-bearing, not deference to its own
+  // Excluding the toggle is required, not deference to its own
   // handler: the click that opens the drawer bubbles on to this
   // listener with `aria-expanded` already "true", and would close it
   // again. The same guard covers the permanent >=1100px sidebar, which
@@ -326,18 +326,18 @@
 
   // ---- Focus trap fallback ----------------------------------------------
   //
-  // `setBackgroundInert` above is the primary defence against Tab
-  // escape into obscured page content, but `inert` is Baseline 2023,
-  // so older browsers silently ignore `el.inert = true` and would let Tab
-  // wander off the last sidebar link into the still-focusable page
-  // behind. Wrap focus inside the sidebar with a keydown listener as a
-  // belt-and-suspenders fallback: on a Tab outside the sidebar (e.g.
-  // user moved focus there before `inert` was applied), bring it back;
-  // on a forward Tab from the last focusable, wrap to the first; on a
-  // back-Tab from the first, wrap to the last. On browsers that DO
-  // support `inert` this is mostly a no-op (Tab from the last
-  // focusable just lands on the same element again because nothing
-  // else is reachable), so the cost of always-on is negligible.
+  // `setBackgroundInert` above is the primary defence against Tab escape
+  // into obscured page content, but `inert` is Baseline 2023, so older
+  // browsers silently ignore `el.inert = true` and would let Tab wander
+  // off the last sidebar link into the still-focusable page behind. Wrap
+  // focus inside the sidebar with a keydown listener as a fallback: on a
+  // Tab outside the sidebar (e.g. user moved focus there before `inert`
+  // was applied), bring it back; on a forward Tab from the last
+  // focusable, wrap to the first; on a back-Tab from the first, wrap to
+  // the last. On browsers that DO support `inert` this is mostly a no-op
+  // (Tab from the last focusable just lands on the same element again
+  // because nothing else is reachable), so the cost of always-on is
+  // negligible.
   //
   // The selector has to name every kind of focusable the sidebar can
   // hold, or the wrap computes its first and last from the wrong set:

@@ -6,7 +6,7 @@
 // 1. Multi-segment `ignore` entries. Before this fixture, only
 //    `extra_macros`'s multi-segment branch was covered.
 // 2. `parse_path`'s per-segment whitespace trimming, so a stray
-//    space in the config doesn't silently de-fang the entry.
+//    space in the config doesn't silently disable the entry.
 //
 // The rule must NOT fire on the multi-line invocation below.
 

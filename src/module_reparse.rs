@@ -1,9 +1,9 @@
 //! Re-parsing a crate's module files from a `LateLintPass`.
 //!
-//! A rule that inspects the *source-level* layout of items hits a
-//! wall in a pre-expansion `EarlyLintPass`. The blank-line grouping of
-//! a module's `use` statements and the text of its doc comments are
-//! both such layouts. In that pass an out-of-line `mod foo;` module is
+//! A rule that inspects the *source-level* layout of items cannot run
+//! as a pre-expansion `EarlyLintPass`. The blank-line grouping of a
+//! module's `use` statements and the text of its doc comments are both
+//! such layouts. In that pass an out-of-line `mod foo;` module is
 //! still `ModKind::Unloaded` (its file is not parsed until macro
 //! expansion), so the walk never sees it and silently skips every
 //! separate-file submodule.
@@ -201,8 +201,8 @@ fn record_module_file(
 /// Hence the empty string, which avoids both a disk re-read and a clone
 /// of the whole file.
 fn parse_module_file(parse_psess: &ParseSess, source_file: &SourceFile) -> Option<Crate> {
-    // Load-bearing: a `SourceFile` without in-memory source makes the
-    // lexer ICE ("cannot lex `source_file` without source"). Local-crate
+    // Required: a `SourceFile` without in-memory source makes the lexer
+    // ICE ("cannot lex `source_file` without source"). Local-crate
     // `Real` files normally carry it, but bail rather than risk the ICE.
     source_file.src.as_ref()?;
     let mut parser = match new_parser_from_source_str(

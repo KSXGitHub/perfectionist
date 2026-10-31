@@ -17,7 +17,7 @@ use rustc_hir::{BorrowKind, Expr, ExprKind, QPath, UnOp};
 use rustc_span::kw;
 
 /// The prefix a method call in the body may be trusted to be free
-/// under, and the one a flagged method should have worn instead: the
+/// under, and the one a flagged method should have carried instead: the
 /// guidelines give both the same meaning.
 pub(super) const AS_PREFIX: &str = "as_";
 

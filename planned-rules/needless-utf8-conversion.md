@@ -238,7 +238,7 @@ satisfy both bounds, so the conversion is provably droppable.
 
 `command_extra::CommandExtra` is the subprocess-builder crate by
 perfectionist's own author, and the rule recognizes it as a
-first-class sink — *not* merely as an incidental match of the
+built-in sink — *not* merely as an incidental match of the
 bound-based detection. Its builder methods, which mirror std's
 `Command` setters, are recognized by default:
 
@@ -295,7 +295,7 @@ A third category is **opt-in** behind `include_byte_sinks` (see
   WTF-8 on Windows), so whether `as_encoded_bytes()` is the *intended*
   on-disk form is a judgement the rule cannot make; opting in asserts
   "these files hold path / raw bytes, not UTF-8 text." The
-  byte-buffer source carries no such ambiguity but rides the same
+  byte-buffer source carries no such ambiguity but shares the same
   toggle, since it too only concerns byte sinks.
 
 ### Exemptions
@@ -462,11 +462,11 @@ as an undefined flat string.
 
 ### Why `include_handled_conversions` is off by default
 
-The knob sits on a genuine tension. A conversion whose non-UTF-8
+The knob reflects a genuine tension. A conversion whose non-UTF-8
 case is *handled* — `path.to_str().ok_or(e)?`, a `match`, a let-else
 that returns an error — and whose `&str` then feeds an OsStr/Path
 sink achieved nothing the `OsStr` would not have achieved for free:
-the error path is dead weight, the fix is `command.arg(path)`. That
+the error path is needless, the fix is `command.arg(path)`. That
 is the case for flagging it. But the opposite reading is also
 legitimate: a developer who deliberately propagated the error may
 have *meant* to reject non-UTF-8 input at that boundary, in which
@@ -571,7 +571,7 @@ expression, no dataflow.
   binding-to-sink dataflow as above, *plus* proving the bound `&str`
   is consumed only by OsStr/Path sinks (else the conversion is
   genuinely needed). The inline-handling subset
-  (`command.arg(path.to_str().ok_or(e)?)`) is the easy slice of this
+  (`command.arg(path.to_str().ok_or(e)?)`) is the easy part of this
   and can land first. See
   ["Why `include_handled_conversions` is off by default"](#why-include_handled_conversions-is-off-by-default).
 

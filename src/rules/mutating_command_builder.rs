@@ -129,7 +129,7 @@ impl MutatingCommandBuilder {
     /// the reason its module doc gives: a link short of a counterpart
     /// cannot be ported at all, and renaming the others around it
     /// would leave it calling a std setter on a receiver the change
-    /// has made owned. So the head stands down with it.
+    /// has made owned. So the head is left alone too.
     ///
     /// The walk ends where the rewrite's does, because nothing past
     /// there is renamed.

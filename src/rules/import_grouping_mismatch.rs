@@ -27,7 +27,7 @@ declare_tool_lint! {
     /// inactive by default; a project opts in and sets `style` to one of:
     /// - `single_block`: every `use` sits in one contiguous block with
     ///   no blank lines between imports, except that `#[cfg(...)]`-gated
-    ///   imports are carved into their own trailing block (one blank
+    ///   imports form their own trailing block (one blank
     ///   line below the rest). Set `cfg_block_handling = "merge"` to keep
     ///   them in the one block.
     /// - `multi_block`: imports are partitioned into ordered groups
@@ -605,7 +605,7 @@ impl ImportGroupingMismatch {
         }
     }
 
-    /// Whether `stmt` is hoisted into the trailing cfg block: a cfg-gated
+    /// Whether `stmt` moves into the trailing cfg block: a cfg-gated
     /// import under [`config::CfgBlockHandling::Trailing`] that the leading
     /// re-export region did not already claim (a cfg-gated re-export stays
     /// with the re-exports when `reexports` separates them).

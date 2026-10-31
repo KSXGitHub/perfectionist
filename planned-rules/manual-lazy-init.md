@@ -11,7 +11,7 @@ both std pairs.
 
 A `Once*` cell that is only ever read through a `get_or_init` call with
 one **fixed, non-capturing** initializer is a hand-rolled `Lazy*`. The
-`Lazy*` type bakes that initializer into the cell, so every read becomes
+`Lazy*` type stores that initializer in the cell, so every read becomes
 a plain deref and the `get_or_init` boilerplate disappears. There are
 exactly two such pairs in std, and the rule treats them uniformly:
 
@@ -57,7 +57,7 @@ declaration and its `get_or_init` call sites) when, and only when, the
 cell's entire usage is expressible as the matching `Lazy*`. The two
 sections below — "What makes a `Once*` replaceable" and "When `Lazy*`
 cannot replace `Once*`" — are the trigger predicate and its complement;
-both are load-bearing, because the value of the rule is in *not* firing
+both are required, because the value of the rule is in *not* firing
 on the second set.
 
 ### Why one rule, not two (`manual_lazy_lock` + `manual_lazy_cell`)
@@ -167,7 +167,7 @@ not-yet-init state, it must remain a `Once*`.
 
 ## The degenerate case: a plain `static`
 
-A narrower slice of replaceable cells could skip `Lazy*` entirely: if
+A narrower subset of replaceable cells could skip `Lazy*` entirely: if
 the initializer is itself a **const expression** (a literal, a `const
 fn` call, no heap allocation), then `static FOO: T = <const>;` (or a
 `thread_local!` of the same) is simpler still, with no lazy machinery at
@@ -182,7 +182,7 @@ analysis (a *semantic* property — is every transitively-called function
 does **not** try to detect it. If it proves worth catching, it belongs
 in its own sibling rule (a `const`-promotion lint) rather than as a
 second diagnostic branch here; bundling two distinct triggers and two
-distinct fixes under one banner is the split this catalogue avoids (see
+distinct fixes in one rule is the split this catalogue avoids (see
 [`CLAUDE.md`](../CLAUDE.md#one-rule-per-file-one-config-per-rule)).
 The note is recorded here so the next reader knows the omission is
 deliberate.
@@ -258,7 +258,7 @@ and add `crate::common::hir_in_external_macro` if it fires. (The
 `thread_local!` locus is itself a macro expansion; candidate-cell
 discovery must accept the std `thread_local!` expansion shape while
 rejecting third-party lazy-init macros — another reason the guard is
-load-bearing for the cell case.)
+needed for the cell case.)
 
 ## Implementation notes
 
@@ -386,8 +386,7 @@ though: this planning file is deleted once the rule ships (per
 [`CLAUDE.md`](../CLAUDE.md#when-the-implementation-is-complete)), so a
 future contributor or AI review proposing "couldn't the equality check
 also handle semantically-equivalent closures / partial agreement /
-helper inlining?" should find the bound and its two load-bearing
-restrictions next to the code they are about to edit. The implementer
+helper inlining?" should find the bound and its two restrictions next to the code they are about to edit. The implementer
 chooses the form; this file's task is only to require that it stays
 internal and stays present.
 

@@ -263,7 +263,7 @@ fn implements_error_trait(cx: &LateContext<'_>, def_id: LocalDefId) -> bool {
 /// associated type that happens to resolve to an enum is not
 /// classified as sum-like. Adding normalization (via
 /// `tcx.normalize_erasing_regions`) would close that gap but
-/// hasn't been needed in practice. Drop a follow-up if a
+/// hasn't been needed in practice. File an issue if a
 /// real-world wrapper hits this case.
 fn is_sum_like(cx: &LateContext<'_>, data: &hir::VariantData<'_>) -> bool {
     let fields = data.fields();

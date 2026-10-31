@@ -62,14 +62,14 @@ to the maintenance hazard it builds in, which has three parts:
   submodules reach it through `super::Thing`, the outer `use` is still
   "used" — by its descendants — so rustc's `unused_imports` never
   flags it. The private import lingers indefinitely as
-  invisible-but-load-bearing glue. The rule closes exactly this gap:
+  an invisible dependency. The rule closes exactly this gap:
   the thing `unused_imports` is structurally unable to see.
 
 - **Removing the lingering import is non-local churn.** If a mindful
   maintainer *does* notice the dead outer `use` and deletes it, every
   `use super::Thing;` in every descendant breaks at once, turning a
   one-line cleanup into a diff that touches unrelated submodules. The
-  fragility is the same one the importer signed up for the moment they
+  fragility is the same one the importer accepted the moment they
   reached through ancestor privilege: the import survives only as long
   as the parent keeps a private binding it has no other reason to
   keep.
@@ -77,7 +77,7 @@ to the maintenance hazard it builds in, which has three parts:
 Naming `Thing` at its definition or a public re-export removes all
 three: the submodule depends on a name its owner intends to expose, and
 the outer module's private `use` becomes ordinary dead code that
-`unused_imports` will flag and delete with no ripple.
+`unused_imports` will flag and delete with no churn.
 
 ## What to lint
 
@@ -95,7 +95,7 @@ reaches `Leaf` only through a private re-export**, i.e. all of:
    `pub` (or otherwise importer-visible, e.g. `pub(crate)` for an
    in-crate importer) re-export is **not** flagged: that is a
    deliberate, independently-nameable re-export, which the statement
-   explicitly blesses.
+   explicitly allows.
 
 Equivalent intuition for (3): if the importing module were moved so it
 is no longer a descendant of `M`, the import would stop compiling. That
@@ -109,7 +109,7 @@ positional fragility is the anti-pattern.
 - **`M` defines the item.** Naming a module's own public item through
   that module is the normal case.
 - **Public re-exports.** `use foo::Thing;` where `foo` does
-  `pub use bar::Thing;` is the blessed form — the whole point of a
+  `pub use bar::Thing;` is the correct shape — the whole point of a
   `pub use` is to offer that second name.
 - **Self-referential leaves.** `use super::helper;` where `helper` is a
   *definition* in the parent (a `fn`, `struct`, inline `mod`, …) is
@@ -240,7 +240,7 @@ as verified API.
 ### Difficulty
 
 **Medium.** Triggering on single named imports and reusing
-`named_prelude_imports`' canonical-path autofix is mechanical. The wedge
+`named_prelude_imports`' canonical-path autofix is mechanical. The hard part
 is the visibility classification — telling a private import reached by
 ancestor privilege apart from a genuine public re-export — which must be
 conservative to keep false positives at zero, since the fix re-points an

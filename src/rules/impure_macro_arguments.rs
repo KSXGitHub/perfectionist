@@ -49,7 +49,7 @@ declare_tool_lint! {
     /// in a state the author did not intend. The bug only surfaces
     /// under `--release`.
     ///
-    /// The same trap covers any macro that expands its capture more
+    /// The same hazard reaches any macro that expands its capture more
     /// than once (`min!`/`max!`-style, retry loops): a side-effecting
     /// expression repeated produces wrong results.
     ///

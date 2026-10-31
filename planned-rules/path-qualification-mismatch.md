@@ -79,7 +79,7 @@ unqualified_skip_prefixes = ["Self", "self", "super", "crate"]
 
 # Whether `unqualified` style also exempts type-associated calls
 # (`String::new`, `Vec::<u8>::with_capacity`). Defaults to true; a
-# project can turn off the type exemption to push for free-function
+# project can turn off the type exemption to require free-function
 # imports of associated constructors.
 unqualified_skip_type_assoc = true
 
@@ -253,7 +253,7 @@ For each path:
 
 - The body-pattern detection is straightforward: count path
   segments, classify the leaf, and consult the resolver.
-- The same-name collision check is the wedge. False positives
+- The same-name collision check is the difficulty. False positives
   (lint suggests an import that would shadow a local) are
   unacceptable; conservative detection that asks the resolver
   before each suggestion keeps the false positive rate at zero

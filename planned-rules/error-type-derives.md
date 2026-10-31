@@ -43,7 +43,7 @@ type is read, and reviewers infer the type's intent from it. A
 the rest of the codebase agrees doesn't look like an error (`impl
 Copy`, or named in a way the project reserves for non-errors),
 creates a false signal — readers reason about the type as if it
-might appear in a `Result`'s `Err` slot, and reviewers wave through
+might appear in a `Result`'s `Err` slot, and reviewers approve
 an unjustified `Error` impl on the assumption "the author had a
 reason." Stripping the misleading derive (or, for the naming check,
 renaming the type) shortens the time it takes a reader to classify
@@ -67,7 +67,7 @@ defect, not a preference.
 > [!IMPORTANT]
 > **Lint name shape.** The `error_type_derives::` prefix used in the
 > sub-check headings below is a documentation label grouping related
-> checks under one banner. Per the
+> checks under one name. Per the
 > [lint-name namespacing convention](./IMPLEMENTATION_CONVENTIONS.md#lint-name-namespacing),
 > each sub-check is registered as its own flat tool lint
 > `perfectionist::<sub_check_name>` (e.g.

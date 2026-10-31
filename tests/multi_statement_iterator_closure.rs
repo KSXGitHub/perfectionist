@@ -55,8 +55,8 @@ fn zero_threshold_counts_single_expression_and_allows_empty_body() {
 }
 
 /// A callback a derive synthesised is left alone even where its every
-/// token wears a user span. One the author wrote is reported even where
-/// an attribute macro rebuilt the signature around it.
+/// token carries a user span. One the author wrote is reported even
+/// where an attribute macro rebuilt the signature around it.
 #[test]
 fn a_rebuilt_signature_does_not_hide_a_handwritten_callback() {
     run_ui(

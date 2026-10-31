@@ -104,7 +104,7 @@ dedented literal compiles and produces exactly the intended
 bytes. The objection is to the *source*:
 
 - A reader scanning the indentation to follow control flow loses
-  the thread the moment the body drops to column zero — the literal
+  track the moment the body drops to column zero — the literal
   reads as if the function ended.
 - The dedented body cannot be re-indented by `cargo fmt` or an
   editor reformat without corrupting the value: rustfmt does not
@@ -254,7 +254,7 @@ The pattern has already slipped into `perfectionist`'s own test
 suite. Both files embed configuration and Rust-source fixtures as
 flush-left literals — the `CONFIG` blocks even carry `\"` escapes
 that a raw `text_block!` line or an `include_str!`-ed `.toml` would
-shed:
+drop:
 
 - `tests/import_grouping_mismatch_submodules.rs` — nine dedented
   blocks: a `const CONFIG: &str = "\` TOML block plus the `lib` /
@@ -305,7 +305,7 @@ write(
 ```
 
 Nothing here is dedented, so the rule stays silent. (The body
-indentation is baked into the value, but the consumer re-parses it
+indentation is part of the value, but the consumer re-parses it
 as Rust where leading whitespace is irrelevant — a deliberate,
 acceptable trade-off, not the anti-pattern this rule targets.)
 

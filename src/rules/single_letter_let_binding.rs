@@ -23,7 +23,7 @@ declare_tool_lint! {
     /// A descriptive `let` binding documents what the right-hand
     /// side computed; a single-letter name does not. The rule
     /// allows `let n = ...` and other names in a configurable
-    /// set of exempt identifiers for the well-worn cases
+    /// set of exempt identifiers for the conventional cases
     /// (unsigned counts).
     ///
     /// ### Interaction with Clippy

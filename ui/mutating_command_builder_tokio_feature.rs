@@ -18,13 +18,13 @@ extern crate tokio;
 
 use command_extra::CommandExtra;
 
-// Bad: blessed unconditionally.
+// Bad: reached unconditionally.
 fn bare_command() {
     let mut command = std::process::Command::new("ls");
     command.arg("on-bare");
 }
 
-// Bad: blessed unconditionally.
+// Bad: reached unconditionally.
 fn boxed_command() {
     let mut command = Box::new(std::process::Command::new("ls"));
     command.arg("on-boxed");
@@ -37,7 +37,7 @@ fn tokio_command() {
     command.arg("on-tokio");
 }
 
-// Bad: a boxed tokio command, which `tokio_process` blesses.
+// Bad: a boxed tokio command, which `tokio_process` reaches.
 fn boxed_tokio_command() {
     let mut command = Box::new(tokio::process::Command::new("ls"));
     command.arg("on-boxed-tokio");

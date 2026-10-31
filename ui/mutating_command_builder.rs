@@ -207,7 +207,7 @@ fn chained() {
 }
 
 // Not flagged: `CommandExtra`'s methods take `self`, and a borrowed
-// receiver has none to give. `std::mem::take` cannot buy one either,
+// receiver has none to give. `std::mem::take` cannot make one either,
 // since `Command` has no `Default`; `std::mem::replace` can, at the
 // cost of a placeholder command and a write-back around the settings,
 // which is more code than the borrowed form it would replace. Exempt
@@ -379,8 +379,8 @@ mod trait_not_imported {
         Command::new("ls").arg(&Noisy);
     }
 
-    // Bad: the rename is shown beside the remedy, which rides in the
-    // rename's own message. `src/rules/mutating_command_builder/emit.rs`
+    // Bad: the rename is shown beside the remedy, which the rename's
+    // own message carries. `src/rules/mutating_command_builder/emit.rs`
     // says why it has to.
     fn rename_beside_the_remedy() {
         Command::new("ls").arg("rename-plus-remedy");
@@ -424,7 +424,7 @@ fn same_name_elsewhere() {
 // `Command`, with setters spelled exactly as std's and returning the
 // same borrow. The rule asks for the `rustc_diagnostic_item` std's
 // `Command` carries, which no local type has, so matching the name and
-// the signatures buys nothing.
+// the signatures is not enough.
 mod shadowing_command {
     use std::path::Path;
 

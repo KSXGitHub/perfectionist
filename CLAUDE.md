@@ -81,7 +81,7 @@ proposal to evaluate, not a specification to fulfil.
 - **It is often over-ambitious.** Among the shapes that recur:
   config knobs nobody would ever set, sub-checks no real code
   violates, autofix branches that cost more than the rule they
-  serve. Implement what earns its complexity and leave the rest
+  serve. Implement what justifies its complexity and leave the rest
   out, recording the omission per
   [When the implementation is partial](#when-the-implementation-is-partial).
 
@@ -102,7 +102,7 @@ has these consequences for the implementer:
 
 1. **Before writing code, check whether the rule is actually one
    rule.** A planning file that bundles several independently-
-   triggered checks under one banner is usually better
+   triggered checks under one name is usually better
    implemented as several rules. If the sub-checks can be cleanly
    separated, with distinct trigger predicates, disjoint
    configuration and no shared diagnostic, split the planning file
@@ -145,7 +145,7 @@ has these consequences for the implementer:
 
 4. **Cross-rule helpers are `pub(crate)`, not `pub`.** The crate is
    a dylint `cdylib` with no public API surface, so `pub`
-   over-advertises. Items in the crate-internal helper modules,
+   misleads. Items in the crate-internal helper modules,
    meaning every `src/*.rs` beside `lib.rs` and `rules.rs`, should
    all be `pub(crate)` (or tighter). Use `pub(super)` for items that are
    only meant to leak one module level up, such as a rule's
@@ -156,7 +156,7 @@ has these consequences for the implementer:
    `common.rs` is for short, self-contained, single-concept
    helpers (`is_single_ascii_letter`, `binding_ident`). Anything
    that has its own invariants worth documenting in a module
-   docstring earns its own file. A generic HIR walker, a
+   docstring gets its own file. A generic HIR walker, a
    per-character emit loop and a path-set parser each do.
 
 ## Choose a collection by observable order
@@ -177,7 +177,7 @@ necessary and not sufficient, because what it sorts by is the key's
 is already scanning in. `Symbol` compares by its slot in the interner,
 which is worse than hashed: stable enough to freeze into a `.stderr`
 fixture and pass review, still arbitrary to whoever reads the
-diagnostic. Holding a `Symbol` and owing alphabetical order, sort by
+diagnostic. Holding a `Symbol` and needing alphabetical order, sort by
 `Symbol::as_str` as you emit.
 
 Where no order reaches the reader the collection is a lookup table,
@@ -201,11 +201,11 @@ The shapes to avoid:
 
 - **A count over a list that can grow is a second copy of it.**
   "The convention has two consequences", "Six rules scan a slice of
-  markdown": the number rots the moment the list gains a member.
+  markdown": the number goes stale once the list gains a member.
   Write "The convention has these consequences".
 - **Prefer a greppable predicate to a hand-maintained roster.**
   "Every rule that imports `crate::markdown`" stays true forever; a
-  list of rule names does not. Where a roster genuinely helps, mark
+  list of rule names does not. Where a list genuinely helps, mark
   it illustrative ("for example", "among them").
 - **Do not quote another file's heading or prose verbatim.** It is a
   copy no tool checks, and the original can be reworded by someone
@@ -215,7 +215,7 @@ The shapes to avoid:
   link to the section by anchor; in Rust, where a repo-relative link
   does not resolve, name the file and let the reader search it.
 - **State a fact in exactly one place.** Defaults, config shapes and
-  file paths have one home; everything else links to it. The
+  file paths have one place; everything else links to it. The
   [defaults convention](#defaults-live-in-field-docs-not-type-or-variant-docs)
   below is this rule applied to the case that recurs most.
 - **Do not paste real code into a guide.** An example copied out of
@@ -307,7 +307,7 @@ prose worse:
 - **An idiom.** "all the same", "either way", "in the same boat".
 
 The `// Bad:` / `// Good:` / `// Not flagged:` labels under `ui/`,
-`ui-toml/` and `tests/fixtures/` are where this bites hardest: each is
+`ui-toml/` and `tests/fixtures/` are where this happens most: each is
 written beside its sibling and then read alone. Sweep them by searching
 those directories for a label line that also carries "the same", "too",
 "either", "as well", "likewise", "ditto", "above" or "below". Anchor the
@@ -367,7 +367,7 @@ crate. The recurring violations:
 - **Development tooling.** A `just` recipe, a CI workflow, a dev
   dependency. The consumer runs `cargo dylint`.
 
-Exceptions, where the reader chose the detour: `README.md` switches
+Exceptions, where the reader opted in: `README.md` switches
 audience by heading (its development section names `just` recipes, its
 rules section offers `planned-rules/` as the roadmap), and a generated
 file's do-not-edit banner names `just gen-rules-md` because it
@@ -415,7 +415,7 @@ not one of the options. Which fix applies is decided by what it says,
 not by where it sits: a block that says what the test pins moves above
 the attribute, and a block that narrates the body goes, per
 [Do not write documentation that restates the code](#do-not-write-documentation-that-restates-the-code).
-Moving launders nothing. Text that would read as a poor doc above the
+Moving fixes nothing. Text that would read as a poor doc above the
 attribute was a poor comment below it, and a test whose name already
 says what it pins needs no block at all.
 
@@ -594,7 +594,7 @@ as formatted code.
 
 rustfmt does not format the body of a `{`-delimited macro invocation,
 so `just fmt` leaves the layout inside a `maud::html!` body alone.
-[maudfmt](https://docs.rs/maudfmt) settles it, pinned as a
+[maudfmt](https://docs.rs/maudfmt) formats it, pinned as a
 dev-dependency in [`Cargo.toml`](Cargo.toml), and
 [`tests/maud_formatting.rs`](tests/maud_formatting.rs) holds every
 template to its output.
@@ -712,7 +712,7 @@ broken or a stylistic preference:
 
 Do not use "Why is this bad?" as a default heading. Claiming
 objective badness for what is really a preference misleads
-readers and invites pushback that the rule's rationale cannot
+readers and invites objections the rule's rationale cannot
 sustain. When in doubt, the rule is a preference; use "Why
 restrict this?".
 
@@ -848,7 +848,7 @@ contexts where relative paths resolve correctly (GitHub, local
 editors, agent tooling). That covers `CLAUDE.md`,
 `planned-rules/*.md` and anything else committed alongside the
 source. Prefer relative links in those files; they survive
-repository renames and don't bake in a hosting URL.
+repository renames and don't hard-code a hosting URL.
 
 ## GitHub-specific markdown
 
@@ -884,7 +884,7 @@ under `ENABLE_TABLES | ENABLE_STRIKETHROUGH | ENABLE_FOOTNOTES`
 | Tables, `~~del~~`, `[^1]` | renders      | renders      | renders  |
 
 So the ones to keep out of rustdoc-bound docs are **alerts, task
-lists, and mermaid fences**. The alert is the trap worth naming:
+lists, and mermaid fences**. The alert misleads most:
 its marker is left as literal text in both the in-tree catalogue
 and the docs site, where it reads as a typo.
 

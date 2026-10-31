@@ -185,7 +185,7 @@ enum Violation {
     /// where a bare item shares a module's name: the `self`-fold
     /// (`thing::{self, T}`) and the sibling-split (`{thing, thing::T}`).
     /// The two shapes are not interchangeable, so both are offered and
-    /// the human picks, hence the `MaybeIncorrect` applicability the
+    /// the author picks, hence the `MaybeIncorrect` applicability the
     /// caller attaches in that case. When `self_merge` is set the
     /// ambiguity is resolved to the configured shape and only that one
     /// candidate is offered.

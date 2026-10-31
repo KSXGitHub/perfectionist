@@ -95,7 +95,7 @@ A project that enables both rules gets one diagnostic per
 attribute either way (the rules deduplicate via a shared
 attribute-already-flagged guard). A project that enables only
 `allow_attributes_without_reason` skips the ancestry walk entirely and still
-catches the high-value cases — most silencing in practice is of
+catches the common cases — most silencing in practice is of
 clippy lints whose default level is `warn`. A project that
 enables only `lint_downgrade_without_reason` accepts `#[allow]` on
 default-`allow` lints (a large share of the pedantic / nursery /
@@ -177,7 +177,7 @@ exempt_lints = [
 # Minimum length of the `reason` value. A one- or two-character
 # reason ("x", "ok") satisfies the literal presence requirement
 # but conveys nothing; the default floor of 3 excludes those
-# cases. Projects that want a higher bar (e.g. require a full
+# cases. Projects that want a longer reason (e.g. require a full
 # sentence) can raise it. The lower bound is 1 — 0 is rejected at
 # parse time, since an empty literal is already treated as a
 # missing reason regardless of this knob.
@@ -211,7 +211,7 @@ min_reason_length = 3
 
 ### Difficulty
 
-**Hard.** The inherited-level analysis is the cost driver:
+**Hard.** The inherited-level analysis is the hard part:
 
 - Lint-level resolution at an arbitrary HIR node is not stable
   across rustc nightlies. `tcx.lint_level_at_node` works today

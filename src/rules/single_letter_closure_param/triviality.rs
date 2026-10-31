@@ -86,9 +86,9 @@ fn path_final_segment<'hir>(expr: &'hir hir::Expr<'hir>) -> Option<Symbol> {
 /// Macro calls are accepted unconditionally on the basis that
 /// the body's expression span lies entirely inside a single
 /// macro invocation written by the user: the source text is a
-/// one-liner whose role is unambiguous from the call site, in
-/// the same spirit as the other shapes. The post-expansion HIR
-/// of `vec![param]`, `dbg!(param)`, `format!("{param}")`, etc.
+/// one-liner whose role is unambiguous from the call site, as
+/// in the non-macro shapes. The post-expansion HIR of
+/// `vec![param]`, `dbg!(param)`, `format!("{param}")`, etc.
 /// does not pattern-match any of the arms above (e.g. `vec!`
 /// expands to `<[_]>::into_vec(Box::new([param]))`), so without
 /// this branch the rule would false-positive on every macro

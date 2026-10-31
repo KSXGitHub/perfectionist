@@ -148,7 +148,7 @@ fn extract_rules(source_path: &Path, shared: &SharedTypes) -> Vec<Rule> {
             // DefaultState::Inactive;`, not in the level. A non-`Warn` here means the source has
             // drifted from the policy; we panic so a doc
             // regeneration catches it rather than silently
-            // rendering the old "Default level" surface we removed.
+            // rendering the old "Default level" line we removed.
             if !matches!(level, Level::Warn) {
                 panic!(
                     "{} declares level `{level_ident}`; catalogue policy is that \

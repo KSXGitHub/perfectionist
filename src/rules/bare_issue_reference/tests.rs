@@ -115,7 +115,7 @@ fn unknown_forge_value_is_rejected() {
     assert!(toml::from_str::<Config>(r#"forge = "bitbucket""#).is_err());
 }
 
-/// The headline scenario: `repository` is set, `forge` is left
+/// The main scenario: `repository` is set, `forge` is left
 /// unset, and no path layout is configured. The forge is
 /// detected from the recognised host and both URLs resolve to a
 /// correct address, so the autofix works rather than help-only.

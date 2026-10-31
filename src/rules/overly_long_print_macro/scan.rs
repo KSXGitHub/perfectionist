@@ -108,7 +108,7 @@ pub(super) fn build_fold_suggestion(
 ///
 /// A `\n` is folded only when the source text immediately after it is
 /// neither end-of-body (a trailing `\n` needs no fold) nor a literal
-/// whitespace character. The whitespace guard is load-bearing for
+/// whitespace character. The whitespace guard is required for
 /// byte-equivalence: the `\<newline>` continuation strips the newline
 /// *and all leading whitespace* of the next source line, so folding
 /// `"a\n  b"` would silently swallow the two spaces of the second

@@ -89,7 +89,7 @@ declare_tool_lint! {
     pub perfectionist::AVOIDABLE_STRING_ESCAPES,
     Warn,
     "string literal contains only raw-expressible escapes; prefer the raw-string form",
-    // Load-bearing: an escaped string literal passed as a `println!` /
+    // Required: an escaped string literal passed as a `println!` /
     // `format!` / `vec!` / etc. argument lives inside a `core` macro
     // expansion. With the default `false` rustc would treat every
     // diagnostic on those literals as "in an external macro" and
@@ -136,7 +136,7 @@ struct Config {
 }
 
 /// Default floor for `min_escapes_to_trigger`. One eliminable
-/// escape is enough to make the raw form an unambiguous win.
+/// escape is enough to prefer the raw form.
 const DEFAULT_MIN_ESCAPES_TO_TRIGGER: NonZeroUsize = NonZeroUsize::new(1).expect("1 is non-zero");
 
 impl Default for Config {
@@ -279,7 +279,7 @@ impl<'tcx> LateLintPass<'tcx> for AvoidableStringEscapes {
         else {
             return;
         };
-        // Belt-and-braces: defend against any source spelling that
+        // Defensive: reject any source spelling that
         // doesn't actually look like a cooked string literal at the
         // syntactic level (synthesised spans, edge cases). The
         // `Cooked` check above already covers the normal path.
