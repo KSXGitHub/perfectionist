@@ -52,13 +52,13 @@ fn renamed_counterpart() {
 // Not flagged: the chain is ported whole, and `with_envs` is not here
 // to port `envs` to, so renaming `arg` around it would leave `envs`
 // calling a std setter on a receiver the change had made owned. The
-// head stands down with the link.
+// head is silent with the link.
 fn absent_counterpart_later_in_the_chain() {
     Command::new("ls").arg("-l").envs([("LANG", "C")]);
 }
 
 // Bad: a chain whose every link has a counterpart, which is what makes
-// a stand-down on a chain missing one attributable to the missing
+// the silence on a chain missing one attributable to the missing
 // method rather than to the chain.
 fn chain_of_present_counterparts() {
     Command::new("ls").arg("-l").env("LANG", "C");

@@ -22,7 +22,7 @@ extern crate tokio;
 
 use command_extra::CommandExtra;
 
-// Bad: blessed unconditionally.
+// Bad: reached unconditionally.
 fn bare_command() {
     let mut command = std::process::Command::new("ls");
     command.arg("off-bare");
