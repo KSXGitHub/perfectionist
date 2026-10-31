@@ -14,47 +14,19 @@ string literals. An OS string, a byte buffer and a C string
 each hold something other than UTF-8, and the comparison can
 be made on what they do hold:
 
-| Written                             | Prefer                                |
-|-------------------------------------|---------------------------------------|
-| `os_str.to_str() == Some("x")`      | `os_str == OsStr::new("x")`           |
-| `path.to_str() == Some("x")`        | `path.as_os_str() == OsStr::new("x")` |
-| `str::from_utf8(bytes) == Ok("x")`  | `bytes == b"x"`                       |
-| `c_str.to_str() == Ok("x")`         | `c_str.to_bytes() == b"x"`            |
-
-An equality keeps its literal as written, since an `OsStr`
-compares against one directly. A `match` cannot, because a
-pattern needs a literal where `OsStr::new("x")` is a call, so
-its scrutinee becomes the bytes and its arms become
-byte-string literals.
-
-Either operand may carry the literal, `matches!` counts as a
-`match`, and a conversion under `unwrap` or `expect` reads the
-same way. `to_string_lossy` and `String::from_utf8_lossy` are
-read beside the conversions that report instead of replacing,
-and `OsString::into_string` beside `to_str`.
-
-Left alone:
-
-- A comparand that is not a literal. There is nothing to
-  compare the native form against.
-- An arm that binds the decoded text, or a guard that reads the
-  binding. The text is being used as text, which is what the
-  conversion is for.
-- A `match` that gives the non-UTF-8 case an arm of its own. A
-  byte comparison tells a listed literal from everything else
-  and cannot tell ill-formed input from valid input that is
-  none of the literals, so the two have to share one wildcard.
-- A lossy conversion measured against a literal holding
-  U+FFFD. A lossy conversion maps each ill-formed sequence to
-  U+FFFD, so such a literal is matched by inputs whose bytes
-  differ from it and the rewrite would not preserve the answer.
+| Written                                | Prefer                                      |
+|----------------------------------------|---------------------------------------------|
+| `os_str.to_str() == Some("x")`         | `os_str == OsStr::new("x")`                 |
+| `matches!(os_str.to_str(), Some("x"))` | `matches!(os_str.as_encoded_bytes(), b"x")` |
+| `path.to_str() == Some("x")`           | `path.as_os_str() == OsStr::new("x")`       |
+| `str::from_utf8(bytes) == Ok("x")`     | `bytes == b"x"`                             |
+| `c_str.to_str() == Ok("x")`            | `c_str.to_bytes() == b"x"`                  |
 
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. The
-comparison answers alike whichever spelling it takes, which is
-why the rule reports only where that holds. The objection is to
-what the reader has to carry:
+comparison answers alike whichever spelling it takes. The
+objection is to what the reader has to carry:
 
 - **A wrapper no arm asked for.** A `match` deciding which of
   three words a value is, written over `to_str`, makes every
@@ -66,12 +38,6 @@ what the reader has to carry:
   use. A reader who meets `to_str` expects the encoding to
   matter somewhere.
 
-Speed is not the argument. Byte equality compares lengths
-before bytes where a UTF-8 validation scans the whole input,
-but these values are short and read once, so a project moved
-by throughput should measure rather than take the shape on
-faith.
-
 ## Interaction with Clippy
 
 `clippy::cmp_owned` flags an owned value built for a
@@ -79,8 +45,8 @@ comparison, such as `x == "foo".to_string()`. A `to_str`
 allocates nothing, so none of the shapes here reach it.
 `clippy::needless_as_bytes` covers `as_bytes` followed by
 `len` or `is_empty` and does not reach a comparison. Neither
-lint fires on this anti-pattern, so the rule takes its own
-name rather than mirroring one.
+lint fires on this anti-pattern, so this rule covers ground
+they leave rather than refining either.
 
 ## Example
 
