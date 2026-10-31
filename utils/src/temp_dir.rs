@@ -16,8 +16,7 @@ use std::path::Path;
 const CHOSEN_NAME: &str = "perfectionist-tests";
 
 pub(crate) fn check() {
-    let temp_dir = env::temp_dir();
-    if let Err(error) = check_against(&temp_dir) {
+    if let Err(error) = check_against(&env::temp_dir()) {
         panic!("{error}");
     }
 }
