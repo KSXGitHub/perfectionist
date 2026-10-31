@@ -30,6 +30,10 @@
 //!   comparison against a literal does not reach through.
 //! - A guard on a literal arm, which the rewrite carries across
 //!   untouched.
+//! - An adapter over a byte slice, whose receiver already answers in
+//!   the form the comparison wants, so the closure goes entirely.
+//! - A dereferenced source, where the method the rewrite appends binds
+//!   tighter than the `*` and needs brackets.
 //! - An `Option` adapter, where the comparison keeps its `Some` and the
 //!   literal is sliced to meet the `Option` the adapter now yields.
 //! - An `unwrap` between the conversion and the comparison, whose
@@ -119,6 +123,14 @@ const SOURCE: &str = text_block_fnl! {
     "    }"
     "}"
     ""
+    "pub fn an_adapter_over_bytes(chunk: Option<&[u8]>) -> bool {"
+    r#"    matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))"#
+    "}"
+    ""
+    "pub fn a_dereferenced_source(path: &&Path) -> bool {"
+    r#"    (*path).to_str() == Some("main.rs")"#
+    "}"
+    ""
     "pub fn an_unwrap_is_left_alone(value: &CStr) -> bool {"
     r#"    value.to_str().unwrap() == "yes""#
     "}"
@@ -188,6 +200,14 @@ const FIXED: &str = text_block_fnl! {
     r#"        b"true" if strict => 1,"#
     "        _ => 0,"
     "    }"
+    "}"
+    ""
+    "pub fn an_adapter_over_bytes(chunk: Option<&[u8]>) -> bool {"
+    r#"    matches!(chunk, Some(b"yes"))"#
+    "}"
+    ""
+    "pub fn a_dereferenced_source(path: &&Path) -> bool {"
+    r#"    (*path).as_os_str() == "main.rs""#
     "}"
     ""
     "pub fn an_unwrap_is_left_alone(value: &CStr) -> bool {"

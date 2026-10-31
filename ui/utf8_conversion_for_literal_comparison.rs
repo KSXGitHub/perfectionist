@@ -30,6 +30,19 @@ fn equality_over_os_strings_rewritten(value: &OsStr, owned: OsString) {
     if owned == "true" {}
 }
 
+// Bad: an `expect` rather than an `unwrap` between the conversion and
+// the comparison. Either hands back the text the conversion produced.
+fn an_expect_between(path: &Path) -> bool {
+    path.to_str().expect("not UTF-8") == "main.rs"
+}
+
+// Good: `an_expect_between` as the rule asks for it. The rewrite drops
+// the `expect`, so input the conversion would have rejected answers
+// `false` where it used to panic.
+fn an_expect_between_rewritten(path: &Path) -> bool {
+    path.as_os_str() == "main.rs"
+}
+
 // Bad: an equality over a path, which reaches its `OsStr` through
 // `as_os_str`.
 fn equality_over_paths(path: &Path, owned: PathBuf) {
@@ -43,6 +56,19 @@ fn equality_over_paths(path: &Path, owned: PathBuf) {
 fn equality_over_paths_rewritten(path: &Path, owned: PathBuf) {
     if path.as_os_str() == "main.rs" {}
     if owned.as_os_str() == "main.rs" {}
+}
+
+// Bad: a lossy conversion, which the rule reads beside the ones that
+// report ill-formed input instead of replacing it.
+fn a_lossy_conversion(path: &Path) -> bool {
+    path.to_string_lossy() == "main.rs"
+}
+
+// Good: `a_lossy_conversion` as the rule asks for it. The replacement
+// the conversion would make has no pre-image among the inputs that
+// render as this literal, so the two answer alike.
+fn a_lossy_conversion_rewritten(path: &Path) -> bool {
+    path.as_os_str() == "main.rs"
 }
 
 // Bad: an equality over a byte buffer, which is already its own native
@@ -61,6 +87,18 @@ fn equality_over_bytes_rewritten(bytes: &[u8], owned: Vec<u8>, boxed: Box<[u8]>)
     if bytes == b"yes" {}
     if owned == b"yes" {}
     if &boxed[..] == b"yes" {}
+}
+
+// Bad: a dereferenced source, whose brackets the rewrite has to keep,
+// a method appended to `*path` binding tighter than the `*` does.
+fn a_dereferenced_source(path: &&Path) -> bool {
+    (*path).to_str() == Some("main.rs")
+}
+
+// Good: `a_dereferenced_source` as the rule asks for it, the brackets
+// still holding `as_os_str` to the path rather than to its result.
+fn a_dereferenced_source_rewritten(path: &&Path) -> bool {
+    (*path).as_os_str() == "main.rs"
 }
 
 // Bad: an equality over a fixed-size buffer, which meets a
@@ -245,6 +283,18 @@ fn through_a_map_adapter_rewritten(path: &Path) -> bool {
     )
 }
 
+// Bad: an adapter over a byte slice, which holds the bytes the
+// comparison wants, so the rewrite drops the closure outright.
+fn through_an_adapter_over_bytes(chunk: Option<&[u8]>) -> bool {
+    matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))
+}
+
+// Good: `through_an_adapter_over_bytes` as the rule asks for it, the
+// adapter gone because its receiver already answers in bytes.
+fn through_an_adapter_over_bytes_rewritten(chunk: Option<&[u8]>) -> bool {
+    matches!(chunk, Some(b"yes"))
+}
+
 // Not flagged: the arm binds the decoded text, so the conversion is
 // what lets the arm use it.
 fn an_arm_binds_the_text(path: &Path) -> Option<String> {
@@ -293,6 +343,13 @@ fn the_non_utf8_case_is_distinguished(path: &Path) -> u8 {
     }
 }
 
+// Not flagged: an ordering comparison rather than an equality. An
+// `Option` orders its `None` below every `Some`, which no comparison
+// of the value's own form reproduces.
+fn an_ordering_comparison(value: &OsStr) -> bool {
+    value.to_str() < Some("true")
+}
+
 // Not flagged: the comparand is not a literal, so there is nothing to
 // compare the native form against.
 fn the_comparand_is_not_a_literal(path: &Path, wanted: &str) -> bool {
@@ -304,6 +361,13 @@ fn the_comparand_is_not_a_literal(path: &Path, wanted: &str) -> bool {
 // bytes do not.
 fn a_lossy_conversion_against_a_replacement_character(path: &Path) -> bool {
     path.to_string_lossy() == "�"
+}
+
+// Not flagged: a lossy conversion taken as a function, where the
+// literal holds U+FFFD. The replacement character has pre-images among
+// the ill-formed inputs, which the byte comparison does not share.
+fn a_lossy_function_against_a_replacement_character(bytes: &[u8]) -> bool {
+    String::from_utf8_lossy(bytes) == "�"
 }
 
 // Not flagged: the receiver is already a `str`, which has no non-UTF-8
@@ -356,6 +420,18 @@ fn an_arm_literal_comes_from_a_macro(value: &OsStr) -> u8 {
         Some(word!()) => 1,
         _ => 0,
     }
+}
+
+macro_rules! decoded {
+    ($value:expr) => {
+        $value.to_str()
+    };
+}
+
+// Not flagged: the conversion itself comes from a macro, whose body is
+// where the text a rewrite would name may live.
+fn the_conversion_comes_from_a_macro(value: &OsStr) -> bool {
+    decoded!(value).unwrap() == "true"
 }
 
 macro_rules! wrapped {

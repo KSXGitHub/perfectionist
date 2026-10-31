@@ -50,6 +50,18 @@ LL +     if owned == "true" {}
 warning: this converts to UTF-8 only to measure the result against string literals
   --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
    |
+LL |     path.to_str().expect("not UTF-8") == "main.rs"
+   |     ^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     path.to_str().expect("not UTF-8") == "main.rs"
+LL +     path.as_os_str() == "main.rs"
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
+   |
 LL |     if path.to_str() == Some("main.rs") {}
    |        ^^^^^^^^^^^^^
    |
@@ -69,6 +81,18 @@ help: compare the value without converting it
    |
 LL -     if owned.to_str() == Some("main.rs") {}
 LL +     if owned.as_os_str() == "main.rs" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
+   |
+LL |     path.to_string_lossy() == "main.rs"
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     path.to_string_lossy() == "main.rs"
+LL +     path.as_os_str() == "main.rs"
    |
 
 warning: this converts to UTF-8 only to measure the result against string literals
@@ -117,6 +141,18 @@ help: compare the value without converting it
    |
 LL -     if str::from_utf8(&boxed).unwrap() == "yes" {}
 LL +     if &boxed[..] == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
+   |
+LL |     (*path).to_str() == Some("main.rs")
+   |     ^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     (*path).to_str() == Some("main.rs")
+LL +     (*path).as_os_str() == "main.rs"
    |
 
 warning: this converts to UTF-8 only to measure the result against string literals
@@ -264,6 +300,18 @@ help: compare the value without converting it
    |
 LL ~         path.file_name().map(|value| value.as_encoded_bytes()),
 LL ~         Some(b"main.rs"),
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison.rs:LL:CC
+   |
+LL |     matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))
+LL +     matches!(chunk, Some(b"yes"))
    |
 
 warning: this converts to UTF-8 only to measure the result against string literals
