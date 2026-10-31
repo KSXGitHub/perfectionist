@@ -29,7 +29,7 @@ because the code compiles and the names look right either way.
 
 A **prefix parser** consumes what it recognises and hands back the
 rest, making no claim about that rest. A `take_*` that stops at the
-end of a version has no opinion on whether `/rest`, whitespace or
+end of a version makes no claim about whether `/rest`, whitespace or
 nothing at all follows it.
 
 An **all-consuming parse** is the entry point. It runs the prefix
@@ -44,7 +44,7 @@ That parse may be a `parse_*` function, a `FromStr` implementation,
 or a `TryFrom` over a string-like input.
 
 Leave the assertion out and the entry point is a prefix parser
-wearing the name of a parse, which accepts every input that merely
+named as a parse, which accepts every input that merely
 *starts* with something valid.
 
 The canonical shapes are:
@@ -73,8 +73,8 @@ fn parse_url(input: &str) -> Option<Url>;
 A prefix parser with nothing to report still returns the remainder in
 a tuple — `Option<((), &str)>` — rather than the remainder alone. The
 bare `Option<&str>` is the shape of a parser that returns a *value*,
-so a parser that returns the rest under that signature reads as its
-own opposite.
+so a parser that returns the rest under that signature misleads the
+reader.
 
 The pattern is well-trodden — `nom`, `chumsky`, `combine`, and
 `winnow` all expose the same essential shape. Within `perfectionist`
@@ -196,9 +196,9 @@ whole comment. No library hits that target without overshooting:
   Heavier than `pulldown_cmark` and aimed at GFM rendering, not
   at "give me byte spans of code regions".
 - **`markdown-rs`** (`wooorm/markdown-rs`) — CommonMark + GFM +
-  MDX + frontmatter. Most spec-faithful, largest dep tree, worst
-  weight-vs-need ratio for this use case.
-- **`markdown-it`** — JS port. Pluggable. Less battle-tested in
+  MDX + frontmatter. Most spec-faithful, largest dep tree,
+  heaviest for what these rules need.
+- **`markdown-it`** — JS port. Pluggable. Less proven in
   Rust than `pulldown_cmark`.
 
 The hand-written approach also keeps span construction precise
@@ -239,8 +239,8 @@ heading, emphasis, and list parsers were added to `src/markdown.rs`
 or forcing a library, so no switch was needed. Should a future
 construct tip that balance for one rule, that rule may switch to a
 vendored `pulldown_cmark` walk while the others continue on the
-hand-rolled helper. Open a follow-up PR; do not silently expand
-`src/markdown.rs`'s dependency surface for the other consumers.
+hand-rolled helper. Open a follow-up PR; do not silently add
+dependencies to `src/markdown.rs` for the other consumers.
 
 ## Reaching every module (source-layout rules)
 
@@ -314,7 +314,7 @@ write a fresh module-discovery or re-parse path; route through:
    code reading but **not** yet pinned by a cfg-disabled-inline-module
    test. Confirm with such a test before treating either as a model
    to copy or "fixing" them.)
-3. **`enclosing_hir::find_enclosing_hir_ids`** to anchor each parked
+3. **`enclosing_hir::find_enclosing_hir_ids`** to anchor each pending
    violation at its enclosing HIR node, emitting through
    `clippy_utils::diagnostics::span_lint_hir_and_then`, so a
    per-module / per-item `#[allow]` / `#[expect]` resolves. Anchor on
@@ -500,7 +500,7 @@ knows the Clippy lint then transfers that knowledge directly.
 
 - `allow_attributes_without_reason` mirrors
   `clippy::allow_attributes_without_reason` (adds a `min_reason_length`
-  quality floor and an `exempt_lints` list).
+  threshold and an `exempt_lints` list).
 - `allow_attributes` mirrors `clippy::allow_attributes` (rewrites
   `#[allow]` to `#[expect]`, restricted to deterministically-firing
   lints).
@@ -712,7 +712,7 @@ shapes — `"::<extern crate>::..."` and `"crate::..."` — and must
 `"::self"`, `"::super"`) rather than silently accepting them.
 Treating `"::crate::internals"` as valid is a real bug, not a
 harmless typo: it cannot occur in source, yet a naive "prepend
-`::` to the import path" matcher will happily match it against
+`::` to the import path" matcher will match it against
 `use crate::internals::*;`. The typo'd entry then matches while the
 correctly-spelled one (`"crate::internals"`) never does.
 
@@ -847,7 +847,7 @@ routes:
 - **`LateLintPass`** — call
   `crate::common::hir_in_external_macro(cx, hir_id, span)`. It checks
   the node's own span *and* the enclosing item's `def_span`. The second
-  check is load-bearing for spans that are nothing but the identifier
+  check is required for spans that are nothing but the identifier
   (a `<T>` generic parameter has no surrounding tokens to carry the
   expansion's `SyntaxContext`); the synthesised owner item's `def_span`
   does carry it.
@@ -881,7 +881,7 @@ The trap — and it has already cost one round of work — is that the
 fixture is only meaningful if its synthesised trigger is one the rule
 **would otherwise fire on**. A fixture built around a node the rule
 exempts or treats as trivial passes whether or not the guard exists: it
-exercises nothing and bestows false confidence. Concretely:
+exercises nothing and gives false confidence. Concretely:
 
 - `allow_attributes` exempts `#[allow(dead_code)]`, so a fixture
   using the `dead_code`-emitting `SynthSilenceReason` derive is vacuous.
@@ -933,7 +933,7 @@ code, and a guard present but never actually tested:
   `#[allow(...)]`; fixed with the early-pass `is_from_proc_macro`
   variant, since the late-pass helper did not apply.
 - `allow_attributes` shipped *with* the early-pass guard in
-  place — it learned from `allow_attributes_without_reason` — but its first
+  place — copied from `allow_attributes_without_reason` — but its first
   regression fixture reused the `dead_code` derive the rule exempts
   anyway. The test was vacuous: it would have passed even with the
   guard deleted. A follow-up commit added a rewriteable-`#[allow]`
