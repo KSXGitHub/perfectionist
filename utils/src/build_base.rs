@@ -1,17 +1,17 @@
-//! Hold a run to the temp directory the `test` recipe chose.
+//! Hold a run to the temp directory `just test` chose.
 //!
 //! `dylint_testing` leaves compiletest's output directory at its
 //! default, [`env::temp_dir`], and compiletest substitutes
 //! `$TEST_BUILD_DIR` for that path throughout a fixture's rendered
-//! output. The `test` recipe chooses the directory and states the
-//! choice in [`EXPECTED_VAR`].
+//! output. `just test` chooses the directory and states the choice in
+//! [`EXPECTED_VAR`].
 
 use derive_more::Display;
 use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 
-/// Where the `test` recipe states the temp directory it chose.
+/// Where `just test` states the temp directory it chose.
 const EXPECTED_VAR: &str = "PERFECTIONIST_TEST_TMPDIR";
 
 pub(crate) fn check() {
@@ -22,8 +22,8 @@ pub(crate) fn check() {
     }
 }
 
-/// [`check`] with the temp directory and the recipe's value given
-/// rather than read from the environment.
+/// [`check`] with the temp directory and the value `just test` states
+/// given rather than read from the environment.
 fn check_against<'a>(
     temp_dir: &'a Path,
     expected: Option<&'a OsStr>,
@@ -38,8 +38,8 @@ fn check_against<'a>(
     })
 }
 
-/// Why a run's temp directory cannot be taken for the one the `test`
-/// recipe chose.
+/// Why a run's temp directory cannot be taken for the one `just test`
+/// chose.
 #[derive(Debug, Display, PartialEq)]
 enum TempDirError<'a> {
     #[display(

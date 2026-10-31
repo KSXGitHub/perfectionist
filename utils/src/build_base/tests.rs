@@ -3,11 +3,11 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 /// A directory for a case to state and to run under, standing in for
-/// whatever the `test` recipe chooses.
+/// whatever `just test` chooses.
 const CHOSEN_TMPDIR: &str = "/tmp/perfectionist-tests";
 
 #[test]
-fn the_recipes_directory_is_accepted() {
+fn the_directory_just_test_chose_is_accepted() {
     check_against(Path::new(CHOSEN_TMPDIR), Some(OsStr::new(CHOSEN_TMPDIR)))
         .expect("the stated directory is this run's");
 }
@@ -26,7 +26,7 @@ fn a_trailing_separator_is_not_a_mismatch() {
 /// What a bare `cargo test` reaches: whatever `TMPDIR` says, and
 /// nothing stating what the `.stderr` fixtures were recorded under.
 #[test]
-fn a_run_the_recipe_did_not_set_up_is_refused() {
+fn a_run_just_test_did_not_set_up_is_refused() {
     assert_eq!(
         check_against(Path::new("/tmp"), None),
         Err(TempDirError::Unstated {
@@ -36,7 +36,7 @@ fn a_run_the_recipe_did_not_set_up_is_refused() {
 }
 
 #[test]
-fn a_temp_directory_other_than_the_recipes_is_refused() {
+fn a_temp_directory_just_test_did_not_choose_is_refused() {
     assert_eq!(
         check_against(Path::new("/tmp"), Some(OsStr::new(CHOSEN_TMPDIR))),
         Err(TempDirError::Mismatched {
