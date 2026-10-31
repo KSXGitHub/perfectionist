@@ -25,10 +25,11 @@ pub(crate) fn check() {
 /// [`check`] with the temp directory given rather than read from the
 /// environment.
 fn check_against(temp_dir: &Path) -> Result<(), TempDirError<'_>> {
-    if temp_dir.file_name() == Some(OsStr::new(CHOSEN_NAME)) {
-        return Ok(());
-    }
-    Err(TempDirError { actual: temp_dir })
+    temp_dir
+        .file_name()
+        .filter(|name| *name == OsStr::new(CHOSEN_NAME))
+        .ok_or(TempDirError { actual: temp_dir })
+        .map(drop)
 }
 
 /// A temp directory `just test` did not choose.
