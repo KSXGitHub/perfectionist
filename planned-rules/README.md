@@ -93,6 +93,27 @@ pattern that several rules call out by reference — live in
   `to_str()` is this rule's core and that rule's exemption. Active by
   default.
 
+### Conversions
+- [`conversion-for-accepting-position.md`](./conversion-for-accepting-position.md)
+  — flag a free conversion (`OsStr::new`, `Path::new`, `as_str()`,
+  `as_slice()`, `as_os_str()`, `as_ref()`, …) standing in a position
+  that already accepts the unconverted operand: a comparison whose
+  other operand's type already compares against it
+  (`os_str == OsStr::new("x")`, where `OsStr` has compared equal to
+  `str` since Rust 1.0.0), or a generic argument whose single bound the
+  operand already satisfies (`File::open(Path::new("x"))`). Reports
+  only where the rewrite compiles and selects an impl that agrees, so
+  it declines the conversion that pins a shared type parameter, meets
+  a turbofish, feeds a `Some`, or decides which impl a second bound
+  uses — and declines `os_str == path.as_os_str()`, where dropping
+  the view turns a bytewise comparison into a componentwise one.
+  Paths compared against literals are exempt by default
+  (`include_path_comparisons` opts in), the wrapper being the only
+  thing that tells a reader the answer is componentwise. Takes the
+  gap `clippy::cmp_owned` and `clippy::unnecessary_to_owned` leave:
+  both are priced on the allocation, and these conversions are free.
+  Active by default.
+
 ### Derives and error types
 - [`error-type-derives.md`](./error-type-derives.md) — derive
   `derive_more::Display` / `Error` only when needed; flag superfluous
