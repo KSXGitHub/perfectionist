@@ -213,7 +213,7 @@ fn emit<'tcx>(cx: &LateContext<'tcx>, call: &DefaultedCall<'tcx>, msrv: Msrv) {
     }
     span_lint_and_then(cx, MAP_OR, call.span, MESSAGE, |diag| {
         match collapse {
-            // The chain rides along where the named predicate is
+            // The chain is offered where the named predicate is
             // younger than `map_or` itself, so a crate pinned below
             // that version still reads advice it can take.
             Some(Collapse::Predicate { method, since }) => {

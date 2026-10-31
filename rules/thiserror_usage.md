@@ -45,9 +45,9 @@ mechanical rewrite is too risky to apply without review.
 Alias collection is crate-wide rather than per-module: a
 `use thiserror::Error;` anywhere in the crate makes the bare
 `#[derive(Error)]` short-hand resolve as thiserror everywhere.
-In practice that overlap is rare and
-the rule treats it as acceptable false-positive surface; a
-project that hits it can suppress individual sites with
+In practice that overlap is rare and the rule treats it as an
+acceptable false positive; a project that hits it can suppress
+individual sites with
 `#[expect(perfectionist::thiserror_usage)]`.
 
 ## Why restrict this?

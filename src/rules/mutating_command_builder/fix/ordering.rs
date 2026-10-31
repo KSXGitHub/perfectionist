@@ -47,7 +47,7 @@ pub(super) fn creates_an_ordered_drop<'tcx>(
 /// recognise leaves the value behind, which is the safe way round for
 /// a guard whose job is to decline.
 ///
-/// Reading a *part* of a value is the case worth naming, because it
+/// Reading a *part* of a value is the exception, because it
 /// looks like a hand-over and is not: only the part moves, and what is
 /// left of the temporary is dropped at the end of the statement.
 fn outlives_the_call<'tcx>(

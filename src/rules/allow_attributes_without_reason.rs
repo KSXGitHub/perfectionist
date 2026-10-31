@@ -84,10 +84,10 @@ struct Config {
     /// Minimum length of the `reason` value. A one- or two-character
     /// reason (`"x"`, `"ok"`) satisfies the literal presence
     /// requirement but conveys nothing; the default floor of 3
-    /// excludes those cases. Projects that want a higher bar (e.g.
-    /// require a full sentence) can raise it. The lower bound is `1`,
-    /// and `0` is rejected at parse time, since an empty literal is
-    /// already treated as a missing reason regardless of this knob.
+    /// excludes those cases. Projects that want a longer reason can
+    /// raise it. The lower bound is `1`, and `0` is rejected at parse
+    /// time, since an empty literal is already treated as a missing
+    /// reason regardless of this knob.
     min_reason_length: NonZeroUsize,
 }
 

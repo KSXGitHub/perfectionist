@@ -56,10 +56,10 @@ edits a reader should make deliberately.
 ## Interaction with Clippy
 
 `clippy::arbitrary_source_item_ordering` (`restriction`, off by
-default) covers adjacent ground from the other end. It is highly
+default) covers the same concern differently. It is highly
 general: it orders many item kinds against an ordering table the
 project supplies and can sort alphabetically within a group.
-This rule takes no configuration and bakes in the single layout
+This rule takes no configuration and hard-codes the single layout
 above. A project that wants to spell out its own ordering should
 prefer the Clippy lint and turn this one off in `dylint.toml`:
 

@@ -42,7 +42,7 @@ pub(super) enum Landing {
 /// One flagged setter call, with every question about it already
 /// answered.
 pub(super) struct Violation {
-    /// The node the diagnostic hangs off, so that an `#[allow(...)]`
+    /// The node the diagnostic anchors at, so that an `#[allow(...)]`
     /// written around the call still applies to it.
     pub(super) hir_id: HirId,
     /// The method segment alone, which is the span a rename replaces.
@@ -195,7 +195,7 @@ struct Lines {
 }
 
 /// The lines for a change the rule can describe but not render: each
-/// thing the change reaches past earns one.
+/// thing the change reaches past gets one.
 fn prose(diagnostic: &mut Diag<'_, ()>, lines: &Lines, advice: String) {
     let &Lines {
         names_generic_arguments,

@@ -1,4 +1,4 @@
-//! Which adapters the chain trigger speaks about, where each one's item
+//! Which adapters the chain trigger covers, where each one's item
 //! parameter sits in the closure it takes, and what a lifted step goes
 //! into.
 //!

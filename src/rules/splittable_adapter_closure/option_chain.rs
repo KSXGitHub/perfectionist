@@ -1,5 +1,5 @@
 //! The guard-and-value trigger: a closure passed to an `Option`-returning
-//! adapter that welds a guard to a value, so one adapter does both.
+//! adapter that joins a guard to a value, so one adapter does both.
 //!
 //! `filter_map` and its kin split on neither of the other triggers'
 //! terms. Their closure returns an `Option`, so there is no conjunction

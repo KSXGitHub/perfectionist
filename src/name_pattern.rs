@@ -22,14 +22,14 @@
 //! Parsing at config-parse time rather than at match time puts the
 //! rejection where the message can name the offending entry, and
 //! leaves the matcher a `starts_with` against an already-split prefix
-//! rather than string surgery repeated for every name a rule sees.
+//! rather than string slicing repeated for every name a rule sees.
 
 use rustc_lexer::{is_id_continue, is_ident};
 
-/// TOML-flavoured type label for [`NamePattern`], surfaced by
-/// `tools/gen-docs` in the per-rule field-type column. Sourced here,
-/// next to the type definition, so the label is the type's own
-/// property rather than a hard-coded match arm in the doc generator.
+/// TOML type label for [`NamePattern`], shown by `tools/gen-docs` in
+/// the per-rule field-type column. Sourced here, next to the type
+/// definition, so the label is the type's own property rather than a
+/// hard-coded match arm in the doc generator.
 #[expect(
     dead_code,
     reason = "consumed by `tools/gen-docs` via syntactic scan of this file, not by the runtime"

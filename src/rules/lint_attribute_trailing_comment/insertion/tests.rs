@@ -33,7 +33,7 @@ fn insertion_multi_line_trailing_comma() {
     assert_eq!(run_insertion(input, "why"), expected);
 }
 
-/// Wrapped argument list whose closing `)` rides the last
+/// Wrapped argument list whose closing `)` shares the last
 /// argument's line. The `)` is not on its own line, so the
 /// inline strategy applies, splicing before `)` rather than
 /// emitting a stray unindented `reason` line.

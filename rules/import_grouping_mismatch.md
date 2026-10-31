@@ -14,7 +14,7 @@ Enforces a single project-wide *grouping* style for the run of
 inactive by default; a project opts in and sets `style` to one of:
 - `single_block`: every `use` sits in one contiguous block with
   no blank lines between imports, except that `#[cfg(...)]`-gated
-  imports are carved into their own trailing block (one blank
+  imports form their own trailing block (one blank
   line below the rest). Set `cfg_block_handling = "merge"` to keep
   them in the one block.
 - `multi_block`: imports are partitioned into ordered groups

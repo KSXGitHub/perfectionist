@@ -5,7 +5,7 @@
 //! One lint over three triggers, because what the closure holds decides
 //! which split it has rather than which adapter holds it. [`step_chain`]
 //! reads a chain of steps rooted at the item, [`predicate`] a conjunction
-//! of tests, and [`option_chain`] an `Option` combinator welding a guard
+//! of tests, and [`option_chain`] an `Option` combinator joining a guard
 //! to a value. [`mod@family`] answers which receiver they are all on.
 //!
 //! The triggers are asked in order and the first finding wins. They
@@ -52,7 +52,7 @@ declare_tool_lint! {
     /// - A predicate that is a conjunction of two or more tests, each
     ///   naming the item, where each test is a filtering adapter of its
     ///   own.
-    /// - A body under `filter_map`, `find_map` or `map_while` that welds
+    /// - A body under `filter_map`, `find_map` or `map_while` that joins
     ///   a guard to a value or runs two or more stages, where each stage
     ///   is the adapter that does it.
     ///
@@ -103,7 +103,7 @@ declare_tool_lint! {
     /// ### Applicability
     ///
     /// A conjunction is rewritten, one adapter per test, and so is a chain
-    /// under an adapter that keeps the last step. A guard welded to a value
+    /// under an adapter that keeps the last step. A guard joined to a value
     /// is described rather than rewritten, its split having more than one
     /// reasonable text.
     ///
@@ -154,8 +154,8 @@ impl_lint_pass!(SplittableAdapterClosure => [SPLITTABLE_ADAPTER_CLOSURE]);
 impl Register for rule::SplittableAdapterClosure {
     /// Every shape the rule flags is ordinary idiomatic Rust, so it fires
     /// often. That is a reason to expect diagnostics rather than a reason
-    /// to ship the rule off: firing on what the rule names is not a false
-    /// positive.
+    /// to ship the rule inactive: firing on what the rule names is not a
+    /// false positive.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {

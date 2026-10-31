@@ -48,17 +48,16 @@ issue is observed rather than hidden.
 
 ## Interaction with Clippy
 
-`clippy::allow_attributes` (`restriction`, off by default)
-also pushes `#[allow]` towards `#[expect]`, but rewrites
-*every* `#[allow]` indiscriminately, and only towards `#[expect]`.
-This rule flags only the lints that fire **deterministically**,
-leaving lint groups and conditionally-firing lints under
-`#[allow]`. Crucially, it does not assume `#[expect]` is always
-the answer: a deterministic `#[allow]` may already be dead, in
-which case `#[expect]` would be unfulfilled and removal is the
-right fix, so the rule offers both. Reach for this rule for that
-precision, or `clippy::allow_attributes` for a blunt crate-wide
-sweep.
+`clippy::allow_attributes` (`restriction`, off by default) also
+pushes `#[allow]` towards `#[expect]`, but rewrites *every*
+`#[allow]` indiscriminately, and only towards `#[expect]`. This
+rule flags only the lints that fire **deterministically**, leaving
+lint groups and conditionally-firing lints under `#[allow]`.
+Crucially, it does not assume `#[expect]` is always the answer: a
+deterministic `#[allow]` may already be dead, in which case
+`#[expect]` would be unfulfilled and removal is the right fix, so
+the rule offers both. Reach for this rule for that precision, or
+`clippy::allow_attributes` for a crate-wide sweep.
 
 ## Example
 

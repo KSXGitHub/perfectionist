@@ -17,8 +17,8 @@ const CONFIG_KEY: &str = "perfectionist::overly_long_print_macro";
 /// invocation is left alone. Matches rustfmt's column default.
 const DEFAULT_MAX_LINE_WIDTH: usize = 100;
 
-/// Macros eligible for folding. Every entry is a pure side-effect
-/// producer whose output is byte-equivalent before and after the
+/// Macros eligible for folding. Every entry is a side-effect-only
+/// macro whose output is byte-equivalent before and after the
 /// template is folded across lines. Macros that *return a value*
 /// (`format!`, `format_args!`) or *terminate* (`panic!`, `assert!`,
 /// the `debug_assert*` family, ...) are deliberately absent; the
