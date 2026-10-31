@@ -631,12 +631,23 @@ Where the fix does emit one, these constraints apply:
   no `PartialEq` at all, and which an array meets only at the array's
   own length. So a boxed or fixed-size buffer is emitted as
   `&value[..]`, which meets the literal whatever length either has.
-- **A literal still inside a `Some` needs slicing too.** Where the
-  conversion was reached through an `Option` adapter the comparison
-  keeps its `Some`, and `Option`'s own equality is between two of the
-  same type rather than between types that merely compare. So the
-  adapter yields an `Option` of a slice and the literal is emitted as
-  `Some(b"…".as_slice())`.
+- **A literal inside a `Some` is sliced for the left-hand order
+  only.** Where the conversion was reached through an `Option` adapter
+  the comparison keeps its `Some`, and which operand carries the
+  literal decides how the array behind it is spelled. On the right it
+  needs nothing: the argument of `Some` is read after the other operand
+  has named the type, so `opt == Some(b"…")` compiles. On the left no
+  type has been named yet, so `Some(b"…")` fixes an `Option` of an
+  array, which the adapter's `Option` of a slice does not meet;
+  `Some::<&[u8]>(b"…")` compiles there, which is what shows the naming
+  to be the whole of it. So the fix emits `Some(b"…")` on the right and
+  `Some(b"…".as_slice())` on the left.
+
+  `&b"…"` is not a third option in either order: it is a reference to a
+  reference to the array, and coercion will not chain a dereference
+  with an unsizing. `&b"…"[..]` and `Some::<&[u8]>(b"…")` hold in both
+  orders as `as_slice` does; `b"…" as &[u8]` holds too but draws
+  `clippy::as_conversions`.
 
 Applicability follows the identity table in
 [The rewrite is an identity](#the-rewrite-is-an-identity):

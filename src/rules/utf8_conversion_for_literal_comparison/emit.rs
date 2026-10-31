@@ -96,6 +96,7 @@ fn rewrite(
             comparand,
             literal,
             drops_panic,
+            literal_leads,
         } => {
             // The operand is replaced whole rather than at the
             // conversion, so an `unwrap` the comparison applied goes
@@ -103,7 +104,10 @@ fn rewrite(
             // a rewrite that answers `false` where the original
             // panicked.
             edits.push((*operand, value));
-            edits.push((*comparand, comparand_text(view, reached, *literal)));
+            edits.push((
+                *comparand,
+                comparand_text(view, reached, *literal, *literal_leads),
+            ));
             if *drops_panic {
                 applicability = Applicability::MaybeIncorrect;
             }
@@ -242,16 +246,22 @@ fn with_suffix(value: Sugg<'_>, suffix: &str, holds: ty::Ty<'_>) -> String {
 }
 
 /// The comparand an equality measures the value against.
-fn comparand_text(view: View, reached: Reached, literal: Symbol) -> String {
+///
+/// The comparison already carries the `Some` the adapter's `Option`
+/// answers with, so a rewrite reaching through an adapter keeps it. What
+/// the literal inside that `Some` has to be spelled as depends on which
+/// operand carries it. On the right, the argument of `Some` is a
+/// coercion site by the time it is read, the other operand having named
+/// the type, so the byte-string literal reaches an `Option` of a slice
+/// as it stands. On the left there is no such type yet, so the literal
+/// would fix an `Option` of an array, which the adapter's `Option` of a
+/// slice does not meet, and the slice has to be named.
+fn comparand_text(view: View, reached: Reached, literal: Symbol, literal_leads: bool) -> String {
     let rendered = literal_text(view, literal);
-    match reached {
-        Reached::Directly => rendered,
-        // The comparison already carries the `Some` the adapter's
-        // `Option` answers with, so the rewrite keeps it. The adapter
-        // now yields an `Option` of a slice, and a byte-string literal
-        // is a reference to an array, so the literal is sliced to reach
-        // the type the `Option` is compared at.
-        Reached::ThroughOption => format!("Some({rendered}.as_slice())"),
+    match (reached, literal_leads) {
+        (Reached::Directly, _) => rendered,
+        (Reached::ThroughOption, false) => format!("Some({rendered})"),
+        (Reached::ThroughOption, true) => format!("Some({rendered}.as_slice())"),
     }
 }
 

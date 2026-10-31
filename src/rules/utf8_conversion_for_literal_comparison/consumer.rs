@@ -41,6 +41,11 @@ pub(super) enum Consumer {
         /// conversion would have rejected answers `false` where it used
         /// to panic.
         drops_panic: bool,
+        /// Whether the literal is the left operand. The comparand is
+        /// then typed before the operand it meets, which is what
+        /// decides whether a byte-string literal reaches the type that
+        /// operand answers with on its own.
+        literal_leads: bool,
     },
     /// A `match` whose arms name literals and wildcards.
     Patterns {
@@ -72,6 +77,7 @@ pub(super) fn literal_operand<'tcx>(
     cx: &LateContext<'tcx>,
     operand: &'tcx Expr<'tcx>,
     other: &'tcx Expr<'tcx>,
+    literal_leads: bool,
 ) -> Option<(&'tcx Expr<'tcx>, Converted<'tcx>, Consumer)> {
     let consumed = peel_unwrap(operand);
     let found = converted(cx, consumed)?;
@@ -84,6 +90,7 @@ pub(super) fn literal_operand<'tcx>(
             comparand: other.span,
             literal,
             drops_panic: consumed.hir_id != operand.hir_id,
+            literal_leads,
         },
     ))
 }

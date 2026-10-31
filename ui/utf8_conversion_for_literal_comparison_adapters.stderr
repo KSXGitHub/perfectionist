@@ -8,7 +8,19 @@ LL |     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
 help: compare the value without converting it
    |
 LL -     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
-LL +     path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs".as_slice())
+LL +     path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs")
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |     Some("main.rs") == path.file_name().and_then(|name| name.to_str())
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     Some("main.rs") == path.file_name().and_then(|name| name.to_str())
+LL +     Some(b"main.rs".as_slice()) == path.file_name().map(|value| value.as_encoded_bytes())
    |
 
 warning: this converts to UTF-8 only to measure the result against string literals

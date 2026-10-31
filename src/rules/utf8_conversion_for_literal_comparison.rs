@@ -159,7 +159,8 @@ fn consumed_conversion<'tcx>(
             }
             // Either operand may be the literal, so both orders are
             // tried.
-            literal_operand(cx, left, right).or_else(|| literal_operand(cx, right, left))
+            literal_operand(cx, left, right, false)
+                .or_else(|| literal_operand(cx, right, left, true))
         }
         ExprKind::Match(scrutinee, arms, match_source) if is_author_written_match(match_source) => {
             let converted = source::converted(cx, scrutinee)?;

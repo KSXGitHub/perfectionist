@@ -34,8 +34,11 @@
 //!   the form the comparison wants, so the closure goes entirely.
 //! - A dereferenced source, where the method the rewrite appends binds
 //!   tighter than the `*` and needs brackets.
-//! - An `Option` adapter, where the comparison keeps its `Some` and the
-//!   literal is sliced to meet the `Option` the adapter now yields.
+//! - An `Option` adapter, where the comparison keeps its `Some`, with
+//!   the literal on each side in turn. The slice is named only for the
+//!   left-hand order, the right-hand one reading the argument of `Some`
+//!   after the other operand has named the type, so the fixer is what
+//!   holds each order to the spelling it needs.
 //! - An `unwrap` between the conversion and the comparison, whose
 //!   rewrite answers `false` where the original panicked and so is
 //!   offered as `MaybeIncorrect`. The fixer has to leave it alone.
@@ -103,6 +106,10 @@ const SOURCE: &str = text_block_fnl! {
     ""
     "pub fn an_option_adapter(path: &Path) -> bool {"
     r#"    path.file_name().and_then(|name| name.to_str()) == Some("main.rs")"#
+    "}"
+    ""
+    "pub fn an_option_adapter_reversed(path: &Path) -> bool {"
+    r#"    Some("main.rs") == path.file_name().and_then(|name| name.to_str())"#
     "}"
     ""
     "pub fn a_failure_arm(value: &OsStr) -> u8 {"
@@ -181,7 +188,11 @@ const FIXED: &str = text_block_fnl! {
     "}"
     ""
     "pub fn an_option_adapter(path: &Path) -> bool {"
-    r#"    path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs".as_slice())"#
+    r#"    path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs")"#
+    "}"
+    ""
+    "pub fn an_option_adapter_reversed(path: &Path) -> bool {"
+    r#"    Some(b"main.rs".as_slice()) == path.file_name().map(|value| value.as_encoded_bytes())"#
     "}"
     ""
     "pub fn a_failure_arm(value: &OsStr) -> u8 {"

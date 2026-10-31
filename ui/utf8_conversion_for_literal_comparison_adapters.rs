@@ -20,10 +20,25 @@ fn through_an_option_adapter(path: &Path) -> bool {
 
 // Good: `through_an_option_adapter` as the rule asks for it, keeping
 // the `Some` and reaching bytes in place of the conversion the closure
-// performed. An `Option`'s equality is between two of the same type,
-// which is what the literal is sliced for.
+// performed. The literal needs no slice: the argument of `Some` is read
+// after the operand it meets has named the type, so the array behind
+// the literal reaches an `Option` of a slice as it stands.
 fn through_an_option_adapter_rewritten(path: &Path) -> bool {
-    path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs".as_slice())
+    path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs")
+}
+
+// Bad: an adapter whose comparison carries the literal on the left,
+// which is the one order where the rewrite has to spell the literal as
+// a slice: the comparand is typed before the operand it meets, so
+// nothing has named the type the array would reach for.
+fn an_adapter_with_the_literal_on_the_left(path: &Path) -> bool {
+    Some("main.rs") == path.file_name().and_then(|name| name.to_str())
+}
+
+// Good: `an_adapter_with_the_literal_on_the_left` as the rule asks for
+// it, the literal sliced so that it meets an `Option` of a slice.
+fn an_adapter_with_the_literal_on_the_left_rewritten(path: &Path) -> bool {
+    Some(b"main.rs".as_slice()) == path.file_name().map(|value| value.as_encoded_bytes())
 }
 
 // Bad: an `Option` adapter whose consumer is a `matches!` rather than
