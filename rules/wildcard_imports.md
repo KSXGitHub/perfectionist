@@ -54,11 +54,10 @@ block:
   while compiling a test harness, so a glob under `#[cfg(test)]`
   goes unflagged whatever the configuration says.
 
-This rule separates the exceptions. `exempt_prelude` and
-`exempt_reexports` toggle independently, `prelude_segment_names`
-sets which segments count as preludes, and `allowed_paths` exempts
-individual paths outright. No carve-out shields test code, so the
-test `super::*;` glob is flagged by default.
+This rule separates the exceptions: each can be turned off on its
+own, and individual paths can be exempted however the toggles are
+set. No carve-out shields test code, so the test `super::*;` glob
+is flagged by default.
 
 Reach for `clippy::wildcard_imports` where all-or-nothing
 exceptions suffice, and for this rule where the `#[cfg(test)]`
