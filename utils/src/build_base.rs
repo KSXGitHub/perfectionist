@@ -1,10 +1,10 @@
-//! The directory compiletest writes a run's output to.
+//! Hold a run to the temp directory the `test` recipe chose.
 //!
-//! `dylint_testing` leaves it at compiletest's default,
-//! [`env::temp_dir`], and compiletest substitutes `$TEST_BUILD_DIR`
-//! for its path throughout a fixture's rendered output. The `test`
-//! recipe chooses the directory and states the choice in
-//! [`EXPECTED_VAR`].
+//! `dylint_testing` leaves compiletest's output directory at its
+//! default, [`env::temp_dir`], and compiletest substitutes
+//! `$TEST_BUILD_DIR` for that path throughout a fixture's rendered
+//! output. The `test` recipe chooses the directory and states the
+//! choice in [`EXPECTED_VAR`].
 
 use derive_more::Display;
 use std::env;
@@ -14,8 +14,6 @@ use std::path::Path;
 /// Where the `test` recipe states the temp directory it chose.
 const EXPECTED_VAR: &str = "PERFECTIONIST_TEST_TMPDIR";
 
-/// Refuse a run whose temp directory is not the one the `test` recipe
-/// chose.
 pub(crate) fn check() {
     let temp_dir = env::temp_dir();
     let expected = env::var_os(EXPECTED_VAR);
