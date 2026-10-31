@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // aux-build:command_extra.rs
 // edition:2024
 //

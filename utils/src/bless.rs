@@ -7,7 +7,8 @@
 //! compiletest never deletes one of those files, so a stale one has to
 //! go before the run rather than after.
 
-use crate::ui_fixtures::fixture_sources;
+use crate::ui_fixtures::patch::write::unified;
+use crate::ui_fixtures::{fixture_sources, runs_rustfix, strip_directives};
 use derive_more::Display;
 use pipe_trait::Pipe;
 use std::ffi::OsStr;
@@ -44,10 +45,21 @@ fn parse(value: &OsStr) -> Result<bool, BlessValueError<'_>> {
 pub(crate) struct Expectations(Vec<Expectation>);
 
 struct Expectation {
-    /// The `.stderr` the repository commits.
+    /// The file the repository commits.
     committed: PathBuf,
-    /// Where compiletest writes the actual output on a mismatch.
+    /// Where compiletest writes what the run produced, on a mismatch.
     staged: PathBuf,
+    /// How the staged text becomes the committed text.
+    recording: Recording,
+}
+
+/// What a staged file holds.
+enum Recording {
+    /// The diagnostics, which the `.stderr` holds as they stand.
+    Diagnostics,
+    /// The fixed source, which the `.diff` holds as its difference
+    /// from the fixture at this path.
+    Fixed { source: PathBuf },
 }
 
 impl Expectations {
@@ -68,20 +80,31 @@ impl Expectations {
                 .next()
                 .expect("fixture path is not empty"),
         );
-        let expectations = fixture_sources(&manifest_dir.join(relative))
-            .into_iter()
-            .map(|fixture| {
-                let below = fixture
-                    .strip_prefix(&root)
-                    .expect("a fixture sits under its own tree");
-                Expectation {
-                    committed: fixture.with_extension("stderr"),
-                    staged: staged_root
-                        .join(below)
-                        .with_extension(format!("{STAGE_ID}.stderr")),
-                }
-            })
-            .collect();
+        let mut expectations = Vec::new();
+        for fixture in fixture_sources(&manifest_dir.join(relative)) {
+            let below = fixture
+                .strip_prefix(&root)
+                .expect("a fixture sits under its own tree");
+            let staged = |extension: &str| {
+                staged_root
+                    .join(below)
+                    .with_extension(format!("{STAGE_ID}.{extension}"))
+            };
+            if runs_rustfix(&read(&fixture)) {
+                expectations.push(Expectation {
+                    committed: fixture.with_extension("diff"),
+                    staged: staged("fixed"),
+                    recording: Recording::Fixed {
+                        source: fixture.clone(),
+                    },
+                });
+            }
+            expectations.push(Expectation {
+                committed: fixture.with_extension("stderr"),
+                staged: staged("stderr"),
+                recording: Recording::Diagnostics,
+            });
+        }
         Expectations(expectations)
     }
 
@@ -96,25 +119,37 @@ impl Expectations {
         }
     }
 
-    /// Copy each staged actual output over the `.stderr` it belongs to,
-    /// returning the `.stderr`s replaced.
+    /// Write each staged output to the file it belongs to, returning
+    /// the files replaced.
     pub(crate) fn record(&self) -> Vec<&Path> {
         let mut recorded = Vec::new();
         for expectation in &self.0 {
             if !expectation.staged.exists() {
                 continue;
             }
-            fs::copy(&expectation.staged, &expectation.committed).unwrap_or_else(|error| {
-                panic!(
-                    "copy {} over {}: {error}",
-                    expectation.staged.display(),
-                    expectation.committed.display(),
-                )
-            });
-            recorded.push(expectation.committed.as_path());
+            let text = match &expectation.recording {
+                Recording::Diagnostics => read(&expectation.staged),
+                Recording::Fixed { source } => {
+                    let name = source
+                        .file_name()
+                        .expect("a fixture has a file name")
+                        .to_str()
+                        .expect("a fixture's name is UTF-8");
+                    let staged = read(&expectation.staged);
+                    unified(name, &read(source), strip_directives(&staged))
+                }
+            };
+            let committed = &expectation.committed;
+            fs::write(committed, text)
+                .unwrap_or_else(|error| panic!("write {}: {error}", committed.display()));
+            recorded.push(committed.as_path());
         }
         recorded
     }
+}
+
+fn read(file: &Path) -> String {
+    fs::read_to_string(file).unwrap_or_else(|error| panic!("read {}: {error}", file.display()))
 }
 
 #[cfg(test)]

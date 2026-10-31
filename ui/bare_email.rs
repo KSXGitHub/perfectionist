@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // Bad: a plain line comment leaves an address bare: security@example.com.
 // Good (angle): <security@example.com>.
 // Good (mailto): mailto:security@example.com.

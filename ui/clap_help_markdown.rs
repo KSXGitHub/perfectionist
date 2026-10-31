@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // aux-build:clap.rs
 //
 //! UI sweep for `clap_help_markdown` under the default
