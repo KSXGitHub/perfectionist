@@ -1,0 +1,65 @@
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_consumers.rs:LL:CC
+   |
+LL |     match value.to_str() {
+   |           ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::utf8_conversion_for_literal_comparison)]` on by default
+help: compare the value without converting it
+   |
+LL ~     match value.as_encoded_bytes() {
+LL ~         b"true" => Ok(true),
+LL ~         b"false" | b"" => Ok(false),
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_consumers.rs:LL:CC
+   |
+LL |     matches!(path.to_str(), Some("lib.rs" | "main.rs" | "mod.rs"))
+   |              ^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     matches!(path.to_str(), Some("lib.rs" | "main.rs" | "mod.rs"))
+LL +     matches!(path.as_os_str().as_encoded_bytes(), b"lib.rs" | b"main.rs" | b"mod.rs")
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_consumers.rs:LL:CC
+   |
+LL |     match value.to_str() {
+   |           ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~     match value.as_encoded_bytes() {
+LL ~         b"true" => 1,
+LL ~         _ => 0,
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_consumers.rs:LL:CC
+   |
+LL |     match value.to_str() {
+   |           ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~     match value.to_bytes() {
+LL ~         b"yes" => 1,
+LL ~         _ => 0,
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_consumers.rs:LL:CC
+   |
+LL |     match value.to_str() {
+   |           ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~     match value.as_encoded_bytes() {
+LL ~         b"true" if strict => 1,
+   |
+
+warning: N warnings emitted

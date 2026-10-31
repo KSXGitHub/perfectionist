@@ -1,0 +1,74 @@
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::utf8_conversion_for_literal_comparison)]` on by default
+help: compare the value without converting it
+   |
+LL -     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
+LL +     path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs")
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |     Some("main.rs") == path.file_name().and_then(|name| name.to_str())
+   |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     Some("main.rs") == path.file_name().and_then(|name| name.to_str())
+LL +     Some(b"main.rs".as_slice()) == path.file_name().map(|value| value.as_encoded_bytes())
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |         path.file_name().and_then(|name| name.to_str()),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~         path.file_name().map(|value| value.as_encoded_bytes()),
+LL ~         Some(b"lib.rs" | b"main.rs"),
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |     match path.file_name().and_then(|name| name.to_str()) {
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~     match path.file_name().map(|value| value.as_encoded_bytes()) {
+LL ~         Some(b"main.rs") => 1,
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |         path.file_name().map(|name| name.to_str()),
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL ~         path.file_name().map(|value| value.as_encoded_bytes()),
+LL ~         Some(b"main.rs"),
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_adapters.rs:LL:CC
+   |
+LL |     matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))
+   |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     matches!(chunk.map(|bytes| str::from_utf8(bytes)), Some(Ok("yes")))
+LL +     matches!(chunk, Some(b"yes"))
+   |
+
+warning: N warnings emitted
