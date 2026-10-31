@@ -13,7 +13,7 @@ asked, of a `PERFECTIONIST_BLESS` parser that matched
 The reply in
 <https://github.com/KSXGitHub/perfectionist/pull/579#discussion_r4403022017>
 confirmed it, named what the rewrite actually buys, and recorded what
-it does *not* buy. Both halves are load-bearing here: the rationale
+it does *not* buy. Both halves matter here: the rationale
 under [Why restrict this?](#why-restrict-this) is the one that review
 settled on, and the one it rejected is written down so a later reader
 does not reintroduce it.
@@ -154,7 +154,7 @@ they are in scope here for the relevance reason rather than that
 one: feeding a corrupted or panicking conversion into a literal
 comparison corrupts nothing, since the answer is the one the faithful
 conversion would have given. The `unwrap` row is the single place
-where the rewrite also retires a fidelity defect, which is
+where the rewrite also removes a fidelity defect, which is
 `perfectionist::needless_utf8_conversion`'s reasoning arriving at a
 consumer that rule does not cover.
 
@@ -196,7 +196,7 @@ the lossy ones find nothing to replace, and the faithful ones
 succeed. A is then true as well. The one case where the original does
 not answer true or false is the `unwrap` row on input that is not
 valid UTF-8, where it panics rather than compares, which
-[Suggested fix](#suggested-fix) prices into that row's applicability.
+[Suggested fix](#suggested-fix) reflects in that row's applicability.
 
 So the literal's own content is the whole condition, and the
 condition is a scan of it, which makes it a guard the rule applies
@@ -217,8 +217,8 @@ and neither equals `"yes"`.
 Each direction was checked separately, over the same length 1 to 3
 inputs. For A true and B false: zero cases against the literals
 `"y"`, `"ye"`, `"yes"` and `"é"`, and 17728 against `"\u{FFFD}"` with
-1344 against `"a\u{FFFD}"`, which is the guard earning its place
-rather than failing. For A false and B true: zero cases over all
+1344 against `"a\u{FFFD}"`, which is what the guard excludes
+rather than a failure. For A false and B true: zero cases over all
 2668544 valid-UTF-8 inputs, counting the lossy conversions of a byte
 buffer and of an OS string, the faithful `to_str`, and `to_str`
 followed by `unwrap`, each against the literal its own bytes spell.
@@ -249,7 +249,7 @@ Receiver methods, where the converted value is the receiver:
 - `OsString::into_string()`, yielding `Result<String, OsString>`. A
   `PathBuf` reaches it through `into_os_string()`.
 - `Path::display()` consumed by `to_string()`, which is
-  `to_string_lossy` wearing a `Display` impl.
+  `to_string_lossy` behind a `Display` impl.
 
 Associated functions, where the converted value is the argument:
 
@@ -462,7 +462,7 @@ if os_string.as_encoded_bytes() == b"yes" { .. }
 ### Not flagged
 
 **The decoded text is used as text.** The `Some(other)` arm reads the
-`&str`, so the conversion earns its place:
+`&str`, so the conversion is justified:
 
 ```rust
 match path.to_str() {

@@ -55,7 +55,7 @@ lists — adding a trailing comma when the list is broken across
 multiple source lines, removing one when it collapses onto a
 single line — but it does not touch macro invocations. The
 conservative default exists because a macro's matcher can make
-the trailing comma load-bearing, and rustfmt has no way to know.
+the trailing comma required, and rustfmt has no way to know.
 
 This lint reinstates the same comma policy for macro invocations
 where the trailing comma is *known* to be syntactically optional.
@@ -490,9 +490,9 @@ extra_macros = [
 # Use this for macros where the project's own convention
 # diverges (for example, macros whose body is more readable
 # with the comma always present even on a single line). The
-# name is `ignore` rather than something forbid-flavoured
-# because the lint never forbids the macro itself — it only
-# declines to act on the invocation's trailing comma.
+# name is `ignore` rather than `forbid` because the lint never
+# forbids the macro itself — it only declines to act on the
+# invocation's trailing comma.
 ignore = [
   # "my_crate::ascii_table",
 ]
