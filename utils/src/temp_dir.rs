@@ -1,57 +1,41 @@
-//! Hold a run to the temp directory `just test` chose.
+//! Hold a run to the temp directory `just test` chooses.
 //!
 //! `dylint_testing` leaves compiletest's output directory at its
 //! default, [`env::temp_dir`], and compiletest substitutes
 //! `$TEST_BUILD_DIR` for that path throughout a fixture's rendered
-//! output. `just test` chooses the directory and states the choice in
-//! [`EXPECTED_VAR`].
+//! output. `just test` points `TMPDIR` at a [`CHOSEN_NAME`] directory,
+//! and that last component is what a run is recognised by: the path
+//! above it is whatever `TMPDIR` already held.
 
 use derive_more::Display;
 use std::env;
 use std::ffi::OsStr;
 use std::path::Path;
 
-/// Where `just test` states the temp directory it chose.
-const EXPECTED_VAR: &str = "PERFECTIONIST_TEST_TMPDIR";
+/// The last component of the temp directory `just test` chooses.
+const CHOSEN_NAME: &str = "perfectionist-tests";
 
 pub(crate) fn check() {
     let temp_dir = env::temp_dir();
-    let expected = env::var_os(EXPECTED_VAR);
-    if let Err(error) = check_against(&temp_dir, expected.as_deref()) {
+    if let Err(error) = check_against(&temp_dir) {
         panic!("{error}");
     }
 }
 
-/// [`check`] with the temp directory and the value `just test` states
-/// given rather than read from the environment.
-fn check_against<'a>(
-    temp_dir: &'a Path,
-    expected: Option<&'a OsStr>,
-) -> Result<(), TempDirError<'a>> {
-    let expected = expected.ok_or(TempDirError::Unstated { actual: temp_dir })?;
-    if temp_dir == Path::new(expected) {
+/// [`check`] with the temp directory given rather than read from the
+/// environment.
+fn check_against(temp_dir: &Path) -> Result<(), TempDirError<'_>> {
+    if temp_dir.file_name() == Some(OsStr::new(CHOSEN_NAME)) {
         return Ok(());
     }
-    Err(TempDirError::Mismatched {
-        actual: temp_dir,
-        stated: expected,
-    })
+    Err(TempDirError { actual: temp_dir })
 }
 
-/// Why a run's temp directory cannot be taken for the one `just test`
-/// chose.
+/// A temp directory `just test` did not choose.
 #[derive(Debug, Display, PartialEq)]
-enum TempDirError<'a> {
-    #[display(
-        "{EXPECTED_VAR} is unset, so nothing says which temp directory the `.stderr` fixtures \
-         were recorded under; this run's is {actual:?}. Run `just test`."
-    )]
-    Unstated { actual: &'a Path },
-    #[display(
-        "this run's temp directory is {actual:?}, but {EXPECTED_VAR} says the `.stderr` \
-         fixtures were recorded under {stated:?}."
-    )]
-    Mismatched { actual: &'a Path, stated: &'a OsStr },
+#[display("this run's temp directory is {actual:?}, not a `{CHOSEN_NAME}` one. Run `just test`.")]
+struct TempDirError<'a> {
+    actual: &'a Path,
 }
 
 #[cfg(test)]

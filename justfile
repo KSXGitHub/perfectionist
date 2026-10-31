@@ -47,7 +47,7 @@ lint:
 test:
   mkdir -pv "{{test_tmp_dir}}"
   just warmup-integration-tests
-  TMPDIR="{{test_tmp_dir}}" PERFECTIONIST_TEST_TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
+  TMPDIR="{{test_tmp_dir}}" cargo test --workspace --all-targets {{locked}}
 
 # Re-record every `.stderr` fixture from what the run produces
 bless:
