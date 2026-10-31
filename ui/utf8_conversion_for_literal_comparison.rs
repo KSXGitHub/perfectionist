@@ -350,6 +350,58 @@ fn an_ordering_comparison(value: &OsStr) -> bool {
     value.to_str() < Some("true")
 }
 
+// Not flagged: the arm names a constant rather than a literal. The
+// rewrite spells its literals as bytes, which a constant's name does
+// not carry.
+fn an_arm_names_a_constant(path: &Path) -> u8 {
+    match path.to_str() {
+        Some(WANTED) => 1,
+        _ => 0,
+    }
+}
+
+// Not flagged: the error arm binds what the conversion reported, so the
+// `match` uses the conversion's answer rather than discarding it.
+fn an_error_arm_binds_the_error(value: &CStr) -> usize {
+    match value.to_str() {
+        Ok("yes") => 0,
+        Ok(_) => 1,
+        Err(error) => error.valid_up_to(),
+    }
+}
+
+// Not flagged: the comparand is built by a call the rule cannot look
+// inside, so there is no literal behind it.
+fn the_comparand_is_a_supplied_call(decoder: &Decoder, value: &OsStr) -> bool {
+    value.to_str() == (decoder.convert)(value)
+}
+
+// Not flagged: a conversion consumed through an adapter other than
+// `unwrap` or `expect`, which the rule does not read through.
+fn the_conversion_is_defaulted(value: &OsStr) -> bool {
+    value.to_str().unwrap_or("") == "true"
+}
+
+// Not flagged: the adapter is an array's `map` rather than an
+// `Option`'s, so the comparison carries no `Some` for the rewrite to
+// keep.
+fn the_adapter_is_over_an_array(value: &OsStr) -> bool {
+    [value].map(|name| name.to_str()) == [Some("true")]
+}
+
+// Not flagged: the adapter is handed a function rather than a closure,
+// so there is no closure body to read a conversion out of.
+fn the_adapter_takes_a_function(path: &Path) -> bool {
+    matches!(path.file_name().map(OsStr::to_str), Some(Some("main.rs")))
+}
+
+// Not flagged: the closure converts an expression built from its
+// parameter rather than the parameter itself, which the rule reads as
+// asking about something other than the adapter's receiver.
+fn the_closure_converts_a_derived_value(names: Option<&&OsStr>) -> bool {
+    names.and_then(|name| (*name).to_str()) == Some("main.rs")
+}
+
 // Not flagged: the comparand is not a literal, so there is nothing to
 // compare the native form against.
 fn the_comparand_is_not_a_literal(path: &Path, wanted: &str) -> bool {
@@ -413,8 +465,9 @@ fn the_literal_comes_from_a_macro(value: &OsStr) -> bool {
     value.to_str() == Some(word!())
 }
 
-// Not flagged: an arm's literal comes from a macro, for the same
-// reason an operand's does.
+// Not flagged: an arm's literal comes from a macro. The rewrite
+// spells out each literal it reads, so it would freeze that macro's
+// expansion into the source.
 fn an_arm_literal_comes_from_a_macro(value: &OsStr) -> u8 {
     match value.to_str() {
         Some(word!()) => 1,
@@ -446,6 +499,12 @@ fn the_comparand_comes_from_a_macro(value: &OsStr) -> bool {
     value.to_str() == wrapped!("true")
 }
 
+const WANTED: &str = "main.rs";
+
+struct Decoder {
+    convert: fn(&OsStr) -> Option<&str>,
+}
+
 trait DecodeText {
     fn to_str(&self) -> Option<&str>;
 }
@@ -462,14 +521,36 @@ impl DecodeText for [u16] {
     }
 }
 
+impl DecodeText for u16 {
+    fn to_str(&self) -> Option<&str> {
+        None
+    }
+}
+
+impl DecodeText for Box<str> {
+    fn to_str(&self) -> Option<&str> {
+        None
+    }
+}
+
 // Not flagged: a `Vec` over something other than bytes is not a byte
 // buffer, whatever it names its decoding method.
 fn not_a_byte_buffer(values: Vec<u16>) -> bool {
     values.to_str() == Some("yes")
 }
 
-// Not flagged: a slice of something other than bytes is not a byte
-// buffer either.
+// Not flagged: a value whose type is no kind of buffer at all.
+fn not_a_buffer(value: u16) -> bool {
+    value.to_str() == Some("yes")
+}
+
+// Not flagged: a `Box` over text rather than over a slice of bytes.
+fn not_a_boxed_buffer(value: Box<str>) -> bool {
+    value.to_str() == Some("yes")
+}
+
+// Not flagged: a slice over something other than bytes. The rule
+// reads the element type rather than trusting the shape.
 fn not_a_byte_slice(values: &[u16]) -> bool {
     values.to_str() == Some("yes")
 }

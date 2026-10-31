@@ -886,6 +886,35 @@ pub fn synth_some_bool_comparison(input: TokenStream) -> TokenStream {
     out
 }
 
+/// `#[derive(SynthUtf8Comparison)]` + `#[synth_utf8_comparison]` →
+/// `fn _synth_utf8_comparison() { let _ = ::std::str::from_utf8(BYTES) == Ok("true"); }`,
+/// where every token of the statement inherits the user-span of
+/// `synth_utf8_comparison` and the wrapping `fn` keeps the derive's
+/// call-site span.
+///
+/// The conversion's own span is then a user span, which
+/// `Span::from_expansion` and `report_in_external_macro: false` both let
+/// through. Only the enclosing item's `def_span` still says where the
+/// conversion lives, which is what `hir_in_external_macro` reads.
+///
+/// `BYTES` is the fixture's own `const`.
+#[proc_macro_derive(SynthUtf8Comparison, attributes(synth_utf8_comparison))]
+pub fn synth_utf8_comparison(input: TokenStream) -> TokenStream {
+    let attr_span = find_attr_span(input, "synth_utf8_comparison")
+        .expect("`#[derive(SynthUtf8Comparison)]` requires a `#[synth_utf8_comparison]`");
+    let body = respan(
+        r#"let _ = ::std::str::from_utf8(BYTES) == Ok("true");"#
+            .parse()
+            .expect("valid tokens"),
+        attr_span,
+    );
+    let mut out: TokenStream = "fn _synth_utf8_comparison()"
+        .parse()
+        .expect("valid tokens");
+    out.extend([TokenTree::Group(Group::new(Delimiter::Brace, body))]);
+    out
+}
+
 /// `#[derive(SynthMapOr)]` + `#[synth_map_or]` →
 /// `fn _synth_map_or() { let _ = FLAG.map_or(bool::default(), |flag| flag); }`,
 /// where every token of the statement inherits the user-span of
