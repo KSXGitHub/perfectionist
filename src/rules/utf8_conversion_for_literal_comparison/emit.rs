@@ -24,11 +24,12 @@ use rustc_span::{Span, Symbol, sym};
 const REPLACEMENT: char = '�';
 
 /// Which of the value's own forms the rewrite compares.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 enum View {
-    /// The value as an `OsStr`, which meets a string literal through
-    /// its `PartialEq<str>` and so keeps the literal's text.
-    OsStr,
+    /// The value as an `OsStr`, reached by the calls named, which meets
+    /// a string literal through `OsStr`'s `PartialEq<str>` and so keeps
+    /// the literal's text.
+    OsStr(&'static str),
     /// The value's bytes, which meet a byte-string literal.
     Bytes,
 }
@@ -45,12 +46,13 @@ pub(super) fn report<'tcx>(
     // literal holding one is matched by inputs whose bytes differ from
     // it. The byte comparison has no such pre-images, so the rewrite
     // would answer differently and the site is left alone.
-    if converted.conversion.lossy
-        && consumer
-            .literals()
-            .iter()
-            .map(Symbol::as_str)
-            .any(|text| text.contains(REPLACEMENT))
+    //
+    // Only an equality reaches this: every lossy conversion answers with
+    // a `Cow<str>`, which no string literal pattern matches, so a
+    // `match` never consumes one.
+    if let Consumer::Equality { literal, .. } = consumer
+        && converted.conversion.lossy
+        && literal.as_str().contains(REPLACEMENT)
     {
         return;
     }
@@ -86,7 +88,7 @@ fn rewrite(
     let reached = converted.reached;
     let view = view(converted.conversion.native, reached, consumer);
     let mut applicability = Applicability::MachineApplicable;
-    let value = value_text(cx, converted, view, &mut applicability)?;
+    let value = value_text(cx, converted, view, &mut applicability);
     let mut edits = Vec::new();
     match consumer {
         Consumer::Equality {
@@ -142,7 +144,7 @@ fn view(native: NativeForm, reached: Reached, consumer: &Consumer) -> View {
         return View::Bytes;
     }
     match native.os_str_view() {
-        Some(_) => View::OsStr,
+        Some(reaching) => View::OsStr(reaching),
         None => View::Bytes,
     }
 }
@@ -154,7 +156,7 @@ fn value_text(
     converted: &Converted<'_>,
     view: View,
     applicability: &mut Applicability,
-) -> Option<String> {
+) -> String {
     let native = converted.conversion.native;
     let source = converted.conversion.source;
     match converted.reached {
@@ -166,18 +168,18 @@ fn value_text(
             let held = peel_hir_expr_refs(source).0;
             let value = Sugg::hir_with_applicability(cx, held, "..", applicability);
             let holds = cx.typeck_results().expr_ty(held);
-            Some(match view {
-                View::OsStr => with_suffix(value, native.os_str_view()?, holds),
+            match view {
+                View::OsStr(reaching) => with_suffix(value, reaching, holds),
                 View::Bytes => bytes_text(cx, holds, value, native),
-            })
+            }
         }
         Reached::ThroughOption => {
             let receiver = Sugg::hir_with_applicability(cx, source, "..", applicability);
             let receiver = receiver.maybe_paren();
-            Some(match native.byte_view() {
+            match native.byte_view() {
                 "" => receiver.to_string(),
                 reaching => format!("{receiver}.map(|value| value{reaching})"),
-            })
+            }
         }
     }
 }
@@ -272,7 +274,7 @@ fn pattern_text(view: View, reached: Reached, literals: &[Symbol]) -> String {
 fn literal_text(view: View, literal: Symbol) -> String {
     let text = literal.as_str();
     match view {
-        View::OsStr => format!("{text:?}"),
+        View::OsStr(_) => format!("{text:?}"),
         View::Bytes => byte_literal(text),
     }
 }
@@ -318,5 +320,7 @@ mod tests {
         assert_eq!(byte_literal(r#"a"b"#), r#"b"a\"b""#);
         assert_eq!(byte_literal(r"a\b"), r#"b"a\\b""#);
         assert_eq!(byte_literal("a\nb"), r#"b"a\nb""#);
+        assert_eq!(byte_literal("a\rb"), r#"b"a\rb""#);
+        assert_eq!(byte_literal("a\tb"), r#"b"a\tb""#);
     }
 }

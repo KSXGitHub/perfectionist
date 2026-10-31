@@ -56,16 +56,6 @@ pub(super) enum Consumer {
 }
 
 impl Consumer {
-    /// Every literal this consumer measures the text against.
-    pub(super) fn literals(&self) -> Vec<Symbol> {
-        match self {
-            Consumer::Equality { literal, .. } => vec![*literal],
-            Consumer::Patterns { arms, .. } => {
-                arms.iter().flat_map(|arm| arm.literals.clone()).collect()
-            }
-        }
-    }
-
     /// Whether the rewrite has to put its literals in pattern
     /// position.
     pub(super) fn needs_pattern(&self) -> bool {
@@ -251,11 +241,9 @@ fn string_pattern(pattern: &PatExpr<'_>) -> Option<Symbol> {
     if pattern.span.from_expansion() {
         return None;
     }
-    let PatExprKind::Lit {
-        lit,
-        negated: false,
-    } = pattern.kind
-    else {
+    // Negation is not tested: a string literal cannot carry one, and
+    // the `LitKind::Str` test below excludes every literal that can.
+    let PatExprKind::Lit { lit, .. } = pattern.kind else {
         return None;
     };
     match lit.node {
