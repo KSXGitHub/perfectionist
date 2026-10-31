@@ -1,0 +1,25 @@
+warning: imports are not grouped into one `use` per module
+  --> crates/import-granularity-mismatch/src/lib.rs:LL:CC
+   |
+LL | / use std::collections::BTreeMap;
+LL | | use std::collections::HashMap;
+   | |______________________________^ help: reorganize the imports: `use std::collections::{BTreeMap, HashMap};`
+   |
+   = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
+   = applicability: MachineApplicable (reorganize the imports)
+warning: multi-line macro invocation should end with a trailing comma
+  --> crates/macro-trailing-comma/src/lib.rs:LL:CC
+   |
+LL |         "the third label, long enough that the list cannot fit on one line"
+   |                                                                            ^ help: add a trailing comma: `,`
+   |
+   = note: `#[warn(perfectionist::macro_trailing_comma)]` on by default
+   = applicability: MachineApplicable (add a trailing comma)
+warning: named item cherry-picked from a prelude module
+  --> crates/named-prelude-imports/src/lib.rs:LL:CC
+   |
+LL | use crate::prelude::Widget;
+   |     ^^^^^^^^^^^^^^^^^^^^^^ help: import the item from its canonical module: `crate::thing::Widget`
+   |
+   = note: `#[warn(perfectionist::named_prelude_imports)]` on by default
+   = applicability: MachineApplicable (import the item from its canonical module)

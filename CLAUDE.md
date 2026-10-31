@@ -606,13 +606,39 @@ driver's output rather than the output itself: a span header's
 `line:column` reads `LL:CC`, so inserting a line above a diagnostic
 does not renumber every header below it. Spell it that way when
 writing one, since pasting the driver's real numbers in will not match, or
-let [`just bless`](#re-recording-a-stderr) record it.
+let [`just bless`](#re-recording-a-fixture) record it.
 [`utils/src/ui_fixtures.rs`](utils/src/ui_fixtures.rs)
 performs the normalisation and explains how.
 
-## Re-recording a `.stderr`
+## Re-recording a fixture
 
-`just bless` updates the `.stderr` fixtures. Read the diff it leaves.
+`just bless` updates the `.stderr` fixtures and the autofix
+expectations. Read the diff it leaves.
+
+## Fixtures for the autofixes
+
+[`utils/src/autofix.rs`](utils/src/autofix.rs) drives a fixture
+through the rounds, and its module docs carry the model.
+
+A crate here earns its place by needing a *round*: a rewrite that
+another rule's rewrite feeds, or that the formatter leaves more work
+after. A rewrite one pass applies and nothing reacts to needs no
+project driven through rounds. One that does earn its place is named
+after the rule, sits in the fixture whose dependency list it needs,
+and holds the shape, a `#[cfg(test)] mod tests` asserting what the
+shape *does*, and a line in what the fixture's `main` prints. A
+rewrite the rule withholds belongs here least of all, what a round
+would pin being `cargo fix`'s uniform handling of it rather than any
+decision of this plugin's.
+
+Re-record with [`just bless`](#re-recording-a-fixture) and read the
+diff of the expectations: that diff is the review, since a shape the
+rule never reached leaves it short rather than failing.
+
+A fixture is linted like any other crate, doc comments included, so
+all of it has to settle: keep it dull, or a second rule lands in the
+diff instead of the rewrite. Store the tree formatted unless the rule
+needs otherwise, since the round ends with rustfmt.
 
 ## Generated documentation site (`tools/gen-docs/`)
 

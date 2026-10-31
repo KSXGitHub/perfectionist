@@ -7,6 +7,7 @@
 //! workspace and has no access to the caller's `CARGO_TARGET_DIR` or
 //! `CARGO_MANIFEST_DIR`.
 
+pub mod autofix;
 pub mod dylint;
 pub mod manifest;
 pub mod project;

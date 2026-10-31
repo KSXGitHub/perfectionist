@@ -1,0 +1,452 @@
+//! Drive a fixture's project through the rounds of autofixes it takes
+//! to settle, and hold each round to what the fixture stored for it.
+//!
+//! A **round** is a perfectionist autofix, then a Clippy autofix,
+//! then a rustfmt pass. A project is **settled** once neither linter
+//! reports anything about it. A **run** is one configuration together
+//! with the rounds it takes to settle the project under it; a fixture
+//! carries one run per configuration, all over the same project, so
+//! the configurations share the tree, the registry dependencies, and
+//! the build cache.
+//!
+//! What a run asserts, round by round:
+//!
+//! * the exact shape the round left, stored as one diff against the
+//!   round before it,
+//! * the exact diagnostics it was handed, normalised as a `.stderr`
+//!   under `ui/` is, which is what its stored diff is the answer to:
+//!   round *n*'s two files are what round *n* saw and what it did
+//!   about it.
+//!
+//! Once the last round has run, the project has to report nothing at
+//! all, which is what settling means. That one is an assertion
+//! rather than a stored file: a blessing run writes what the run
+//! produced, so a stored copy would absorb a regression that left
+//! findings behind.
+//!
+//! Once the last round has run, a run also asserts the project still
+//! behaves: its own tests pass, and its `main` prints what it
+//! printed before the first round. A rewrite that compiles and
+//! answers differently is the failure these catch and the rest
+//! cannot. The tests run over the settled tree alone, that being the
+//! one whose behaviour is in question. A blessing run also runs
+//! `main` over the project the rounds start from, because its output
+//! there is what the settled tree is held to.
+//!
+//! Clippy's own lints are not under test. Clippy is in a round to
+//! show that its rewrites and this plugin's do not fight, so a
+//! finding of Clippy's earns a place in a stored `.stderr` only where
+//! a perfectionist rewrite produced it, and the project as stored
+//! reports none at all.
+//!
+//! The number of rounds comes from the fixture rather than from
+//! driving the project to a fixpoint, so a project that settles in
+//! fewer rounds than declared, or needs more, is a failure rather
+//! than something the harness absorbs.
+
+pub mod config;
+pub mod diagnostics;
+pub mod diff;
+pub mod expectation;
+pub mod report;
+pub mod round;
+pub mod snapshot;
+
+pub use config::{Fixture, Run};
+pub use report::Report;
+pub use snapshot::Snapshot;
+
+use crate::manifest::fixture_dylint_toml;
+use diagnostics::Reported;
+use std::fs;
+use std::path::{Path, PathBuf};
+use tempfile::TempDir;
+
+/// Where the fixtures live, relative to this checkout.
+const FIXTURES: &str = "tests/fixtures/autofix";
+
+/// The namespace of the lints a fixture may not plant, which
+/// [`check_unplanted`] holds the stored project to reporting none of.
+const CLIPPY: &str = "clippy::";
+
+/// What a fixture stores its `main`'s output under, relative to the
+/// fixture. One file per fixture rather than per run: it holds what
+/// the project printed before any round, which is the same project
+/// whatever a run then rewrites.
+const OUTPUT: &str = "cli.stdout";
+
+/// Where the fixtures' build caches live, relative to this checkout.
+/// One subdirectory per fixture, because the dependency list is what
+/// decides what a cache has to hold, and every run over one fixture
+/// shares that list.
+///
+/// What the cache carries across runs is the compiled standard
+/// library, the registry dependencies and the plugin, which is where
+/// the cost is. It deliberately does not carry the fixture's own
+/// members: cargo decides a path dependency's freshness by comparing
+/// mtimes and never by reading its contents, so a project
+/// materialised with the stored tree's own mtimes would be taken for
+/// fresh against artefacts built from a *later* round of an earlier
+/// run over the same project, and that run's rewrites would stand in
+/// for this one's round zero. Materialising at the current time is
+/// what keeps each run's first round honest, and the members are
+/// small enough that recompiling them is noise beside the fix passes.
+const CACHE: &str = "target/autofix-fixtures";
+
+/// Drive every run of the fixture `name`, and panic with every
+/// failure any of them reported.
+///
+/// `repository_dir` is this checkout: the fixtures, the build cache,
+/// and the plugin the project lints under are all found through it.
+pub fn check_fixture(repository_dir: &Path, name: &str) {
+    let fixtures_dir = repository_dir.join(FIXTURES);
+    let fixture_dir = fixtures_dir.join(name);
+    let fixture = Fixture::load(&fixtures_dir, name);
+    let target_dir = cache_dir(repository_dir, name);
+    let stored = snapshot::read(&fixture_dir.join("project"));
+    let context = Context {
+        name,
+        fixture_dir: &fixture_dir,
+        repository_dir,
+        target_dir: &target_dir,
+        cli_package: &fixture.cli_package,
+    };
+
+    let failures: Vec<String> = fixture
+        .runs
+        .iter()
+        .filter_map(|run| drive(&context, run, &stored))
+        .collect();
+    assert!(failures.is_empty(), "\n\n{}", failures.join("\n"));
+}
+
+/// Everything a run needs that is the same for every run over one
+/// fixture.
+struct Context<'a> {
+    name: &'a str,
+    fixture_dir: &'a Path,
+    repository_dir: &'a Path,
+    target_dir: &'a Path,
+    cli_package: &'a str,
+}
+
+/// Materialise the project, drive it through one run, and hand back
+/// the failure message where the run came out short.
+fn drive(context: &Context, run: &Run, stored: &Snapshot) -> Option<String> {
+    let mut report = Report::new(context.name.to_owned(), run.name.clone());
+    let project = TempDir::new().expect("create a directory for the fixture's project");
+    let dir = project.path();
+    snapshot::write(dir, stored);
+    write_dylint_toml(dir, context, run);
+    report.record(stored.clone());
+    if *crate::bless::ENABLED {
+        record_output(dir, context, &mut report);
+    }
+
+    let mut previous = stored.clone();
+    let mut reported = collect(dir, context, &mut report);
+    check_unplanted(&reported, &mut report);
+    for number in 1..=run.rounds {
+        check_handed(context, run, number, &reported, &mut report);
+        apply(dir, &previous, context.target_dir, &mut report, number);
+        let current = snapshot::read(dir);
+        report.record(current.clone());
+        check_shape(context, run, number, (&previous, &current), &mut report);
+        previous = current;
+        reported = collect(dir, context, &mut report);
+    }
+    check_settled(&reported, &mut report);
+
+    expect_success(round::test(dir, context.target_dir), &mut report);
+    check_output(dir, context, &mut report);
+    report.finish()
+}
+
+/// Write the project's `dylint.toml`: the plugin's location, then the
+/// run's own configuration appended to it. The run's file holds only
+/// the configuration, since where the plugin sits is this checkout's
+/// business rather than the fixture's.
+fn write_dylint_toml(project_dir: &Path, context: &Context, run: &Run) {
+    let configuration_file = run.directory(context.fixture_dir).join("dylint.toml");
+    let configuration = fs::read_to_string(&configuration_file)
+        .unwrap_or_else(|error| panic!("read {}: {error}", configuration_file.display()));
+    let contents = format!(
+        "{}\n{configuration}",
+        fixture_dylint_toml(context.repository_dir),
+    );
+    let file = project_dir.join("dylint.toml");
+    fs::write(&file, contents).unwrap_or_else(|error| panic!("write {}: {error}", file.display()));
+}
+
+/// Apply one round: perfectionist's autofixes, then Clippy's, then
+/// rustfmt. A failure in any of them is recorded and the round still
+/// closes, so the dump holds the tree the failure was about.
+///
+/// `project` is the project as the round receives it, whose files the
+/// round opens by restamping.
+fn apply(
+    project_dir: &Path,
+    project: &Snapshot,
+    target_dir: &Path,
+    report: &mut Report,
+    number: usize,
+) {
+    round::restamp(project_dir, project);
+    for outcome in [
+        round::dylint_fix(project_dir, target_dir),
+        round::clippy_fix(project_dir, target_dir),
+        round::rustfmt(project_dir, target_dir),
+    ] {
+        let reverted = outcome
+            .stderr
+            .contains("errors present after applying fixes");
+        let command = outcome.command.clone();
+        expect_success(outcome, report);
+        if reverted {
+            report.fail(format!(
+                "[round {number}] `{command}` rewrote a crate into code that does not \
+                 compile, so it threw away every fix in that crate; the rewrite the rule \
+                 handed over is unsound",
+            ));
+        }
+    }
+}
+
+/// Hold the round to the diff the fixture stored for it.
+fn check_shape(
+    context: &Context,
+    run: &Run,
+    number: usize,
+    rounds: (&Snapshot, &Snapshot),
+    report: &mut Report,
+) {
+    let (before, after) = rounds;
+    let file = run
+        .directory(context.fixture_dir)
+        .join(format!("round-{number}.diff"));
+    let what = format!("[round {number}] the shape the round left");
+    if let Err(failure) = expectation::check(&file, &diff::unified(before, after), &what) {
+        report.fail(failure);
+    }
+}
+
+/// Every diagnostic the project reports as it now stands, from both
+/// linters.
+fn collect(project_dir: &Path, context: &Context, report: &mut Report) -> Reported {
+    let mut reported = Reported::default();
+    for check in [round::dylint_check, round::clippy_check] {
+        let outcome = check(project_dir, context.target_dir);
+        reported.extend(&outcome.stdout, project_dir);
+        expect_success(outcome, report);
+    }
+    reported
+}
+
+/// Hold the round to the diagnostics the fixture stored as what it
+/// was handed, which is what its stored diff is the answer to.
+fn check_handed(
+    context: &Context,
+    run: &Run,
+    number: usize,
+    reported: &Reported,
+    report: &mut Report,
+) {
+    let file = run
+        .directory(context.fixture_dir)
+        .join(format!("round-{number}.stderr"));
+    let what = format!("[round {number}] the diagnostics the round was handed");
+    if let Err(failure) = expectation::check(&file, &reported.render(), &what) {
+        report.fail(failure);
+    }
+}
+
+/// Hold the project as stored to reporting nothing of Clippy's.
+///
+/// Clippy is in a round to show that its rewrites and this plugin's
+/// do not fight rather than because its lints are under test, so a
+/// finding of Clippy's is worth storing only where a perfectionist
+/// rewrite produced it. No rewrite has reached the project the first
+/// round is handed, so a finding of Clippy's there was planted, and a
+/// shape it reports is one Clippy would rewrite before the rule under
+/// test had a say.
+///
+/// Nothing is stored for this, deliberately, for the reason
+/// [`check_settled`] states: a blessing run writes what the run
+/// itself produced, so a planted finding would be written into the
+/// file and read as expected.
+fn check_unplanted(reported: &Reported, report: &mut Report) {
+    let planted: Vec<&str> = reported
+        .lints
+        .iter()
+        .map(String::as_str)
+        .filter(|lint| lint.starts_with(CLIPPY))
+        .collect();
+    if planted.is_empty() {
+        return;
+    }
+    report.fail(format!(
+        "the project as stored reports {}, which Clippy's lints are not here to \
+         pin; write the shape so that only the rule under test reports it",
+        planted.join(", "),
+    ));
+}
+
+/// Hold the project to having settled once the last round has run.
+///
+/// Nothing is stored for this, deliberately. An expectation recorded
+/// from the run itself is written by a blessing run, so a regression
+/// that left findings behind after the last round would be written
+/// into the file and pass.
+fn check_settled(reported: &Reported, report: &mut Report) {
+    if reported.lints.is_empty() {
+        return;
+    }
+    report.fail(format!(
+        "the project is not settled after its last round; still reported:\n{}",
+        reported.render(),
+    ));
+}
+
+/// Store what the fixture's `main` prints over the project as the
+/// rounds receive it, which is the behaviour they have to preserve.
+///
+/// [`check_output`] relies on this being recorded here rather than
+/// from the settled project: a blessing run then has to pass that
+/// comparison instead of writing it.
+fn record_output(project_dir: &Path, context: &Context, report: &mut Report) {
+    let Some(stdout) = output(project_dir, context, report, "before the first round") else {
+        return;
+    };
+    expectation::record(&context.fixture_dir.join(OUTPUT), &stdout);
+}
+
+/// Hold the fixture's `main`, run over the settled project, to what
+/// it printed before the rounds. A rewrite that changed what the
+/// project prints is the failure this reports.
+///
+/// The comparison runs whether or not this run re-records, because
+/// what it is held to was recorded from the project the rounds
+/// started from.
+fn check_output(project_dir: &Path, context: &Context, report: &mut Report) {
+    let Some(stdout) = output(project_dir, context, report, "after the last round") else {
+        return;
+    };
+    let file = context.fixture_dir.join(OUTPUT);
+    let what = "the output of the fixture's `main`";
+    if let Err(failure) = expectation::compare(&file, &stdout, what) {
+        report.fail(failure);
+    }
+}
+
+/// What the fixture's `main` prints over the project as it now
+/// stands, or `None` where it cannot stand in for the behaviour.
+/// `when` names the moment in the run for a failure to carry.
+///
+/// A `main` that prints nothing would match an equally empty stored
+/// file, so the empty case is a failure of the fixture rather than a
+/// pass.
+fn output(
+    project_dir: &Path,
+    context: &Context,
+    report: &mut Report,
+    when: &str,
+) -> Option<String> {
+    let outcome = round::run_cli(project_dir, context.target_dir, context.cli_package);
+    if !outcome.success {
+        expect_success_when(outcome, report, when);
+        return None;
+    }
+    if outcome.stdout.is_empty() {
+        report.fail(
+            "the fixture's `main` printed nothing, so holding it to a stored file \
+             would assert nothing; have it print what each crate in the project \
+             contributes"
+                .to_owned(),
+        );
+        return None;
+    }
+    Some(outcome.stdout)
+}
+
+fn expect_success(outcome: round::Outcome, report: &mut Report) {
+    expect_success_when(outcome, report, "");
+}
+
+/// Record a failed invocation, quoting what it printed. `when` names
+/// the moment in the run where that is not already obvious from the
+/// command.
+fn expect_success_when(outcome: round::Outcome, report: &mut Report, when: &str) {
+    if outcome.success {
+        return;
+    }
+    let moment = match when.is_empty() {
+        true => String::new(),
+        false => format!(" {when}"),
+    };
+    report.fail(format!(
+        "`{}`{moment} failed; it printed:\n{}",
+        outcome.command, outcome.stderr,
+    ));
+}
+
+/// The build cache the fixture `name` owns.
+pub fn cache_dir(repository_dir: &Path, name: &str) -> PathBuf {
+    repository_dir.join(CACHE).join(name)
+}
+
+/// Every fixture in this checkout, in ascending order.
+///
+/// Read off disk rather than listed, so it cannot go stale. The tests
+/// name their fixtures one by one instead, which is what gives each a
+/// failure of its own and lets two run at once; a fixture nobody
+/// named is one nothing drives, and is for review to catch.
+pub fn fixtures(repository_dir: &Path) -> Vec<String> {
+    let fixtures_dir = repository_dir.join(FIXTURES);
+    let entries = fs::read_dir(&fixtures_dir)
+        .unwrap_or_else(|error| panic!("read {}: {error}", fixtures_dir.display()));
+    let mut names: Vec<String> = entries
+        .map(|entry| entry.expect("read an entry of the fixture directory"))
+        .filter(|entry| entry.path().join("fixture.toml").is_file())
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    names.sort();
+    names
+}
+
+/// Fill the build cache the fixture `name` uses, so a later run pays
+/// for the standard library, the registry dependencies and the plugin
+/// from the cache rather than from cold.
+///
+/// Everything a round compiles is compiled here: each linter has a
+/// wrapper of its own, so each gets a cache lane of its own, and the
+/// project's own tests and `main` are built by plain rustc, which is
+/// a third. A fix pass is not run, so nothing the warmup does depends
+/// on which run comes first; the first run's configuration is written
+/// only because a check needs some configuration to read.
+pub fn warm(repository_dir: &Path, name: &str) {
+    let fixtures_dir = repository_dir.join(FIXTURES);
+    let fixture_dir = fixtures_dir.join(name);
+    let fixture = Fixture::load(&fixtures_dir, name);
+    let target_dir = cache_dir(repository_dir, name);
+    let context = Context {
+        name,
+        fixture_dir: &fixture_dir,
+        repository_dir,
+        target_dir: &target_dir,
+        cli_package: &fixture.cli_package,
+    };
+    let project = TempDir::new().expect("create a directory for the fixture's project");
+    let dir = project.path();
+    snapshot::write(dir, &snapshot::read(&fixture_dir.join("project")));
+    let first = fixture.runs.first().expect("a fixture declares a run");
+
+    let mut report = Report::new(name.to_owned(), first.name.clone());
+    write_dylint_toml(dir, &context, first);
+    for check in [round::dylint_check, round::clippy_check] {
+        expect_success(check(dir, &target_dir), &mut report);
+    }
+    expect_success(round::build_tests(dir, &target_dir), &mut report);
+    if let Some(failure) = report.finish() {
+        panic!("\n{failure}");
+    }
+}

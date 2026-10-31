@@ -1,0 +1,9 @@
+[package]
+name = "fixture-third-party-cli"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+folded_command_setter = { package = "fixture-third-party-folded-command-setter", path = "../folded-command-setter" }
+mutating_command_builder = { package = "fixture-third-party-mutating-command-builder", path = "../mutating-command-builder" }
+redundant_derive_more_forward_template = { package = "fixture-third-party-redundant-derive-more-forward-template", path = "../redundant-derive-more-forward-template" }

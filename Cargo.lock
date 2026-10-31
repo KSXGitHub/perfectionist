@@ -55,10 +55,13 @@ dependencies = [
  "clap",
  "command-extra",
  "derive_more",
+ "diff",
  "dylint_testing",
  "pipe-trait",
  "serde",
+ "serde_json",
  "tempfile",
+ "text-block-macros",
  "toml 1.1.2+spec-1.1.0",
 ]
 
