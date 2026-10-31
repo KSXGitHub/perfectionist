@@ -1,0 +1,26 @@
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_conversions.rs:LL:CC
+   |
+LL |     path.to_str().expect("not UTF-8") == "main.rs"
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::utf8_conversion_for_literal_comparison)]` on by default
+help: compare the value without converting it
+   |
+LL -     path.to_str().expect("not UTF-8") == "main.rs"
+LL +     path.as_os_str() == "main.rs"
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_conversions.rs:LL:CC
+   |
+LL |     path.to_string_lossy() == "main.rs"
+   |     ^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     path.to_string_lossy() == "main.rs"
+LL +     path.as_os_str() == "main.rs"
+   |
+
+warning: N warnings emitted
