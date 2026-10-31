@@ -29,7 +29,7 @@
 //! clears them instead. See [`crate::dylint`].
 
 use crate::bless::{self, Expectations};
-use crate::build_base;
+use crate::temp_dir;
 use crate::ui_fixtures::{FixtureCopy, copy_fixtures_with_directives};
 use std::panic;
 use std::path::PathBuf;
@@ -249,7 +249,7 @@ where
 
     /// Everything the builder deferred happens here.
     fn build(self) -> ConfiguredUiTest {
-        build_base::check();
+        temp_dir::check();
         // The copy lands in a `TempDir` of its own and shares nothing,
         // so it stays outside the critical section.
         let fixtures =

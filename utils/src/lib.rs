@@ -23,7 +23,7 @@ pub use ui_test::{ConfiguredUiTest, ConfiguredUiTestBuilder};
 use std::path::Path;
 
 mod bless;
-mod build_base;
+mod temp_dir;
 mod ui_fixtures;
 
 /// Materialise a fixture project in a fresh [`TempDir`], run
