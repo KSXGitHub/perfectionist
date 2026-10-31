@@ -8,7 +8,7 @@ mod consumer;
 mod emit;
 mod source;
 
-use consumer::{Consumer, literal_arms, literal_operand};
+use consumer::{Consumer, literal_operand, literal_patterns};
 use source::Converted;
 
 declare_tool_lint! {
@@ -21,9 +21,9 @@ declare_tool_lint! {
     ///
     /// | Written                                | Prefer                                      |
     /// |----------------------------------------|---------------------------------------------|
-    /// | `os_str.to_str() == Some("x")`         | `os_str == OsStr::new("x")`                 |
+    /// | `os_str.to_str() == Some("x")`         | `os_str == "x"`                             |
     /// | `matches!(os_str.to_str(), Some("x"))` | `matches!(os_str.as_encoded_bytes(), b"x")` |
-    /// | `path.to_str() == Some("x")`           | `path.as_os_str() == OsStr::new("x")`       |
+    /// | `path.to_str() == Some("x")`           | `path.as_os_str() == "x"`                   |
     /// | `str::from_utf8(bytes) == Ok("x")`     | `bytes == b"x"`                             |
     /// | `c_str.to_str() == Ok("x")`            | `c_str.to_bytes() == b"x"`                  |
     ///
@@ -159,14 +159,11 @@ fn consumed_conversion<'tcx>(
             }
             // Either operand may be the literal, so both orders are
             // tried.
-            let (consumed, converted, literal) =
-                literal_operand(cx, left, right).or_else(|| literal_operand(cx, right, left))?;
-            Some((consumed, converted, Consumer::Equality { literal }))
+            literal_operand(cx, left, right).or_else(|| literal_operand(cx, right, left))
         }
         ExprKind::Match(scrutinee, arms, match_source) if is_author_written_match(match_source) => {
             let converted = source::converted(cx, scrutinee)?;
-            let literals = literal_arms(arms)?;
-            Some((scrutinee, converted, Consumer::Patterns { literals }))
+            Some((scrutinee, converted, literal_patterns(arms)?))
         }
         _ => None,
     }

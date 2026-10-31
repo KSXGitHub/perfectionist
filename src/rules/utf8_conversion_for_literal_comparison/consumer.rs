@@ -1,47 +1,79 @@
 //! What consumes a conversion's text, and whether it only ever
 //! measures that text against string literals.
 //!
-//! Two consumers qualify. An equality names one literal; a `match`
-//! names several and may also distinguish outcomes a byte comparison
-//! cannot, which is the condition [`literal_arms`] enforces.
+//! The consumers that qualify measure the text and nothing else. An
+//! equality names one literal; a `match` names several and may also
+//! distinguish outcomes a byte comparison cannot, which is the
+//! condition [`literal_patterns`] enforces.
 
 use super::source::{Converted, converted};
 use rustc_ast::LitKind;
 use rustc_hir::{Arm, Expr, ExprKind, Pat, PatExpr, PatExprKind, PatKind, QPath};
 use rustc_lint::LateContext;
-use rustc_span::Symbol;
+use rustc_span::{Span, Symbol};
+
+/// One arm's pattern, and the literals it names in source order.
+///
+/// The arm's whole pattern is what the rewrite replaces, rather than
+/// each literal inside it. `Some("a") | Some("b")` and
+/// `Some("a" | "b")` name the same pair and want the same replacement,
+/// and spans that nest cannot both be edited in one suggestion.
+pub(super) struct LiteralArm {
+    pub(super) pattern: Span,
+    pub(super) literals: Vec<Symbol>,
+}
 
 /// How a conversion's text is measured against literals.
 pub(super) enum Consumer {
     /// One `==` or `!=` against a single literal.
     Equality {
+        /// The whole operand that carried the conversion. An `unwrap`
+        /// the comparison applied sits inside it, so replacing this
+        /// span drops that call along with the conversion.
+        operand: Span,
+        /// The whole operand that carried the literal, including the
+        /// `Some` or `Ok` the comparison wrapped it in.
+        comparand: Span,
         /// The literal the comparison names.
         literal: Symbol,
+        /// Whether an `unwrap` or `expect` stood between the conversion
+        /// and the comparison. The rewrite drops it, so input the
+        /// conversion would have rejected answers `false` where it used
+        /// to panic.
+        drops_panic: bool,
     },
     /// A `match` whose arms name literals and wildcards.
     Patterns {
-        /// Every literal any arm names.
-        literals: Vec<Symbol>,
+        /// Every arm that names literals.
+        arms: Vec<LiteralArm>,
+        /// The arm catching everything else, where it names the
+        /// conversion's own failure as `None` or `Err(_)` rather than
+        /// as `_`. A rewrite handing the `match` the value's own form
+        /// hands it something that is neither an `Option` nor a
+        /// `Result`, so that pattern has nothing left to name.
+        failure: Option<Span>,
     },
 }
 
 impl Consumer {
     /// Every literal this consumer measures the text against.
-    pub(super) fn literals(&self) -> &[Symbol] {
+    pub(super) fn literals(&self) -> Vec<Symbol> {
         match self {
-            Consumer::Equality { literal } => core::slice::from_ref(literal),
-            Consumer::Patterns { literals } => literals,
+            Consumer::Equality { literal, .. } => vec![*literal],
+            Consumer::Patterns { arms, .. } => {
+                arms.iter().flat_map(|arm| arm.literals.clone()).collect()
+            }
         }
     }
 
     /// Whether the rewrite has to put its literals in pattern
-    /// position, where no `OsStr` literal exists to put.
+    /// position.
     pub(super) fn needs_pattern(&self) -> bool {
         matches!(self, Consumer::Patterns { .. })
     }
 }
 
-/// `operand` read through [`converted`] and `other` as the literal it
+/// `operand` read through [`converted`], with `other` as the literal it
 /// is measured against.
 ///
 /// The caller tries both operand orders, since either side may carry
@@ -50,10 +82,20 @@ pub(super) fn literal_operand<'tcx>(
     cx: &LateContext<'tcx>,
     operand: &'tcx Expr<'tcx>,
     other: &'tcx Expr<'tcx>,
-) -> Option<(&'tcx Expr<'tcx>, Converted<'tcx>, Symbol)> {
+) -> Option<(&'tcx Expr<'tcx>, Converted<'tcx>, Consumer)> {
     let consumed = peel_unwrap(operand);
     let found = converted(cx, consumed)?;
-    Some((consumed, found, string_operand(other)?))
+    let literal = string_operand(other)?;
+    Some((
+        consumed,
+        found,
+        Consumer::Equality {
+            operand: operand.span,
+            comparand: other.span,
+            literal,
+            drops_panic: consumed.hir_id != operand.hir_id,
+        },
+    ))
 }
 
 /// The string a comparison's literal operand carries.
@@ -92,17 +134,19 @@ fn is_some_or_ok(callee: &Expr<'_>) -> bool {
         .is_some_and(|segment| matches!(segment.ident.name.as_str(), "Some" | "Ok"))
 }
 
-/// Every literal `arms` names, where each arm names only literals and
-/// wildcards and the arms the rewrite cannot keep apart already agree.
+/// `arms` read as the patterns a rewrite replaces, where each arm names
+/// only literals and wildcards and the arms the rewrite cannot keep
+/// apart already agree.
 ///
 /// Answers `None` where any arm binds the decoded text, carries a
 /// guard, or gives the non-UTF-8 case an outcome of its own. A byte
 /// comparison separates a listed literal from everything else and
 /// cannot separate ill-formed input from valid input that is none of
 /// the literals, so those two have to reach one wildcard arm.
-pub(super) fn literal_arms(arms: &[Arm<'_>]) -> Option<Vec<Symbol>> {
-    let mut literals = Vec::new();
+pub(super) fn literal_patterns(arms: &[Arm<'_>]) -> Option<Consumer> {
+    let mut literal_arms = Vec::new();
     let mut wildcards = 0_usize;
+    let mut failure = None;
     for arm in arms {
         // A guard reads the binding its pattern made, or some other
         // value, and either way the arm is deciding on more than which
@@ -110,24 +154,39 @@ pub(super) fn literal_arms(arms: &[Arm<'_>]) -> Option<Vec<Symbol>> {
         if arm.guard.is_some() {
             return None;
         }
+        let mut literals = Vec::new();
         match pattern_literals(arm.pat, &mut literals)? {
-            Reach::Literals => {}
+            Reach::Literals => literal_arms.push(LiteralArm {
+                pattern: arm.pat.span,
+                literals,
+            }),
             Reach::Wildcard => wildcards += 1,
+            Reach::Failure => {
+                wildcards += 1;
+                failure = Some(arm.pat.span);
+            }
         }
     }
     // The non-literal cases reach one arm, so ill-formed input and
     // unlisted text already share an outcome. Two wildcard-shaped arms
     // mean the `match` told them apart, which the rewrite cannot.
-    (wildcards == 1 && !literals.is_empty()).then_some(literals)
+    (wildcards == 1 && !literal_arms.is_empty()).then_some(Consumer::Patterns {
+        arms: literal_arms,
+        failure,
+    })
 }
 
 /// What an arm's pattern reaches.
+#[derive(Clone, Copy)]
 enum Reach {
     /// Only the literals the pattern named, now pushed onto the
     /// caller's list.
     Literals,
-    /// Everything the literal arms left over.
+    /// Everything the literal arms left over, named as `_`.
     Wildcard,
+    /// Everything the literal arms left over, named as the
+    /// conversion's own failure: `None` or `Err(_)`.
+    Failure,
 }
 
 /// Push every literal `pat` names onto `literals`, answering what the
@@ -139,15 +198,28 @@ fn pattern_literals(pat: &Pat<'_>, literals: &mut Vec<Symbol>) -> Option<Reach> 
     match pat.kind {
         PatKind::Wild => Some(Reach::Wildcard),
         PatKind::Or(alternatives) => {
-            // An alternation is a wildcard as a whole where any branch
-            // is one, since the arm then catches what the others left.
-            let mut reach = Reach::Literals;
+            let mut named_literals = false;
+            let mut wildcard = false;
+            let mut failure = false;
             for alternative in alternatives {
-                if matches!(pattern_literals(alternative, literals)?, Reach::Wildcard) {
-                    reach = Reach::Wildcard;
+                match pattern_literals(alternative, literals)? {
+                    Reach::Literals => named_literals = true,
+                    Reach::Wildcard => wildcard = true,
+                    Reach::Failure => failure = true,
                 }
             }
-            Some(reach)
+            // An alternation naming both a literal and everything else
+            // is one the rewrite cannot keep. A wildcard branch already
+            // reaches every input, so the arm would answer for the arms
+            // after it, which is not what the `match` did.
+            if named_literals && (wildcard || failure) {
+                return None;
+            }
+            Some(match (failure, wildcard) {
+                (true, _) => Reach::Failure,
+                (false, true) => Reach::Wildcard,
+                (false, false) => Reach::Literals,
+            })
         }
         // A unit variant and a literal are both `PatKind::Expr`, so
         // which one this is decided by the `PatExpr` inside.
@@ -158,10 +230,10 @@ fn pattern_literals(pat: &Pat<'_>, literals: &mut Vec<Symbol>) -> Option<Reach> 
             }
             // A `None` arm is where the conversion's report reaches an
             // outcome of its own, which is the distinction the byte
-            // comparison cannot make. Counting it as a wildcard is what
-            // makes a `match` carrying both it and a `Some(_)` arm
-            // answer `None` from `literal_arms`.
-            PatExprKind::Path(ref path) if is_none_path(path) => Some(Reach::Wildcard),
+            // comparison cannot make. Counting it among the wildcards
+            // is what makes a `match` carrying both it and a `Some(_)`
+            // arm answer `None` from `literal_patterns`.
+            PatExprKind::Path(ref path) if is_none_path(path) => Some(Reach::Failure),
             _ => None,
         },
         PatKind::TupleStruct(ref path, [inner], _) if is_some_or_ok_path(path) => {
@@ -173,7 +245,7 @@ fn pattern_literals(pat: &Pat<'_>, literals: &mut Vec<Symbol>) -> Option<Reach> 
         PatKind::TupleStruct(ref path, [inner], _)
             if is_err_path(path) && matches!(inner.kind, PatKind::Wild) =>
         {
-            Some(Reach::Wildcard)
+            Some(Reach::Failure)
         }
         _ => None,
     }

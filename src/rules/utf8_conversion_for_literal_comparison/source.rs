@@ -10,6 +10,8 @@
 use crate::utf8_conversion::{Conversion, conversion};
 use rustc_hir::{Body, Expr, ExprKind};
 use rustc_lint::LateContext;
+use rustc_middle::ty;
+use rustc_span::sym;
 
 /// How a comparison reaches the conversion it names.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -66,7 +68,10 @@ fn through_option<'tcx>(cx: &LateContext<'tcx>, expr: &'tcx Expr<'tcx>) -> Optio
     // `Some`. A `Result` reaches the same text through the same
     // adapters, and its `Err` carries a payload the rewrite would have
     // to preserve, so it is left out of this tier.
-    if !crate::common::receiver_is_option_or_result(cx, receiver) {
+    let ty::Adt(option, _) = cx.typeck_results().expr_ty(receiver).peel_refs().kind() else {
+        return None;
+    };
+    if !cx.tcx.is_diagnostic_item(sym::Option, option.did()) {
         return None;
     }
     let ExprKind::Closure(closure) = adapter.kind else {

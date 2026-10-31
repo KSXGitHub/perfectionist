@@ -43,14 +43,15 @@ Implemented:
   occurs: both sites the rule reports in this repository are written
   that way, and the closure is local, so none of the dataflow the
   deferred tier needs is involved.
+- The fix for both consumers, as a multipart suggestion. An equality
+  replaces its two operands and a `match` replaces its scrutinee and
+  every literal arm, which is why one span replacement could not
+  carry it. It is `MachineApplicable` except where it drops an
+  `unwrap` or `expect`, and so a panic, where it is
+  `MaybeIncorrect`.
 
 Pending:
 
-- **An applied fix.** The rule names the replacement in help text
-  and applies nothing, so the applicability the
-  [Suggested fix](#suggested-fix) section describes is not yet
-  expressed. A pattern consumer's rewrite changes the scrutinee and
-  every arm at once, which one span replacement cannot carry.
 - **`if let` and let-else consumers.** Each collapses to one boolean
   like an `==` does, so [(d)](#d-the-outcomes-the-conversion-distinguishes)
   stays satisfied; only the HIR shapes are unread.
@@ -558,17 +559,17 @@ OS-string source the choice is real rather than cosmetic.
 ### A pattern consumer forces the byte view
 
 A `match`, `matches!`, `if let` or let-else needs its literal in
-pattern position, and there is no `OsStr` literal to put there:
-`OsStr::new("x")` is a function call, which a pattern cannot be. So
+pattern position, where a string literal matches a `str` and nothing
+else: there is no pattern an `OsStr` meets. So
 the scrutinee becomes the source's byte view from
 [(b)](#b-the-source-type) and every arm becomes a byte-string
 literal. The shape in [Statement](#statement) is this case, which is
 why its fix reads `as_encoded_bytes`.
 
-### An `==` consumer should compare as `OsStr`
+### An `==` consumer compares against the literal itself
 
-`OsStr` implements `PartialEq`, so an equality against a literal can
-keep the literal exactly as written:
+`OsStr` implements `PartialEq<str>`, so an equality against a literal
+can keep the literal exactly as written:
 
 **Avoid:**
 
@@ -579,16 +580,17 @@ if value.to_str() == Some("true") { .. }
 **Prefer:**
 
 ```rust
-if value == OsStr::new("true") { .. }
+if value == "true" { .. }
 ```
 
-Nothing is respelled, so none of the literal constraints below
+Nothing is respelled, so none of the constraints under
+[Emitting a byte-string literal](#emitting-a-byte-string-literal)
 arise, and the reader still sees one comparison against the word
 rather than a comparison of byte views. Prefer this wherever the
 source is an OS string and the consumer is `==` or `!=`. It costs
-nothing: `OsStr::new` returns a borrow whose lifetime is its
-argument's, so it cannot allocate and hand back a reference to the
-allocation.
+nothing: the comparison reads the literal's bytes where they already
+are, so it allocates nothing, and it names no type, so a fix applying
+it needs nothing brought into scope.
 
 A `Path` or `PathBuf` source reaches this spelling through
 `as_os_str()`, and the detour is **not** optional.
@@ -602,19 +604,19 @@ A `Path` or `PathBuf` source reaches this spelling through
 > `p.to_str() == Some(LIT)`, so a rule suggesting it would rewrite a
 > consumer's comparison into one that answers differently.
 
-Checked over paths including `a//b`, `a/./b` and `main.rs/` against
-the literals they normalise onto: `p.as_os_str() == OsStr::new(LIT)`
-disagreed with `p.to_str() == Some(LIT)` on nothing, for `&Path`,
-`PathBuf`, `&OsStr` and `OsString` receivers alike, while
-`p == Path::new(LIT)` disagreed on three.
+Checked over paths including `a//b`, `a/./b`, `a/b/.` and `main.rs/`
+against the literals they normalise onto: over 187 path-literal pairs
+`p.as_os_str() == LIT` disagreed with `p.to_str() == Some(LIT)` on
+nothing, for `&Path`, `PathBuf`, `&OsStr` and `OsString` receivers
+alike, while `p == Path::new(LIT)` disagreed on 19.
 
-A byte buffer needs no counterpart to `OsStr::new`, being already
-its own native form. Its literal is a byte-string literal, and the
-constraints below are what settle its spelling.
+A byte buffer meets no string literal, holding bytes rather than
+text, so its literal is a byte-string literal and the constraints
+below are what settle its spelling.
 
 ### Emitting a byte-string literal
 
-Where the fix does emit one, two constraints apply:
+Where the fix does emit one, these constraints apply:
 
 - **`b"…"`, never `"…".as_bytes()`.** `clippy::string_lit_as_bytes`
   flags `"…".as_bytes()` and suggests `b"…"`, so a fix reaching for
@@ -623,6 +625,18 @@ Where the fix does emit one, two constraints apply:
   ("non-ASCII character in byte string literal … must be ASCII"), so
   a literal outside 7-bit ASCII is emitted as the `\xHH` escapes of
   its UTF-8 bytes, so `é` is emitted as `b"\xc3\xa9"`.
+- **A buffer that is not already a slice needs slicing.** A
+  byte-string literal is a reference to an array, which a `[u8]` and
+  a `Vec<u8>` meet as they stand, which a `Box<[u8]>` meets through
+  no `PartialEq` at all, and which an array meets only at the array's
+  own length. So a boxed or fixed-size buffer is emitted as
+  `&value[..]`, which meets the literal whatever length either has.
+- **A literal still inside a `Some` needs slicing too.** Where the
+  conversion was reached through an `Option` adapter the comparison
+  keeps its `Some`, and `Option`'s own equality is between two of the
+  same type rather than between types that merely compare. So the
+  adapter yields an `Option` of a slice and the literal is emitted as
+  `Some(b"…".as_slice())`.
 
 Applicability follows the identity table in
 [The rewrite is an identity](#the-rewrite-is-an-identity):

@@ -56,11 +56,12 @@ impl NativeForm {
     /// The calls that turn the value into an `&OsStr`, for the forms
     /// that have one.
     ///
-    /// An equality may compare against `OsStr::new(LIT)` and keep its
-    /// literal as written, which is why this is asked separately from
-    /// [`NativeForm::byte_view`]. A byte buffer and a C string answer
-    /// `None`: neither compares against an `OsStr`, so an equality on
-    /// one goes through the byte view like a pattern does.
+    /// An `OsStr` carries `PartialEq<str>`, so an equality reaching one
+    /// meets a string literal and keeps the literal's text, which is
+    /// why this is asked separately from [`NativeForm::byte_view`]. A
+    /// byte buffer and a C string answer `None`: neither reaches an
+    /// `OsStr`, so an equality on one goes through the byte view like a
+    /// pattern does.
     pub(crate) fn os_str_view(self) -> Option<&'static str> {
         match self {
             NativeForm::OsString => Some(""),

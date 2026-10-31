@@ -16,9 +16,9 @@ be made on what they do hold:
 
 | Written                                | Prefer                                      |
 |----------------------------------------|---------------------------------------------|
-| `os_str.to_str() == Some("x")`         | `os_str == OsStr::new("x")`                 |
+| `os_str.to_str() == Some("x")`         | `os_str == "x"`                             |
 | `matches!(os_str.to_str(), Some("x"))` | `matches!(os_str.as_encoded_bytes(), b"x")` |
-| `path.to_str() == Some("x")`           | `path.as_os_str() == OsStr::new("x")`       |
+| `path.to_str() == Some("x")`           | `path.as_os_str() == "x"`                   |
 | `str::from_utf8(bytes) == Ok("x")`     | `bytes == b"x"`                             |
 | `c_str.to_str() == Ok("x")`            | `c_str.to_bytes() == b"x"`                  |
 

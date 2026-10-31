@@ -21,11 +21,28 @@ fn equality_over_os_strings(value: &OsStr, owned: OsString) {
     if owned.into_string().unwrap() == "true" {}
 }
 
+// Good: `equality_over_os_strings` as the rule asks for it. An `OsStr`
+// carries `PartialEq<str>`, so every literal keeps its text.
+fn equality_over_os_strings_rewritten(value: &OsStr, owned: OsString) {
+    if value == "true" {}
+    if value != "true" {}
+    if "true" == value {}
+    if owned == "true" {}
+}
+
 // Bad: an equality over a path, which reaches its `OsStr` through
 // `as_os_str`.
 fn equality_over_paths(path: &Path, owned: PathBuf) {
     if path.to_str() == Some("main.rs") {}
     if owned.to_str() == Some("main.rs") {}
+}
+
+// Good: `equality_over_paths` as the rule asks for it. Comparing the
+// `Path` itself is not the counterpart: `Path` compares by normalised
+// components, so it would answer differently.
+fn equality_over_paths_rewritten(path: &Path, owned: PathBuf) {
+    if path.as_os_str() == "main.rs" {}
+    if owned.as_os_str() == "main.rs" {}
 }
 
 // Bad: an equality over a byte buffer, which is already its own native
@@ -37,6 +54,27 @@ fn equality_over_bytes(bytes: &[u8], owned: Vec<u8>, boxed: Box<[u8]>) {
     if str::from_utf8(&boxed).unwrap() == "yes" {}
 }
 
+// Good: `equality_over_bytes` as the rule asks for it. A `Vec<u8>`
+// meets the byte-string literal as it stands, where a `Box<[u8]>` has
+// to be sliced to meet one.
+fn equality_over_bytes_rewritten(bytes: &[u8], owned: Vec<u8>, boxed: Box<[u8]>) {
+    if bytes == b"yes" {}
+    if owned == b"yes" {}
+    if &boxed[..] == b"yes" {}
+}
+
+// Bad: an equality over a fixed-size buffer, which meets a
+// byte-string literal only at its own length.
+fn equality_over_a_fixed_buffer(buffer: [u8; 3]) -> bool {
+    str::from_utf8(&buffer) == Ok("yes")
+}
+
+// Good: `equality_over_a_fixed_buffer` as the rule asks for it, sliced
+// so that the literal's length no longer has to agree.
+fn equality_over_a_fixed_buffer_rewritten(buffer: [u8; 3]) -> bool {
+    &buffer[..] == b"yes"
+}
+
 // Bad: an equality over a C string, whose byte view drops the
 // terminator the literal never mentions.
 fn equality_over_c_strings(value: &CStr, owned: CString) {
@@ -44,12 +82,30 @@ fn equality_over_c_strings(value: &CStr, owned: CString) {
     if owned.to_str().unwrap() == "yes" {}
 }
 
-// Bad: the motivating shape, where the arms are deciding between three
-// words and every one of them carries a `Some`.
+// Good: `equality_over_c_strings` as the rule asks for it. Neither
+// view is a `_with_nul` one, which would retain a terminator no
+// literal can carry.
+fn equality_over_c_strings_rewritten(value: &CStr, owned: CString) {
+    if value.to_bytes() == b"yes" {}
+    if owned.as_bytes() == b"yes" {}
+}
+
+// Bad: a `match` deciding which of three words a value is, where every
+// arm carries a `Some` that no arm asked for.
 fn match_over_an_os_string(value: &OsStr) -> Result<bool, ()> {
     match value.to_str() {
         Some("true") => Ok(true),
         Some("false") | Some("") => Ok(false),
+        _ => Err(()),
+    }
+}
+
+// Good: `match_over_an_os_string` as the rule asks for it, with the
+// arms spelled as the words they decide between.
+fn match_over_an_os_string_rewritten(value: &OsStr) -> Result<bool, ()> {
+    match value.as_encoded_bytes() {
+        b"true" => Ok(true),
+        b"false" | b"" => Ok(false),
         _ => Err(()),
     }
 }
@@ -60,10 +116,28 @@ fn matches_over_a_path(path: &Path) -> bool {
     matches!(path.to_str(), Some("lib.rs" | "main.rs" | "mod.rs"))
 }
 
+// Good: `matches_over_a_path` as the rule asks for it. A string
+// literal in pattern position matches a `str` and nothing else, so
+// this one compares bytes.
+fn matches_over_a_path_rewritten(path: &Path) -> bool {
+    matches!(
+        path.as_os_str().as_encoded_bytes(),
+        b"lib.rs" | b"main.rs" | b"mod.rs",
+    )
+}
+
 // Bad: the conversion reached through an `Option` adapter. The
 // comparison already carries the `Some` the adapter answers with.
 fn through_an_option_adapter(path: &Path) -> bool {
     path.file_name().and_then(|name| name.to_str()) == Some("main.rs")
+}
+
+// Good: `through_an_option_adapter` as the rule asks for it, keeping
+// the `Some` and reaching bytes in place of the conversion the closure
+// performed. An `Option`'s equality is between two of the same type,
+// which is what the literal is sliced for.
+fn through_an_option_adapter_rewritten(path: &Path) -> bool {
+    path.file_name().map(|value| value.as_encoded_bytes()) == Some(b"main.rs".as_slice())
 }
 
 // Bad: an `Option` adapter whose consumer is a `matches!` rather than
@@ -75,18 +149,99 @@ fn through_an_option_adapter_in_a_match(path: &Path) -> bool {
     )
 }
 
-// Good: the comparisons the rule asks for. It does not fire on what it
-// suggests.
-fn rewritten(value: &OsStr, path: &Path, bytes: &[u8], c_string: &CStr) -> bool {
-    let _ = value == OsStr::new("true");
-    let _ = path.as_os_str() == OsStr::new("main.rs");
-    let _ = bytes == b"yes";
-    let _ = c_string.to_bytes() == b"yes";
-    let _ = matches!(value.as_encoded_bytes(), b"true" | b"false" | b"");
-    let _ = path.file_name() == Some(OsStr::new("main.rs"));
+// Good: `through_an_option_adapter_in_a_match` as the rule asks for
+// it, the adapter reaching bytes so the arms can be literals.
+fn through_an_option_adapter_in_a_match_rewritten(path: &Path) -> bool {
     matches!(
-        path.file_name().map(OsStr::as_encoded_bytes),
+        path.file_name().map(|value| value.as_encoded_bytes()),
         Some(b"lib.rs" | b"main.rs"),
+    )
+}
+
+// Bad: a `match` whose other arm names the conversion's own failure
+// alongside the text it could not place.
+fn the_other_arm_names_the_failure(value: &OsStr) -> u8 {
+    match value.to_str() {
+        Some("true") => 1,
+        Some(_) | None => 0,
+    }
+}
+
+// Good: `the_other_arm_names_the_failure` as the rule asks for it. The
+// comparison left behind cannot fail, so the arm that named the
+// failure becomes a wildcard.
+fn the_other_arm_names_the_failure_rewritten(value: &OsStr) -> u8 {
+    match value.as_encoded_bytes() {
+        b"true" => 1,
+        _ => 0,
+    }
+}
+
+// Bad: a fallible conversion whose other arm names the error it
+// reports.
+fn the_other_arm_names_an_error(value: &CStr) -> u8 {
+    match value.to_str() {
+        Ok("yes") => 1,
+        Ok(_) | Err(_) => 0,
+    }
+}
+
+// Good: `the_other_arm_names_an_error` as the rule asks for it, the
+// error arm becoming a wildcard for want of anything left to name.
+fn the_other_arm_names_an_error_rewritten(value: &CStr) -> u8 {
+    match value.to_bytes() {
+        b"yes" => 1,
+        _ => 0,
+    }
+}
+
+// Bad: an `Option` adapter whose other arm names the failure. The
+// adapter's `Option` survives the rewrite, so that arm survives it
+// too.
+fn an_adapter_keeps_the_failure_arm(path: &Path) -> u8 {
+    match path.file_name().and_then(|name| name.to_str()) {
+        Some("main.rs") => 1,
+        Some(_) | None => 0,
+    }
+}
+
+// Good: `an_adapter_keeps_the_failure_arm` as the rule asks for it,
+// with the arm that named the failure left as it was written.
+fn an_adapter_keeps_the_failure_arm_rewritten(path: &Path) -> u8 {
+    match path.file_name().map(|value| value.as_encoded_bytes()) {
+        Some(b"main.rs") => 1,
+        Some(_) | None => 0,
+    }
+}
+
+// Bad: a closure parameter, carrying a second layer of reference that
+// the comparison does not reach through.
+fn through_a_second_reference(names: &[&OsStr]) -> bool {
+    names.iter().any(|name| name.to_str() == Some("main.rs"))
+}
+
+// Good: `through_a_second_reference` as the rule asks for it, with the
+// dereference that leaves the one layer the comparison reaches
+// through.
+fn through_a_second_reference_rewritten(names: &[&OsStr]) -> bool {
+    names.iter().any(|name| *name == "main.rs")
+}
+
+// Bad: an `Option::map` adapter, whose closure answers an `Option` of
+// its own, so the pattern names two `Some`s.
+fn through_a_map_adapter(path: &Path) -> bool {
+    matches!(
+        path.file_name().map(|name| name.to_str()),
+        Some(Some("main.rs")),
+    )
+}
+
+// Good: `through_a_map_adapter` as the rule asks for it, the adapter
+// answering the bytes so that one `Some` is left.
+fn through_a_map_adapter_rewritten(path: &Path) -> bool {
+    matches!(
+        path.file_name().map(|value| value.as_encoded_bytes()),
+        Some(b"main.rs"),
     )
 }
 
@@ -137,17 +292,120 @@ fn the_receiver_is_already_text(text: &str) -> bool {
     text.to_lowercase() == "true"
 }
 
-// Not flagged: a `Vec` over something other than bytes is not a byte
-// buffer.
-fn not_a_byte_buffer(values: Vec<u16>) -> bool {
-    values.len() == 1
-}
-
 // Not flagged: the closure converts something other than its own
 // parameter, so the comparison is not asking about the adapter's
 // receiver.
 fn the_closure_converts_elsewhere(path: &Path, other: &OsStr) -> bool {
     path.file_name().and_then(|_| other.to_str()) == Some("main.rs")
+}
+
+// Not flagged: an alternation naming both a literal and everything
+// else. A wildcard branch reaches every input, so an arm keeping it
+// would answer for the arms after it.
+fn an_alternation_mixes_a_literal_and_a_wildcard(value: &OsStr) -> u8 {
+    match value.to_str() {
+        Some("true") | None => 1,
+        _ => 2,
+    }
+}
+
+// Not flagged: no arm names a literal, so the `match` is not asking
+// which word the text is.
+fn no_arm_names_a_literal(value: &OsStr) -> u8 {
+    match value.to_str() {
+        _ => 1,
+    }
+}
+
+macro_rules! word {
+    () => {
+        "true"
+    };
+}
+
+// Not flagged: the literal itself comes from a macro, so a rewrite
+// would name whatever that expands to today.
+fn the_literal_comes_from_a_macro(value: &OsStr) -> bool {
+    value.to_str() == Some(word!())
+}
+
+// Not flagged: an arm's literal comes from a macro, for the same
+// reason an operand's does.
+fn an_arm_literal_comes_from_a_macro(value: &OsStr) -> u8 {
+    match value.to_str() {
+        Some(word!()) => 1,
+        _ => 0,
+    }
+}
+
+macro_rules! wrapped {
+    ($literal:literal) => {
+        Some($literal)
+    };
+}
+
+// Not flagged: the comparand's wrapper comes from a macro, so a
+// rewrite would edit the macro's own text through this one call site.
+fn the_comparand_comes_from_a_macro(value: &OsStr) -> bool {
+    value.to_str() == wrapped!("true")
+}
+
+trait DecodeText {
+    fn to_str(&self) -> Option<&str>;
+}
+
+impl DecodeText for Vec<u16> {
+    fn to_str(&self) -> Option<&str> {
+        None
+    }
+}
+
+impl DecodeText for [u16] {
+    fn to_str(&self) -> Option<&str> {
+        None
+    }
+}
+
+// Not flagged: a `Vec` over something other than bytes is not a byte
+// buffer, whatever it names its decoding method.
+fn not_a_byte_buffer(values: Vec<u16>) -> bool {
+    values.to_str() == Some("yes")
+}
+
+// Not flagged: a slice of something other than bytes is not a byte
+// buffer either.
+fn not_a_byte_slice(values: &[u16]) -> bool {
+    values.to_str() == Some("yes")
+}
+
+mod elsewhere {
+    pub struct Path(pub String);
+
+    impl Path {
+        pub fn to_str(&self) -> Option<&str> {
+            Some(&self.0)
+        }
+    }
+}
+
+// Not flagged: a `Path` defined outside the standard library, which
+// shares the name and holds UTF-8 already.
+fn a_path_defined_elsewhere(path: &elsewhere::Path) -> bool {
+    path.to_str() == Some("main.rs")
+}
+
+struct Unwrapper<'a>(&'a OsStr);
+
+impl<'a> Unwrapper<'a> {
+    fn map<Mapped>(self, take: impl FnOnce(&'a OsStr) -> Mapped) -> Mapped {
+        take(self.0)
+    }
+}
+
+// Not flagged: the adapter's receiver is not an `Option`, so the
+// `Some` the comparison carries is not the adapter's answer.
+fn the_adapter_receiver_is_not_an_option(wrapper: Unwrapper<'_>) -> bool {
+    wrapper.map(|name| name.to_str()) == Some("main.rs")
 }
 
 fn main() {}
