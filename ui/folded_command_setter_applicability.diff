@@ -1,0 +1,41 @@
+--- a/folded_command_setter_applicability.rs
++++ b/folded_command_setter_applicability.rs
+@@ -83,7 +83,7 @@ fn mutating_receiver_observed(mut queue: Queue) {
+ // Bad: an initial value that binds looser than a method call, so the
+ // suggestion has to bracket it.
+ fn looser_initial(command: Box<Command>) {
+-    let _ = VARS.iter().fold(*command, CommandExtra::without_env);
++    let _ = (*command).without_envs(VARS.iter());
+ }
+ 
+ struct Literal {
+@@ -122,7 +122,7 @@ impl CommandExtra for Literal {
+ // start of the match's block and not parse, so the suggestion brackets
+ // it.
+ fn struct_literal_initial(inner: Command) {
+-    match VARS.iter().fold(Literal { inner }, CommandExtra::without_env) {
++    match (Literal { inner }).without_envs(VARS.iter()) {
+         _ => {}
+     }
+ }
+@@ -182,7 +182,7 @@ fn overloaded_deref_by_autoderef(noisy: Noisy) {
+     let _ = noisy.into_iter().fold(
+         Command::new(format!(
+             "ls{}",
+-            DEREFS.load(std::sync::atomic::Ordering::SeqCst)
++            DEREFS.load(std::sync::atomic::Ordering::SeqCst),
+         )),
+         CommandExtra::without_env,
+     );
+@@ -218,10 +218,7 @@ fn place_written_by_the_initial(mut countdown: Countdown) -> Command {
+ // Bad: a place the initial value only reads. A read cannot change what
+ // the receiver copies, so the fix is applied.
+ fn place_read_by_the_initial(countdown: Countdown) -> Command {
+-    countdown.fold(
+-        Command::new(countdown.0.to_string()),
+-        CommandExtra::without_env,
+-    )
++    Command::new(countdown.0.to_string()).without_envs(countdown)
+ }
+ 
+ // Bad: a std call that panics on its caller's behalf. `unwrap` panics

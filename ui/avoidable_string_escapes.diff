@@ -1,0 +1,105 @@
+--- a/avoidable_string_escapes.rs
++++ b/avoidable_string_escapes.rs
+@@ -5,35 +5,35 @@
+ 
+ // Bad: escaped quotes in a JSON snippet.
+ fn _escaped_quotes() {
+-    let _ = "{\"name\":\"foo\"}";
++    let _ = r#"{"name":"foo"}"#;
+ }
+ 
+ // Bad: escaped backslashes in a Windows path.
+ fn _escaped_backslashes() {
+-    let _ = "C:\\Users\\foo\\bar";
++    let _ = r"C:\Users\foo\bar";
+ }
+ 
+ // Bad: escaped apostrophe.
+ fn _escaped_apostrophe() {
+-    let _ = "it\'s here";
++    let _ = r"it's here";
+ }
+ 
+ // Bad: multi-byte UTF-8 surrounding an eligible escape. Exercises
+ // the `len_utf8` branch in `take_literal_char`, where the autofix
+ // must preserve the non-ASCII characters byte-for-byte.
+ fn _multi_byte_utf8() {
+-    let _ = "日本語: C:\\Users";
++    let _ = r"日本語: C:\Users";
+ }
+ 
+ // Bad: mix of `\"` and `\\` in one literal.
+ fn _mixed_eligible_escapes() {
+-    let _ = "say \"\\\\\" twice";
++    let _ = r#"say "\\" twice"#;
+ }
+ 
+ // Bad: literal contains `"#`, so the autofix needs two hashes
+ // (`r##"..."##`) to avoid colliding with the closing delimiter.
+ fn _hash_count_grows() {
+-    let _ = "snippet: \"#suffix\" end";
++    let _ = r##"snippet: "#suffix" end"##;
+ }
+ 
+ // Bad: literal is a `core` macro argument. With
+@@ -41,7 +41,7 @@ fn _hash_count_grows() {
+ // `println!` (and the equivalent `format!` / `vec!` / `assert!`
+ // invocations) must still be flagged.
+ fn _inside_core_macro() {
+-    println!("path: \"foo\"");
++    println!(r#"path: "foo""#);
+ }
+ 
+ // Bad: `format!` template carrying a `{...}` placeholder. The
+@@ -50,13 +50,13 @@ fn _inside_core_macro() {
+ // pre-expansion pass rescues it. (issue #219)
+ fn _format_with_inline_placeholder() {
+     let name = "x";
+-    let _ = format!("url(\"{name}\")");
++    let _ = format!(r#"url("{name}")"#);
+ }
+ 
+ // Bad: a positional placeholder in `println!` hides the split literal
+ // from the late pass, and the pre-expansion pass rescues it.
+ fn _println_with_positional_placeholder() {
+-    println!("path: \"{}\"", "x");
++    println!(r#"path: "{}""#, "x");
+ }
+ 
+ // Bad: `assert_eq!`'s message is the *third* argument, with no macro
+@@ -66,7 +66,7 @@ fn _println_with_positional_placeholder() {
+ // literals here, so nothing competes for the diagnostic.
+ fn _assert_eq_message_placeholder() {
+     let value = 1;
+-    assert_eq!(value, value, "v = \"{value}\"");
++    assert_eq!(value, value, r#"v = "{value}""#);
+ }
+ 
+ // Bad: a string-literal *operand* of `assert_eq!`
+@@ -74,7 +74,7 @@ fn _assert_eq_message_placeholder() {
+ // pre-expansion scan also sees it, but the byte-range dedup drops the
+ // duplicate, and this fixture pins that there is no double diagnostic.
+ fn _assert_eq_string_operand() {
+-    assert_eq!("a\"b".len(), 3);
++    assert_eq!(r#"a"b"#.len(), 3);
+ }
+ 
+ // Bad: `stringify!` reflects its argument's source spelling, so the
+@@ -82,7 +82,7 @@ fn _assert_eq_string_operand() {
+ // still value-preserving; the project deliberately flags it (suppress
+ // with `#[allow]` in the rare case the exact `stringify!` text matters).
+ fn _stringify_argument() {
+-    let _ = stringify!("a\"b");
++    let _ = stringify!(r#"a"b"#);
+ }
+ 
+ // Bad: `dbg!`'s argument *survives* lowering as the `match` scrutinee,
+@@ -92,7 +92,7 @@ fn _stringify_argument() {
+ // runtime changes, the same deliberately-accepted trade-off as
+ // `stringify!`.
+ fn _dbg_argument() {
+-    let _ = dbg!("a\"b");
++    let _ = dbg!(r#"a"b"#);
+ }
+ 
+ // Not flagged: a placeholder template that also contains a non-raw

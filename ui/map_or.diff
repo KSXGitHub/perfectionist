@@ -1,0 +1,35 @@
+--- a/map_or.rs
++++ b/map_or.rs
+@@ -98,12 +98,12 @@ fn computed_default(width: Option<u32>) -> u32 {
+ // Bad: `String::new()` is what `String`'s `Default` gives, which the
+ // fix takes.
+ fn constructed_default(name: Option<&str>) -> String {
+-    name.map_or(String::new(), |name| name.to_uppercase())
++    name.map_or_default(|name| name.to_uppercase())
+ }
+ 
+ // Bad: `Default::default()` says outright what the fix writes.
+ fn trait_default(width: Option<u32>) -> u32 {
+-    width.map_or(Default::default(), |width| width + 1)
++    width.map_or_default(|width| width + 1)
+ }
+ 
+ // Bad, and no fix: `Port::new` hands back `Port(8080)` where
+@@ -136,7 +136,7 @@ fn struct_literal_default(width: Option<u32>) -> Layout {
+ 
+ // Bad: a tuple literal is a complex default, however short.
+ fn tuple_default(width: Option<u32>) -> (u32, bool) {
+-    width.map_or((0, false), |width| (width, true))
++    width.map_or_default(|width| (width, true))
+ }
+ 
+ // Bad: a tuple variant of an enum is a call to its constructor.
+@@ -190,7 +190,7 @@ fn through_a_reference(width: &Option<u32>) -> u32 {
+ // Bad: a call written as a macro argument carries the author's own
+ // span, so it is theirs to fix.
+ fn inside_a_macro_argument(width: Option<u32>) {
+-    assert!(width.map_or(bool::default(), |width| width > 2));
++    assert!(width.map_or_default(|width| width > 2));
+ }
+ 
+ // Not flagged: a literal default is one value, and the reader holding

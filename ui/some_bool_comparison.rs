@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // edition:2024
 //
 // Which comparisons this rule reads as an `Option<bool>` measured

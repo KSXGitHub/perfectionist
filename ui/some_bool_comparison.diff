@@ -1,0 +1,70 @@
+--- a/some_bool_comparison.rs
++++ b/some_bool_comparison.rs
+@@ -18,10 +18,10 @@ struct Entry {
+ 
+ // Bad: one rewrite per operator-and-literal pair.
+ fn each_pair(verbose: Option<bool>) {
+-    if verbose == Some(true) {}
+-    if verbose != Some(false) {}
+-    if verbose != Some(true) {}
+-    if verbose == Some(false) {}
++    if verbose.unwrap_or(false) {}
++    if verbose.unwrap_or(true) {}
++    if !verbose.unwrap_or(false) {}
++    if !verbose.unwrap_or(true) {}
+ }
+ 
+ // Good: `each_pair`'s four comparisons as the rule asks for them. The rule
+@@ -35,18 +35,18 @@ fn each_pair_rewritten(verbose: Option<bool>) {
+ 
+ // Bad: the `Some` on the left reads the same as the `Some` on the right.
+ fn reversed_operands(entry: Entry) {
+-    if Some(true) == entry.enabled {}
++    if entry.enabled.unwrap_or(false) {}
+ }
+ 
+ // Bad: a method chain is spliced as it stands.
+ fn method_chain(flags: HashMap<String, bool>) {
+-    if flags.get("verbose").copied() == Some(true) {}
++    if flags.get("verbose").copied().unwrap_or(false) {}
+ }
+ 
+ // Bad: a `&bool` payload, which the rewrite reaches with `copied`.
+ fn borrowed_payload(flags: HashMap<String, bool>, settings: Option<bool>) {
+-    if flags.get("verbose") == Some(&true) {}
+-    if settings.as_ref() != Some(&false) {}
++    if flags.get("verbose").copied().unwrap_or(false) {}
++    if settings.as_ref().copied().unwrap_or(true) {}
+ }
+ 
+ // Good: `borrowed_payload`'s two comparisons as the rule asks for them,
+@@ -60,25 +60,25 @@ fn borrowed_payload_rewritten(flags: HashMap<String, bool>, settings: Option<boo
+ // the reference, so the rewrite keeps neither.
+ fn borrowed_option(entry: Entry) {
+     let enabled = &entry.enabled;
+-    if enabled == &Some(true) {}
++    if enabled.unwrap_or(false) {}
+ }
+ 
+ // Bad: an option side whose `&` is written rather than carried by its
+ // type, which the suggestion takes off rather than bracketing.
+ fn borrowed_on_both_sides(entry: Entry) {
+-    if &entry.enabled == &Some(true) {}
++    if entry.enabled.unwrap_or(false) {}
+ }
+ 
+ // Bad: a receiver that binds looser than a method call keeps its
+ // brackets.
+ fn dereferenced_option(entry: Entry) {
+     let enabled = &entry.enabled;
+-    if *enabled == Some(true) {}
++    if (*enabled).unwrap_or(false) {}
+ }
+ 
+ // Bad: a comparison written as a macro argument is the author's own.
+ fn as_a_macro_argument(verbose: Option<bool>) {
+-    assert!(verbose == Some(true));
++    assert!(verbose.unwrap_or(false));
+ }
+ 
+ // Not flagged: both sides are `Option<bool>`, so neither names a state.

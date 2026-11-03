@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // edition:2024
 #![feature(register_tool)]
 #![register_tool(perfectionist)]

@@ -1,0 +1,59 @@
+--- a/fixture.rs
++++ b/fixture.rs
+@@ -11,19 +11,19 @@ extern crate alloc;
+ 
+ // Bad: an item `std` reaches by the same suffix, written through `core`.
+ mod plain_core_path {
+-    use core::fmt::Display;
++    use std::fmt::Display;
+ }
+ 
+ // Bad: an item `std` reaches by the same suffix, written through
+ // `alloc`, which the default config covers.
+ mod plain_alloc_path {
+-    use alloc::sync::Arc;
++    use std::sync::Arc;
+ }
+ 
+ // Bad: a `::`-rooted path names the same crate as the unrooted form, so
+ // it is flagged.
+ mod rooted_path {
+-    use ::core::hash::Hash;
++    use ::std::hash::Hash;
+ }
+ 
+ // Good: already written through `std`.
+@@ -34,7 +34,7 @@ mod already_std {
+ // Bad, once: the leaves of a brace list share one `core` token, and one
+ // rewrite of that token moves every one of them.
+ mod brace_list {
+-    use core::fmt::{Binary, Octal};
++    use std::fmt::{Binary, Octal};
+ }
+ 
+ // Good: `std::panic::PanicInfo` is a deprecated alias of
+@@ -53,13 +53,13 @@ mod brace_list_with_a_blocked_leaf {
+ 
+ // Bad: a path in type position is a path like any other.
+ mod type_position {
+-    pub fn describe(_address: core::net::IpAddr) {}
++    pub fn describe(_address: std::net::IpAddr) {}
+ }
+ 
+ // Bad: so is one in expression position.
+ mod expression_position {
+     pub fn null_pointer() -> *const u32 {
+-        core::ptr::null::<u32>()
++        std::ptr::null::<u32>()
+     }
+ }
+ 
+@@ -72,7 +72,7 @@ mod macro_namespace {
+ // Bad, once: `alloc::vec` names a module and a macro at once, and only
+ // the module half is the rule's business.
+ mod module_and_macro {
+-    use alloc::vec;
++    use std::vec;
+ }
+ 
+ // Good: a `core` that is not the crate is not this rule's business.

@@ -26,3 +26,6 @@ pipe-trait = "0.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 tempfile = "3.27.0"
 toml = "1.1.2"
+
+[dev-dependencies]
+text-block-macros = "0.2.0"

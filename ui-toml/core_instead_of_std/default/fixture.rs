@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
 #![allow(unknown_lints, dead_code, unused_imports, reason = "ui fixture")]
