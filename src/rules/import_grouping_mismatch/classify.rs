@@ -77,7 +77,7 @@ fn is_alias_reexport(tree: &UseTree) -> bool {
 }
 
 /// The rank a statement sorts by. The style decides the partition;
-/// under both, a cfg-gated import is hoisted into a trailing block only
+/// under both, a cfg-gated import moves into a trailing block only
 /// when `cfg_block_handling` is [`CfgBlockHandling::Trailing`]:
 ///
 /// - `single_block` keeps every import in one block (rank `0`), so the

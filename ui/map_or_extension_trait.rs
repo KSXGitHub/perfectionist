@@ -7,7 +7,7 @@
 // `&Option<String>`. The call therefore resolves to the trait's
 // method, whose arguments mean whatever the trait says they mean.
 //
-// The receiver is still an `Option` and the method still wears the
+// The receiver is still an `Option` and the method still carries the
 // name, so every other part of the trigger admits this call: asking
 // whether the method is an inherent one is the only thing stopping the
 // diagnostic. The trait's impl covers every `&Option<_>`, which is why

@@ -164,7 +164,7 @@ pub(crate) fn string_literal_quote_lengths(snippet: &str) -> Option<(usize, usiz
 /// verbatim source spelling of the escape, with nothing decoded. A
 /// caller that needs the decoded character derives it from the slice.
 ///
-/// The "cooked" qualifier is load-bearing: in a *raw* string literal a
+/// The "cooked" qualifier matters: in a *raw* string literal a
 /// backslash is an ordinary character, so running this scanner over a
 /// raw body would misread `r"\n"` (literal backslash, literal `n`) as
 /// a newline escape. Callers must gate on the literal being cooked

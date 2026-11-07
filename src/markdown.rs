@@ -189,7 +189,7 @@ pub(crate) fn scan_code_regions(input: &str, include_code_spans: bool) -> Vec<Sk
 /// `[...]` link (`` [`Foo`] ``, `` [`Foo`](dest) ``, `` [`Foo`][id] ``)
 /// and *not* sitting inside a code block.
 ///
-/// The walk shares the same parser surface and ordering as
+/// The walk shares the same parsers and ordering as
 /// [`scan_skip_regions`]; the only difference is what it records. Block
 /// constructs, autolinks, and links are *consumed* (so a `` `Foo` ``
 /// inside `` [`Foo`] `` is skipped, having already been swallowed by
@@ -595,7 +595,7 @@ pub(crate) enum LinkForm {
     Reference,
     /// `[text]` / `` [`Type`] ``: the collapsed / shortcut form with
     /// no trailing destination. This is also the shape a rustdoc
-    /// intra-doc link wears.
+    /// intra-doc link takes.
     Shortcut,
 }
 

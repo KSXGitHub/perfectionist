@@ -79,7 +79,7 @@ declare_tool_lint! {
     pub perfectionist::UNICODE_ELLIPSIS_IN_PANIC_MESSAGES,
     Warn,
     "U+2026 HORIZONTAL ELLIPSIS in panic / assertion / expect messages; prefer `...`",
-    // Load-bearing: the user-supplied literal inside `panic!`,
+    // Required: the user-supplied literal inside `panic!`,
     // `assert!`, `assert_eq!`, etc. lives inside a `core` macro
     // expansion. With the default `false` rustc would treat every
     // diagnostic on those literals as "in an external macro" and

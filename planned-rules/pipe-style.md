@@ -189,7 +189,7 @@ below as `pipe_ref` when the borrow is shared.
 
 Any other `arg` — a place expression (local, field, index,
 deref), a nullary call, a call with two or more arguments, a
-macro invocation — has no legal landing, so the check stays
+macro invocation — is not liftable, so the check stays
 quiet. `f(&mut g(x, y))` could only become `g(x, y).pipe_mut(f)`,
 whose pipe has neither a method call to its left nor one to its
 right and no liftable head to fix that, so
@@ -243,7 +243,7 @@ report
 Both shapes end with the head piped, and the reason is
 `call_at_pipe_chain_head` in both: the rewrite creates a chain
 that pipes, and such a chain may not be headed by a unary call.
-Neither intermediate is a resting place —
+Neither intermediate is accepted —
 `ParsedDesc::parse(SOURCE).unwrap().pipe_mut(run_assertions)` and
 `ForgetfulQuerier::new(SOURCE).pipe_mut(run_assertions)` are both
 violations. Emit the fully lifted form as the suggestion, so one
@@ -389,8 +389,8 @@ Columns, in order: `pipe_at_chain_boundary` (**B**),
 | `x.pipe(g).pipe_mut(f)`                     | ok   | ok           | ok   | ok   | good    |
 
 Two rows carry the whole design. `g(x).pipe(f)` is **B**'s, not
-**H**'s, because the pipe is removable — `f(g(x))` is a legal
-resting place. `g(x).pipe_mut(f)` is **H**'s, not **B**'s, because
+**H**'s, because the pipe is removable — `f(g(x))` is an accepted
+form. `g(x).pipe_mut(f)` is **H**'s, not **B**'s, because
 the pipe is *not* removable: `f(&mut g(x))` is what **R** forbids,
 so the only way out is to lift the head. Same syntactic shape,
 different owner, decided by the pipe method's borrowing-ness.
@@ -417,7 +417,7 @@ SOURCE.pipe(ParsedDesc::parse).unwrap().pipe_mut(run_assertions);   // fixed poi
 `borrow_wrapped_in_call` suggests the last line directly, so one
 pass suffices; `call_at_pipe_chain_head` still has to exist, or
 the middle line — reachable by hand, or from a partially applied
-fix — would be a resting place too, and the rule would have two
+fix — would be accepted too, and the rule would have two
 fixed points for one input.
 
 ## Configuration

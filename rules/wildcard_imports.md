@@ -23,7 +23,7 @@ and each can be turned off individually:
 
 The case the rule is most concerned with is `use super::*;` inside
 a `#[cfg(test)] mod tests` block; explicit imports must replace it.
-A project that wants a stricter posture disables either or both
+A project that wants a stricter policy disables either or both
 exceptions, or names extra always-allowed paths, in `dylint.toml`.
 
 ## Why restrict this?
@@ -41,9 +41,8 @@ those are exempt by default.
 
 `clippy::wildcard_imports` is an allow-by-default `pedantic` lint
 over glob `use`s in module bodies, with prelude and re-export
-exceptions of its own. What it cannot express is this rule's
-headline case, a `use super::*;` inside a `#[cfg(test)] mod tests`
-block:
+exceptions of its own. What it cannot express is this rule's main
+case, a `use super::*;` inside a `#[cfg(test)] mod tests` block:
 
 - **Clippy's exceptions are all-or-nothing.**
   `warn-on-all-wildcard-imports` drops every one of them at once,
@@ -56,14 +55,14 @@ block:
 
 This rule separates the exceptions: each can be turned off on its
 own, and individual paths can be exempted however the toggles are
-set. No carve-out shields test code, so the test `super::*;` glob
+set. No exception exempts test code, so the test `super::*;` glob
 is flagged by default.
 
 Reach for `clippy::wildcard_imports` where all-or-nothing
 exceptions suffice, and for this rule where the `#[cfg(test)]`
 distinction matters. Paired with
 `perfectionist::named_prelude_imports`, it states the project's
-full posture: preludes must be glob-imported, and globs are
+full policy: preludes must be glob-imported, and globs are
 allowed only for preludes.
 
 ## Example
