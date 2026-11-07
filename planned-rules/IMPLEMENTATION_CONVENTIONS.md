@@ -982,9 +982,9 @@ The two states map to the consumer-visible behaviour as follows:
 Reserve `Inactive by default` for rules whose triggers are
 known to false-positive in real codebases, advisory sub-checks
 gated behind a "are you sure?" knob, or rules whose preferred
-configuration genuinely varies per project to the point that
-shipping a baseline policy would be presumptuous. Everything
-else is `Active by default`.
+configuration genuinely varies per project to the point that no
+baseline policy would suit. Everything else is `Active by
+default`.
 
 ### Mandatory configuration on opt-in rules
 

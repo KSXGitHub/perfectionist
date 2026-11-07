@@ -9,7 +9,7 @@
 
 // Under `style = "single_block"`, `cfg_block_handling` defaults to
 // `trailing`: the non-cfg imports stay in one contiguous block and every
-// `#[cfg(...)]`-gated import is hoisted into a single trailing block one
+// `#[cfg(...)]`-gated import moves into a single trailing block one
 // blank line below. Path origin is irrelevant: only the cfg gate moves
 // an import.
 
@@ -42,7 +42,7 @@ use std::os::unix::fs::PermissionsExt;
 struct Sep3;
 
 // Good: a `#[cfg(...)]` applied through a `#[cfg_attr(...)]` gates the
-// import's existence just as a bare one does, so it is hoisted into the
+// import's existence just as a bare one does, so it moves into the
 // trailing block too.
 use std::fmt::Write;
 

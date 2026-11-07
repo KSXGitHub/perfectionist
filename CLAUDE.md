@@ -203,7 +203,7 @@ The shapes to avoid:
   "The convention has two consequences", "Six rules scan a slice of
   markdown": the number goes stale once the list gains a member.
   Write "The convention has these consequences".
-- **Prefer a greppable predicate to a hand-maintained roster.**
+- **Prefer a greppable predicate to a hand-maintained list.**
   "Every rule that imports `crate::markdown`" stays true forever; a
   list of rule names does not. Where a list genuinely helps, mark
   it illustrative ("for example", "among them").

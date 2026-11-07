@@ -489,7 +489,7 @@ and the default follows **detection difficulty**:
   exception, since the literal can be respelled as a byte-string
   literal and the comparison moved to the bytes; that is
   [`utf8-conversion-for-literal-comparison.md`](./utf8-conversion-for-literal-comparison.md)'s
-  trigger rather than a text use that rescues the conversion.
+  trigger rather than a text use that justifies the conversion.
   Establishing "only fed to a sink" needs whole-binding
   use-analysis.
 - Per the project's policy for difficult, false-positive-prone

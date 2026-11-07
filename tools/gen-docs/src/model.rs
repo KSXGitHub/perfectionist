@@ -139,7 +139,7 @@ pub(crate) struct ConfigField {
     /// `snake_case` with `rename_all = "snake_case"`, which makes
     /// the Rust ident and the TOML key coincide).
     pub(crate) name: String,
-    /// TOML-flavoured label for the field's type (e.g. `[string]`
+    /// TOML label for the field's type (e.g. `[string]`
     /// for `Vec<char>`). See `toml_type_label` for the mapping
     /// rules; the source-level type is intentionally not surfaced,
     /// since TOML authors don't write Rust syntax in `dylint.toml`.
@@ -217,7 +217,7 @@ pub(crate) struct StructField {
     /// The TOML key for this field, after applying the struct's
     /// own serde rename rules where present.
     pub(crate) name: String,
-    /// TOML-flavoured label for the field's type. See
+    /// TOML label for the field's type. See
     /// `toml_type_label` for the mapping.
     pub(crate) type_label: String,
     /// Per-field `///` doc comment, in markdown form.

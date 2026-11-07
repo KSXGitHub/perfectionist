@@ -183,7 +183,7 @@ const BUILTIN_PURE_MACROS: &[&str] = &[
 /// Zero-arg method names that are conventionally side-effect-free
 /// across the standard library and ecosystem. `vec.len()`,
 /// `s.is_empty()`, `opt.as_ref()` evaluate the same way no matter how
-/// many times the macro touches them, so they are accepted as pure
+/// many times the macro evaluates them, so they are accepted as pure
 /// postfixes on a pure base. Names whose pure-getter convention is
 /// less universal (e.g. `count` is consuming on `Iterator` but
 /// `O(1)` and pure on indexed collections) are left for projects to

@@ -1,6 +1,6 @@
 //! [`AsciiLetter`], a single-ASCII-letter newtype shared between the
 //! `single_letter_*` rules' allow-list configuration knobs. Encoding
-//! the "ASCII alphabetic" invariant in the type system retires the
+//! the "ASCII alphabetic" invariant in the type system removes the
 //! convention-only `#[serde(deserialize_with = "deserialize_ascii_letters")]`
 //! attribute the rules used to carry on their `Vec<char>` fields.
 
