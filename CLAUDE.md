@@ -271,6 +271,47 @@ The
 [fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
 is this one's complement: repeat words freely, never facts.
 
+## Say what it does, not what it resembles
+
+A metaphor borrowed from outside software states nothing the reader can
+check. "The guard is load-bearing" claims that removing it breaks
+something without saying what, and "the knob earns its keep" rates it
+against a standard it never names. Both read as decisive and leave the
+mechanism to be guessed. Name the mechanism and the sentence becomes
+checkable: "without the guard, every macro expansion is flagged".
+
+The shapes to avoid:
+
+- **A metaphor from another field**, such as construction, finance or
+  medicine: "load-bearing", "papers over", "baked in", "belt and
+  braces". Software has a plainer word for each, usually a shorter one.
+- **An unnamed standard**: "earns its keep", "pays for itself", "worth
+  the complexity". Give the cost and the benefit, or drop the claim.
+- **Anthropomorphism**: "the rule wants a `Symbol`", "the parser is
+  happy with an empty remainder". An item does what it does; write
+  that.
+- **A vogue phrase**: "low-hanging fruit", "moves the needle", "at the
+  end of the day". Each is filler that names nothing.
+
+These are *not* the fault, and a sweep that rewrites them makes the
+prose worse:
+
+- **Software's own vocabulary**, however it began; among them pass,
+  span, walk, visitor, hook, sweep, drift, gate, guard, ratchet and
+  fixture. A reader of this codebase knows each, which is what makes it
+  a term rather than a figure.
+- **A figure the passage defines where it stands.**
+- **A dead metaphor that is simply the word for the thing**: a span
+  *covers* bytes, a file *holds* items, a doc *points at* a section.
+
+A lint's diagnostic needs the plain word most, because rustc prints it
+to a reader who has never seen this guide.
+
+Where the
+[fact-duplication rule](#do-not-write-documentation-that-restates-the-code)
+asks what would make a sentence go stale, this one asks what would make
+it false. A sentence with no answer says nothing.
+
 ## Every passage must read on its own
 
 A sentence that takes its meaning from a neighbouring one breaks when
