@@ -29,14 +29,13 @@ pub(super) fn single_expression_body<'hir>(
     body: &'hir hir::Body<'hir>,
 ) -> Option<&'hir hir::Expr<'hir>> {
     let value = body.value;
-    if let hir::ExprKind::Block(block, _) = value.kind {
-        if !block.stmts.is_empty() {
-            return None;
-        }
-        block.expr
-    } else {
-        Some(value)
+    let hir::ExprKind::Block(block, _) = value.kind else {
+        return Some(value);
+    };
+    if !block.stmts.is_empty() {
+        return None;
     }
+    block.expr
 }
 
 /// Return the callee name of the parent call expression of
