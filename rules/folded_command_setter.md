@@ -44,7 +44,7 @@ accumulator threaded through a closure.
 The fold form also has more places to get wrong. A fold whose
 closure swaps its accumulator and item, or returns the wrong one of
 the two, compiles in some shapes and silently builds the wrong
-command. The plural has no such surface.
+command. The plural has no such places.
 
 `command-extra` defines each plural as the fold of its singular, so
 a hand-rolled fold is not an alternative to the plural but its

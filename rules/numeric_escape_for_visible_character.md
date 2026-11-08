@@ -51,11 +51,10 @@ exchange.
 
 Spelling the character out can hand it to a rule that forbids
 the character itself, and the two then compose into a two-step
-fix rather than fighting: a `\u{2026}` in a panic message is
-spelled out by this rule, which
+fix rather than conflicting: a `\u{2026}` in a panic message
+is spelled out by this rule, which
 `perfectionist::unicode_ellipsis_in_panic_messages` then
-reports, so the pair lands on the ASCII three-dot form it
-wants.
+reports, so the pair lands on the ASCII three-dot form.
 
 ## Interaction with Clippy
 

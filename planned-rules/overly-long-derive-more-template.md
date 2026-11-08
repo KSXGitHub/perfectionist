@@ -173,7 +173,7 @@ reformat of the template literal, no argument re-slicing.
 The only complication is splitting the attribute across multiple
 source lines, which is sometimes more involved than splitting
 a macro call (attributes are parsed by the derive macro and
-some derive_more versions may be picky about whitespace inside
+some derive_more versions may be strict about whitespace inside
 the meta-item parens).
 
 Autofix is `MachineApplicable` for the literal-only rewrite (the

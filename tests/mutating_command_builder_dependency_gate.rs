@@ -641,7 +641,7 @@ const TEST_FN_IN_PRODUCTION_MODULE: &str = include_str!(
 /// exemption cannot close this. That gate asks whether the *node* is
 /// test code; the import lands in the node's *module*. A `#[test]` fn
 /// in the library's own root is test-exclusive as a node and
-/// production as a module, so the rule speaks and the `use` it asks
+/// production as a module, so the rule fires and the `use` it asks
 /// for is `E0432` in the shipping build.
 #[test]
 fn a_test_fn_in_a_production_module_is_told_where_the_dependency_must_live() {

@@ -19,7 +19,7 @@ that section asks whether the sub-checks can be *cleanly separated*, and
 these cannot. They share the family table and the gates on captures,
 receiver moves and the extra reference a lifted test is handed; their
 configuration is disjoint only because all three have none; and the
-adapters whose closure returns an `Option` are a seam both the chain and
+adapters whose closure returns an `Option` are an overlap both the chain and
 the guard-and-value trigger have a split for, so which trigger answers is
 a question about what the closure holds rather than about which adapter
 holds it.
@@ -1106,7 +1106,7 @@ let names = headers.map(normalise).collect::<Vec<_>>();
 Extraction is the one to take knowingly. It satisfies both triggers
 while putting the steps back inside a body, which is the arrangement
 this rule exists to open up: the pipeline gets shorter and its stages
-go somewhere else. Extraction earns its place where the extracted run
+go somewhere else. Extraction is justified where the extracted run
 has a name of its own, and costs something where it is reached for
 only to get under a limit.
 

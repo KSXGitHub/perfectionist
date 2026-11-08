@@ -52,7 +52,7 @@ pub(super) fn check<'tcx>(cx: &LateContext<'tcx>, call: &Call<'tcx>) -> Option<F
     }
     // A conjunct not naming the item holds for every item or none, so an
     // adapter of its own would ask the same question once per item.
-    // Hoisting it out of the pipeline is the rewrite it wants, which is
+    // Hoisting it out of the pipeline is the rewrite for it, which is
     // not the one this trigger makes.
     if !conjuncts
         .iter()
@@ -230,7 +230,7 @@ fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Discipline> {
     Some(Discipline::Set)
 }
 
-/// The adapter that stops a run rather than sieving it, which a family read
+/// The adapter that stops a run rather than filtering it, which a family read
 /// from signatures is not given a discipline for.
 const PREFIX_SHAPED: &str = "take_while";
 
@@ -278,9 +278,8 @@ fn collect<'tcx>(expr: &'tcx Expr<'tcx>, conjuncts: &mut Vec<&'tcx Expr<'tcx>>) 
 /// the conjunction does.
 ///
 /// Comparing is not enough on its own. `row.first >= low && row.second < high`
-/// bounds two quantities, so it asks two questions however it is spelled,
-/// and an adapter apiece is what it wants. [`shared_operand`] is the
-/// difference.
+/// bounds two quantities, so it asks two questions however it is spelled, and
+/// an adapter apiece is the right split. [`shared_operand`] is the difference.
 ///
 /// One comparison among named questions is a third shape:
 /// `wanted(line) && line.len() > 3` asks two things already, and the

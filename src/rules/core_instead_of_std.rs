@@ -207,7 +207,7 @@ impl CoreInsteadOfStd {
         };
         // `core::panic!` and `std::panic!` expand differently, and a
         // macro is re-exported by a mechanism of its own; leave the
-        // macro namespace to the human.
+        // macro namespace to the author.
         if matches!(def_kind, DefKind::Macro(_)) {
             return None;
         }

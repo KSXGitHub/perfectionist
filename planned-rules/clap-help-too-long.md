@@ -14,7 +14,7 @@ escape hatch — same as the markdown rule — is an explicit help
 override (`#[arg(help = "...")]`, `#[clap(about = "...")]`, etc.).
 
 The default budgets are sized to catch AI-generated bloat without
-tripping on legitimately rich CLI options:
+firing on legitimately rich CLI options:
 
 - **First paragraph (`about`):** at most 1 line, at most 120 characters.
 - **Whole comment (`long_about`):** at most 8 lines, at most 600
@@ -27,7 +27,7 @@ markers and trailing whitespace are stripped before counting.
 
 This is a stylistic preference, not a correctness issue.
 CLI help text serves the user at a terminal, not a docs.rs reader. A
-flag that prints an essay is hostile in `--help` output:
+flag that prints an essay reads poorly in `--help` output:
 
 ```text
   --manifest <PATH>
@@ -40,7 +40,7 @@ flag that prints an essay is hostile in `--help` output:
 ```
 
 That text was probably auto-completed in seconds and reads poorly. The
-lint nudges the author either to trim the comment or to move the long
+lint asks the author either to trim the comment or to move the long
 prose into `#[arg(long_help = "...")]` (or `#[clap(long_about = "...")]`
 on the struct), keeping the doc comment available for `cargo doc`.
 

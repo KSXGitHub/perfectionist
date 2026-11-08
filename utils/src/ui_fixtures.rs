@@ -27,7 +27,7 @@ use std::path::{Component, Path, PathBuf};
 /// `#issue`, backtick, or repo ref, and no Unicode ellipsis, so none of
 /// perfectionist's text-scanning lints fires on it.
 ///
-/// What each one buys, in order:
+/// What each one does, in order:
 ///
 /// 1. `.rs:LINE:COL` becomes `.rs:LL:CC`, so inserting a line above a
 ///    diagnostic no longer renumbers every span header below it.

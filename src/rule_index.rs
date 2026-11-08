@@ -45,7 +45,7 @@ pub(crate) trait Register {
 ///
 /// Each entry pairs the rule's name with the type to generate for it,
 /// and both are spelled out because `macro_rules!` cannot case-convert
-/// an identifier. That name is the snake_case one the rule wears in
+/// an identifier. That name is the snake_case one the rule carries in
 /// `dylint.toml` and in `#[allow(perfectionist::...)]`, and the name of
 /// its `src/rules/<name>.rs` file.
 ///
