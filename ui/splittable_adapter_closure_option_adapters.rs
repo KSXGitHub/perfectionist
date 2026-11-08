@@ -76,7 +76,7 @@ fn split_infallible_prefix(lines: std::vec::IntoIter<&'static str>) -> Vec<usize
     lines.map_while(parse).map(double).collect()
 }
 
-// Bad: two fallible stages welded together under a prefix-shaped
+// Bad: two fallible stages joined together under a prefix-shaped
 // adapter, whose lift target for a stage is a `map_while` of its own: a
 // `filter_map` there would drop the very item the run would have stopped
 // at.

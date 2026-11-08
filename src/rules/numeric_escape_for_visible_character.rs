@@ -59,11 +59,10 @@ declare_tool_lint! {
     ///
     /// Spelling the character out can hand it to a rule that forbids
     /// the character itself, and the two then compose into a two-step
-    /// fix rather than fighting: a `\u{2026}` in a panic message is
-    /// spelled out by this rule, which
+    /// fix rather than conflicting: a `\u{2026}` in a panic message
+    /// is spelled out by this rule, which
     /// `perfectionist::unicode_ellipsis_in_panic_messages` then
-    /// reports, so the pair lands on the ASCII three-dot form it
-    /// wants.
+    /// reports, so the pair lands on the ASCII three-dot form.
     ///
     /// ### Interaction with Clippy
     ///
@@ -159,7 +158,7 @@ impl Register for rule::NumericEscapeForVisibleCharacter {
     /// decides, not a limit a project would want set differently. One
     /// policy does vary: whether a non-ASCII character may be spelled
     /// out at all. That is a knob rather than a reason to ship the
-    /// rule off, since the ASCII half holds either way.
+    /// rule inactive, since the ASCII half holds either way.
     const DEFAULT_STATE: DefaultState = DefaultState::Active;
 
     fn register_lint(lint_store: &mut LintStore) {

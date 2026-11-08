@@ -64,7 +64,7 @@ impl Category {
 ///   the top of a crate root, above the `pub mod` declarations, and
 ///   predates the imports the rule orders.
 /// - **A `#[cfg(...)]`-gated `use`.** A conditional import block is
-///   conventionally parked below the unconditional ones, so gating it
+///   conventionally written below the unconditional ones, so gating it
 ///   excuses it from the ordering rather than pinning what follows.
 /// - **A macro-expanded item.** The rule reads the layout the author
 ///   wrote; an item an expansion produced is not one of those.

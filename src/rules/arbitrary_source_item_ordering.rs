@@ -84,10 +84,10 @@ declare_tool_lint! {
     /// ### Interaction with Clippy
     ///
     /// `clippy::arbitrary_source_item_ordering` (`restriction`, off by
-    /// default) covers adjacent ground from the other end. It is highly
+    /// default) covers the same concern differently. It is highly
     /// general: it orders many item kinds against an ordering table the
     /// project supplies and can sort alphabetically within a group.
-    /// This rule takes no configuration and bakes in the single layout
+    /// This rule takes no configuration and hard-codes the single layout
     /// above. A project that wants to spell out its own ordering should
     /// prefer the Clippy lint and turn this one off in `dylint.toml`:
     ///
@@ -147,7 +147,7 @@ pub struct ArbitrarySourceItemOrdering;
 impl_lint_pass!(ArbitrarySourceItemOrdering => [ARBITRARY_SOURCE_ITEM_ORDERING]);
 
 impl Register for rule::ArbitrarySourceItemOrdering {
-    /// Active by default. The rule encodes one baked-in layout rather
+    /// Active by default. The rule encodes one fixed layout rather
     /// than a direction a project has to choose between, and its
     /// trigger reads only what the author wrote, so there is nothing
     /// to configure and no shape it guesses at.
@@ -181,7 +181,7 @@ struct Pending {
     /// module body being checked, so the anchor stays in the file that
     /// holds the violation.
     ///
-    /// No proc-macro guard rides along. The rule reads source the
+    /// No proc-macro guard is needed. The rule reads source the
     /// author wrote: its items come from re-parsing the crate's own
     /// module files, which excludes proc-macro-synthesised modules, and
     /// an item carrying an expansion is dropped when it is classified.

@@ -473,8 +473,8 @@ fn flags_equivalent_body_in_src_module() {
 
 /// Benchmarks are their own crate compiled under `cfg(test)`, like
 /// integration tests, so without the separate-target skip the same
-/// over-budget body would be flagged. This is the one load-bearing
-/// separate-target branch besides `tests/`, so guard it directly.
+/// over-budget body would be flagged. This is the one other
+/// separate-target branch the skip takes, so guard it directly.
 #[test]
 fn does_not_flag_benchmarks() {
     let (_temp, stderr, success) = run_project_with_config(

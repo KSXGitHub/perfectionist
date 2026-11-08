@@ -13,7 +13,7 @@
 // that span shape on a minimal `#[synth_costless_to_conversion]`
 // attribute.
 //
-// The synthesised method wears the `to_` prefix and hands a field
+// The synthesised method carries the `to_` prefix and hands a field
 // straight back as a borrow, so every half of the trigger admits it and
 // the guard is the only thing left stopping the diagnostic. A method
 // named anything else, or one doing any work on the way to the borrow,

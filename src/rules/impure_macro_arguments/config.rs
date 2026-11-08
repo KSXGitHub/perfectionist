@@ -34,7 +34,7 @@ const BUILTIN_DENY: &[&str] = &["debug_assert", "debug_assert_eq", "debug_assert
 ///    `is_x86_feature_detected!` family takes a string literal, the
 ///    `line!` / `column!` / `file!` / `module_path!` family takes
 ///    no argument, and `compile_error!` aborts compilation. In the
-///    matryoshka case from issue [#71](https://github.com/KSXGitHub/perfectionist/issues/71),
+///    nested case from issue [#71](https://github.com/KSXGitHub/perfectionist/issues/71),
 ///    that argument is itself a call to another macro from this
 ///    group. None of these evaluates a user
 ///    expression at runtime, so no exactly-once-vs.-zero hazard
@@ -124,9 +124,9 @@ const BUILTIN_ALLOW: &[&str] = &[
     //   only contract.
     // - `serde_json::json` builds a `serde_json::Value` tree; each
     //   embedded Rust expression goes through `to_value(&expr)`
-    //   exactly once. Unlike `maplit::*`, this entry is load-
-    //   bearing for direct-expression arguments: `json!(expr)`
-    //   has no DSL marker, so removing the entry would re-flag
+    //   exactly once. Unlike `maplit::*`, this entry is required
+    //   for direct-expression arguments: `json!(expr)` has no DSL
+    //   marker, so removing the entry would re-flag
     //   `json!(value().unwrap())` and similar.
     //
     // Add further crates here as their matchers are vetted to
@@ -183,7 +183,7 @@ const BUILTIN_PURE_MACROS: &[&str] = &[
 /// Zero-arg method names that are conventionally side-effect-free
 /// across the standard library and ecosystem. `vec.len()`,
 /// `s.is_empty()`, `opt.as_ref()` evaluate the same way no matter how
-/// many times the macro touches them, so they are accepted as pure
+/// many times the macro evaluates them, so they are accepted as pure
 /// postfixes on a pure base. Names whose pure-getter convention is
 /// less universal (e.g. `count` is consuming on `Iterator` but
 /// `O(1)` and pure on indexed collections) are left for projects to
