@@ -25,9 +25,9 @@ The reply in
 established that nothing fires: every rustc lint and the whole of
 `clippy::all`, `pedantic`, `nursery`, `cargo` and `restriction` left
 the comparisons alone, and the nearest lint,
-`clippy::cmp_owned`, is priced on the **allocation** rather than on
-the redundancy. `OsStr::new` allocates nothing, so there is nothing
-for it to object to.
+`clippy::cmp_owned`, fires on the **allocation** rather than on the
+redundancy. `OsStr::new` allocates nothing, so there is nothing for
+it to object to.
 
 That gap is this rule.
 
@@ -91,10 +91,10 @@ family by family. The objection is to what the reader has to carry:
   A conversion inside a comparison sometimes cannot be dropped
   without changing what the comparison does, and
   [(e)](#e-the-rewrite-must-select-an-impl-that-agrees) records the
-  cases in this very neighbourhood where that is so. So a reader who
+  cases among these same types where that is so. So a reader who
   meets one cannot skip it: they have to decide whether it changes
-  which `PartialEq` impl is selected. Where the answer is no, the
-  conversion cost them that decision and bought nothing.
+  which `PartialEq` impl is selected. Where the answer is no, they
+  made that decision and learned nothing from it.
 - **A claim about reachability that was never true.** The wrapper
   reads as "this would not compile without me". For the OS-string
   family that has been false since Rust 1.0.0, which is the whole
@@ -109,15 +109,15 @@ exists. Removing one saves no allocation and no work, and the rule
 does not claim otherwise.
 
 That is deliberate, and it is what separates this rule from the
-lints that already cover part of this neighbourhood.
+lints that already cover some of these conversions.
 `clippy::cmp_owned` and `clippy::unnecessary_to_owned` fire on the
 *allocating* conversions in these same positions, and they fire
 because of the allocation;
 [Interaction with Clippy and rustc](#interaction-with-clippy-and-rustc)
-shows which conversions each one recognises and which it walks past.
+lists which conversions each one recognises and which it ignores.
 A rule motivated by cost would be a worse version of those two. A
 rule motivated by wording reaches the ones they decline, and reaches
-them for a reason that does not need a benchmark to defend.
+them for a reason that needs no benchmark.
 
 ### The rewrite is an identity
 
@@ -325,9 +325,10 @@ operand of a comparison.
   `self.as_bytes() == other.as_bytes()`, and
   `impl PartialEq<PathBuf> for str` is `self == other.as_path()`.
   Dropping either view spells the impl in terms of itself. rustc's
-  `unconditional_recursion` does catch the result, which makes the
-  mistake loud rather than acceptable: a suggestion that trades this
-  rule's warning for a rustc one has not improved the code.
+  `unconditional_recursion` does catch the result, so the mistake is
+  reported rather than silent — which is a reason to exempt the
+  position, not to accept it: a suggestion that trades this rule's
+  warning for a rustc one has not improved the code.
 - A conversion of a path compared against a literal, unless
   `include_path_comparisons` is set, per
   [Configuration](#configuration).
@@ -487,13 +488,13 @@ shipping the trigger.
 include_path_comparisons = false
 ```
 
-The path family is the one case where the wrapper earns its place on
-grounds the rule cannot measure. `path == Path::new("a/b")` and
-`path == "a/b"` give the same answer on every input, and only the
-wrapped spelling warns the reader that the answer is componentwise —
-that `"a/b"` will match a stored `"a//b"`. The wrapper does no type
-work but real documentary work, which is a trade a project should
-make for itself rather than inherit.
+The path family is the one case where the wrapper does something the
+rule cannot measure. `path == Path::new("a/b")` and `path == "a/b"`
+give the same answer on every input, and only the wrapped spelling
+warns the reader that the answer is componentwise — that `"a/b"` will
+match a stored `"a//b"`. So the wrapper does no type work and does
+tell the reader something, and which of those matters more is a
+judgement each project should make rather than take from a default.
 
 Keeping the family off by default also puts the rule's MSRV question
 behind the knob. `impl PartialEq<str> for Path` is stable
@@ -529,7 +530,7 @@ repository were checked to have.
 
 The argument position ships in the same state once it is built. Its
 risk is not higher — the single-bound condition is what holds it to
-an identity — but its yield here is zero, which
+an identity — but it finds nothing in this repository, which
 [Difficulty](#difficulty) accounts for.
 
 ## Implementation notes
@@ -597,17 +598,17 @@ establish that the parameter has exactly one bound, recognising a
 turbofish, and recognising a type parameter that another argument
 also fixes.
 [`src/rules/folded_command_setter/setter.rs`](../src/rules/folded_command_setter/setter.rs)
-is the nearest prior art and it is worth reading before starting,
-because the `&K: AsRef<OsStr>` trap it records is the same trap in a
-different position.
+already solves the nearest version of this and is worth reading
+before starting, because the `&Key: AsRef<OsStr>` trap it records is
+the same trap in a different position.
 
-The yield is also worth knowing before budgeting for it. Scanning
-this repository found no instance: every path-taking and
-OS-string-taking parameter here is a concrete `&Path` or `&OsStr`,
-which no literal coerces to, so dropping the wrapper at any of those
-call sites would stop the call compiling. The tier is in the design
-because the redundancy is real where the generic bound is, not
-because this repository is waiting on it.
+How much the tier would find is also worth knowing before planning
+the work. Scanning this repository found no instance: every
+path-taking and OS-string-taking parameter here is a concrete
+`&Path` or `&OsStr`, which no literal coerces to, so dropping the
+wrapper at any of those call sites would stop the call compiling.
+The tier is in the design because the redundancy is real where the
+generic bound is, not because this repository is waiting on it.
 
 **Deferrable**, and not in the design:
 
@@ -640,10 +641,11 @@ The lints that come closest, each confirmed by running it:
   comparison. It recognises `String::from`, `to_owned`, `to_string`,
   `OsString::from`, `PathBuf::from` and `Vec::from`, and suggests the
   bare literal for each. It fires on none of this rule's
-  conversions, and it also walks past `to_vec`, `to_path_buf`,
-  `to_os_string` and `clone` in the same position. Those allocate, so
-  [(a)](#a-the-conversion) excludes them here, and `cmp_owned` does
-  not reach them: between the two rules they are reported by neither.
+  conversions, and it also leaves `to_vec`, `to_path_buf`,
+  `to_os_string` and `clone` alone in the same position. Those
+  allocate, so [(a)](#a-the-conversion) excludes them here, and
+  `cmp_owned` does not reach them: between the two rules they are
+  reported by neither.
 - **`clippy::unnecessary_to_owned`** is the argument-position
   counterpart, and sorts the same way: it fires on
   `generic_str(s.to_string())` and on `command.arg(s.to_string())`,

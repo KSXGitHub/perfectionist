@@ -111,7 +111,7 @@ pattern that several rules call out by reference — live in
   (`include_path_comparisons` opts in), the wrapper being the only
   thing that tells a reader the answer is componentwise. Takes the
   gap `clippy::cmp_owned` and `clippy::unnecessary_to_owned` leave:
-  both are priced on the allocation, and these conversions are free.
+  both fire on the allocation, and these conversions are free.
   Active by default.
 
 ### Derives and error types
