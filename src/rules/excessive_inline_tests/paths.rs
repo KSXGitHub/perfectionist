@@ -2,6 +2,7 @@
 //! uses.
 
 use rustc_span::{FileName, SourceFile};
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 
 pub(super) fn real_path(file: &SourceFile) -> Option<PathBuf> {
@@ -28,7 +29,7 @@ pub(super) fn canonical_target(parent: &Path, name: &str) -> Option<PathBuf> {
 
 fn is_mod_root(parent: &Path) -> bool {
     matches!(
-        parent.file_name().and_then(|name| name.to_str()),
-        Some("lib.rs" | "main.rs" | "mod.rs"),
+        parent.file_name().map(OsStr::as_encoded_bytes),
+        Some(b"lib.rs" | b"main.rs" | b"mod.rs"),
     )
 }
