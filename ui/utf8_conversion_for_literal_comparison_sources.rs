@@ -76,7 +76,7 @@ fn equality_over_a_fixed_buffer_rewritten(buffer: [u8; 3]) -> bool {
 }
 
 // Bad: an equality over a C string, whose byte view drops the
-// terminator the literal never mentions.
+// terminator the literal never names.
 fn equality_over_c_strings(value: &CStr, owned: CString) {
     if value.to_str() == Ok("yes") {}
     if owned.to_str().unwrap() == "yes" {}

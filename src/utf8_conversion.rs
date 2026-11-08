@@ -7,7 +7,7 @@
 //! what the conversion is, which value it converted, and what that
 //! value's native form offers instead.
 //!
-//! Two rules want that answer and differ in what consumes the text.
+//! The rules that want that answer differ in what consumes the text.
 //! `utf8_conversion_for_literal_comparison` reads a conversion whose
 //! result only meets string literals, and the planned
 //! `needless_utf8_conversion` reads one whose result feeds a sink that

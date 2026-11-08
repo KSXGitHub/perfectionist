@@ -259,8 +259,8 @@ fn the_autofix_leaves_the_crate_compiling() {
     );
 
     // A revert would also leave the file untouched, which the assertion
-    // above cannot tell from a rule that stood down. Comparing the whole
-    // file pins every rewrite, down to the brackets.
+    // above cannot tell from a rule that offered no suggestion at all.
+    // Comparing the whole file pins every rewrite, down to the brackets.
     assert_eq!(
         fixed, FIXED,
         "the fixer did not turn the fixture into its expected form",

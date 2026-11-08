@@ -4,7 +4,7 @@
 //! The rewrite edits more than one span: an equality replaces both of
 //! its operands, and a `match` replaces its scrutinee along with the
 //! arms whose patterns change. A multipart suggestion is what expresses
-//! either, so both shapes take that route.
+//! either.
 
 use super::UTF8_CONVERSION_FOR_LITERAL_COMPARISON;
 use super::consumer::Consumer;
