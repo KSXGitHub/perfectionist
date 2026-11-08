@@ -105,7 +105,7 @@ pattern that several rules call out by reference — live in
   only where the rewrite compiles and selects an impl that agrees, so
   it declines the conversion that pins a shared type parameter, meets
   a turbofish, feeds a `Some`, or decides which impl a second bound
-  uses — and declines `os_str == path.as_os_str()`, where dropping
+  uses. It also declines `os_str == path.as_os_str()`, where dropping
   the view turns a bytewise comparison into a componentwise one.
   Paths compared against literals are exempt by default
   (`include_path_comparisons` opts in), the wrapper being the only
