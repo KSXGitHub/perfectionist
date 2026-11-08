@@ -37,7 +37,7 @@ fn render(line: &str) -> usize {
     line.len()
 }
 
-// Bad: two fallible stages welded together.
+// Bad: two fallible stages joined together.
 fn fallible(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(|line| parse(line).and_then(validate)).collect()
 }
@@ -67,7 +67,7 @@ fn split_filtering(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines.filter_map(parse).filter(positive).collect()
 }
 
-// Bad: a guard welded to a value, which is what this trigger is named
+// Bad: a guard joined to a value, which is what this trigger is named
 // for. The value names the item, because a `map` over the item is where it
 // goes.
 fn guarded(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {

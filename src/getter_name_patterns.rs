@@ -21,7 +21,7 @@
 
 use crate::name_pattern::{NamePattern, verdict};
 
-/// TOML-flavoured type label for [`GetterNamePatterns`], surfaced by
+/// TOML type label for [`GetterNamePatterns`], shown by
 /// `tools/gen-docs` in the per-rule field-type column. Sourced here,
 /// next to the type definition, so the label is the type's own
 /// property rather than a hard-coded match arm in the doc generator.
@@ -49,9 +49,9 @@ impl GetterNamePatterns {
     /// Whether the list says `name` is a getter.
     ///
     /// The first entry covers every name, so [`verdict`] never comes
-    /// back undecided here; the fallback is unreachable, and is the
-    /// quiet answer rather than the loud one so that a future way to
-    /// build a list without the check fails safe.
+    /// back undecided here; the fallback is unreachable, and answers
+    /// "not a getter" so that a future way to build a list without
+    /// the check fails safe.
     pub(crate) fn says_getter(&self, name: &str) -> bool {
         verdict(&self.0, name).unwrap_or(false)
     }

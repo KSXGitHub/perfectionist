@@ -1,5 +1,5 @@
 //! Discover shared-module type definitions whose TOML field-type
-//! label is sourced from their definition site rather than baked into
+//! label is sourced from their definition site rather than hard-coded into
 //! [`super::ty::toml_type_label`]'s match arms.
 //!
 //! Today the only shared type with a definition-site label is
@@ -27,7 +27,7 @@ use std::fs;
 use std::path::Path;
 use syn::{Expr, ExprLit, Item, Lit};
 
-/// Map of Rust struct identifier → TOML-flavoured type label,
+/// Map of Rust struct identifier → TOML type label,
 /// populated from shared modules under `src/`. Threaded through
 /// [`super::config::extract_config`], [`super::ty::toml_type_label`],
 /// and [`super::ty::collect_referenced_idents`] so the renderer

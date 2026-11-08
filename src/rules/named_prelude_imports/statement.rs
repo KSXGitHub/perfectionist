@@ -196,7 +196,7 @@ pub(super) struct Fix {
 /// `diesel::{table, AsChangeset}` instead of spelling `diesel::` twice.
 /// Entries stay in written order: which entry goes where is
 /// `import_granularity_mismatch`'s business, not this rule's, and
-/// reordering here would fight whatever that rule is configured to
+/// reordering here would contradict whatever that rule is configured to
 /// enforce.
 fn render_tree(entries: &[(&str, &str)]) -> String {
     let paths: Vec<Vec<&str>> = entries

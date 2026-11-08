@@ -60,7 +60,7 @@ re-export under the same name is.
 
 This is a stylistic preference, not a correctness issue: the
 attribute compiles to exactly the code the derive emits without
-it. It is the same shape of dead weight as an unused import or
+it. It is as redundant as an unused import or
 a needless borrow: it restates what the compiler already does,
 and a reader has to read the whole template before concluding
 it changes nothing.

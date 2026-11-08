@@ -59,7 +59,7 @@ pub(super) fn is_on_an_owned_command<'tcx>(
     )
 }
 
-/// Whether `ty` is a command whose setters this rule speaks about:
+/// Whether `ty` is a command whose setters this rule covers:
 /// `std::process::Command` itself, or any type a loaded `CommandExtra`
 /// is implemented for.
 ///
@@ -72,7 +72,7 @@ pub(super) fn is_on_an_owned_command<'tcx>(
 /// something new is followed with no change.
 ///
 /// std's `Command` is named by its diagnostic item instead of being
-/// asked, because the rule speaks about it whether or not the crate has
+/// asked, because the rule covers it whether or not the crate has
 /// loaded `command-extra` yet. A crate that has declared the dependency
 /// without naming it loads no trait, as
 /// [`super::availability::loaded_traits`] explains, and the advice to

@@ -458,7 +458,7 @@ fn count(line: &str, brace: char) -> isize {
 /// The echoed helper attribute is dropped: its removal is the very
 /// thing under test, so it differs between the two expansions by
 /// construction. Whitespace is then collapsed so the pretty-printer's
-/// line wrapping cannot masquerade as a difference.
+/// line wrapping cannot read as a difference.
 fn normalise(expanded: &str) -> String {
     const HELPERS: &[&str] = &[
         "display",

@@ -72,7 +72,7 @@ fn single_block_collapses_blank_lines() {
 
 /// Under `style = "single_block"`, `cfg_block_handling` defaults to
 /// `trailing`: the non-cfg imports stay in one contiguous block and
-/// every `#[cfg(...)]`-gated import is hoisted into a single trailing
+/// every `#[cfg(...)]`-gated import moves into a single trailing
 /// block one blank line below. No cfg knob is set, so this also
 /// asserts the default.
 #[test]

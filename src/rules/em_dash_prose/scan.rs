@@ -65,7 +65,7 @@ fn take_hyphen_run(input: &str) -> Option<(usize, &str)> {
 /// else at its own end of the pair, so none needs the word-boundary
 /// test that tells an ASCII single quote from an apostrophe. U+2019
 /// doubles as an apostrophe, but it only ever closes a span this table
-/// opens with U+2018. A Chinese title mark earns its place on the
+/// opens with U+2018. A Chinese title mark is listed here on the
 /// quotation's own terms: a title is reproduced verbatim, so a dash
 /// inside one belongs to whoever named the work. The backtick is
 /// absent because a backtick-quoted run is a markdown code span, which

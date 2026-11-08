@@ -1,6 +1,6 @@
 // edition:2024
 //
-// Which adapters the chain trigger speaks about, and where each one's item
+// Which adapters the chain trigger covers, and where each one's item
 // sits in the closure it takes. The condition is that the item enters by
 // value and never comes back out, so `filter` and `inspect` are here to be
 // left alone, and one case stands for each table entry: an entry naming the

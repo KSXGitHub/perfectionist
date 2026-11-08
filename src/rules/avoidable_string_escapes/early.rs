@@ -1,4 +1,4 @@
-//! Pre-expansion pass that rescues string literals the late
+//! Pre-expansion pass that reaches string literals the late
 //! `ExprKind::Lit` pass cannot see.
 //!
 //! Some macros consume a string literal during expansion so that it
@@ -50,7 +50,7 @@ impl EarlyLintPass for AvoidableStringEscapesEarly {
                 continue;
             };
             // Synthesised spans and any non-cooked spelling that slips
-            // through bail here, mirroring the late pass's belt-and-braces
+            // through bail here, mirroring the late pass's defensive
             // quote-stripping guard.
             let Some(body) = snippet
                 .strip_prefix('"')
