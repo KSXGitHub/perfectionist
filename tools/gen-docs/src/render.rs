@@ -5,7 +5,7 @@
 //! can ctrl-F across every rule's prose without page loads; the CSS and
 //! JS live in their own files (rather than inlined) so each can be
 //! edited and cached independently and so future changes can add or
-//! split sheets without reflowing one monolith. GitHub Pages serves the
+//! split sheets without touching the others. GitHub Pages serves the
 //! whole output directory verbatim.
 
 pub(crate) mod config;
@@ -21,7 +21,7 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 /// `index.html` and linked with a dedicated `<link rel="stylesheet">`.
 /// They are deliberately *not* concatenated into one sheet: keeping
 /// them separate lets each be edited and cached on its own and leaves
-/// room for future sheets without reflowing a monolith. The slice
+/// room for future sheets without touching the others. The slice
 /// order is the cascade order the page links them in.
 pub(crate) const STYLESHEETS: &[(&str, &str)] = &[
     ("base.css", include_str!("style/base.css")),
@@ -218,7 +218,7 @@ const NAV_FILTER_LABEL: &str = "Filter the navigation by lint name";
 /// `display: none` target.
 ///
 /// A `<use>` the parser meets first draws nothing until this arrives,
-/// costing ink and never layout: the stylesheet sizes it.
+/// costing paint and never layout: the stylesheet sizes it.
 fn icon_sprite() -> Markup {
     PreEscaped(icons::sprite())
 }

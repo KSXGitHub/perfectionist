@@ -18,7 +18,7 @@
 fn homoglyph() {}
 
 // Bad: the offending character is a combining mark. Reported raw it
-// would ride the quote of the help message, so it is escaped. The
+// would attach to the help message's quote, so it is escaped. The
 // help reads `'\u{951}'`; compiletest rewrites every backslash to a
 // forward slash when it normalises expected output for Windows, hence
 // the `/u{951}` in the stderr file.

@@ -5,7 +5,7 @@
 // ============================================================================
 
 ;(function () {
-  // Load-bearing: if either library never ran, this throws before any
+  // A guard: if either library never ran, this throws before any
   // control is revealed.
   var matchFuzzy = perfectionistMatch.matchFuzzy
   var renderName = perfectionistHighlight.renderName
@@ -224,7 +224,7 @@
 
     // No debounce; the scan is over lint names.
     input.addEventListener('input', apply)
-    // Belt and braces: what a `type="search"` input fires on its clear
+    // Fallback: what a `type="search"` input fires on its clear
     // button in older WebKit.
     input.addEventListener('search', apply)
     input.addEventListener('keydown', function (event) {

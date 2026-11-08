@@ -6,7 +6,7 @@
 //! std's setters against a receiver that is now owned. That is how a
 //! by-value method of the author's own comes to be found before the
 //! inherent one, compiling, with nothing in the diff to show it.
-//! Renaming every link takes that name out of play.
+//! Renaming every link removes that name.
 //!
 //! The chain's own value still has to land somewhere, which
 //! [`position::Position`] answers.

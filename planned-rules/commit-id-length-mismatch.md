@@ -47,7 +47,7 @@ scan_string_literals = true    # `"..."`, `r"..."`
 #
 # Defaults: 6 to 40, accepting any abbreviation that's at least
 # Git's default-render length (6 chars in `git log --oneline`,
-# bumped from Git's hard minimum of 4 to push back on
+# bumped from Git's hard minimum of 4 to discourage
 # overly-short SHAs that risk ambiguity in large repos).
 #
 # To require the full 40-char SHA:
@@ -173,7 +173,7 @@ Only full SHAs accepted.
   (`src/rules/unpinned_repo_ref.rs`). Discovery happens once per
   source comment; classification is per-lint.
 - Each `kind` has a small, fixed set of SHA-bearing path patterns,
-  baked into the lint at compile time. The lint does not parse user-
+  hardcoded in the lint at compile time. The lint does not parse user-
   supplied templates; configuration declares hostnames only.
 - For compare URLs, emit one diagnostic per offending SHA. The same
   URL may produce two warnings.

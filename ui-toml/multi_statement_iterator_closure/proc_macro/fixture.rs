@@ -13,7 +13,7 @@
 // the author already wrote. The cases below pin that from both sides.
 //
 // `#[derive(SynthCallback)]` emits a two-statement callback whose every
-// token wears the user span of `#[synth_callback]`, so a guard that
+// token carries the user span of `#[synth_callback]`, so a guard that
 // asks whether the enclosing item came from a macro has nothing to
 // find. Nothing is reported for it.
 //

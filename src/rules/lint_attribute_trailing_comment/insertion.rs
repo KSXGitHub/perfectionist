@@ -40,7 +40,7 @@ pub(super) fn build_reason_insertion(snippet: &str, escaped: &str) -> Option<Ins
     // Pick the insertion strategy by whether the closing `)` sits on
     // its own line, *not* by whether the argument list contains a
     // newline anywhere. A true single-line list (`allow(foo)`) and a
-    // wrapped list whose `)` rides the last argument's line
+    // wrapped list whose `)` shares the last argument's line
     // (`allow(\n    foo)`) both want the inline splice. Only a `)`
     // alone on its own line (`allow(\n    foo,\n)`) wants a new
     // indented `reason` line. Keying off "any newline in the parens"

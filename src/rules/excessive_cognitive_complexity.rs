@@ -140,19 +140,19 @@ declare_tool_lint! {
     /// - *Mostly branching.* The function is doing several independent
     ///   things in one body. Move each into its own function named for
     ///   the one thing it does; a `match` moved into its own function
-    ///   also sheds the nesting penalty it carried at the call site.
+    ///   also loses the nesting penalty it carried at the call site.
     ///
-    /// One shortcut is worth naming, because it is tempting. The score
-    /// is measured per function body, and a call counts as one step
-    /// however much stands behind it, so pulling a tangled block into a
-    /// private helper always lowers the number, even when it helps the
-    /// reader not at all. That moves the complexity; it does not remove
-    /// it. An extraction is real only when the new function stands on
-    /// its own: a name that describes one responsibility, a small
-    /// interface, and no mutable state threaded back to the caller. If
-    /// the helper only makes sense read together with its single call
-    /// site, the tangle is still there under a new name. The goal is
-    /// the reader's burden, not the number.
+    /// One shortcut is tempting. The score is measured per function
+    /// body, and a call counts as one step however much stands behind
+    /// it, so pulling a tangled block into a private helper always
+    /// lowers the number, even when it helps the reader not at all.
+    /// That moves the complexity; it does not remove it. An extraction
+    /// is real only when the new function stands on its own: a name
+    /// that describes one responsibility, a small interface, and no
+    /// mutable state threaded back to the caller. If the helper only
+    /// makes sense read together with its single call site, the tangle
+    /// is still there under a new name. What matters is the reader's
+    /// burden, not the number.
     pub perfectionist::EXCESSIVE_COGNITIVE_COMPLEXITY,
     Warn,
     "function body has a cognitive complexity above the configured maximum",

@@ -2,7 +2,7 @@
 # commit-msg check: reject any commit message that contains a bare
 # "@handle" mention. GitHub autolinks "@foo" as a user/team mention
 # unless it is wrapped in backticks, so an unescaped handle both reads
-# as a mention GitHub may not intend and needlessly pings a real
+# as a mention the author may not intend and needlessly pings a real
 # person. Pure text, runs for every commit.
 set -euo pipefail
 

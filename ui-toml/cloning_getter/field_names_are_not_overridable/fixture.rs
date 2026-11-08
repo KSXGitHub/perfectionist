@@ -12,7 +12,7 @@ struct Person {
 }
 
 impl Person {
-    // Bad: named for a field, which no entry talks the rule out of.
+    // Bad: named for a field, which no entry exempts.
     fn first_name(&self) -> String {
         self.first_name.clone()
     }
