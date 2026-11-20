@@ -29,9 +29,10 @@ struct RuleConfig {
     exclude_imports: Option<bool>,
 }
 
+/// A crate root of 3 lines of code below a 4-line `use` item.
 const IMPORT_SOURCES: &[(&str, &str)] = &[(
     "src/lib.rs",
-    "use std::{\n    collections::{HashMap, HashSet},\n    sync::Arc,\n};\n\nfn work() {\n    let _: Option<(HashMap<(), ()>, HashSet<()>, Arc<()>)> = None;\n}\n",
+    include_str!("fixtures/overly_long_file/imports.rs"),
 )];
 
 fn dylint_toml(config: RuleConfig) -> String {
@@ -167,19 +168,32 @@ fn exempt_tests_leaves_test_files_alone() {
     assert_not_flagged(&stderr, "bench.rs");
 }
 
-#[test]
-fn exclude_imports_does_not_count_vertical_import_lines() {
+/// Run the import fixture with a 3-line limit and the given
+/// `exclude_imports`, and return its stderr.
+fn run_imports(package_name: &str, exclude_imports: Option<bool>) -> String {
     let (_temp, stderr, success) = run_project_with_config(
-        "fixture_olfile_imports",
+        package_name,
         cargo_manifest_dir(),
         &shared_target_dir(),
         IMPORT_SOURCES,
         &dylint_toml(RuleConfig {
             max_lines: Some(3),
-            exclude_imports: Some(true),
+            exclude_imports,
             ..RuleConfig::default()
         }),
     );
     assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    stderr
+}
+
+#[test]
+fn imports_are_not_counted_by_default() {
+    let stderr = run_imports("fixture_olfile_imports_default", None);
     assert_not_flagged(&stderr, "lib.rs");
+}
+
+#[test]
+fn exclude_imports_false_counts_import_lines() {
+    let stderr = run_imports("fixture_olfile_imports_counted", Some(false));
+    assert_flagged(&stderr, "lib.rs");
 }

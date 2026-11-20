@@ -8,7 +8,8 @@ use rustc_hir::HirId;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::SourceFile;
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
+use std::sync::Arc;
 
 declare_tool_lint! {
     /// ### What it does
@@ -27,10 +28,6 @@ declare_tool_lint! {
     /// `mod tests;` behind `#[cfg(test)]` or any file of an
     /// integration-test or benchmark target; set `exempt_tests` to
     /// leave it alone.
-    ///
-    /// Set `exclude_imports` to avoid counting lines belonging to top-level
-    /// `use` items. This is useful when a project chooses a vertical import
-    /// layout, where formatting can add several lines without adding code.
     ///
     /// ### Why restrict this?
     ///
@@ -74,8 +71,9 @@ struct Config {
     /// benchmark target. Defaults to `false`, so a test file is held
     /// to the same limit as the code it exercises.
     exempt_tests: bool,
-    /// Whether lines belonging to top-level `use` items are excluded.
-    /// Defaults to `false`.
+    /// Whether lines belonging to top-level `use` items are left out of
+    /// the count. Defaults to `true`, so an import layout that puts each
+    /// item on its own line does not use up the budget.
     exclude_imports: bool,
 }
 
@@ -84,7 +82,7 @@ impl Default for Config {
         Self {
             max_lines: DEFAULT_MAX_LINES,
             exempt_tests: false,
-            exclude_imports: false,
+            exclude_imports: true,
         }
     }
 }

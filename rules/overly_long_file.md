@@ -24,10 +24,6 @@ A file of test code is measured like any other, whether a
 integration-test or benchmark target; set `exempt_tests` to
 leave it alone.
 
-Set `exclude_imports` to avoid counting lines belonging to top-level
-`use` items. This is useful when a project chooses a vertical import
-layout, where formatting can add several lines without adding code.
-
 ## Why restrict this?
 
 This is a stylistic preference, not a correctness issue. A file
@@ -76,5 +72,6 @@ to the same limit as the code it exercises.
 - _Type:_ `boolean`
 - _Optional_
 
-Whether lines belonging to top-level `use` items are excluded.
-Defaults to `false`.
+Whether lines belonging to top-level `use` items are left out of
+the count. Defaults to `true`, so an import layout that puts each
+item on its own line does not use up the budget.
