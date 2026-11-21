@@ -66,3 +66,12 @@ Whether files of test code are left alone: a module behind
 `#[cfg(test)]`, and every file of an integration-test or
 benchmark target. Defaults to `false`, so a test file is held
 to the same limit as the code it exercises.
+
+### Field: `exclude_imports`
+
+- _Type:_ `boolean`
+- _Optional_
+
+Whether lines belonging to top-level `use` items are left out of
+the count. Defaults to `true`, so an import layout that puts each
+item on its own line does not use up the budget.
