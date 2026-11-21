@@ -147,7 +147,10 @@ including the empty one and two that are not valid UTF-8. `s == lit`
 agreed with `s.as_str() == lit` on all 98304 comparisons, over every
 `char` below U+2000 against literals including `é` and U+FFFD, and a
 `Cow<'_, str>` and a `Box<str>` over the same inputs agreed on 98304
-more.
+more. The owned side may also be the right-hand operand, which is how
+this repository writes it: `left == owned` agreed with
+`left == owned.as_str()` on all 49152 comparisons over those same
+inputs.
 
 **The path family is the exception, and it is exempt by default.**
 `impl PartialEq<str> for Path` exists, so `path == "a/b"` compiles.
@@ -347,7 +350,7 @@ operand of a comparison.
 
 ### A comparison operand
 
-Both of the sites this repository was found to have are this shape.
+Every example here is a shape this repository contains.
 
 **Avoid.** The anchor search in
 [`src/cargo_target.rs`](../src/cargo_target.rs) wraps a literal,
@@ -376,6 +379,22 @@ temp_dir.file_name().filter(|name| *name == OsStr::new(CHOSEN_NAME))
 
 ```rust
 temp_dir.file_name().filter(|name| *name == CHOSEN_NAME)
+```
+
+**Avoid.** A `&String` compared against a `&str`, where
+[`src/macro_path.rs`](../src/macro_path.rs) takes a view of the
+owned side:
+
+```rust
+segment.ident.name.as_str() == entry_segment.as_str()
+```
+
+**Prefer.** `str` compares against `String`, so the owned side needs
+no view. The same function already spells it this way where the
+entry is reached by index:
+
+```rust
+segment.ident.name.as_str() == entry_segment
 ```
 
 **Avoid.** A view taken of an owned buffer that the comparison would
@@ -469,8 +488,8 @@ leaves behind:
 
 ### The fix can orphan an import
 
-Measured, by applying both of this repository's fixes and
-type-checking the workspace: the
+Measured, by applying the two OS-string fixes and type-checking the
+workspace: the
 [`utils/src/temp_dir.rs`](../utils/src/temp_dir.rs) fix leaves
 `use std::ffi::OsStr;` with no remaining use, which is an
 `unused_imports` warning and a build failure under this project's
@@ -533,7 +552,7 @@ compiler a question with a yes-or-no answer, and
 [(e)](#e-the-rewrite-must-select-an-impl-that-agrees), which cannot
 be asked of the compiler, is answered by the closed conversion set
 rather than by inference. A site that passes all of them has a
-rewrite that compiles and agrees, which both sites found in this
+rewrite that compiles and agrees, which the sites found in this
 repository were checked to have.
 
 The argument position ships in the same state once it is built. The
@@ -594,7 +613,7 @@ here.
 ### Difficulty
 
 **Medium** for the comparison position, which is the core and the
-tier both of this repository's sites are in: a `Binary` whose operand
+tier this repository's own sites are in: a `Binary` whose operand
 is a recognised conversion, two `expr_ty` queries, one
 `implements_trait` per candidate operator, a lookup in the closed
 conversion set, and the exemptions in
