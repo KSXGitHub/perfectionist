@@ -49,7 +49,7 @@ workspace = true
 
 [dependencies]
 clippy_utils = "=0.1.99"
-dylint_linting = "6.1.0"
+dylint_linting = "6.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "1.1.2"
 unicode-width = "0.2.2"
