@@ -50,7 +50,7 @@ pattern that several rules call out by reference — live in
   function takes `&T` but the body unconditionally calls
   `.to_owned()` / `.to_path_buf()` / equivalent, take `T` directly.
   Test code and build scripts are exempt by default, since neither
-  collects on the copy the owned signature saves. Pairs with
+  benefits from the copy the owned signature saves. Pairs with
   `clippy::ptr_arg` and `clippy::needless_pass_by_value` to cover the
   full owned-vs-borrowed trade-off from the pacquet guide.
 
@@ -118,7 +118,7 @@ pattern that several rules call out by reference — live in
 - [`splittable-adapter-closure.md`](./splittable-adapter-closure.md)
   — flag a closure doing several jobs where one adapter per job would
   do: a chain of steps on the item, a predicate that is a conjunction,
-  or a guard welded to a value. One rule,
+  or a guard folded into a value. One rule,
   `perfectionist::splittable_adapter_closure`, implements all three
   triggers; the file's `## Status` section says which module answers
   each trigger, which families the rule reaches, and how it is
@@ -133,7 +133,7 @@ pattern that several rules call out by reference — live in
 - [`loop-in-option-guard.md`](./loop-in-option-guard.md) — flag an
   `if let Some(..)` with no `else` whose only statement is a `for`
   over the binding. An `Option` is already an iterator of at most one
-  item, so the guard buys a level of indentation and no decision.
+  item, so the guard adds a level of indentation and no decision.
   Offers no rewrite, which of `.into_iter().flatten()` in the header
   or a `let` first being a judgement about the scrutinee; the help
   names both. Active by default, no configuration.
@@ -173,7 +173,7 @@ pattern that several rules call out by reference — live in
   `include_str!` of a sibling fixture file, a `text_block_fnl! { ... }`
   re-indented block, or — for a single logical line — a one-line
   `"…\n"`. Independent of `manual_json_string`: a dedented JSON
-  literal trips both.
+  literal triggers both.
 - [`overly-long-print-macro.md`](./overly-long-print-macro.md) — when a
   splittable print macro (`println!`, `eprintln!`, `writeln!`,
   log family, …) has an embedded-`\n` template *and* spans more

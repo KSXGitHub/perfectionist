@@ -68,7 +68,7 @@ pub(super) struct Shape {
 /// most one argument-less method call.
 ///
 /// An argument is where logic hides, and a second call is more text
-/// moving. Both bars are structural rather than a list of adapter names
+/// moving. Both tests are structural rather than a list of adapter names
 /// that would need extending as the iterator API grows.
 pub(super) fn shape<'tcx>(
     cx: &LateContext<'tcx>,

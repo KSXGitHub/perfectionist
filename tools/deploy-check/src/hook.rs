@@ -54,7 +54,7 @@ const SCISSORS_BODY: &str = "------------------------ >8 -----------------------
 /// * `Ok(Some(subject))` when the message is a release-shaped one
 ///   (`X.Y.Z(-<suffix>)?` only, no body).
 /// * `Ok(None)` when the message is empty or doesn't look like a
-///   release, so the hook bows out and lets git proceed.
+///   release, so the hook exits and lets git proceed.
 /// * `Err(MessageHasExtraContent)` when a release-shaped subject is
 ///   followed by additional body lines, which the contract forbids.
 pub(crate) fn extract_release_subject(

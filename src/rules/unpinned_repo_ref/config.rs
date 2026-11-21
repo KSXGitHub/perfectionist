@@ -1,5 +1,5 @@
-//! Configuration surface for `unpinned_repo_ref`: which surfaces to
-//! scan, how short a hex run still counts as a SHA, whether
+//! Configuration for `unpinned_repo_ref`: which surfaces to scan,
+//! how short a hex run still counts as a SHA, whether
 //! version-shaped refs are accepted, and the hostname-to-forge-kind
 //! table that decides how each URL's path is shaped.
 //!

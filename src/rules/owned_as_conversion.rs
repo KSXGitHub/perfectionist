@@ -154,7 +154,7 @@ declare_tool_lint! {
 /// is what notices if it stops.
 const AS_PREFIX: &str = "as_";
 
-/// The prefix a flagged method should have worn instead: the one that
+/// The prefix a flagged method should have had instead: the one that
 /// announces a conversion the caller pays for.
 const COSTLY_PREFIX: &str = "to_";
 

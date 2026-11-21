@@ -65,7 +65,7 @@ I needed a way to automatically force the AI agents I use to comply with a certa
 
 I needed encode these rules quick, so I chose vibe-coding.
 
-The code quality of this code base is not as important as the code quality this code base will enforce upon others. This code base is, after all, scaffholding.
+The code quality of this code base is not as important as the code quality this code base will enforce upon others. This code base is, after all, scaffolding.
 
 ## License
 

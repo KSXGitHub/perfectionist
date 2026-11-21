@@ -130,7 +130,7 @@ impl<'tcx> LateLintPass<'tcx> for SingleLetterFunctionParam {
         _def_id: rustc_span::def_id::LocalDefId,
     ) {
         if !matches!(kind, FnKind::ItemFn(..) | FnKind::Method(..)) {
-            // Closure parameters are the closure rule's territory.
+            // Closure parameters belong to the closure rule.
             return;
         }
         // The first param of a method is `self`, whose pattern is the

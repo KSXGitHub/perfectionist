@@ -18,7 +18,7 @@ adapter does all of them. It triggers on:
 - A predicate that is a conjunction of two or more tests, each
   naming the item, where each test is a filtering adapter of its
   own.
-- A body under `filter_map`, `find_map` or `map_while` that welds
+- A body under `filter_map`, `find_map` or `map_while` that joins
   a guard to a value or runs two or more stages, where each stage
   is the adapter that does it.
 
@@ -69,7 +69,7 @@ same things have to be read out of that expression first.
 ## Applicability
 
 A conjunction is rewritten, one adapter per test, and so is a chain
-under an adapter that keeps the last step. A guard welded to a value
+under an adapter that keeps the last step. A guard joined to a value
 is described rather than rewritten, its split having more than one
 reasonable text.
 

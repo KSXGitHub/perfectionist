@@ -7,7 +7,7 @@
 //! such reading, a leading `>` there being as likely a shell prompt or
 //! an arrow.
 //!
-//! One shape wearing the `>` marker is not a quotation. A block
+//! One shape carrying the `>` marker is not a quotation. A block
 //! opening `[!NOTE]`, `[!WARNING]` or any other bracketed-bang name is
 //! an alert: an aside in the author's own voice that borrows the
 //! blockquote syntax to render as a callout. Those are scanned like

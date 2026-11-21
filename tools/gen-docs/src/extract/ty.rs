@@ -1,5 +1,5 @@
 //! Type-graph helpers used while extracting a rule's `Config`:
-//! translating Rust types to TOML-flavoured labels for the field
+//! translating Rust types to TOML labels for the field
 //! table, and discovering which project-local types (enums and
 //! structs) those fields reach so the renderer can show their shape.
 
@@ -216,7 +216,7 @@ pub(crate) fn is_option(ty: &Type) -> bool {
     )
 }
 
-/// Translate a `syn::Type` into a TOML-flavoured type label. The
+/// Translate a `syn::Type` into a TOML type label. The
 /// renderer never shows Rust syntax to the reader; TOML authors
 /// write arrays as `[a, b]`, integers without sign annotations, and
 /// strings without `char` / `&str` / `Cow` distinctions, so the

@@ -44,7 +44,7 @@ fn small(value: &usize) -> bool {
     *value < 100
 }
 
-// Bad: three fallible stages welded together, one more than the pair the
+// Bad: three fallible stages joined together, one more than the pair the
 // shape is named for.
 fn three_fallible(lines: std::vec::IntoIter<&'static str>) -> Vec<usize> {
     lines

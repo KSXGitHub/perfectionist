@@ -831,7 +831,7 @@ pub fn synth_splittable_adapter_predicate(input: TokenStream) -> TokenStream {
 /// which inherits the user-span of
 /// `synth_splittable_adapter_option_chain`.
 ///
-/// `VARS` is the fixture's own `const`. The synthesised closure welds a
+/// `VARS` is the fixture's own `const`. The synthesised closure joins a
 /// guard to a value, which the rule fires on when hand-written, so only
 /// the proc-macro guard keeps the fixture silent.
 #[proc_macro_derive(
