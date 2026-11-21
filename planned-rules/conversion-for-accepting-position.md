@@ -131,26 +131,24 @@ impls.
 one level std added later is `impl PartialEq<&str> for OsString`,
 which is `#[stable(feature = "os_str_str_ref_eq", since = "1.29.0")]`
 and is what an owned `OsString` compared against a literal needs.
-`os_str == lit` agreed with `os_str == OsStr::new(lit)` on every one
-of 67072 comparisons: each of the 256 byte values as a one-byte OS
-string against a spread of literals, and every two-byte pair against
-a literal derived from its first byte. `OsStr` also has
-`PartialOrd<str>`, so the ordering operators belong to this family
-too.
+`os_str == lit` agreed with `os_str == OsStr::new(lit)` on every
+input tried: each of the 256 byte values as a one-byte OS string
+against literals including the empty one and several holding `/`,
+and every two-byte pair against a literal derived from its first
+byte. `OsStr` also has `PartialOrd<str>`, so the ordering operators
+belong to this family too.
 
 **The byte-buffer and text families.** `Vec<u8>` compares against a
 byte-string literal and `String` against a string literal, so
 `v.as_slice() == b"xy"` and `s.as_str() == "x"` each drop their view.
-`v == lit` agreed with `v.as_slice() == lit` on all 655360
-comparisons: every one-byte and two-byte buffer against literals
-including the empty one and two that are not valid UTF-8. `s == lit`
-agreed with `s.as_str() == lit` on all 98304 comparisons, over every
-`char` below U+2000 against literals including `é` and U+FFFD, and a
-`Cow<'_, str>` and a `Box<str>` over the same inputs agreed on 98304
-more. The owned side may also be the right-hand operand, which is how
-this repository writes it: `left == owned` agreed with
-`left == owned.as_str()` on all 49152 comparisons over those same
-inputs.
+`v == lit` agreed with `v.as_slice() == lit` over every one-byte and
+two-byte buffer, against literals including the empty one and two
+that are not valid UTF-8. `s == lit` agreed with `s.as_str() == lit`
+over every `char` below U+2000, against literals including `é` and
+U+FFFD, and a `Cow<'_, str>` and a `Box<str>` agreed over those same
+inputs. The owned side may also be the right-hand operand, which is
+how this repository writes it, and `left == owned` agreed with
+`left == owned.as_str()` over those inputs too.
 
 **The path family is the exception, and it is exempt by default.**
 `impl PartialEq<str> for Path` exists, so `path == "a/b"` compiles.
@@ -158,8 +156,8 @@ It is `#[stable(feature = "eq_str_for_path", since = "1.91.0")]`, and
 it does **not** compare the string. It compares components:
 `Path::new("a/b") == "a//b"` is `true`, where `"a/b" == "a//b"` is
 `false`. The rewrite is still an identity. `path == lit` agreed with
-`path == Path::new(lit)` and with `path == OsStr::new(lit)` on all
-242 pairs drawn from a set of shapes including `//`, `a/b/`, `./a`,
+`path == Path::new(lit)` and with `path == OsStr::new(lit)` on every
+pair drawn from a set of shapes including `//`, `a/b/`, `./a`,
 `a/./b` and `a/../b`, so the rule could fire here and be correct.
 [Configuration](#configuration) says why it does not.
 
