@@ -10,7 +10,7 @@ extern crate proc_macro;
 
 use proc_macro::{Delimiter, Group, Ident, Punct, Span, TokenStream, TokenTree};
 
-/// An over-threshold callback in which every token wears one user
+/// An over-threshold callback in which every token carries one user
 /// span, the way `quote_spanned!(field.span() => ...)` emits a whole
 /// expansion at the span of something the caller wrote.
 const SYNTHESISED: &str = "const _: () = { fn _synth() { \
@@ -275,8 +275,8 @@ fn rebuild(stream: TokenStream) -> TokenStream {
         .collect()
 }
 
-/// Appends a synthesised call whose tokens wear the item's first span
-/// and whose synthesised callback wears a parenthesis group's, so the
+/// Appends a synthesised call whose tokens carry the item's first span
+/// and whose synthesised callback carries a parenthesis group's, so the
 /// two sit on separate spans the caller wrote.
 ///
 /// Nothing here is the caller's code, so nothing is reported.

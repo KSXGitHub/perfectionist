@@ -161,9 +161,8 @@ impl Person {
         self.first_name.clone()
     }
 
-    // Bad: named for a field, which no configuration talks the rule out
-    // of. The name says it copies, but so does the field it is named
-    // after.
+    // Bad: named for a field, which no configuration exempts. The name
+    // says it copies, but so does the field it is named after.
     fn clone_url(&self) -> String {
         self.clone_url.clone()
     }

@@ -96,7 +96,7 @@ fn the_autofix_leaves_the_crate_compiling() {
     );
 
     // A revert would also leave the file untouched, which the assertion
-    // above cannot tell from a rule that stood down. Comparing the whole
+    // above cannot tell from a rule that never fired. Comparing the whole
     // file pins every rewrite, down to the brackets, and holds the
     // commented predicate to being left alone.
     assert_eq!(

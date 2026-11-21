@@ -22,8 +22,8 @@
      visible behind would leave only a thin strip of page peeking
      out, and that strip's scroll-with-page behaviour is the exact
      mobile-browser quirk we're working around in the JS. Making
-     the overlay full-screen instead cuts the surface area where
-     the quirk could manifest. The 600px line is the same
+     the overlay full-screen instead leaves no strip where
+     the quirk could appear. The 600px line is the same
      phone/tablet boundary `table.index` uses to switch from
      tabular to card-stacked layout, so the two layouts stay in
      lockstep. */

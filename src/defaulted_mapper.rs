@@ -158,7 +158,7 @@ pub(crate) fn default_is_simple(default: &Expr<'_>) -> bool {
 /// receiver's own answers what the two arguments answer together.
 pub(crate) enum Collapse {
     /// A predicate of the receiver's own, with the Rust version it
-    /// arrived in. That version is younger than the method it
+    /// arrived in. That version is newer than the method it
     /// replaces, so the help names the chain beside it.
     Predicate {
         method: &'static str,

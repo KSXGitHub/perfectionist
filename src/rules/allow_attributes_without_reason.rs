@@ -40,7 +40,7 @@ declare_tool_lint! {
     /// `clippy::allow_attributes_without_reason` (`restriction`, off
     /// by default) flags a missing `reason = "..."` on the same two
     /// levels this rule does, `#[allow]` and `#[expect]`, and only
-    /// those, so the trigger overlaps. This rule adds a quality floor
+    /// those, so the trigger overlaps. This rule adds a threshold
     /// Clippy lacks: `min_reason_length` (default 3) flags a
     /// content-free `reason = "ok"` that Clippy accepts, and a blank
     /// `reason = ""` is treated as missing. It also takes a per-lint
@@ -84,10 +84,10 @@ struct Config {
     /// Minimum length of the `reason` value. A one- or two-character
     /// reason (`"x"`, `"ok"`) satisfies the literal presence
     /// requirement but conveys nothing; the default floor of 3
-    /// excludes those cases. Projects that want a higher bar (e.g.
-    /// require a full sentence) can raise it. The lower bound is `1`,
-    /// and `0` is rejected at parse time, since an empty literal is
-    /// already treated as a missing reason regardless of this knob.
+    /// excludes those cases. Projects that want a longer reason can
+    /// raise it. The lower bound is `1`, and `0` is rejected at parse
+    /// time, since an empty literal is already treated as a missing
+    /// reason regardless of this knob.
     min_reason_length: NonZeroUsize,
 }
 

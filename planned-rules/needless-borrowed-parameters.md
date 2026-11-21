@@ -132,13 +132,13 @@ The lint stays silent when:
 #### Test code and build scripts
 
 The rule's whole argument is that the owned signature saves the
-caller a copy. Two bodies of code never collect on that: a test,
+caller a copy. Two bodies of code never benefit from that: a test,
 which is not on anyone's hot path, and a build script, which runs
 once per build. Both still pay the argument's price — every call
 site that holds a borrow has to write the `.to_owned()` the callee
 just gave up — and a test's call sites are exactly the ones that
-hold borrows, since they pass string literals. So the trade the rule
-is selling is a straight loss there, and both are exempt by default.
+hold borrows, since they pass string literals. So the rule's
+argument does not hold there, and both are exempt by default.
 `exempt_tests` / `exempt_build_scripts` turn the exemptions
 off for a project that wants one signature style everywhere.
 

@@ -21,8 +21,8 @@
 //! Once the last round has run, the project has to report nothing at
 //! all, which is what settling means. That one is an assertion
 //! rather than a stored file: a blessing run writes what the run
-//! produced, so a stored copy would absorb a regression that left
-//! findings behind.
+//! produced, so a stored copy would be rewritten to hold whatever a
+//! regression left behind, and pass.
 //!
 //! Once the last round has run, a run also asserts the project still
 //! behaves: its own tests pass, and its `main` prints what it
@@ -34,15 +34,15 @@
 //! there is what the settled tree is held to.
 //!
 //! Clippy's own lints are not under test. Clippy is in a round to
-//! show that its rewrites and this plugin's do not fight, so a
-//! finding of Clippy's earns a place in a stored `.stderr` only where
-//! a perfectionist rewrite produced it, and the project as stored
+//! show that its rewrites and this plugin's do not undo each other,
+//! so a finding of Clippy's is stored in a `.stderr` only where a
+//! perfectionist rewrite produced it, and the project as stored
 //! reports none at all.
 //!
 //! The number of rounds comes from the fixture rather than from
 //! driving the project to a fixpoint, so a project that settles in
 //! fewer rounds than declared, or needs more, is a failure rather
-//! than something the harness absorbs.
+//! than something the harness accepts.
 
 pub mod config;
 pub mod diagnostics;
@@ -263,9 +263,9 @@ fn check_handed(
 /// Hold the project as stored to reporting nothing of Clippy's.
 ///
 /// Clippy is in a round to show that its rewrites and this plugin's
-/// do not fight rather than because its lints are under test, so a
-/// finding of Clippy's is worth storing only where a perfectionist
-/// rewrite produced it. No rewrite has reached the project the first
+/// do not undo each other rather than because its lints are under
+/// test, so a finding of Clippy's is stored only where a
+/// perfectionist rewrite produced it. No rewrite has reached the project the first
 /// round is handed, so a finding of Clippy's there was planted, and a
 /// shape it reports is one Clippy would rewrite before the rule under
 /// test had a say.
@@ -413,9 +413,9 @@ pub fn fixtures(repository_dir: &Path) -> Vec<String> {
     names
 }
 
-/// Fill the build cache the fixture `name` uses, so a later run pays
-/// for the standard library, the registry dependencies and the plugin
-/// from the cache rather than from cold.
+/// Fill the build cache the fixture `name` uses, so a later run takes
+/// the standard library, the registry dependencies and the plugin
+/// from the cache rather than compiling them again.
 ///
 /// Everything a round compiles is compiled here: each linter has a
 /// wrapper of its own, so each gets a cache lane of its own, and the

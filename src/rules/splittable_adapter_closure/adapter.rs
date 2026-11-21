@@ -1,4 +1,4 @@
-//! Which adapters the chain trigger speaks about, where each one's item
+//! Which adapters the chain trigger covers, where each one's item
 //! parameter sits in the closure it takes, and what a lifted step goes
 //! into.
 //!
@@ -22,7 +22,7 @@ use super::signature::{self, Handing};
 use rustc_lint::LateContext;
 use rustc_span::Symbol;
 
-/// One adapter the chain trigger speaks about.
+/// One adapter the chain trigger covers.
 #[derive(Clone, Copy)]
 pub(super) struct Adapter {
     /// Which of the method's arguments is the closure holding the item.
@@ -146,7 +146,7 @@ fn derived(cx: &LateContext<'_>, call: &Call<'_>) -> Option<Adapter> {
 /// The adapter a lifted step goes into, where the family is read rather
 /// than tabled.
 ///
-/// Every family the rule speaks about calls it `map`, and a trait that
+/// Every family the rule covers calls it `map`, and a trait that
 /// does not declare one is left alone rather than guessed at.
 const LIFT_TARGET: &str = "map";
 

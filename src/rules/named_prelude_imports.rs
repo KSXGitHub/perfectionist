@@ -284,7 +284,7 @@ impl NamedPreludeImports {
 
         // Only one rewrite is offered per statement: it replaces the
         // statement's whole use tree, so it already covers every
-        // cherry-pick in it. It rides the first of them; the rest carry
+        // cherry-pick in it. The first of them carries it; the rest carry
         // the fallback help.
         emit(cx, first, statement.rewrite(cx));
         for &leaf in rest {
@@ -295,7 +295,7 @@ impl NamedPreludeImports {
 
 /// A rewrite onto a canonical path every importer can name is
 /// mechanical; one onto a path that is private somewhere up to the
-/// crate root needs a human's eye.
+/// crate root needs review.
 fn applicability(nameable: bool) -> Applicability {
     if nameable {
         Applicability::MachineApplicable

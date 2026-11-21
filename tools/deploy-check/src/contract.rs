@@ -169,7 +169,7 @@ pub(crate) fn assert_version_only_diff(
             after: (*extra_a).to_owned(),
         });
     }
-    // Final byte-level sanity check: `str::lines()` smooths over
+    // Final byte-level sanity check: `str::lines()` hides
     // trailing-newline-at-EOF changes and conflates `\n` / `\r\n`,
     // so a release commit that also alters the version line's EOL
     // style or strips/adds the file's final newline can pass the

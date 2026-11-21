@@ -75,9 +75,9 @@ scrutinee: a short one folds into the header, and a chain binds to a
 judgement about the surrounding code rather than a fact about the
 shape, so no spelling of it is the rule's to make. A
 `MachineApplicable` fix would be applied unreviewed by `--fix`, and
-on a chained scrutinee it makes the code worse, with rustfmt baking
-the result in. So the diagnostic
-carries help naming both forms and why the second exists, in the
+on a chained scrutinee it makes the code worse, with rustfmt then
+reformatting the result. So the diagnostic carries help naming both
+forms and why the second exists, in the
 shape `perfectionist::overly_long_method_chain` uses:
 
 > **help:** an `Option` is already an iterator of at most one item.

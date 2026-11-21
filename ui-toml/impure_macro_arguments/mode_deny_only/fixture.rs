@@ -1,6 +1,6 @@
 // `mode = "deny_only"` flags only invocations of the curated deny
 // list (`debug_assert*`). Every other macro is silently accepted, so
-// the uncatalogued `my_macro!` here gets a free pass even though its
+// the uncatalogued `my_macro!` here is accepted even though its
 // argument is an impure function call.
 
 macro_rules! my_macro {

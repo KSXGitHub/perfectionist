@@ -413,7 +413,7 @@ json_macro_path = "serde_json::json"
   helper is current for the pinned Rust toolchain — sibling rule
   [`overly-long-format-macro`](./overly-long-format-macro.md) leans on the same
   helper; pick the live API name at implementation time rather
-  than baking it into the planning doc. Walk the
+  than hard-coding it in the planning doc. Walk the
   template with the catalogue's shared format-template
   combinators (see
   [`uninlined-derive-more-args`](./uninlined-derive-more-args.md)
