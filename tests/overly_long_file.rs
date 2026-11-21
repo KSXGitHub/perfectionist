@@ -25,7 +25,15 @@ struct RuleConfig {
     max_lines: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     exempt_tests: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    exclude_imports: Option<bool>,
 }
+
+/// A crate root of 3 lines of code below a 4-line `use` item.
+const IMPORT_SOURCES: &[(&str, &str)] = &[(
+    "src/lib.rs",
+    include_str!("fixtures/overly_long_file/imports.rs"),
+)];
 
 fn dylint_toml(config: RuleConfig) -> String {
     let table: BTreeMap<&str, RuleConfig> = [(LINT_NAME, config)].into_iter().collect();
@@ -158,4 +166,34 @@ fn exempt_tests_leaves_test_files_alone() {
     assert_not_flagged(&stderr, "tests.rs");
     assert_not_flagged(&stderr, "it.rs");
     assert_not_flagged(&stderr, "bench.rs");
+}
+
+/// Run the import fixture with a 3-line limit and the given
+/// `exclude_imports`, and return its stderr.
+fn run_imports(package_name: &str, exclude_imports: Option<bool>) -> String {
+    let (_temp, stderr, success) = run_project_with_config(
+        package_name,
+        cargo_manifest_dir(),
+        &shared_target_dir(),
+        IMPORT_SOURCES,
+        &dylint_toml(RuleConfig {
+            max_lines: Some(3),
+            exclude_imports,
+            ..RuleConfig::default()
+        }),
+    );
+    assert!(success, "`cargo dylint` failed; stderr was:\n{stderr}");
+    stderr
+}
+
+#[test]
+fn imports_are_not_counted_by_default() {
+    let stderr = run_imports("fixture_olfile_imports_default", None);
+    assert_not_flagged(&stderr, "lib.rs");
+}
+
+#[test]
+fn exclude_imports_false_counts_import_lines() {
+    let stderr = run_imports("fixture_olfile_imports_counted", Some(false));
+    assert_flagged(&stderr, "lib.rs");
 }
