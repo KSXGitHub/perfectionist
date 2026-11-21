@@ -1,0 +1,6 @@
+cli_package = "fixture-plain-cli"
+
+[[runs]]
+name = "default"
+rounds = 2
+

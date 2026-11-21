@@ -1,0 +1,3 @@
+folded_command_setter: 2
+mutating_command_builder: 1
+redundant_derive_more_forward_template: wrapped
