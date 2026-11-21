@@ -1,0 +1,48 @@
+--- a/clap_help_markdown.rs
++++ b/clap_help_markdown.rs
+@@ -22,7 +22,7 @@ use std::path::PathBuf;
+ /// Path to the [`PackageManifest`].
+ #[derive(clap::Parser)]
+ struct Cli {
+-    /// Path to the `manifest` file.
++    /// Path to the manifest file.
+     code_span: PathBuf,
+ 
+     /// Path to the [`PackageManifest`].
+@@ -64,22 +64,22 @@ struct Cli {
+     #[arg(verbatim_doc_comment)]
+     verbatim: PathBuf,
+ 
+-    /** Block doc with a `code` span. */
++    /** Block doc with a code span. */
+     block_doc: PathBuf,
+ 
+-    /// First run with a `first` span.
++    /// First run with a first span.
+     #[arg(long)]
+-    /// Second run with a `second` span, after an interleaved attribute.
++    /// Second run with a second span, after an interleaved attribute.
+     split_doc: PathBuf,
+ }
+ 
+-/// Top-level `command` summary.
++/// Top-level command summary.
+ #[derive(clap::Subcommand)]
+ enum Command {
+     /// Create the [`Lockfile`].
+     Create,
+ 
+-    /// Run with a `--flag`.
++    /// Run with a --flag.
+     Run,
+ }
+ 
+@@ -88,7 +88,7 @@ enum Command {
+ #[derive(clap::ValueEnum)]
+ #[derive(Clone)]
+ enum Mode {
+-    /// The `fast` mode.
++    /// The fast mode.
+     Fast,
+     /// The slow mode.
+     Slow,

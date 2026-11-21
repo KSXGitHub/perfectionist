@@ -1,0 +1,69 @@
+--- a/overly_long_print_macro.rs
++++ b/overly_long_print_macro.rs
+@@ -14,7 +14,10 @@ macro_rules! info {
+ fn _println_basic() {
+     let err_src = "disk";
+     let magic_cmd = "fsck";
+-    println!("error: the operation failed because of {err_src} deep inside the subsystem\nhint: run {magic_cmd} to repair it");
++    println!(
++        "error: the operation failed because of {err_src} deep inside the subsystem\n\
++        hint: run {magic_cmd} to repair it",
++    );
+ }
+ 
+ // Bad: `writeln!`, whose template is the second argument, behind the
+@@ -23,7 +26,10 @@ fn _writeln_second_arg() -> std::fmt::Result {
+     let mut out = String::new();
+     let header = "Content-Type";
+     let body = "text/plain";
+-    writeln!(out, "header field that is intentionally verbose: {header} and keeps going\nbody field follows here: {body}")?;
++    writeln!(
++        out, "header field that is intentionally verbose: {header} and keeps going\n\
++        body field follows here: {body}",
++    )?;
+     Ok(())
+ }
+ 
+@@ -32,19 +38,28 @@ fn _writeln_second_arg() -> std::fmt::Result {
+ fn _positional_args() {
+     let first = 1;
+     let second = 2;
+-    println!("the first value is {} and there is plenty of padding here to clear the width limit\nthe second value is {}", first, second);
++    println!(
++        "the first value is {} and there is plenty of padding here to clear the width limit\n\
++        the second value is {}", first, second,
++    );
+ }
+ 
+ // Bad: `eprintln!` to stderr is in the target set.
+ fn _eprintln_basic() {
+-    eprintln!("warning: the request took an unusually long time to finish and may have stalled\ncheck the upstream service");
++    eprintln!(
++        "warning: the request took an unusually long time to finish and may have stalled\n\
++        check the upstream service",
++    );
+ }
+ 
+ // Bad: the `log` family matches by final path segment, so `info!` is
+ // eligible.
+ fn _log_family() {
+     let user = "alice";
+-    info!("user {user} performed an action that we want to record in a fairly verbose log line\nfollow-up details are here");
++    info!(
++        "user {user} performed an action that we want to record in a fairly verbose log line\n\
++        follow-up details are here",
++    );
+ }
+ 
+ // Skipped: the source line is within the width limit.
+@@ -88,7 +103,9 @@ fn _newline_then_whitespace() {
+ // not buried inside it.
+ fn _trailing_line_comment() {
+     let value = 1;
+-    println!("a long message padded out so that this source line comfortably exceeds the width limit\nsecond {}", value // keep this note
++    println!(
++        "a long message padded out so that this source line comfortably exceeds the width limit\n\
++        second {}", value, // keep this note
+     );
+ }
+ 

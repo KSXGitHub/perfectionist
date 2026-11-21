@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 #![allow(unused_imports, unused, reason = "ui fixture deliberately leaves imports unused")]
 
 mod defs {

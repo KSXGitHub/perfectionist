@@ -16,8 +16,18 @@
 //! commit those directives into every fixture,
 //! [`copy_fixtures_with_directives`] injects them into a temporary
 //! copy at test time.
+//!
+//! The same copy is where a `// run-rustfix` fixture's `.fixed`
+//! comes from. compiletest reads the fixed form it compares against
+//! from a file beside the fixture, and committing that would commit a
+//! second copy of the fixture to show the handful of lines a rewrite
+//! touches, so what is committed is a `.diff`, and the `.fixed` the
+//! copy holds is written from it.
+
+pub(crate) mod patch;
 
 use crate::TempDir;
+use patch::try_apply;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
@@ -54,6 +64,37 @@ const NORMALIZE_STDERR_DIRECTIVES: &[&str] = &[
     r#"// normalize-stderr-test: "(?m) +$" -> """#,
     r#"// normalize-stderr-test: "(\n)\n+\z" -> "$1""#,
 ];
+
+/// The directive a fixture carries to have rustfix rewrite the copy
+/// and compiletest compare that rewrite against a `.fixed`.
+const RUN_RUSTFIX: &str = "// run-rustfix";
+
+/// Whether rustfix rewrites `source`, which is the fixture whose
+/// fixed form a `.diff` stores.
+pub(crate) fn runs_rustfix(source: &str) -> bool {
+    source.lines().any(|line| line == RUN_RUSTFIX)
+}
+
+/// `text` with the header [`inject_directives`] put in front of it
+/// taken back off, which is what a fixture's own text looks like.
+///
+/// Each directive is required in place rather than counted off, so a
+/// header that stops matching fails rather than eating a line of the
+/// fixture.
+pub(crate) fn strip_directives(text: &str) -> &str {
+    let mut rest = text;
+    for directive in NORMALIZE_STDERR_DIRECTIVES {
+        let (line, tail) = rest
+            .split_once('\n')
+            .unwrap_or_else(|| panic!("a staged fixture carries the header, got {rest:?}"));
+        assert_eq!(
+            line, *directive,
+            "the header is out of step with what it writes",
+        );
+        rest = tail;
+    }
+    rest
+}
 
 /// A throwaway copy of a fixture tree, laid out so that compiletest
 /// names each test after the fixture's repository-relative path.
@@ -113,6 +154,7 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
     let temp = TempDir::new().expect("create fixture copy dir");
     let destination = temp.path().join(relative);
     copy_dir(&manifest_dir.join(relative), &destination);
+    materialise_fixed(&destination);
     inject_directives(&destination);
     // compiletest recurses from `src_base`, and the copy holds nothing
     // but `relative`, so starting at the first component still collects
@@ -126,6 +168,44 @@ pub(crate) fn copy_fixtures_with_directives(manifest_dir: &str, relative: &str) 
         _temp: temp,
         src_base,
     }
+}
+
+/// Write the `.fixed` of every `.rs` under `dir` that stores a
+/// `.diff`, so compiletest has the fixed form to compare its rustfix
+/// output against. The `.diff` is applied to the fixture as
+/// committed, before [`inject_directives`] puts a header on either
+/// file.
+fn materialise_fixed(dir: &Path) {
+    for path in fixture_sources(dir) {
+        let diff = path.with_extension("diff");
+        if !diff.exists() {
+            continue;
+        }
+        let original = fs::read_to_string(&path)
+            .unwrap_or_else(|error| panic!("read {}: {error}", path.display()));
+        let stored = fs::read_to_string(&diff)
+            .unwrap_or_else(|error| panic!("read {}: {error}", diff.display()));
+        let what = format!("{}", diff.display());
+        let text = match try_apply(&original, &stored, &what) {
+            Ok(text) => text,
+            // A diff that no longer fits its fixture is the one a
+            // blessing run exists to replace, and writing nothing
+            // leaves compiletest to stage what rustfix produced.
+            Err(_) if *crate::bless::ENABLED => continue,
+            Err(reason) => panic!("{reason}"),
+        };
+        let fixed = path.with_extension("fixed");
+        fs::write(&fixed, text)
+            .unwrap_or_else(|error| panic!("write {}: {error}", fixed.display()));
+    }
+}
+
+/// Put `header` and a newline in front of what `file` holds.
+fn prepend(file: &Path, header: &str) {
+    let body =
+        fs::read_to_string(file).unwrap_or_else(|error| panic!("read {}: {error}", file.display()));
+    fs::write(file, format!("{header}\n{body}"))
+        .unwrap_or_else(|error| panic!("write {}: {error}", file.display()));
 }
 
 /// Recursively copy the contents of `source` into `destination`,
@@ -149,9 +229,9 @@ fn copy_dir(source: &Path, destination: &Path) {
 /// skips an `auxiliary` directory itself, treating what is in one as
 /// something a fixture builds against rather than a test.
 ///
-/// [`inject_directives`] and [`crate::bless`] have to agree on this
-/// set: a fixture the header misses is linted at its real line and
-/// column numbers, and recording that output would commit them.
+/// Every caller has to agree on this set: a fixture the header misses
+/// is linted at its real line and column numbers, and recording that
+/// output would commit them.
 pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();
     for entry in fs::read_dir(dir).expect("read fixture dir") {
@@ -169,12 +249,20 @@ pub(crate) fn fixture_sources(dir: &Path) -> Vec<PathBuf> {
 }
 
 /// Prepend [`NORMALIZE_STDERR_DIRECTIVES`] to every fixture under
-/// `dir` that [`fixture_sources`] collects.
+/// `dir` that [`fixture_sources`] collects, and to the `.fixed` of
+/// one that has it.
 fn inject_directives(dir: &Path) {
     let header = NORMALIZE_STDERR_DIRECTIVES.join("\n");
     for path in fixture_sources(dir) {
-        let body = fs::read_to_string(&path).expect("read fixture .rs");
-        fs::write(&path, format!("{header}\n{body}")).expect("write fixture .rs");
+        prepend(&path, &header);
+        // rustfix rewrites this copy, header and all, and compiletest
+        // compares that rewrite against the `.fixed`, so a header on
+        // one file and not the other fails the comparison on the
+        // header itself.
+        let fixed = path.with_extension("fixed");
+        if fixed.exists() {
+            prepend(&fixed, &header);
+        }
     }
 }
 

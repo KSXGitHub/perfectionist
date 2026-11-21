@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // Bad: `Debug` should come after `Clone` and `Copy` under
 // alphabetical ordering.
 #[derive(Debug, Clone, Copy)]
