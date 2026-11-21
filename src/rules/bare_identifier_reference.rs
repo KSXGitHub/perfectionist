@@ -396,7 +396,7 @@ impl BareIdentifierReference {
         // One slot per namespace (`TypeNS`, `ValueNS`, `MacroNS`). The
         // first set is rustdoc's resolution view (for ambiguity); the
         // second is the subset that survives the rule's filters (for
-        // choosing a disambiguator that points at an endorsed target).
+        // choosing a disambiguator that points at an eligible target).
         let mut namespaces = [false; 3];
         let mut eligible_namespaces = [false; 3];
         let mut has_eligible_target = false;
@@ -468,7 +468,7 @@ impl BareIdentifierReference {
         let distinct = namespaces.iter().filter(|present| **present).count();
         Some(if distinct > 1 {
             // Prefer a namespace that has an eligible target so the help
-            // never steers the reader at a private / out-of-policy item;
+            // never points the reader at a private / out-of-policy item;
             // fall back to the full set if the only eligible target
             // carries no namespace (e.g. a lone ctor). `distinct > 1`
             // guarantees the chosen mask has a present namespace.

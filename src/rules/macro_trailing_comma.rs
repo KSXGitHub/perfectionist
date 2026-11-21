@@ -42,7 +42,7 @@ declare_tool_lint! {
     /// default `trailing_comma = "Vertical"` policy keeps argument lists
     /// uniform: every multi-line list ends with a comma, every single-line
     /// list does not. rustfmt opts out of macro bodies because a macro
-    /// matcher *can* make the trailing comma load-bearing; for the curated
+    /// matcher *can* make the trailing comma meaningful; for the curated
     /// macros covered by this lint, it cannot, and the policy applies
     /// without risk.
     ///

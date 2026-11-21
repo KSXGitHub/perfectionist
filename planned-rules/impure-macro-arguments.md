@@ -62,8 +62,8 @@ Still pending:
   site.** A configured entry of `"vec"`, `"format"`, or
   `"assert_eq"` continues to match the invocation's final
   syntactic segment without consulting resolution — the
-  ecosystem names that earn a slot on the curated lists are
-  distinctive enough that the syntactic shape is sufficient,
+  ecosystem names on the curated lists are distinctive enough
+  that the syntactic shape is sufficient,
   and the matcher should not have to canonicalise the same
   macro across `core::format` vs `std::format` re-export chains
   to do its job. The resolution path is reserved for
@@ -152,7 +152,7 @@ Still pending:
   and the resulting "pure path" leaves an unexpected tail in the
   suffix walk, which still bottoms out as impure — so the lint
   classification is correct by coincidence. Tighten `take_pure_atom`
-  to reject reserved-keyword idents so the right door owns the
+  to reject reserved-keyword idents so the right branch owns the
   decision.
 
 The "What to lint" pipeline below applies to the implemented
@@ -294,7 +294,7 @@ The lint accepts any argument whose outermost shape is one of:
   evaluates `expr` at most once at runtime, so neither shape
   benefits from a let-bind rewrite when its parts are already
   pure. The indexing suffix `base[index]` is handled by the
-  postfix walker and is unaffected by this carve-out.
+  postfix walker and is unaffected by this exception.
 - A binary chain whose every operand is pure and whose
   every operator is side-effect-free in the syntactic sense:
   the arithmetic operators (`+`, `-`, `*`, `/`, `%`), the
@@ -309,7 +309,7 @@ The lint accepts any argument whose outermost shape is one of:
   `as_deref`, `as_slice`) or in the project's
   `extra_pure_methods`. `vec.len()`, `s.is_empty()`,
   `opt.as_ref()` evaluate the same way no matter how many
-  times the macro touches them, so the let-bind rewrite
+  times the macro evaluates them, so the let-bind rewrite
   would only force the call to run in release builds for
   no benefit. Method calls with arguments, generic method
   calls, and method names outside the configured set stay
@@ -348,9 +348,9 @@ need to appear inline.
 The binary-chain rule reflects an important consequence for
 `debug_assert*`: a side-effect-free comparison of pure
 operands evaluates the same way regardless of how many times the
-macro touches it, and the lint's `let`-binding hint would
+macro evaluates it, and the lint's `let`-binding hint would
 *force* the comparison to evaluate even in release builds. The
-pure-chain carve-out keeps the lint focused on the genuine
+pure-chain exception keeps the lint focused on the genuine
 hazard (side-effecting expressions like `map.insert(k, v)`
 passed where the macro might drop them) and away from the noise
 case (comparing two locals).
@@ -393,7 +393,7 @@ an impure top-level argument, regardless of macro. Add
 specific exceptions to `allow_extra`; there is no built-in
 allow set in this mode.
 
-The maximum-paranoia stance. Not the default because
+The strictest mode. Not the default because
 `format!("hello {name}", compute())` is fine in practice and
 flagging every macro invocation is exhausting.
 
@@ -488,7 +488,7 @@ narrower than this one; the two lists are not kept in
 lockstep.
 
 Flagging unlisted macros by default is deliberate: the rule
-isn't useful if every unrecognised proc macro gets a free pass.
+isn't useful if every unrecognised proc macro is accepted.
 Projects extend `allow_extra` with the third-party macros they
 trust to evaluate each argument exactly once.
 

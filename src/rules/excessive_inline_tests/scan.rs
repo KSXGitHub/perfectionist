@@ -95,7 +95,7 @@ fn classify(cx: &LateContext<'_>, item: &Item<'_>, files: &mut BTreeMap<BytePos,
         // call site. Count a production expansion toward that file so a
         // file whose only production is macro-generated still fails the
         // all-test exemption; but never charge macro-expanded test code
-        // to the budget (a single macro call must not bust it), and do
+        // to the budget (a single macro call must not exceed it), and do
         // not recurse into the expansion.
         if !is_test {
             record_production(cx, item.span.source_callsite(), files);

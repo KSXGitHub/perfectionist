@@ -31,7 +31,7 @@ The two are **not** semantically equivalent in general:
   is where validation, normalisation, or splitting lives.
 - `transparent` inherits the inner type's borrowing behaviour
   (`Cow<'de, str>` borrows from input where possible);
-  `from = "T"` ties the borrow story to `T`.
+  `from = "T"` ties the borrowing behaviour to `T`.
 
 The two are *operationally* interchangeable only when the
 `From<Inner>` and `From<Self> for Inner` impls are trivial moves

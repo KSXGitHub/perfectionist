@@ -103,7 +103,7 @@ Detection difficulty: **hard.** This is the sub-lint most likely to
 false-positive, both because the body shapes that look reducible
 sometimes hide subtle differences (e.g., an early-bail `if` that
 returns a different message) and because derive_more's expression
-DSL is a moving target across major versions. Default off.
+DSL changes across major versions. Default off.
 
 ### Hardest: `Error`
 
@@ -207,7 +207,7 @@ configuration knobs documented above.
 
 This is a stylistic preference, not a correctness issue.
 Hand-written `impl From for ...` blocks are the most common
-AI-generated alternative to a one-line derive. They sneak past code
+AI-generated alternative to a one-line derive. They pass code
 review because they look "more explicit" — the model produced four
 lines of code where one attribute would do. The lint catches them
 mechanically and pushes the codebase toward the smaller,

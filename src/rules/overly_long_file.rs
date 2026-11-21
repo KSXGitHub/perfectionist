@@ -1,4 +1,4 @@
-use crate::code_lines::count_code_lines;
+use crate::code_lines::count_code_lines_excluding;
 use crate::common::{DefaultState, plural};
 use crate::rule_index::{Register, rule};
 use crate::test_code::item_in_test_code;
@@ -8,6 +8,7 @@ use rustc_hir::HirId;
 use rustc_lint::{LateContext, LateLintPass, LintContext, LintStore};
 use rustc_session::{declare_tool_lint, impl_lint_pass};
 use rustc_span::SourceFile;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 declare_tool_lint! {
@@ -70,6 +71,10 @@ struct Config {
     /// benchmark target. Defaults to `false`, so a test file is held
     /// to the same limit as the code it exercises.
     exempt_tests: bool,
+    /// Whether lines belonging to top-level `use` items are left out of
+    /// the count. Defaults to `true`, so an import layout that puts each
+    /// item on its own line does not use up the budget.
+    exclude_imports: bool,
 }
 
 impl Default for Config {
@@ -77,6 +82,7 @@ impl Default for Config {
         Self {
             max_lines: DEFAULT_MAX_LINES,
             exempt_tests: false,
+            exclude_imports: true,
         }
     }
 }
@@ -114,7 +120,12 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
         let Some(source) = file.src.as_deref() else {
             return;
         };
-        let count = count_code_lines(source);
+        let empty = HashSet::new();
+        let excluded_lines = self
+            .config
+            .exclude_imports
+            .then(|| import_lines(&file, module, cx));
+        let count = count_code_lines_excluding(source, excluded_lines.as_ref().unwrap_or(&empty));
         if count <= self.config.max_lines {
             return;
         }
@@ -133,6 +144,41 @@ impl<'tcx> LateLintPass<'tcx> for OverlyLongFile {
              rather than the concerns separated",
         );
     }
+}
+
+fn import_lines(file: &SourceFile, module: &hir::Mod<'_>, cx: &LateContext<'_>) -> HashSet<usize> {
+    let Some(source) = file.src.as_deref() else {
+        return HashSet::new();
+    };
+    let mut lines = HashSet::new();
+    for item_id in module.item_ids {
+        let item = cx.tcx.hir_item(*item_id);
+        if !matches!(item.kind, hir::ItemKind::Use(..)) {
+            continue;
+        }
+        let Some(start) = item.span.lo().0.checked_sub(file.start_pos.0) else {
+            continue;
+        };
+        let Some(end) = item.span.hi().0.checked_sub(file.start_pos.0) else {
+            continue;
+        };
+        let start = start as usize;
+        let end = (end as usize).min(source.len());
+        if start >= end || start >= source.len() {
+            continue;
+        }
+        let first_line = source[..start]
+            .bytes()
+            .filter(|byte| *byte == b'\n')
+            .count();
+        let last_line = first_line
+            + source[start..end]
+                .bytes()
+                .filter(|byte| *byte == b'\n')
+                .count();
+        lines.extend(first_line..=last_line);
+    }
+    lines
 }
 
 /// The file `module` is the whole of: the crate root's file, or the

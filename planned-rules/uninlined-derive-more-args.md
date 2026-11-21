@@ -195,7 +195,7 @@ it was.
 
 ## Interaction with `clippy::uninlined_format_args`
 
-The two lints together cover the full surface:
+The two lints together cover both source positions:
 
 - `clippy::uninlined_format_args` — `format!`, `println!`, `write!`,
   `panic!`, etc.

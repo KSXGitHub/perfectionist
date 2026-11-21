@@ -113,8 +113,8 @@ impl RuleSelector {
 /// Whether a rule's pass is installed at all. Both the per-rule
 /// baseline (each rule's `DEFAULT_STATE` constant) and the
 /// user-supplied override (the `enable` / `disable` arrays in
-/// `dylint.toml`) speak this same alphabet, so a single type is
-/// used end-to-end and no `bool` ever bridges the two. Mirrors
+/// `dylint.toml`) take the same values, so a single type is used
+/// end-to-end and no `bool` ever bridges the two. Mirrors
 /// `gen-docs`'s own copy of this enum (separate crate, same shape).
 /// The doc generator reads each rule's `DEFAULT_STATE` constant
 /// directly to render the rule's catalogue entry.
@@ -148,17 +148,16 @@ pub(crate) fn init_global_config() {
 /// what it resolves can be checked without writing
 /// [`GLOBAL_OVERRIDES`].
 ///
-/// Panics if any rule name appears under both `enable` and
-/// `disable`: that's a contradiction the runtime can't sensibly
-/// resolve, and silently picking one direction would hide a
-/// user-side mistake. The same name twice under one of them agrees
-/// with itself and is accepted. Unknown rule names are silently
-/// ignored: the override map keys that don't match any registered rule
-/// have no effect (the rule never registers, so there's nothing to
-/// toggle), and validating against the registered set here would
-/// duplicate the existing
+/// Panics if any rule name appears under both `enable` and `disable`:
+/// that's a contradiction the runtime can't sensibly resolve, and
+/// silently picking one direction would hide a user-side mistake. The
+/// same name twice under one of them agrees with itself and is
+/// accepted. Unknown rule names are silently ignored: the override map
+/// keys that don't match any registered rule have no effect (the rule
+/// never registers, so there's nothing to toggle), and validating
+/// against the registered set here would duplicate the existing
 /// `perfectionist::unknown_perfectionist_lints` rule's purpose at a
-/// config-loading layer that has no diagnostic surface.
+/// config-loading layer that emits no diagnostics.
 fn resolve_overrides(config: &GlobalConfig) -> HashMap<String, DefaultState> {
     let mut overrides: HashMap<String, DefaultState> = HashMap::new();
     for (selectors, state) in [
@@ -214,7 +213,7 @@ fn resolved_state_from(
 /// Render a lint-control meta item's path as its fully-namespaced
 /// name (`clippy::too_many_arguments`, `dead_code`), joining the path
 /// segments with `::`. Shared by the lint-level rules that classify or
-/// report lint names by the printed form they wear in diagnostics and
+/// report lint names by the printed form they take in diagnostics and
 /// `#[allow(...)]` attributes: `allow_attributes_without_reason`,
 /// `unknown_perfectionist_lints`, and `allow_attributes`.
 pub(crate) fn render_meta_path(meta: &MetaItem) -> String {

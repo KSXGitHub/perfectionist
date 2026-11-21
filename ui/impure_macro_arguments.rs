@@ -412,11 +412,11 @@ fn _turbofish_method_call_flagged(text: &str) {
 // `::serde_json::json!`, and the bare `json!` form all line up
 // with the same entry.
 //
-// Each call below was chosen so the allow-set entry is *load-
-// bearing*: the impure argument shape would otherwise be flagged
-// by the default `AllowAndDeny` mode. Without that property the
-// test passes trivially and a regression that drops the entry
-// from `BUILTIN_ALLOW` would slip through.
+// Each call below was chosen so the allow-set entry is *required*:
+// the impure argument shape would otherwise be flagged by the
+// default `AllowAndDeny` mode. Without that the test passes
+// trivially and a regression that drops the entry from
+// `BUILTIN_ALLOW` would slip through.
 //
 // - `json!(value().unwrap())`: a direct impure expression, no
 //   DSL marker, not brace-delimited. Without `json` in the allow
@@ -431,8 +431,8 @@ fn _turbofish_method_call_flagged(text: &str) {
 //   note these would *also* be skipped by the brace-DSL and
 //   `=>`-DSL heuristics respectively even without their
 //   `BUILTIN_ALLOW` entries, so they're here for shape coverage,
-//   not as load-bearing assertions. The `maplit::*` entries are
-//   in the same boat by design: every form of the macros emits
+//   not as required assertions. The `maplit::*` entries are not
+//   required either, by design: every form of the macros emits
 //   `=>` at top level, which the DSL-marker check already
 //   skips. The allow-set entries serve as documentation of
 //   intent more than functional gates.

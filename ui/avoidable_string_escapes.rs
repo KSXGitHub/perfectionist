@@ -45,14 +45,14 @@ fn _inside_core_macro() {
 // Bad: `format!` template carrying a `{...}` placeholder. The
 // placeholder splits the template away from the HIR during format-args
 // lowering, so the late `ExprKind::Lit` pass never sees it; the
-// pre-expansion pass rescues it. (issue #219)
+// pre-expansion pass reaches it. (issue #219)
 fn _format_with_inline_placeholder() {
     let name = "x";
     let _ = format!("url(\"{name}\")");
 }
 
 // Bad: a positional placeholder in `println!` hides the split literal
-// from the late pass, and the pre-expansion pass rescues it.
+// from the late pass, and the pre-expansion pass reaches it.
 fn _println_with_positional_placeholder() {
     println!("path: \"{}\"", "x");
 }

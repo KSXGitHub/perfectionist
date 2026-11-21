@@ -16,7 +16,7 @@
 //! diagnostic moving from line 9 to line 10 re-indents every line of
 //! it.
 //!
-//! The shapes worth recognising are taken by the `take_*` prefix
+//! The shapes it recognises are taken by the `take_*` prefix
 //! parsers the conventions file calls for. None asserts that its
 //! input is exhausted; the rewriter that owns the line decides where
 //! the token it took had to end.

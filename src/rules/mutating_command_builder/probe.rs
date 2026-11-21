@@ -37,8 +37,8 @@ use rustc_span::Symbol;
 ///   trait `&mut self` one before the change and wins after. The sound
 ///   refinement is narrower, holding only where no inherent method of
 ///   the name exists and every candidate takes `&mut self`. What it
-///   would buy is `CommandExt::exec` and its neighbours, which this
-///   costs today.
+///   would reach is `CommandExt::exec` and its neighbours, which this
+///   misses today.
 ///
 /// `is_method` is what keeps an associated function out, since its
 /// `has_self` is exactly the set `value.name()` can reach: a

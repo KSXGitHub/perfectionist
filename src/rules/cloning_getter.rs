@@ -273,7 +273,7 @@ impl CloningGetter {
     /// 2. A method named for a field of `self` is a getter, and the
     ///    list never reaches it. Naming a method after the field it
     ///    returns is Rust's own convention, so this is the rule's
-    ///    definition rather than a default a consumer talks out of.
+    ///    definition rather than a default a consumer overrides.
     /// 3. Every other name is the list's to decide:
     ///    `crate::name_pattern::verdict` reads it back to front, and a
     ///    name no entry covers is not a getter.

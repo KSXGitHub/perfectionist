@@ -13,7 +13,7 @@
 // builds that span shape on a minimal
 // `#[synth_unconsumed_into_conversion]` attribute.
 //
-// The synthesised method wears the `into_` prefix and returns a borrow
+// The synthesised method carries the `into_` prefix and returns a borrow
 // of the receiver, so the trigger's borrowing half admits it and the
 // guard is the only thing left stopping the diagnostic. A method named
 // anything else, or one handing back a value of its own, would leave

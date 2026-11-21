@@ -1,4 +1,4 @@
-//! Which characters the rule speaks about: the visible ones, less the
+//! Which characters the rule covers: the visible ones, less the
 //! non-ASCII ones where the consumer has narrowed it to ASCII.
 //!
 //! Visibility is tested by terminal display width, which already
@@ -6,8 +6,8 @@
 //! than a glyph would: a control character has no width at all, a
 //! combining mark and a zero-width or format character measure zero
 //! columns, and everything a reader can actually see measures one or
-//! two. Two families measure a column and still want their escape, so
-//! they are excluded by name: whitespace, where the escape is what
+//! two. Two families measure a column and still read better escaped,
+//! so they are excluded by name: whitespace, where the escape is what
 //! says which space it is, and the Private Use Areas, whose
 //! codepoints render as a replacement box outside the one font that
 //! assigns them a glyph.

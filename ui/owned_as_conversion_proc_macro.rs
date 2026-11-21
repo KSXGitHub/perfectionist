@@ -12,7 +12,7 @@
 // here. The `SynthOwnedAsConversion` derive imported below builds that
 // span shape on a minimal `#[synth_owned_as_conversion]` attribute.
 //
-// The synthesised method wears the `as_` prefix and copies a field, so
+// The synthesised method carries the `as_` prefix and copies a field, so
 // both of the rule's shapes admit it and the guard is the only thing
 // left stopping the diagnostic. A method named anything else would
 // leave the fixture passing whether the guard were there or not.
