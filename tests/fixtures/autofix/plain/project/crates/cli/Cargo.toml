@@ -4,6 +4,5 @@ version = "0.0.0"
 edition = "2024"
 
 [dependencies]
-import_granularity_mismatch = { package = "fixture-plain-import-granularity-mismatch", path = "../import-granularity-mismatch" }
-macro_trailing_comma = { package = "fixture-plain-macro-trailing-comma", path = "../macro-trailing-comma" }
+shapes = { package = "fixture-plain-shapes", path = "../shapes" }
 named_prelude_imports = { package = "fixture-plain-named-prelude-imports", path = "../named-prelude-imports" }

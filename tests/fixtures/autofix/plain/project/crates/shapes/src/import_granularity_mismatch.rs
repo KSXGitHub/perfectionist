@@ -1,10 +1,10 @@
-//! A crate splitting one module across two `use` statements, which
+//! A module splitting one module across two `use` statements, which
 //! `perfectionist::import_granularity_mismatch` merges.
 
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 
-/// What this crate contributes to the fixture's output.
+/// What this module contributes to the fixture's output.
 pub fn report() -> String {
     let ordered: BTreeMap<u8, u8> = BTreeMap::from([(1, 2)]);
     let hashed: HashMap<u8, u8> = HashMap::from([(3, 4)]);

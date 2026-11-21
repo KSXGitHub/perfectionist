@@ -1,15 +1,14 @@
-//! A crate whose macro invocations break the vertical trailing-comma
+//! A module whose macro invocations break the vertical trailing-comma
 //! policy, which `perfectionist::macro_trailing_comma` restores.
 //!
 //! One case takes two rounds. Its invocation is stored across several
 //! lines and would fit on one, so the round's rustfmt pass joins it,
 //! and the comma that was the vertical form's becomes the
 //! single-line form's gratuitous one. The fixer rewrites what the
-//! crate reported when it was compiled, which was before the
-//! formatter joined the lines, so that comma is the next round's to
-//! remove.
+//! check reported, which was before the formatter joined the lines,
+//! so that comma is the next round's to remove.
 
-/// The labels this crate reports, one per line, with the comma left
+/// The labels this module reports, one per line, with the comma left
 /// off the last of them. The list cannot fit on one line, so the
 /// formatter leaves the vertical layout, and the comma is the rule's
 /// to add.
@@ -30,7 +29,7 @@ pub fn summary() -> String {
     )
 }
 
-/// What this crate contributes to the fixture's output.
+/// What this module contributes to the fixture's output.
 pub fn report() -> String {
     format!("macro_trailing_comma: {}\n", summary())
 }

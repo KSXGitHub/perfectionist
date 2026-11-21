@@ -1,5 +1,5 @@
 warning: single-line macro invocation should not end with a trailing comma
-  --> crates/macro-trailing-comma/src/lib.rs:LL:CC
+  --> crates/shapes/src/macro_trailing_comma.rs:LL:CC
    |
 LL |     format!("{} labels", labels().len(),)
    |                                        ^ help: remove the trailing comma
