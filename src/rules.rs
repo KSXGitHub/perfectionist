@@ -55,4 +55,5 @@ pub mod unicode_ellipsis_in_panic_messages;
 pub mod unknown_perfectionist_lints;
 pub mod unordered_derives;
 pub mod unpinned_repo_ref;
+pub mod utf8_conversion_for_literal_comparison;
 pub mod wildcard_imports;

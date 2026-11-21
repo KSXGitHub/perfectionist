@@ -18,6 +18,51 @@ under [Why restrict this?](#why-restrict-this) is the one that review
 settled on, and the one it rejected is written down so a later reader
 does not reintroduce it.
 
+## Status
+
+The core is implemented in
+[`src/rules/utf8_conversion_for_literal_comparison.rs`](../src/rules/utf8_conversion_for_literal_comparison.rs),
+with the conversion recognition in
+[`src/utf8_conversion.rs`](../src/utf8_conversion.rs) for the sibling
+rule to reuse. This file stays as the spec for what is left.
+
+Implemented:
+
+- Every conversion in [(a)](#a-the-conversion) but
+  `Path::display()`, each optionally under `unwrap` or `expect`.
+- Every source in [(b)](#b-the-source-type).
+- Both consumers in [(c)](#c-the-consumer) that collapse to an `==`
+  or a `match`, with `matches!` counted as a `match`, under the arm
+  conditions of [(d)](#d-the-outcomes-the-conversion-distinguishes)
+  and every exemption.
+- The conversion reached through an `Option::map` or
+  `Option::and_then` whose closure converts its own parameter. This
+  goes beyond what [Difficulty](#difficulty) calls the core, which
+  named only the conversion sitting in the operand or the scrutinee.
+  It was added because the adapter is where the shape actually
+  occurs: both sites the rule reports in this repository are written
+  that way, and the closure is local, so none of the dataflow the
+  deferred tier needs is involved.
+- The fix for both consumers, as a multipart suggestion. An equality
+  replaces its two operands and a `match` replaces its scrutinee and
+  every literal arm, which is why one span replacement could not
+  carry it. It is `MachineApplicable` except where it drops an
+  `unwrap` or `expect`, and so a panic, where it is
+  `MaybeIncorrect`.
+
+Pending:
+
+- **`if let` and let-else consumers.** Each collapses to one boolean
+  like an `==` does, so [(d)](#d-the-outcomes-the-conversion-distinguishes)
+  stays satisfied; only the HIR shapes are unread.
+- **A `Result` adapter.** `Option::map` and `Option::and_then` are
+  read where `Result::map` and `Result::and_then` are not, since an
+  `Err` carries a payload the rewrite would have to preserve.
+- Everything [Difficulty](#difficulty) lists as a follow-up:
+  `starts_with` / `ends_with`, `Path::display()` consumed by
+  `to_string()`, the conversion bound to a local first, and a
+  conversion inside a `format!` template.
+
 ## Statement
 
 Some values have a native representation that is not UTF-8: an OS
@@ -514,17 +559,17 @@ OS-string source the choice is real rather than cosmetic.
 ### A pattern consumer forces the byte view
 
 A `match`, `matches!`, `if let` or let-else needs its literal in
-pattern position, and there is no `OsStr` literal to put there:
-`OsStr::new("x")` is a function call, which a pattern cannot be. So
+pattern position, where a string literal matches a `str` and nothing
+else: there is no pattern an `OsStr` meets. So
 the scrutinee becomes the source's byte view from
 [(b)](#b-the-source-type) and every arm becomes a byte-string
 literal. The shape in [Statement](#statement) is this case, which is
 why its fix reads `as_encoded_bytes`.
 
-### An `==` consumer should compare as `OsStr`
+### An `==` consumer compares against the literal itself
 
-`OsStr` implements `PartialEq`, so an equality against a literal can
-keep the literal exactly as written:
+`OsStr` implements `PartialEq<str>`, so an equality against a literal
+can keep the literal exactly as written:
 
 **Avoid:**
 
@@ -535,16 +580,17 @@ if value.to_str() == Some("true") { .. }
 **Prefer:**
 
 ```rust
-if value == OsStr::new("true") { .. }
+if value == "true" { .. }
 ```
 
-Nothing is respelled, so none of the literal constraints below
+Nothing is respelled, so none of the constraints under
+[Emitting a byte-string literal](#emitting-a-byte-string-literal)
 arise, and the reader still sees one comparison against the word
 rather than a comparison of byte views. Prefer this wherever the
 source is an OS string and the consumer is `==` or `!=`. It costs
-nothing: `OsStr::new` returns a borrow whose lifetime is its
-argument's, so it cannot allocate and hand back a reference to the
-allocation.
+nothing: the comparison reads the literal's bytes where they already
+are, so it allocates nothing, and it names no type, so a fix applying
+it needs nothing brought into scope.
 
 A `Path` or `PathBuf` source reaches this spelling through
 `as_os_str()`, and the detour is **not** optional.
@@ -558,19 +604,19 @@ A `Path` or `PathBuf` source reaches this spelling through
 > `p.to_str() == Some(LIT)`, so a rule suggesting it would rewrite a
 > consumer's comparison into one that answers differently.
 
-Checked over paths including `a//b`, `a/./b` and `main.rs/` against
-the literals they normalise onto: `p.as_os_str() == OsStr::new(LIT)`
-disagreed with `p.to_str() == Some(LIT)` on nothing, for `&Path`,
-`PathBuf`, `&OsStr` and `OsString` receivers alike, while
-`p == Path::new(LIT)` disagreed on three.
+Checked over paths including `a//b`, `a/./b`, `a/b/.` and `main.rs/`
+against the literals they normalise onto: over 187 path-literal pairs
+`p.as_os_str() == LIT` disagreed with `p.to_str() == Some(LIT)` on
+nothing, for `&Path`, `PathBuf`, `&OsStr` and `OsString` receivers
+alike, while `p == Path::new(LIT)` disagreed on 19.
 
-A byte buffer needs no counterpart to `OsStr::new`, being already
-its own native form. Its literal is a byte-string literal, and the
-constraints below are what settle its spelling.
+A byte buffer meets no string literal, holding bytes rather than
+text, so its literal is a byte-string literal and the constraints
+below are what settle its spelling.
 
 ### Emitting a byte-string literal
 
-Where the fix does emit one, two constraints apply:
+Where the fix does emit one, these constraints apply:
 
 - **`b"…"`, never `"…".as_bytes()`.** `clippy::string_lit_as_bytes`
   flags `"…".as_bytes()` and suggests `b"…"`, so a fix reaching for
@@ -579,6 +625,29 @@ Where the fix does emit one, two constraints apply:
   ("non-ASCII character in byte string literal … must be ASCII"), so
   a literal outside 7-bit ASCII is emitted as the `\xHH` escapes of
   its UTF-8 bytes, so `é` is emitted as `b"\xc3\xa9"`.
+- **A buffer that is not already a slice needs slicing.** A
+  byte-string literal is a reference to an array, which a `[u8]` and
+  a `Vec<u8>` meet as they stand, which a `Box<[u8]>` meets through
+  no `PartialEq` at all, and which an array meets only at the array's
+  own length. So a boxed or fixed-size buffer is emitted as
+  `&value[..]`, which meets the literal whatever length either has.
+- **A literal inside a `Some` is sliced for the left-hand order
+  only.** Where the conversion was reached through an `Option` adapter
+  the comparison keeps its `Some`, and which operand carries the
+  literal decides how the array behind it is spelled. On the right it
+  needs nothing: the argument of `Some` is read after the other operand
+  has named the type, so `opt == Some(b"…")` compiles. On the left no
+  type has been named yet, so `Some(b"…")` fixes an `Option` of an
+  array, which the adapter's `Option` of a slice does not meet;
+  `Some::<&[u8]>(b"…")` compiles there, which is what shows the naming
+  to be the whole of it. So the fix emits `Some(b"…")` on the right and
+  `Some(b"…".as_slice())` on the left.
+
+  `&b"…"` is not a third option in either order: it is a reference to a
+  reference to the array, and coercion will not chain a dereference
+  with an unsizing. `&b"…"[..]` and `Some::<&[u8]>(b"…")` hold in both
+  orders as `as_slice` does; `b"…" as &[u8]` holds too but draws
+  `clippy::as_conversions`.
 
 Applicability follows the identity table in
 [The rewrite is an identity](#the-rewrite-is-an-identity):

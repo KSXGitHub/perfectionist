@@ -1,0 +1,182 @@
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if value.to_str() == Some("true") {}
+   |        ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(perfectionist::utf8_conversion_for_literal_comparison)]` on by default
+help: compare the value without converting it
+   |
+LL -     if value.to_str() == Some("true") {}
+LL +     if value == "true" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if value.to_str() != Some("true") {}
+   |        ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if value.to_str() != Some("true") {}
+LL +     if value != "true" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if Some("true") == value.to_str() {}
+   |                        ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if Some("true") == value.to_str() {}
+LL +     if "true" == value {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if owned.into_string().unwrap() == "true" {}
+   |        ^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if owned.into_string().unwrap() == "true" {}
+LL +     if owned == "true" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if path.to_str() == Some("main.rs") {}
+   |        ^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if path.to_str() == Some("main.rs") {}
+LL +     if path.as_os_str() == "main.rs" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if owned.to_str() == Some("main.rs") {}
+   |        ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if owned.to_str() == Some("main.rs") {}
+LL +     if owned.as_os_str() == "main.rs" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if str::from_utf8(bytes) == Ok("yes") {}
+   |        ^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if str::from_utf8(bytes) == Ok("yes") {}
+LL +     if bytes == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if String::from_utf8_lossy(bytes) == "yes" {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if String::from_utf8_lossy(bytes) == "yes" {}
+LL +     if bytes == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if String::from_utf8(owned).unwrap() == "yes" {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if String::from_utf8(owned).unwrap() == "yes" {}
+LL +     if owned == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if str::from_utf8(&boxed).unwrap() == "yes" {}
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if str::from_utf8(&boxed).unwrap() == "yes" {}
+LL +     if &boxed[..] == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     str::from_utf8(&buffer) == Ok("yes")
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     str::from_utf8(&buffer) == Ok("yes")
+LL +     &buffer[..] == b"yes"
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if value.to_str() == Ok("yes") {}
+   |        ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if value.to_str() == Ok("yes") {}
+LL +     if value.to_bytes() == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     if owned.to_str().unwrap() == "yes" {}
+   |        ^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     if owned.to_str().unwrap() == "yes" {}
+LL +     if owned.as_bytes() == b"yes" {}
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     (*path).to_str() == Some("main.rs")
+   |     ^^^^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     (*path).to_str() == Some("main.rs")
+LL +     (*path).as_os_str() == "main.rs"
+   |
+
+warning: this converts to UTF-8 only to measure the result against string literals
+  --> $DIR/utf8_conversion_for_literal_comparison_sources.rs:LL:CC
+   |
+LL |     names.iter().any(|name| name.to_str() == Some("main.rs"))
+   |                             ^^^^^^^^^^^^^
+   |
+help: compare the value without converting it
+   |
+LL -     names.iter().any(|name| name.to_str() == Some("main.rs"))
+LL +     names.iter().any(|name| *name == "main.rs")
+   |
+
+warning: N warnings emitted

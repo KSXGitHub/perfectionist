@@ -234,6 +234,10 @@ Lint-control attributes use the `perfectionist::` namespace.
 
   repository URL references a branch or tag instead of a commit SHA
 
+- [`utf8_conversion_for_literal_comparison`](./utf8_conversion_for_literal_comparison.md) (default: `active`).
+
+  UTF-8 conversion whose result only meets string literals; compare the native form
+
 - [`wildcard_imports`](./wildcard_imports.md) (default: `active`).
 
   glob (`*`) import in a module body, outside the prelude and root-re-export exceptions

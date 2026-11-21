@@ -154,6 +154,7 @@ rule_index! {
     unknown_perfectionist_lints => UnknownPerfectionistLints,
     unordered_derives => UnorderedDerives,
     unpinned_repo_ref => UnpinnedRepoRef,
+    utf8_conversion_for_literal_comparison => Utf8ConversionForLiteralComparison,
     wildcard_imports => WildcardImports,
 }
 

@@ -51,6 +51,7 @@ mod rule_index;
 mod rules;
 mod test_code;
 mod url_scan;
+mod utf8_conversion;
 
 #[unsafe(no_mangle)]
 #[expect(
