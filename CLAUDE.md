@@ -877,51 +877,6 @@ containing one. It strips backtick-wrapped spans before scanning (so
 `user@example.com` is not flagged. A genuinely intended mention
 belongs in the PR or issue body, not the commit message.
 
-## Tagging a release
-
-A release is cut by tagging a commit, and for the tag to mean
-anything the tag name, the commit message and the manifests have to
-agree. [`tools/deploy-check`](tools/deploy-check/src/main.rs) is the
-one place that decides whether they do, and its module docstring
-states the contract.
-
-Each of these runs it, and each catches a tag the earlier ones let
-past:
-
-- The [`commit-msg` hook](.githooks/commit-msg) judges the staged
-  index whenever the typed subject is a version literal, so a
-  malformed version-bump commit is never written.
-- The [`reference-transaction` hook](.githooks/reference-transaction)
-  refuses the tag as it is written. This is what makes
-  `git tag 0.0.0-rc.23` on a commit saying otherwise fail locally
-  rather than succeed.
-- The [`pre-push` hook](.githooks/pre-push) catches a tag written
-  before the hooks were installed.
-- The deploy workflow catches one pushed from a checkout with no
-  hooks installed.
-
-Install the hooks on a fresh checkout with `just install-git-hooks`
-(or `git config core.hooksPath .githooks`).
-
-git has no hook for writing a tag, so `reference-transaction` is the
-one that can refuse one, and git runs it for every ref update in the
-repository rather than for tags alone. That has consequences:
-
-- The hook filters on the transaction state and then looks for a
-  release-shaped tag before it starts anything, because the check is
-  a `cargo run` and every commit, branch and checkout would otherwise
-  pay for a deploy-check build.
-- A transaction covers the refs a fetch writes, which git does not
-  let the hook tell apart from the ones a `git tag` writes, so a tag
-  arriving from a remote is held to the same contract and one that
-  fails it fails the whole fetch. The report names
-  `git -c core.hooksPath= fetch`, which takes the tag without the
-  check.
-- Every check in the contract compares the tagged commit against its
-  parent, so at a `--depth`-limited clone's boundary there is no
-  before-image to read. Such a tag is reported as unchecked and left
-  to deploy CI rather than refused.
-
 ## Markdown links
 
 `README.md` uses absolute links throughout, because it is
