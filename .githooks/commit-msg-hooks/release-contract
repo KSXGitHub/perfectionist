@@ -8,14 +8,14 @@ msg_file="$1"
 lib_dir="$(dirname "${BASH_SOURCE[0]}")/../lib"
 source "$lib_dir/comment-char.sh"
 source "$lib_dir/message-subject.sh"
-source "$lib_dir/version-subject.sh"
+source "$lib_dir/version-literal.sh"
 comment_char=$(git_comment_char)
 subject=$(message_subject "$msg_file" "$comment_char")
 
 # Cheap pre-filter so non-release commits don't pay the cost of
 # spawning cargo: only a bare version-literal subject reaches the
 # version-bump contract.
-if ! is_version_subject "$subject"; then
+if ! is_version_literal "$subject"; then
   exit 0
 fi
 
