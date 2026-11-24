@@ -6,7 +6,7 @@
 set -euo pipefail
 
 msg_file="$1"
-lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
+lib_dir="$(dirname "${BASH_SOURCE[0]}")/../lib"
 source "$lib_dir/comment-char.sh"
 source "$lib_dir/message-subject.sh"
 source "$lib_dir/version-literal.sh"
