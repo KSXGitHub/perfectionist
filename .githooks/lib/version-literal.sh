@@ -7,7 +7,8 @@
 # one is a version-bump commit, exempt from the subject-length check and
 # the only kind the release contract applies to. A tag whose name is one
 # is a release tag, and the contract applies to the commit it points at.
-# Mirrors `is_version_literal` on the Rust side.
+# The Rust side spells the same shape in
+# tools/deploy-check/src/version_literal.rs.
 # Args: <candidate>.
 is_version_literal() {
   [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]

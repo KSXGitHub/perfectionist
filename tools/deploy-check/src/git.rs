@@ -44,9 +44,9 @@ pub(crate) fn git_rev_present(root: &Path, rev: &str) -> Result<bool, RuntimeErr
     Ok(status.success())
 }
 
-/// Whether this checkout was cloned with `--depth`, so that the
-/// ancestors of its boundary commits are absent from the object
-/// database.
+/// Whether this checkout is shallow, so that the ancestors of its
+/// boundary commits are absent from the object database. A `--depth`
+/// clone or fetch is how that arises.
 pub(crate) fn git_is_shallow(root: &Path) -> Result<bool, RuntimeError> {
     let stdout = git_capture(root, ["rev-parse", "--is-shallow-repository"])?;
     Ok(stdout.trim() == "true")

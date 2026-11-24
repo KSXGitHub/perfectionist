@@ -10,12 +10,14 @@ set -euo pipefail
 
 # git names the transaction's state in the argument and feeds the refs
 # it is about to write on stdin. Only a non-zero exit from `prepared`
-# stops the update: `committed` and `aborted` report a transaction that
-# has already been decided, and git discards what this hook makes of
-# them. Returning before reading stdin is safe because git ignores
-# SIGPIPE while feeding this hook and treats EPIPE as success, and it is
-# worth doing because every commit, branch and checkout in the
-# repository reaches those two states.
+# stops the update: `committed` and `aborted` name a transaction that
+# has already been decided, and git ignores this hook's exit status for
+# them.
+#
+# Returning before reading stdin is safe because git ignores SIGPIPE
+# while feeding this hook and treats EPIPE as success, and it saves the
+# fork `cat` would cost on every commit, branch and checkout in the
+# repository, each of which reaches those two states.
 if [ "${1-}" != "prepared" ]; then
   exit 0
 fi

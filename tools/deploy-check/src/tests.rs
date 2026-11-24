@@ -338,10 +338,10 @@ fn version_only_diff_rejects_byte_identical_inputs() {
 }
 
 /// git feeds `pre-push` the local ref first and the remote half after,
-/// so the ref to judge is field 1 and the object it points at is
-/// field 2. Reading them in the wrong order makes every line's ref
-/// read as a hash, which never carries the `refs/tags/` prefix, so the
-/// hook would pass every tag silently.
+/// so the ref to judge is the first field and the object it points at
+/// is the second. Reading them in the wrong order makes every line's
+/// ref read as a hash, which never carries the `refs/tags/` prefix, so
+/// the hook would pass every tag silently.
 #[test]
 fn pushed_update_reads_the_local_ref_and_sha() {
     let line = "refs/tags/0.0.0-rc.9 1111111111111111111111111111111111111111 \
@@ -373,10 +373,10 @@ fn pushed_update_rejects_a_line_short_of_four_fields() {
 }
 
 /// git feeds `reference-transaction` the old value, then the new one,
-/// then the ref, which is the reverse of where `pre-push` puts the ref.
-/// Taking the ref from field 1, as `pre-push` does, leaves it reading
-/// the old value, which never carries the `refs/tags/` prefix, so the
-/// hook would pass every tag silently.
+/// then the ref, so the ref is last where `pre-push` puts it first.
+/// Taking the ref from the first field, as `pre-push` does, leaves it
+/// reading the old value, which never carries the `refs/tags/` prefix,
+/// so the hook would pass every tag silently.
 #[test]
 fn transaction_update_reads_the_ref_last_and_the_new_value_second() {
     let line = "0000000000000000000000000000000000000000 \
