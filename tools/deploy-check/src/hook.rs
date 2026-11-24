@@ -1,10 +1,11 @@
-//! `commit-msg` and `pre-push` git-hook entry points. Both reduce
-//! their input to one or more (version-literal, snapshot) pairs
-//! and feed them through `contract::verify`.
+//! `commit-msg`, `pre-push` and `reference-transaction` git-hook
+//! entry points. Each reduces its input to one or more
+//! (version-literal, snapshot) pairs and feeds them through
+//! `contract::verify`.
 
 use super::contract::{Source, verify};
 use super::error::RuntimeError;
-use super::git::git_capture;
+use super::git::{git_capture, git_is_shallow, git_rev_present};
 use super::version_literal::is_version_literal;
 use std::fs;
 use std::io::{self, BufRead};
@@ -83,40 +84,145 @@ pub(crate) fn extract_release_subject(
 }
 
 pub(crate) fn pre_push(root: &Path) -> Result<(), RuntimeError> {
+    check_tag_updates(root, pushed_update)
+}
+
+/// The state git runs the `reference-transaction` hook with while the
+/// refs are still unwritten. It is the only one whose non-zero exit
+/// stops the update: `committed` and `aborted` report a transaction
+/// that has already been decided, and git discards what the hook makes
+/// of them.
+const PREPARED: &str = "prepared";
+
+/// Judge the refs a transaction is about to write.
+///
+/// This is what catches `git tag <version>` on a commit the contract
+/// rejects. [`pre_push`] is handed the same tag only once it exists, so
+/// taking its rejection means deleting the tag and writing it again.
+///
+/// A ref transaction covers the refs a fetch writes as well as the ones
+/// a `git tag` writes, and git hands the hook the same input either
+/// way, so a tag arriving from a remote is held to the same contract.
+/// One that fails it fails the whole fetch, so the report names
+/// `git -c core.hooksPath= fetch` for taking it anyway.
+pub(crate) fn reference_transaction(root: &Path, state: &str) -> Result<(), RuntimeError> {
+    if state != PREPARED {
+        return Ok(());
+    }
+    let outcome = check_tag_updates(root, transaction_update);
+    if matches!(outcome, Err(RuntimeError::TagUpdatesFailed)) {
+        eprintln!(
+            "deploy-check: if this tag is arriving from a fetch rather than one you \
+             are writing, `git -c core.hooksPath= fetch` takes it without this check.",
+        );
+    }
+    outcome
+}
+
+/// Pick the ref and the object it will point at out of one line of
+/// `pre-push` input: `<local-ref> <local-sha> <remote-ref> <remote-sha>`.
+pub(crate) fn pushed_update(line: &str) -> Option<(&str, &str)> {
+    let mut fields = line.split_whitespace();
+    let local_ref = fields.next()?;
+    let local_sha = fields.next()?;
+    // The remote half decides nothing here, but a line without it is
+    // not a ref update.
+    fields.next()?;
+    fields.next()?;
+    Some((local_ref, local_sha))
+}
+
+/// Pick the ref and the object it will point at out of one line of
+/// `reference-transaction` input: `<old-value> <new-value> <ref-name>`.
+pub(crate) fn transaction_update(line: &str) -> Option<(&str, &str)> {
+    let mut fields = line.split_whitespace();
+    // The old value decides nothing here: the contract is read off the
+    // commit the ref is about to point at.
+    fields.next()?;
+    let new_object = fields.next()?;
+    let ref_name = fields.next()?;
+    Some((ref_name, new_object))
+}
+
+/// Verify every release-shaped tag among the ref updates on stdin.
+///
+/// `parse` reads one input line as `(ref name, new object)`; the layout
+/// of that line is all that differs between the hooks.
+fn check_tag_updates(
+    root: &Path,
+    parse: impl Fn(&str) -> Option<(&str, &str)>,
+) -> Result<(), RuntimeError> {
     let stdin = io::stdin();
     let mut failed = false;
     for line in stdin.lock().lines() {
         let line = line.map_err(RuntimeError::ReadStdin)?;
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 4 {
+        let Some((ref_name, new_object)) = parse(&line) else {
             continue;
-        }
-        let local_ref = parts[0];
-        let local_sha = parts[1];
-        let tag_name = match local_ref.strip_prefix("refs/tags/") {
-            Some(name) => name,
-            None => continue,
+        };
+        let Some(tag_name) = ref_name.strip_prefix("refs/tags/") else {
+            continue;
         };
         if !is_version_literal(tag_name) {
             continue;
         }
-        if local_sha.chars().all(|char| char == '0') {
+        if new_object.chars().all(|char| char == '0') {
             // Tag deletion, so nothing to verify.
             continue;
         }
-        // Dereference annotated tags to their commit before running
-        // the diff-based checks.
-        let commit = git_capture(root, ["rev-parse", &format!("{local_sha}^{{commit}}")])?
-            .trim()
-            .to_owned();
-        if let Err(err) = verify(root, tag_name, &Source::Commit(commit)) {
-            eprintln!("deploy-check: tag {tag_name}: {err}");
+        if !check_tag(root, tag_name, new_object)? {
             failed = true;
         }
     }
     if failed {
-        Err(RuntimeError::PrePushFailed)
+        Err(RuntimeError::TagUpdatesFailed)
     } else {
         Ok(())
     }
+}
+
+/// Verify one release-shaped tag against the contract, reporting on
+/// stderr. Reports whether the tag holds.
+fn check_tag(root: &Path, tag_name: &str, new_object: &str) -> Result<bool, RuntimeError> {
+    // Dereference annotated tags to their commit before running the
+    // diff-based checks.
+    let commit = git_capture(root, ["rev-parse", &format!("{new_object}^{{commit}}")])?
+        .trim()
+        .to_owned();
+    if !git_rev_present(root, &format!("{commit}^"))? {
+        return check_parentless_tag(root, tag_name, &commit);
+    }
+    if let Err(err) = verify(root, tag_name, &Source::Commit(commit)) {
+        eprintln!("deploy-check: tag {tag_name}: {err}");
+        return Ok(false);
+    }
+    Ok(true)
+}
+
+/// Judge a release-shaped tag on a commit whose parent is absent from
+/// the object database.
+///
+/// Every check in the contract compares the commit against its parent,
+/// so without one there is no before-image to read.
+///
+/// A `--depth`-limited clone is the case that arises in practice: the
+/// ancestors of its boundary commits are absent, so a fetch landing a
+/// release tag on one would otherwise be refused for a contract this
+/// checkout cannot read. Such a tag is left to deploy CI, which fetches
+/// the tagged commit's parent and so can read the contract.
+///
+/// In a complete clone the only commit without a parent is the root
+/// commit, where the contract genuinely cannot hold.
+fn check_parentless_tag(root: &Path, tag_name: &str, commit: &str) -> Result<bool, RuntimeError> {
+    if git_is_shallow(root)? {
+        eprintln!(
+            "deploy-check: tag {tag_name}: not checked, {commit} is at this \
+             checkout's shallow boundary so its parent is absent",
+        );
+        return Ok(true);
+    }
+    eprintln!(
+        "deploy-check: tag {tag_name}: {commit} has no parent, so there is no \
+         before-image to check a version bump against",
+    );
+    Ok(false)
 }

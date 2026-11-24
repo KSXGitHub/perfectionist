@@ -2,6 +2,9 @@
 # pre-push hook: reject pushing a tag whose name looks like a release
 # (X.Y.Z or X.Y.Z-<suffix>) but whose pointed-to commit fails the
 # version-bump contract enforced by tools/deploy-check.
+#
+# `reference-transaction` refuses such a tag as it is written, so this
+# hook is what catches one written before the hooks were installed.
 set -euo pipefail
 
 # stdin format (one per ref):  <local-ref> <local-sha> <remote-ref> <remote-sha>
@@ -40,7 +43,8 @@ fi
 root=$(git rev-parse --show-toplevel)
 cd "$root"
 
-# See `.githooks/commit-msg` for why the linker override is here.
+# See `.githooks/commit-msg-hooks/release-contract` for why the linker
+# override is here.
 #
 # No `--quiet`: a cold build takes seconds, and a silent hook looks
 # hung. Cargo's progress goes to stderr and hooks signal via exit
