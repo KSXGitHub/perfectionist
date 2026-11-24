@@ -2,7 +2,7 @@
 set -euo pipefail
 
 msg_file="$1"
-hooks_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/commit-msg-hooks"
+hooks_dir="$(dirname "${BASH_SOURCE[0]}")/commit-msg-hooks"
 
 "$hooks_dir/bare-issue-refs" "$msg_file"
 "$hooks_dir/bare-mentions" "$msg_file"
