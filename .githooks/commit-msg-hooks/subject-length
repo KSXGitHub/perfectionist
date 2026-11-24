@@ -9,13 +9,13 @@ msg_file="$1"
 lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib"
 source "$lib_dir/comment-char.sh"
 source "$lib_dir/message-subject.sh"
-source "$lib_dir/version-subject.sh"
+source "$lib_dir/version-literal.sh"
 comment_char=$(git_comment_char)
 subject=$(message_subject "$msg_file" "$comment_char")
 
 # Version-bump commits are exempt — their subject is just the version,
 # always short.
-if is_version_subject "$subject"; then
+if is_version_literal "$subject"; then
   exit 0
 fi
 

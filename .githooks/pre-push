@@ -12,6 +12,9 @@ if [ -z "$input" ]; then
   exit 0
 fi
 
+lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib"
+source "$lib_dir/version-literal.sh"
+
 needs_check=0
 while IFS=' ' read -r local_ref local_sha _ _; do
   [ -z "${local_ref:-}" ] && continue
@@ -19,15 +22,15 @@ while IFS=' ' read -r local_ref local_sha _ _; do
     refs/tags/*) ;;
     *) continue ;;
   esac
-  tag_name="${local_ref#refs/tags/}"
-  if [[ "$tag_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]] \
-     && [[ "$local_sha" != *[!0]* ]]; then
-    # Tag deletion — nothing to verify.
+  if ! is_version_literal "${local_ref#refs/tags/}"; then
     continue
-  elif [[ "$tag_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[^[:space:]]+)?$ ]]; then
-    needs_check=1
-    break
   fi
+  if [[ "$local_sha" != *[!0]* ]]; then
+    # Tag deletion, so nothing to verify.
+    continue
+  fi
+  needs_check=1
+  break
 done <<< "$input"
 
 if [ "$needs_check" -eq 0 ]; then
