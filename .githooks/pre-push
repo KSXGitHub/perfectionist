@@ -15,7 +15,7 @@ if [ -z "$input" ]; then
   exit 0
 fi
 
-lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib"
+lib_dir="$(dirname "${BASH_SOURCE[0]}")/lib"
 source "$lib_dir/version-literal.sh"
 
 needs_check=0
