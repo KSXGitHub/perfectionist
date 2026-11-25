@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# reference-transaction hook: reject writing a tag whose name looks like
+# a release (X.Y.Z or X.Y.Z-<suffix>) but whose pointed-to commit fails
+# the version-bump contract enforced by tools/deploy-check.
+#
+# This is the hook a `git tag` reaches, and it refuses the tag before it
+# is written. `pre-push` is handed the same tag only once it exists, so
+# taking its rejection means deleting the tag and writing it again.
+set -euo pipefail
+
+# git names the transaction's state in the argument and feeds the refs
+# it is about to write on stdin. Only a non-zero exit from `prepared`
+# stops the update: `committed` and `aborted` name a transaction that
+# has already been decided, and git ignores this hook's exit status for
+# them.
+#
+# Returning before reading stdin is safe because git ignores SIGPIPE
+# while feeding this hook and treats EPIPE as success, and it saves the
+# fork `cat` would cost on every commit, branch and checkout in the
+# repository, each of which reaches those two states.
+if [ "${1-}" != "prepared" ]; then
+  exit 0
+fi
+
+# stdin format (one per ref):  <old-value> <new-value> <ref-name>
+# Buffer it so the cheap shell-side filter can decide whether to spawn
+# cargo at all. git runs this hook for every ref update, so without the
+# filter an ordinary commit would pay for a deploy-check build.
+input=$(cat)
+if [ -z "$input" ]; then
+  exit 0
+fi
+
+lib_dir="$(dirname "${BASH_SOURCE[0]}")/lib"
+source "$lib_dir/version-literal.sh"
+
+needs_check=0
+while IFS=' ' read -r _ new_value ref_name; do
+  [ -z "${ref_name:-}" ] && continue
+  case "$ref_name" in
+    refs/tags/*) ;;
+    *) continue ;;
+  esac
+  if ! is_version_literal "${ref_name#refs/tags/}"; then
+    continue
+  fi
+  if [[ "$new_value" != *[!0]* ]]; then
+    # Tag deletion, so nothing to verify.
+    continue
+  fi
+  needs_check=1
+  break
+done <<< "$input"
+
+if [ "$needs_check" -eq 0 ]; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+# See `.githooks/commit-msg-hooks/release-contract` for why the linker
+# override is here.
+#
+# No `--quiet`: a cold build takes seconds, and a silent hook looks
+# hung. Cargo's progress goes to stderr and hooks signal via exit
+# code, so surfacing it is harmless.
+exec cargo --config 'target."cfg(all())".linker="cc"' run \
+  --locked --package _deploy_check --bin deploy-check -- \
+  "$root" reference-transaction "$1" <<< "$input"

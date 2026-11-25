@@ -17,6 +17,9 @@
 //!   when the typed message looks like a version literal).
 //! * `pre-push`: `pre-push` git hook (each tag-ref update fed on
 //!   stdin).
+//! * `reference-transaction <state>`: `reference-transaction` git
+//!   hook (each ref update about to be written, fed on stdin). This
+//!   is the one a `git tag` reaches, before the tag exists.
 //!
 //! When any of those fires on a release-shaped operation, this tool
 //! exits non-zero so the operation aborts.
@@ -37,7 +40,7 @@ mod tests;
 
 use contract::{Source, verify};
 use error::RuntimeError;
-use hook::{commit_msg, pre_push};
+use hook::{commit_msg, pre_push, reference_transaction};
 
 pub(crate) const PACKAGE_NAME: &str = "perfectionist";
 
@@ -75,6 +78,11 @@ enum Sub {
     },
     #[clap(about = "pre-push git-hook entry point (reads ref updates from stdin)")]
     PrePush,
+    #[clap(about = "reference-transaction git-hook entry point (reads ref updates from stdin)")]
+    ReferenceTransaction {
+        #[clap(help = "Transaction state passed by git: prepared, committed or aborted")]
+        state: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -103,5 +111,6 @@ fn run(Cli { root, command }: Cli) -> Result<(), RuntimeError> {
         }
         Sub::CommitMsg { msg_file } => commit_msg(&root, &msg_file),
         Sub::PrePush => pre_push(&root),
+        Sub::ReferenceTransaction { state } => reference_transaction(&root, &state),
     }
 }
