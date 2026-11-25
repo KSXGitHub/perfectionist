@@ -89,5 +89,5 @@ pub(crate) enum RuntimeError {
     )]
     MessageHasExtraContent(String),
     #[display("one or more tag updates fail the version-bump contract")]
-    PrePushFailed,
+    TagUpdatesFailed,
 }

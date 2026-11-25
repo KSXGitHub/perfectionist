@@ -1,6 +1,6 @@
 use super::contract::assert_version_only_diff;
 use super::error::RuntimeError;
-use super::hook::extract_release_subject;
+use super::hook::{extract_release_subject, pushed_update, transaction_update};
 use super::manifest::{parse_cargo_lock_version, parse_cargo_toml_version};
 use super::version_literal::is_version_literal;
 use text_block_macros::text_block_fnl;
@@ -335,4 +335,92 @@ fn version_only_diff_rejects_byte_identical_inputs() {
         assert_version_only_diff("Cargo.toml", same, same, "0.0.0-rc.6", "0.0.0-rc.6"),
         Err(RuntimeError::NoVersionChange(_))
     ));
+}
+
+/// git feeds `pre-push` the local ref first and the remote half after,
+/// so the ref to judge is the first field and the object it points at
+/// is the second. Reading them in the wrong order makes every line's
+/// ref read as a hash, which never carries the `refs/tags/` prefix, so
+/// the hook would pass every tag silently.
+#[test]
+fn pushed_update_reads_the_local_ref_and_sha() {
+    let line = "refs/tags/0.0.0-rc.9 1111111111111111111111111111111111111111 \
+                refs/tags/0.0.0-rc.9 0000000000000000000000000000000000000000";
+    assert_eq!(
+        pushed_update(line),
+        Some((
+            "refs/tags/0.0.0-rc.9",
+            "1111111111111111111111111111111111111111",
+        )),
+    );
+}
+
+/// A `pre-push` line carries four fields, a deletion included: git
+/// writes that as the same four with an all-zero local sha. So a line
+/// short of four is not a ref update, and is skipped rather than
+/// half-read.
+#[test]
+fn pushed_update_rejects_a_line_short_of_four_fields() {
+    assert_eq!(pushed_update(""), None);
+    assert_eq!(
+        pushed_update("refs/tags/1.2.3 1111111111111111111111111111111111111111"),
+        None,
+    );
+    assert_eq!(
+        pushed_update("refs/tags/1.2.3 1111111111111111111111111111111111111111 refs/tags/1.2.3"),
+        None,
+    );
+}
+
+/// git feeds `reference-transaction` the old value, then the new one,
+/// then the ref, so the ref is last where `pre-push` puts it first.
+/// Taking the ref from the first field, as `pre-push` does, leaves it
+/// reading the old value, which never carries the `refs/tags/` prefix,
+/// so the hook would pass every tag silently.
+#[test]
+fn transaction_update_reads_the_ref_last_and_the_new_value_second() {
+    let line = "0000000000000000000000000000000000000000 \
+                2222222222222222222222222222222222222222 refs/tags/0.0.0-rc.9";
+    assert_eq!(
+        transaction_update(line),
+        Some((
+            "refs/tags/0.0.0-rc.9",
+            "2222222222222222222222222222222222222222",
+        )),
+    );
+}
+
+/// A `reference-transaction` line carries three fields, a deletion
+/// included: git writes that as the same three with an all-zero new
+/// value. So a line short of three is not a ref update, and is skipped
+/// rather than half-read.
+#[test]
+fn transaction_update_rejects_a_line_short_of_three_fields() {
+    assert_eq!(transaction_update(""), None);
+    assert_eq!(
+        transaction_update(
+            "0000000000000000000000000000000000000000 \
+             2222222222222222222222222222222222222222"
+        ),
+        None,
+    );
+}
+
+/// Both hooks are fed refs other than tags: `reference-transaction`
+/// sees `HEAD` and a branch on every commit. Each parser reads out
+/// those lines' ref and object as it reads any other, and the shared
+/// `refs/tags/` test is what drops them, so neither parser may reject
+/// a ref for its shape.
+#[test]
+fn both_parsers_accept_a_ref_that_is_not_a_tag() {
+    let sha = "3333333333333333333333333333333333333333";
+    let zero = "0000000000000000000000000000000000000000";
+    assert_eq!(
+        pushed_update(&format!("refs/heads/master {sha} refs/heads/master {zero}")),
+        Some(("refs/heads/master", sha)),
+    );
+    assert_eq!(
+        transaction_update(&format!("{zero} {sha} HEAD")),
+        Some(("HEAD", sha)),
+    );
 }
