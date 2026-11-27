@@ -1,0 +1,12 @@
+--- a/fixture.rs
++++ b/fixture.rs
+@@ -20,8 +20,7 @@ mod bare_then_item {
+ 
+ // The `{self}` form folds the same way, with no namespace change.
+ mod selfbrace_then_item {
+-    use crate::defs::inner::{self};
+-    use crate::defs::inner::Baz;
++    use crate::defs::inner::{self, Baz};
+ }
+ 
+ // The pair folds regardless of source order (item first, module second).

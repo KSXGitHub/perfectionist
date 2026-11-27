@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // aux-build:clap.rs
 #![feature(register_tool)]
 #![register_tool(perfectionist)]
