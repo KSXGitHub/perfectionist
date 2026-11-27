@@ -27,6 +27,8 @@ const RULE_NAME: &str = "overly_long_method_chain";
 struct RuleConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     max_calls: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    closure_weight: Option<usize>,
 }
 
 /// The `[perfectionist]` table, kept minimal so every fixture below
@@ -83,7 +85,21 @@ fn default_limit_flags_a_chain_above_five_calls() {
 fn zero_threshold_reports_every_chain_length() {
     run_ui(
         "ui-toml/overly_long_method_chain/zero_threshold",
-        RuleConfig { max_calls: Some(0) },
+        RuleConfig {
+            max_calls: Some(0),
+            ..RuleConfig::default()
+        },
+    );
+}
+
+#[test]
+fn closure_weight_of_one_counts_every_stage_alike() {
+    run_ui(
+        "ui-toml/overly_long_method_chain/closure_weight_one",
+        RuleConfig {
+            closure_weight: Some(1),
+            ..RuleConfig::default()
+        },
     );
 }
 
