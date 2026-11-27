@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // edition:2024
 // aux-build:serde_json_stub.rs
 #![feature(register_tool)]

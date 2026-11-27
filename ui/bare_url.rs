@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // Bad: a plain line comment leaves a URL bare: https://example.com here.
 // Good: <https://example.com> wrapped explicitly.
 
