@@ -1,0 +1,17 @@
+--- a/bare_url.rs
++++ b/bare_url.rs
+@@ -1,12 +1,12 @@
+ // run-rustfix
+ // rustfix-only-machine-applicable
+-// Bad: a plain line comment leaves a URL bare: https://example.com here.
++// Bad: a plain line comment leaves a URL bare: <https://example.com> here.
+ // Good: <https://example.com> wrapped explicitly.
+ 
+ /* Bad: a block comment leaves a URL bare: https://example.org. */
+ /* Good: <https://example.org>. */
+ 
+-/// Bad: a doc comment leaves a URL bare: https://example.com here.
++/// Bad: a doc comment leaves a URL bare: <https://example.com> here.
+ fn _doc_bad() {}
+ 
+ /** Bad: a `/** */` doc-block leaves a URL bare: https://example.org. */

@@ -653,8 +653,25 @@ performs the normalisation and explains how.
 
 ## Re-recording a fixture
 
-`just bless` updates the `.stderr` fixtures and the autofix
-expectations. Read the diff it leaves.
+`just bless` updates the `.stderr` and `.diff` fixtures and the
+autofix expectations. Read the diff it leaves.
+
+## Applicability fixtures
+
+rustc renders a suggestion the same way whether or not the fixer
+would apply it, so no `.stderr` can show an applicability. A `.diff`
+beside the fixture pins it.
+
+Opt a fixture in with `// run-rustfix` and
+`// rustfix-only-machine-applicable` at its top, then record its
+`.diff`; a run needs the `.diff` as well as the directives. An empty
+`.diff` is the assertion that the fixture offers nothing
+machine-applicable, and compiletest compiles what a non-empty one
+produces.
+
+[`just bless`](#re-recording-a-fixture) records a `.diff` from what
+rustfix produced, including the first one for a fixture that has none
+and a stored one the fixture has outgrown.
 
 ## Fixtures for the autofixes
 

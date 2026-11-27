@@ -1,3 +1,5 @@
+// run-rustfix
+// rustfix-only-machine-applicable
 // edition:2024
 //
 // What counts as a step, and how many. The chain is found by walking up
