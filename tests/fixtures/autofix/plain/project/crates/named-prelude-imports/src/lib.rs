@@ -2,12 +2,12 @@
 //! `perfectionist::named_prelude_imports` rewrites to the item's
 //! canonical home.
 //!
-//! The canonical home is already imported from for a second item, so
-//! the rewrite leaves two `use` statements naming one module, which
-//! `perfectionist::import_granularity_mismatch` then merges. That
-//! merge is the next round's work rather than this one's: the fixer
-//! rewrites what the crate reported when it was compiled, and the
-//! statement the merge applies to did not exist then.
+//! A second item is already imported from the canonical home, so the
+//! rewrite leaves two `use` statements naming one module, which
+//! `perfectionist::import_granularity_mismatch` merges. Both land in
+//! one round: `cargo fix` recompiles after applying a suggestion and
+//! reapplies until the crate reports nothing more, so the merge sees
+//! the statement the first rewrite produced.
 
 pub mod thing {
     /// An item imported through the prelude.

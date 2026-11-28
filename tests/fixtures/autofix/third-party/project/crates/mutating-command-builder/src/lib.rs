@@ -47,10 +47,10 @@ mod tests {
         assert_eq!(super::chained_arg_count(), 1);
     }
 
-    /// The command built with the consuming setter carries the same
-    /// one argument, so the two spellings answer alike.
+    /// The consuming setter the rule rewrites to carries the argument
+    /// it was given, which is why the swap preserves the call.
     #[test]
-    fn the_consuming_setter_carries_the_same_argument() {
+    fn the_consuming_setter_carries_the_argument_it_was_given() {
         let command = super::already_consuming("chained");
         let arguments: Vec<_> = command.get_args().collect();
         assert_eq!(arguments, [std::ffi::OsStr::new("chained")]);

@@ -3,9 +3,7 @@
 //!
 //! Each crate is named by its full path rather than through a `use`,
 //! so the import rules have nothing to rewrite here and this file
-//! reads the same on every run. The crates are printed in
-//! the order the rules they stand for are named, which is the order
-//! `src/rule_index.rs` lists them in.
+//! reads the same on every run.
 
 fn main() {
     print!("{}", import_granularity_mismatch::report());

@@ -16,8 +16,8 @@ use core::fmt::Write as _;
 use core::ops::Range;
 use std::collections::BTreeSet;
 
-/// Lines of unchanged context a hunk carries on each side of a change.
-/// Three is what `diff -u` and `git diff` default to.
+/// Lines of unchanged context a hunk carries on each side of a
+/// change, which is the amount `diff -u` and `git diff` default to.
 const CONTEXT: usize = 3;
 
 /// What one line of a file became between the two snapshots.

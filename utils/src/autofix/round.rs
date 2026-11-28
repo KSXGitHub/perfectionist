@@ -1,10 +1,9 @@
 //! The cargo invocations a round is made of, plus the ones that
 //! bracket a run.
 //!
-//! A round is a perfectionist autofix, a Clippy autofix, and a
-//! rustfmt pass, in that order. Each is one invocation over the whole
-//! fixture workspace rather than one per member, so the
-//! per-invocation floor is paid once instead of once per crate.
+//! A round's invocations each cover the whole fixture workspace
+//! rather than one member, so the work cargo does before it compiles
+//! anything happens once rather than once per crate.
 //!
 //! Every invocation shares one `CARGO_TARGET_DIR` with the rest of
 //! its fixture, so a round reuses the compiled standard library, the
@@ -123,7 +122,7 @@ pub fn rustfmt(project_dir: &Path, target_dir: &Path) -> Outcome {
 }
 
 /// Compile the project's own tests without running them, which is
-/// what a warmup needs of the lane plain rustc builds.
+/// what a warmup needs of the artefacts plain rustc builds.
 pub fn build_tests(project_dir: &Path, target_dir: &Path) -> Outcome {
     collect(
         cargo_command(project_dir, target_dir).with_args(["test", "--workspace", "--no-run"]),

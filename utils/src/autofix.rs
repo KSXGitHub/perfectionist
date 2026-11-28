@@ -26,12 +26,13 @@
 //!
 //! Once the last round has run, a run also asserts the project still
 //! behaves: its own tests pass, and its `main` prints what it
-//! printed before the first round. A rewrite that compiles and
-//! answers differently is the failure these catch and the rest
-//! cannot. The tests run over the settled tree alone, that being the
-//! one whose behaviour is in question. A blessing run also runs
-//! `main` over the project the rounds start from, because its output
-//! there is what the settled tree is held to.
+//! printed before the first round. A rewrite that changes what the
+//! project computes while still compiling is what the tests and the
+//! output check catch, and no stored diff or `.stderr` does. The
+//! tests run over the settled tree alone, that being the one whose
+//! behaviour is in question. A blessing run also runs `main` over
+//! the project the rounds start from, because its output there is
+//! what the settled tree is held to.
 //!
 //! Clippy's own lints are not under test. Clippy is in a round to
 //! show that its rewrites and this plugin's do not undo each other,
@@ -243,7 +244,7 @@ fn collect(project_dir: &Path, context: &Context, report: &mut Report) -> Report
 }
 
 /// Hold the round to the diagnostics the fixture stored as what it
-/// was handed, which is what its stored diff is the answer to.
+/// was handed.
 fn check_handed(
     context: &Context,
     run: &Run,
@@ -262,18 +263,13 @@ fn check_handed(
 
 /// Hold the project as stored to reporting nothing of Clippy's.
 ///
-/// Clippy is in a round to show that its rewrites and this plugin's
-/// do not undo each other rather than because its lints are under
-/// test, so a finding of Clippy's is stored only where a
-/// perfectionist rewrite produced it. No rewrite has reached the project the first
-/// round is handed, so a finding of Clippy's there was planted, and a
-/// shape it reports is one Clippy would rewrite before the rule under
-/// test had a say.
+/// No rewrite has reached the project the first round is handed, so
+/// a finding of Clippy's there was planted, and the shape it reports
+/// is one Clippy would rewrite before the rule under test reported
+/// anything.
 ///
 /// Nothing is stored for this, deliberately, for the reason
-/// [`check_settled`] states: a blessing run writes what the run
-/// itself produced, so a planted finding would be written into the
-/// file and read as expected.
+/// [`check_settled`] states.
 fn check_unplanted(reported: &Reported, report: &mut Report) {
     let planted: Vec<&str> = reported
         .lints
@@ -417,12 +413,13 @@ pub fn fixtures(repository_dir: &Path) -> Vec<String> {
 /// the standard library, the registry dependencies and the plugin
 /// from the cache rather than compiling them again.
 ///
-/// Everything a round compiles is compiled here: each linter has a
-/// wrapper of its own, so each gets a cache lane of its own, and the
-/// project's own tests and `main` are built by plain rustc, which is
-/// a third. A fix pass is not run, so nothing the warmup does depends
-/// on which run comes first; the first run's configuration is written
-/// only because a check needs some configuration to read.
+/// Everything a round compiles is compiled here: each linter runs
+/// under a wrapper of its own, so the cache has to hold a set of
+/// artefacts for each, and the project's own tests and `main` are
+/// built by plain rustc, which needs another set. A fix pass is not
+/// run, so nothing the warmup does depends on which run comes first;
+/// the first run's configuration is written only because a check
+/// needs some configuration to read.
 pub fn warm(repository_dir: &Path, name: &str) {
     let fixtures_dir = repository_dir.join(FIXTURES);
     let fixture_dir = fixtures_dir.join(name);
