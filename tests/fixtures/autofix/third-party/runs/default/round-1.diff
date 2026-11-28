@@ -1,25 +1,3 @@
---- a/crates/folded-command-setter/src/lib.rs
-+++ b/crates/folded-command-setter/src/lib.rs
-@@ -8,7 +8,7 @@
- /// A command with each name in `names` removed from its environment.
- pub fn without_each(names: &[&str]) -> Command {
-     let start = Command::new("ls");
--    names.iter().fold(start, CommandExtra::without_env)
-+    start.without_envs(names.iter())
- }
- 
- /// What this crate contributes to the fixture's output.
---- a/crates/mutating-command-builder/src/lib.rs
-+++ b/crates/mutating-command-builder/src/lib.rs
-@@ -25,7 +25,7 @@
- /// How many arguments a command carries once it has been configured
- /// in the expression that passes it on.
- pub fn chained_arg_count() -> usize {
--    count_args(Command::new("ls").arg("chained"))
-+    count_args(&mut Command::new("ls").with_arg("chained"))
- }
- 
- /// The number of arguments `command` carries.
 --- a/crates/redundant-derive-more-forward-template/src/lib.rs
 +++ b/crates/redundant-derive-more-forward-template/src/lib.rs
 @@ -5,7 +5,6 @@
@@ -30,3 +8,25 @@
  pub struct Name(pub String);
  
  /// What this crate contributes to the fixture's output.
+--- a/crates/shapes/src/folded_command_setter.rs
++++ b/crates/shapes/src/folded_command_setter.rs
+@@ -8,7 +8,7 @@
+ /// A command with each name in `names` removed from its environment.
+ pub fn without_each(names: &[&str]) -> Command {
+     let start = Command::new("ls");
+-    names.iter().fold(start, CommandExtra::without_env)
++    start.without_envs(names.iter())
+ }
+ 
+ /// What this module contributes to the fixture's output.
+--- a/crates/shapes/src/mutating_command_builder.rs
++++ b/crates/shapes/src/mutating_command_builder.rs
+@@ -25,7 +25,7 @@
+ /// How many arguments a command carries once it has been configured
+ /// in the expression that passes it on.
+ pub fn chained_arg_count() -> usize {
+-    count_args(Command::new("ls").arg("chained"))
++    count_args(&mut Command::new("ls").with_arg("chained"))
+ }
+ 
+ /// The number of arguments `command` carries.

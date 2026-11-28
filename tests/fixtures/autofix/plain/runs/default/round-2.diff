@@ -1,6 +1,6 @@
---- a/crates/macro-trailing-comma/src/lib.rs
-+++ b/crates/macro-trailing-comma/src/lib.rs
-@@ -24,7 +24,7 @@
+--- a/crates/shapes/src/macro_trailing_comma.rs
++++ b/crates/shapes/src/macro_trailing_comma.rs
+@@ -23,7 +23,7 @@
  /// How many labels there are, formatted across lines that would fit
  /// on one.
  pub fn summary() -> String {
@@ -8,4 +8,4 @@
 +    format!("{} labels", labels().len())
  }
  
- /// What this crate contributes to the fixture's output.
+ /// What this module contributes to the fixture's output.

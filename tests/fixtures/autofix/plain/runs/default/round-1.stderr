@@ -1,5 +1,5 @@
 warning: imports are not grouped into one `use` per module
-  --> crates/import-granularity-mismatch/src/lib.rs:LL:CC
+  --> crates/shapes/src/import_granularity_mismatch.rs:LL:CC
    |
 LL | / use std::collections::BTreeMap;
 LL | | use std::collections::HashMap;
@@ -8,7 +8,7 @@ LL | | use std::collections::HashMap;
    = note: `#[warn(perfectionist::import_granularity_mismatch)]` on by default
    = applicability: MachineApplicable (reorganize the imports)
 warning: multi-line macro invocation should end with a trailing comma
-  --> crates/macro-trailing-comma/src/lib.rs:LL:CC
+  --> crates/shapes/src/macro_trailing_comma.rs:LL:CC
    |
 LL |         "the third label, long enough that the list cannot fit on one line"
    |                                                                            ^ help: add a trailing comma: `,`

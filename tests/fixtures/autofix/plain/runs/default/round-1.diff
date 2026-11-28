@@ -1,18 +1,30 @@
---- a/crates/import-granularity-mismatch/src/lib.rs
-+++ b/crates/import-granularity-mismatch/src/lib.rs
+--- a/crates/named-prelude-imports/src/lib.rs
++++ b/crates/named-prelude-imports/src/lib.rs
+@@ -21,8 +21,7 @@
+     pub use crate::thing::{Gadget, Widget};
+ }
+ 
+-use crate::prelude::Widget;
+-use crate::thing::Gadget;
++use crate::thing::{Gadget, Widget};
+ 
+ /// What this crate contributes to the fixture's output.
+ pub fn report() -> String {
+--- a/crates/shapes/src/import_granularity_mismatch.rs
++++ b/crates/shapes/src/import_granularity_mismatch.rs
 @@ -1,8 +1,7 @@
- //! A crate splitting one module across two `use` statements, which
+ //! A module splitting one module across two `use` statements, which
  //! `perfectionist::import_granularity_mismatch` merges.
  
 -use std::collections::BTreeMap;
 -use std::collections::HashMap;
 +use std::collections::{BTreeMap, HashMap};
  
- /// What this crate contributes to the fixture's output.
+ /// What this module contributes to the fixture's output.
  pub fn report() -> String {
---- a/crates/macro-trailing-comma/src/lib.rs
-+++ b/crates/macro-trailing-comma/src/lib.rs
-@@ -17,17 +17,14 @@
+--- a/crates/shapes/src/macro_trailing_comma.rs
++++ b/crates/shapes/src/macro_trailing_comma.rs
+@@ -16,17 +16,14 @@
      vec![
          "the first label, long enough that the list cannot fit on one line",
          "the second label, long enough that the list cannot fit on one line",
@@ -31,16 +43,4 @@
 +    format!("{} labels", labels().len(),)
  }
  
- /// What this crate contributes to the fixture's output.
---- a/crates/named-prelude-imports/src/lib.rs
-+++ b/crates/named-prelude-imports/src/lib.rs
-@@ -21,8 +21,7 @@
-     pub use crate::thing::{Gadget, Widget};
- }
- 
--use crate::prelude::Widget;
--use crate::thing::Gadget;
-+use crate::thing::{Gadget, Widget};
- 
- /// What this crate contributes to the fixture's output.
- pub fn report() -> String {
+ /// What this module contributes to the fixture's output.

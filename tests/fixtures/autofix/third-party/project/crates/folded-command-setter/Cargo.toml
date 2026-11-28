@@ -1,7 +1,0 @@
-[package]
-name = "fixture-third-party-folded-command-setter"
-version = "0.0.0"
-edition = "2024"
-
-[dependencies]
-command-extra = "1.2.0"

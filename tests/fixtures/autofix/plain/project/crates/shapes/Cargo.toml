@@ -1,4 +1,5 @@
 [package]
-name = "fixture-plain-macro-trailing-comma"
+name = "fixture-plain-shapes"
 version = "0.0.0"
 edition = "2024"
+
