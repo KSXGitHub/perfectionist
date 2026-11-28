@@ -1,6 +1,6 @@
 //! Take the churn out of one rendered diagnostic.
 //!
-//! Each rule here answers something that differs between two runs of
+//! Each rule here removes something that differs between two runs of
 //! the same unchanged project, or between two machines, and so would
 //! have a stored expectation rewritten by a change that is not the
 //! one under review.
@@ -10,7 +10,7 @@
 //! turns its gutters into `LL`. The checks here run without that
 //! flag, so that rustc still sees the same command line as the fix
 //! pass before it and the check costs nothing to repeat. What the
-//! flag would have done is done below instead, which is why the
+//! flag would have done is done here instead, which is why the
 //! gutter is rebuilt rather than only renumbered: rustc sizes the
 //! gutter column by the widest line number in the block, so a
 //! diagnostic moving from line 9 to line 10 re-indents every line of
@@ -143,9 +143,9 @@ fn take_digits(input: &str) -> Option<((), &str)> {
     }
 }
 
-/// Drop the ANSI escapes cargo renders a diagnostic with where it
-/// takes its output for a terminal. Which it takes it for is not
-/// something a stored expectation should turn on.
+/// Drop the ANSI escapes cargo adds to a diagnostic when it takes
+/// its output for a terminal. Whether it did is not something a
+/// stored expectation should turn on.
 fn without_colour(line: &str) -> String {
     let mut out = String::with_capacity(line.len());
     let mut rest = line;

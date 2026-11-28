@@ -5,7 +5,7 @@
 //! the project is the `project/` directory beside that file, a run's
 //! configuration is the `dylint.toml` under its directory, and a
 //! round's expectations are the `round-<n>.diff` and
-//! `round-<n>.stderr` files beside it.
+//! `round-<n>.stderr` files in that same directory.
 
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
@@ -34,9 +34,7 @@ pub struct Run {
     /// failure report.
     pub name: String,
 
-    /// How many rounds this run takes. The harness applies exactly
-    /// this many, so a project that would settle in fewer, or need
-    /// more, fails rather than being driven to a fixpoint.
+    /// How many rounds this run takes.
     pub rounds: usize,
 }
 

@@ -7,19 +7,15 @@
 //! trees. A run that fails does not stop the next one, so one pass
 //! reports every run that came out short.
 //!
-//! The harness itself is `_utils::autofix`, whose module
-//! documentation explains what a round, a settled project and a run
-//! are, and what each round is held to. Re-record every expectation
-//! with `just bless`, then read the diff of the fixture files as the
-//! review of the autofixes.
+//! The harness itself is `_utils::autofix`, whose module docs carry
+//! the model. Re-record every expectation with `just bless`, then
+//! read the diff of the fixture files as the review of the autofixes.
 
 pub mod _utils;
 
 use _utils::autofix::check_fixture;
 
-/// The project with no registry dependencies, under the default
-/// configuration and under the one that opts into the rules shipping
-/// inactive.
+/// The project with no registry dependencies.
 #[test]
 fn plain() {
     check_fixture(_utils::cargo_manifest_dir(), "plain");

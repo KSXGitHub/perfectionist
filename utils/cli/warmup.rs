@@ -7,9 +7,8 @@
 //! the built perfectionist plugin instead of paying the cost from
 //! cold.
 //!
-//! Each fixture under `tests/fixtures/autofix/` then gets the same
-//! treatment in a target dir of its own, since what its cache has to
-//! hold is decided by its dependency list.
+//! Each fixture under `tests/fixtures/autofix/` is then warmed in a
+//! target dir of its own.
 //!
 //! The run resolves `cargo dylint` from `PATH`, so it starts by
 //! checking that binary against the version this workspace pins.

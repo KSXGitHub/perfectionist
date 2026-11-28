@@ -2,27 +2,23 @@
 //! the text a round stores.
 //!
 //! The harness asks cargo for `--message-format=json` rather than
-//! reading the rendered stream off stderr, for two reasons. Cargo
-//! renders diagnostics in whatever order its jobs finish, so the
-//! stream is not reproducible, while the JSON carries one object per
-//! diagnostic for the harness to put in an order of its own. And the
-//! JSON names each diagnostic's lint in a field, where nothing a
-//! project's own source says can reach it, which is what the settling
-//! check reads.
+//! reading the rendered stream off stderr. Cargo renders diagnostics
+//! in whatever order its jobs finish, so the stream is not
+//! reproducible, while the JSON carries one object per diagnostic for
+//! the harness to put in an order of its own. The JSON also names
+//! each diagnostic's lint in a field, where nothing a project's own
+//! source says can reach it, which is what the settling check reads.
 //!
 //! Normalisation follows the rules `utils/src/ui_fixtures.rs` states
-//! for a `.stderr` under `ui/`, and for the same reason: a span
-//! header's `line:column` would otherwise renumber every header below
-//! an inserted line. The absolute paths
-//! this harness works in are normalised too, since a temp directory's
-//! name is different on every run.
+//! for a `.stderr` under `ui/`. The absolute paths this harness works
+//! in are normalised on top of those, since a temp directory's name
+//! is different on every run.
 //!
 //! One line per rendered block is the harness's own rather than
 //! rustc's: each suggestion's **applicability**, which rustc computes
 //! and never prints. It is what decides whether the fixer touches a
-//! suggestion, so it is the property every test here exists for, and
-//! a `.stderr` that left it out would record a rule's rewrites
-//! without recording which of them are offered to a machine.
+//! suggestion, so a `.stderr` that left it out would record a rule's
+//! rewrites without recording which of them are offered to a machine.
 
 use serde::Deserialize;
 use std::collections::BTreeSet;
@@ -81,8 +77,9 @@ struct DiagnosticCode {
     code: String,
 }
 
-/// One span of a diagnostic, pared down to what says whether it
-/// carries a rewrite and how far rustc stands behind it.
+/// One span of a diagnostic, pared down to the field that says
+/// whether the span carries a rewrite and what applicability rustc
+/// gave it.
 #[derive(Deserialize)]
 struct DiagnosticSpan {
     suggestion_applicability: Option<String>,

@@ -6,7 +6,7 @@
 //! what the harness diffs a round against, what it dumps when a round
 //! fails, and what it materialises a fresh project from.
 //!
-//! Two paths are left out of every snapshot, each because the round
+//! Some paths are left out of every snapshot, each because the round
 //! does not own it. `Cargo.lock` is the resolver's, and `dylint.toml`
 //! carries the configuration under test plus an absolute path to this
 //! checkout, so neither belongs in a diff a reader is asked to
@@ -62,8 +62,8 @@ fn collect(dir: &Path, prefix: &str, snapshot: &mut Snapshot) {
     }
 }
 
-/// One file's contents, held to the two assumptions the diff format
-/// makes about them.
+/// One file's contents, held to UTF-8 and to a trailing newline,
+/// which is what the diff format assumes of them.
 fn read_text(file: &Path, path: &str) -> String {
     let contents =
         fs::read(file).unwrap_or_else(|error| panic!("read {}: {error}", file.display()));

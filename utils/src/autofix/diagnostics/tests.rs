@@ -146,8 +146,8 @@ fn the_project_directory_is_anonymised() {
     );
 }
 
-/// Whether cargo thought it was writing to a terminal is not
-/// something a stored expectation should turn on.
+/// Whether cargo took its output for a terminal is not something a
+/// stored expectation should turn on.
 #[test]
 fn colour_escapes_are_stripped() {
     let stdout = message(
@@ -191,8 +191,8 @@ fn suggestion(code: &str, rendered: &str, label: &str, applicability: &str) -> S
 
 /// An applicability is what decides whether the fixer touches a
 /// suggestion, and rustc computes it without printing it. Recording
-/// it is what lets a shape a rule withholds say so, rather than
-/// leaving it to be read off an empty diff.
+/// it is what shows that a rule withheld a rewrite, rather than
+/// leaving that to be read off an empty diff.
 #[test]
 fn each_suggestion_records_its_applicability() {
     let stdout = suggestion(
