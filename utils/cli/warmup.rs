@@ -1,4 +1,4 @@
-//! Pre-warm the shared integration-test target dir.
+//! Pre-warm the target dirs the integration tests share.
 //!
 //! Materialises a minimal canonical fixture and runs
 //! `cargo dylint --all` against it with `CARGO_TARGET_DIR` pointed at
@@ -6,6 +6,9 @@
 //! runs once, subsequent integration tests reuse the compiled std and
 //! the built perfectionist plugin instead of paying the cost from
 //! cold.
+//!
+//! Each fixture under `tests/fixtures/autofix/` is then warmed in a
+//! target dir of its own.
 //!
 //! The run resolves `cargo dylint` from `PATH`, so it starts by
 //! checking that binary against the version this workspace pins.
@@ -73,6 +76,12 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
     eprintln!("warmup: cargo dylint --all took {elapsed:.2?}");
+
+    for fixture in _utils::autofix::fixtures(&root) {
+        let started = Instant::now();
+        _utils::autofix::warm(&root, &fixture);
+        eprintln!("warmup: {fixture} took {:.2?}", started.elapsed());
+    }
 
     ExitCode::SUCCESS
 }
